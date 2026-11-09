@@ -26,6 +26,7 @@ TBD
 - **Paint**: Auto (contrast + harmony), Random, or Custom.
 - **Export**: PNG/JPG at current view, 1024, 2048 or 4096 px; save/load design as JSON.
 - **Roll**: cannon-es rigid-body physics on a table; **Standard 7** view shows the full set.
+- **Epoxy inclusion**: a built-in rubber duck or your own glb/obj/stl miniature cast inside clear epoxy.
 - **Settings** persist in localStorage.
 
 Design file format: [docs/design/design-format.md](docs/design/design-format.md). Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md). Work is tracked in `backlog/` (backlog.md; `backlog board`).

@@ -87,6 +87,14 @@
       <div class="row"><label>Glitter</label><input type="range" id="glitter" min="0" max="1" step="0.01"></div>
       <div class="row"><label>Bubbles</label><input type="range" id="bubbles" min="0" max="1" step="0.01"></div>
       <div class="row"><label>Clarity</label><input type="range" id="clarity" min="0.2" max="1" step="0.01"></div>
+      <div class="row"><label>Inclusion</label><select id="incl"><option value="none">None</option><option value="duck">Rubber duck</option><option value="custom">Custom model…</option></select></div>
+      <div id="inclctl">
+        <div class="row"><button id="loadmodel" style="flex:1">Load model file (glb, obj, stl)…</button></div>
+        <input type="file" id="modelfile" accept=".glb,.gltf,.obj,.stl" hidden>
+        <div class="row"><label>Size</label><input type="range" id="inclsize" min="0.15" max="0.9" step="0.01"></div>
+        <div class="row"><label>Turn</label><input type="range" id="inclturn" min="-180" max="180" step="1"></div>
+        <div class="row"><label>Height</label><input type="range" id="inclheight" min="-0.6" max="0.6" step="0.01"></div>
+      </div>
     </div>
 
     <h2>Numbers</h2>
@@ -121,6 +129,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
 /* ---------- utils ---------- */
 const mulberry32 = a => () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
@@ -484,7 +495,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
@@ -494,6 +505,7 @@ function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palett
 function setSubstrate(id,r){ state.substrate=id; ensurePalette(r); }
 function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }
 if(!STONES[state.stone]) state.stone='marble';
+if(state.inclusion==='custom') state.inclusion='none';   // custom models are not persisted
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
 let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
@@ -536,6 +548,43 @@ function specsFor(shape){
   if(SHAPES[shape].pair) return [mk('d10',-1.2,0,TENS,'d%'), mk('d10',1.2,0,null,'d10')];
   return [mk(shape,0,0)];
 }
+/* ---------- inclusion: a miniature model cast inside clear epoxy ---------- */
+function makeDuck(){                                   // original procedural rubber duck (no third-party asset)
+  const g=new THREE.Group(), yellow=new THREE.MeshStandardMaterial({color:0xffd21f,roughness:.35}), orange=new THREE.MeshStandardMaterial({color:0xff8a1f,roughness:.4}), black=new THREE.MeshStandardMaterial({color:0x111111,roughness:.2});
+  const add=(geo,mat,p,sc=[1,1,1],rot=[0,0,0])=>{ const m=new THREE.Mesh(geo,mat); m.position.set(...p); m.scale.set(...sc); m.rotation.set(...rot); g.add(m); return m; };
+  const sph=new THREE.SphereGeometry(1,40,28);
+  add(sph,yellow,[0,0,0],[1,.78,1.2]);                  // body
+  add(sph,yellow,[0,.95,.55],[.58,.58,.58]);            // head
+  add(sph,yellow,[0,.38,-1.15],[.34,.3,.5],[-.7,0,0]);  // tail
+  add(sph,yellow,[.82,.15,-.05],[.2,.42,.7],[0,0,-.25]); add(sph,yellow,[-.82,.15,-.05],[.2,.42,.7],[0,0,.25]);   // wings
+  add(sph,orange,[0,.86,1.08],[.3,.14,.38]);            // beak
+  add(sph,black,[.24,1.08,.98],[.07,.07,.07]); add(sph,black,[-.24,1.08,.98],[.07,.07,.07]);                       // eyes
+  return g;
+}
+let customTemplate=null;
+function normalizeModel(obj){                           // centre it and scale to a unit bounding sphere
+  const box=new THREE.Box3().setFromObject(obj), c=box.getCenter(new THREE.Vector3()), r=box.getBoundingSphere(new THREE.Sphere()).radius||1;
+  const inner=new THREE.Group(); inner.add(obj); obj.position.sub(c); const w=new THREE.Group(); inner.scale.setScalar(1/r); w.add(inner); return w;
+}
+const duckTemplate=(()=>{ let t=null; return ()=>t||(t=normalizeModel(makeDuck())); })();
+function loadModelFile(file){
+  return new Promise((res,rej)=>{
+    if(file.size>25e6) return rej(new Error('Model is larger than 25 MB'));
+    const ext=file.name.split('.').pop().toLowerCase(), fr=new FileReader();
+    fr.onerror=()=>rej(new Error('Could not read file'));
+    fr.onload=()=>{ try{
+      if(ext==='glb'||ext==='gltf') new GLTFLoader().parse(fr.result,'',g=>res(g.scene),e=>rej(new Error('Could not parse glTF: '+(e.message||e))));
+      else if(ext==='obj') res(new OBJLoader().parse(fr.result));
+      else if(ext==='stl') res(new THREE.Mesh(new STLLoader().parse(fr.result),new THREE.MeshStandardMaterial({color:0xcccccc,roughness:.4})));
+      else rej(new Error('Use a .glb, .gltf, .obj or .stl file'));
+    }catch(e){ rej(e); } };
+    ext==='obj'?fr.readAsText(file):fr.readAsArrayBuffer(file);
+  });
+}
+function makeInclusion(){ const tpl=state.inclusion==='duck'?duckTemplate():state.inclusion==='custom'?customTemplate:null; if(!tpl) return null;
+  const inc=new THREE.Group(); const c=tpl.clone(true); c.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } }); inc.add(c); return inc; }
+function updateInclusions(){ for(const d of dice){ if(!d.inc) continue;
+  d.inc.scale.setScalar(d.inradius*state.inclSize); d.inc.position.set(0,state.inclY*d.inradius,0); d.inc.rotation.set(0,THREE.MathUtils.degToRad(state.inclTurn),0); } }
 function buildDice(keepRoll){
   if(!keepRoll) exitRoll(true);
   rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
@@ -546,7 +595,9 @@ function buildDice(keepRoll){
     if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
     const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%'), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
-    dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part});
+    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,inradius:Math.min(...faces.map(f=>f.d))};
+    if(state.substrate==='epoxy'){ const inc=makeInclusion(); if(inc){ mesh.add(inc); entry.inc=inc; } }
+    dice.push(entry);
   });
   needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 0;
   baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
@@ -571,7 +622,7 @@ function applyLook(){
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
-  syncUI(); save(); scheduleCheckpoint();
+  updateInclusions(); syncUI(); save(); scheduleCheckpoint();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
@@ -591,7 +642,7 @@ function randomize(noBuild){
 }
 
 /* ---------- undo / redo of design settings ---------- */
-const DESIGN_KEYS=['polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
+const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
 let history=[], hIdx=-1, hTimer=null;
 function checkpoint(){                                   // record the current design if it differs from the last recorded one
@@ -638,12 +689,17 @@ function syncUI(){
   for(const [id,k] of SLIDERS) $(id).value=state[k];
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
-  $('customctl').hidden=state.shape!=='custom'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
+  $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
+$('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
+  checkpoint(); state.inclusion=v; buildDice(true); };
+$('loadmodel').onclick=()=>$('modelfile').click();
+$('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
@@ -666,7 +722,7 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  finish:{polish:state.polish}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+  finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
@@ -682,7 +738,8 @@ function loadDesign(d){
   state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
   state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
-  state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5); const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
+  state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5);
+  { const ic=d.inclusion||{}; state.inclusion=ic.type==='duck'?'duck':'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
   state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   return ensureFont(state.font).then(()=>buildDice());
@@ -823,7 +880,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(q.get('incl')==='duck') state.inclusion='duck'; if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
@@ -833,6 +890,10 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
       for(let y=0;y<at.cell;y++)for(let x=0;x<at.cell;x++) if(d[(y*at.cell+x)*4]>128){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
       out.push(`${l}:(${((x0+x1)/2-128).toFixed(1)},${((y0+y1)/2-128).toFixed(1)})`); });
     console.log('ATLAS',f,out.join(' ')); } }
+if(new URLSearchParams(location.search).get('test')==='incl'){ // loaders: OBJ + STL from inline text
+  const obj='v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n';
+  const stl='solid t\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid t\n';
+  for(const [n,t] of [['t.obj',obj],['t.stl',stl]]){ try{ const o=await loadModelFile(new File([t],n)); customTemplate=normalizeModel(o); state.inclusion='custom'; buildDice(true); console.log('INCL_OK',n,dice.filter(d=>d.inc).length); }catch(e){ console.log('INCL_FAIL',n,e.message); } } }
 if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
