@@ -406,8 +406,10 @@ const scene=new THREE.Scene();
 { const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d');
   const gr=g.createRadialGradient(256,230,20,256,256,380); gr.addColorStop(0,'#262b3a'); gr.addColorStop(1,'#0b0c11');
   g.fillStyle=gr; g.fillRect(0,0,512,512);
-  { const rr=mulberry32(7); for(let i=0;i<46;i++){ const x=rr()*512,y=rr()*512,rad=8+rr()*34,a=.05+rr()*.09; const bg=g.createRadialGradient(x,y,0,x,y,rad);
-      bg.addColorStop(0,`rgba(200,215,255,${a})`); bg.addColorStop(.8,`rgba(200,215,255,${a*.8})`); bg.addColorStop(1,'rgba(200,215,255,0)'); g.fillStyle=bg; g.fillRect(x-rad,y-rad,rad*2,rad*2); } }
+  // broad, very soft light bands (like studio strip lights): gives glass something gentle to refract without looking busy
+  for(const [x0,w,a0] of [[120,70,.05],[330,110,.04],[450,50,.035]]){ const lg=g.createLinearGradient(x0-w,0,x0+w,0);
+    lg.addColorStop(0,'rgba(190,205,240,0)'); lg.addColorStop(.5,`rgba(190,205,240,${a0})`); lg.addColorStop(1,'rgba(190,205,240,0)');
+    g.save(); g.translate(256,256); g.rotate(.35); g.translate(-256,-256); g.fillStyle=lg; g.fillRect(-200,-200,912,912); g.restore(); }
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
 scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
 const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,6,4); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-.0004; key.shadow.normalBias=.03;
@@ -419,10 +421,6 @@ const table=(()=>{const c=document.createElement('canvas');c.width=c.height=256;
   m.rotation.x=-Math.PI/2; m.position.y=TABLE_Y-.002; m.receiveShadow=true; m.visible=false; scene.add(m); return m;})();
 const camera=new THREE.PerspectiveCamera(32,1,.1,50); camera.position.set(0,0,5.4);
 const rig=new THREE.Group(); scene.add(rig);
-const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
-  const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
-  m.rotation.x=-Math.PI/2; m.position.y=-1.55; scene.add(m); return m;})();
 
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
@@ -747,7 +745,7 @@ renderer.setAnimationLoop(()=>{
   { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(baseZ,ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
     const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
-  table.visible=camBlend>.01; table.material.opacity=camBlend; shadow.visible=camBlend<.3&&dice.length<3;
+  table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
 });
 
