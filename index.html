@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pretty Dice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;800&family=Uncial+Antiqua&family=Metamorphous&display=swap">
 <style>
   :root{--bg:#0e1015;--panel:#161922;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c}
   *{box-sizing:border-box}
@@ -67,17 +67,28 @@
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
 
+    <h2>Numbers</h2>
+    <div class="row"><label>Font</label><select id="font"></select></div>
+    <div class="row"><label>Size</label><input type="range" id="numsize" min="0.3" max="1" step="0.01"></div>
+    <div class="row"><label>Rotation</label><input type="range" id="numrot" min="-180" max="180" step="1"><output id="numrotv" style="width:38px;text-align:right;color:var(--dim)"></output></div>
+    <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
+    <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
+
     <h2>Generate</h2>
     <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
-    <div class="chk"><input type="checkbox" id="rotate" checked><span>Idle rotation</span></div>
+    <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
     <button class="big" id="rand">Randomize</button>
     <button class="big alt" id="roll">Roll</button>
     <button class="big alt" id="back" hidden>Back to showcase</button>
-    <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02" value="0.4"></div>
+    <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02"></div>
 
     <h2>Export</h2>
     <div class="row"><label>Size</label><select id="expsize"><option value="0">Current view</option><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="4096">4096 px</option></select></div>
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
+    <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
+    <input type="file" id="jsonfile" accept=".json,application/json" hidden>
+    <h2>Settings</h2>
+    <button id="reset" style="width:100%">Reset to defaults</button>
   </aside>
   <div id="stage"><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
@@ -114,6 +125,7 @@ const SHAPES = {
         for(const a of [1,-1])for(const b of [1,-1]){o.push(V(0,a,b*PHI),V(a,b*PHI,0),V(b*PHI,0,a));} return o;}, labels:range(1,20)},
   d14: {label:'d14', verts:()=>trapezohedron(7), labels:range(1,14)},
   d16: {label:'d16', verts:()=>dipyramid(8,0.9), labels:range(1,16)},
+  set7:{label:'Standard 7', set:true},
   rd12:{label:'rhombic d12', verts:()=>{const o=signs(1,1,1); for(const s of [2,-2]) o.push(V(s,0,0),V(0,s,0),V(0,0,s)); return o;}, labels:range(1,12)},
 };
 
@@ -148,31 +160,38 @@ function assignLabels(faces, labels, rng){
 }
 
 /* ---------- number atlas (bump + paint mask) ---------- */
-function makeAtlas(N, labels, fontsOK){
-  const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=256;
+const FONTS={ cinzel:{label:'Cinzel (classic)',css:'Cinzel,Georgia,serif',load:'700 100px Cinzel'}, metamorphous:{label:'Metamorphous (fantasy)',css:'Metamorphous,Georgia,serif',load:'400 100px Metamorphous'},
+  uncial:{label:'Uncial Antiqua (runic)',css:'"Uncial Antiqua",Georgia,serif',load:'400 100px "Uncial Antiqua"'}, inter:{label:'Inter (clean sans)',css:'Inter,Arial,sans-serif',load:'800 100px Inter'},
+  georgia:{label:'Georgia (serif)',css:'Georgia,serif',load:null}, mono:{label:'Courier (mono)',css:'"Courier New",monospace',load:null} };
+function makeAtlas(N, labels, fontKey, soft){
+  const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=256, F=FONTS[fontKey]||FONTS.cinzel;
   const mk=(bg)=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,c.width,c.height); return [c,g];};
-  const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000');
-  const font=`700 ${labels.some(l=>String(l).length>1)?118:140}px ${fontsOK?'Cinzel,':''}Georgia,serif`;
+  const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), info=[];
+  const px=labels.some(l=>String(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
   labels.forEach((lab,i)=>{
     let txt=String(lab); if(lab===6||lab===9) txt+='.';
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
-    for(const [g,fill,blur] of [[bg,'#000',3],[mg,'#fff',0.6]]){
-      g.font=font; g.textAlign='center'; g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none';
-      const m=g.measureText(txt); g.fillText(txt,cx,cy+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2);
+    mg.font=`${weight} ${px}px ${F.css}`; const m=mg.measureText(txt);
+    const w=m.actualBoundingBoxLeft+m.actualBoundingBoxRight, h=m.actualBoundingBoxAscent+m.actualBoundingBoxDescent;
+    info.push({halfDiag:Math.hypot(w,h)/2});            // text box half-diagonal in atlas px, used to fit it inside the face
+    for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){
+      g.font=`${weight} ${px}px ${F.css}`; g.textAlign='center'; g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none';
+      g.fillText(txt,cx+(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2,cy+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2);
       g.filter='none';
     }
   });
   const tex=c=>{const t=new THREE.CanvasTexture(c); t.anisotropy=8; return t;};
-  return {bump:tex(bc), mask:tex(mc), cols, rows};
+  return {bump:tex(bc), mask:tex(mc), cols, rows, cell, info};
 }
 
 /* ---------- geometry: flat numbered faces + (optional) rounded edge strips and vertex patches ---------- */
 const slerp=(a,b,t)=>{const th=Math.acos(THREE.MathUtils.clamp(a.dot(b),-1,1)); if(th<1e-6) return a.clone();
   return a.clone().multiplyScalar(Math.sin((1-t)*th)).addScaledVector(b,Math.sin(t*th)).multiplyScalar(1/Math.sin(th));};
 
-function buildGeometry(faces, atlas, radius){
-  const pos=[],nor=[],uv=[];
-  const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v);};
+function buildGeometry(faces, atlas, radius, numSize, numRot){
+  const pos=[],nor=[],uv=[],cb=[];
+  let curCell=[0,0,1,1];
+  const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v); cb.push(...curCell);};
   let R=0, SV=null;                                   // R: clamped radius, SV: shrunk vertex per original vertex id
   if(radius>0){
     R=Math.min(radius, 0.3*Math.min(...faces.map(f=>f.d)));
@@ -194,13 +213,20 @@ function buildGeometry(faces, atlas, radius){
       C.add(new THREE.Vector3().add(p0).add(P[k]).add(P[k+1]).multiplyScalar(a/3)); A+=a;}
     C.multiplyScalar(1/A);
     let far=P[0]; P.forEach(p=>{if(p.distanceTo(C)>far.distanceTo(C)+1e-6) far=p;});
-    const up=new THREE.Vector3().subVectors(far,C).normalize(), right=new THREE.Vector3().crossVectors(up,n);
+    const equi=P.every(p=>Math.abs(p.distanceTo(C)-far.distanceTo(C))<1e-4*far.distanceTo(C)+1e-6);
+    const up=new THREE.Vector3().subVectors(far,C).normalize();
+    if(m===4&&equi){ up.copy(new THREE.Vector3().subVectors(P[1],P[0]).cross(n).normalize()); }   // squares: edge-aligned, like real d6 pips
+    up.applyAxisAngle(n,THREE.MathUtils.degToRad(numRot));
+    const right=new THREE.Vector3().crossVectors(up,n);
     let r=1e9; for(let k=0;k<m;k++){const a=P[k],b=P[(k+1)%m],o=new THREE.Vector3().subVectors(b,a).cross(n).normalize();
       r=Math.min(r,-new THREE.Vector3().subVectors(C,a).dot(o));}
-    const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows, K=1.25*r;
-    const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/K*.5/atlas.cols, cv+d.dot(up)/K*.5/atlas.rows);};
+    const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows;
+    const opx=numSize*r/atlas.info[i].halfDiag;                       // object units per atlas pixel: text box fits numSize * inradius
+    curCell=[col/atlas.cols,1-(row+1)/atlas.rows,(col+1)/atlas.cols,1-row/atlas.rows];
+    const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/opx/(atlas.cols*atlas.cell), cv+d.dot(up)/opx/(atlas.rows*atlas.cell));};
     for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
   });
+  curCell=[0,0,1,1];
   if(R>0){
     const BU=.001, BV=.999;                           // blank atlas corner: no paint, no bump
     const tri=(p0,n0,p1,n1,p2,n2)=>{ const c=new THREE.Vector3().subVectors(p1,p0).cross(new THREE.Vector3().subVectors(p2,p0));
@@ -229,6 +255,7 @@ function buildGeometry(faces, atlas, radius){
   g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
   g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setAttribute('cellB',new THREE.Float32BufferAttribute(cb,4));
   return g;
 }
 
@@ -262,16 +289,19 @@ function makeMaterial(atlas){
     Object.assign(sh.uniforms, U, {uMask:{value:atlas.mask}});
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>',`#include <common>
-        varying vec3 vOP; varying vec2 vPUv;`)
+        attribute vec4 cellB; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv;`)
       .replace('#include <begin_vertex>',`#include <begin_vertex>
-        vOP=position; vPUv=uv;`);
+        vOP=position; vPUv=uv; vCell=cellB;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>',`#include <common>
         uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode; uniform float uScale,uFlake,uBrush; uniform sampler2D uMask;
-        varying vec3 vOP; varying vec2 vPUv;
+        varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv;
+        bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
+        vec4 bumpSample(sampler2D t, vec2 u){return inCell(u)?texture2D(t,u):vec4(1.);}
         ${GLSL_NOISE}`)
+      .replace('#include <bumpmap_pars_fragment>', THREE.ShaderChunk.bumpmap_pars_fragment.split('texture2D( bumpMap, ').join('bumpSample( bumpMap, '))
       .replace('#include <color_fragment>',`#include <color_fragment>
-        float pm = smoothstep(.35,.65,texture2D(uMask,vPUv).r);
+        float pm = inCell(vPUv) ? smoothstep(.35,.65,texture2D(uMask,vPUv).r) : 0.;
         diffuseColor.rgb = mix(pattern(vOP*uScale+uOff), uPaint, pm);`)
       .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
         roughnessFactor = mix(roughnessFactor + uBrush*(vn(vOP*vec3(2.,90.,2.))-.5), .5, pm);`)
@@ -332,7 +362,7 @@ const scene=new THREE.Scene();
   g.fillStyle=gr; g.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
 scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
 const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,6,4); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-.0004; key.shadow.normalBias=.03;
-Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25}); scene.add(key);
+Object.assign(key.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:.5,far:30}); scene.add(key);
 const TABLE_Y=-1.6;
 const table=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
   const gr=g.createRadialGradient(128,128,40,128,128,128);gr.addColorStop(0,'#fff');gr.addColorStop(1,'#000');g.fillStyle=gr;g.fillRect(0,0,256,256);
@@ -345,66 +375,93 @@ const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128
   const m=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
   m.rotation.x=-Math.PI/2; m.position.y=-1.55; scene.add(m); return m;})();
 
-/* ---------- state ---------- */
-const state={shape:'d20', substrate:'swirl', colors:['#000000','#000000','#000000'], paint:'#ffffff', paintMode:'auto', scale:1.6, radius:0.04, seed:1};
-let dice=[], fontsOK=false, camZ=5.4;
+/* ---------- state (persisted to localStorage) ---------- */
+const $=id=>document.getElementById(id);
+const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+const state=structuredClone(DEFAULTS);
+const STORE='prettydice.v1';
+try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
+function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} }
+function setSubstrate(id,r){ state.substrate=id; if(!state.palettes[id]) state.palettes[id]=SUBSTRATES[id].pal(r||mulberry32(state.seed)); state.colors=state.palettes[id]; }
+setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
+if(!SHAPES[state.shape]) state.shape='d20';
+let dice=[], baseZ=5.4;
 
-function buildDice(){
-  exitRoll(true); rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
-  const specs = SHAPES[state.shape].pair
-    ? [{verts:SHAPES.d10.verts(), labels:[0,10,20,30,40,50,60,70,80,90], x:-1.2},{verts:SHAPES.d10.verts(), labels:range(0,9), x:1.2}]
-    : [{verts:SHAPES[state.shape].verts(), labels:SHAPES[state.shape].labels, x:0}];
+const TENS=range(0,9).map(n=>n*10);
+const SET7=[['d4',-3.4,1.25],['d6',-1.13,1.25],['d8',1.13,1.25],['d10',3.4,1.25],['dpct',-2.27,-1.25],['d12',0,-1.25],['d20',2.27,-1.25]];
+function specsFor(shape){
+  const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
+  if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
+  if(SHAPES[shape].pair) return [mk('d10',-1.2,0,TENS,'d%'), mk('d10',1.2,0,null,'d10')];
+  return [mk(shape,0,0)];
+}
+function buildDice(keepRoll){
+  if(!keepRoll) exitRoll(true);
+  rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
+  const specs=specsFor(state.shape);
   specs.forEach(s=>{
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
     const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
-    if(faces.length!==s.labels.length) console.warn(`${state.shape}: hull has ${faces.length} faces, expected ${s.labels.length}`);
-    const atlas=makeAtlas(faces.length,labs,fontsOK), geo=buildGeometry(faces,atlas,state.radius), mat=makeMaterial(atlas);
-    const mesh=new THREE.Mesh(geo,mat); mesh.position.x=s.x; mesh.castShadow=true; rig.add(mesh); dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x});
+    if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
+    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
+    const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
+    dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name});
   });
-  camZ = specs.length>1 ? 7.6 : 5.4;
-  document.getElementById('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+SUBSTRATES[state.substrate].label.toUpperCase();
+  baseZ = state.shape==='set7' ? 13 : specs.length>1 ? 7.6 : 5.4;
   applyLook();
 }
+let rebuildQueued=false;
+const scheduleRebuild=()=>{ if(rebuildQueued) return; rebuildQueued=true; requestAnimationFrame(()=>{rebuildQueued=false; buildDice(true);}); };
+async function ensureFont(k){ const f=FONTS[k]; if(f&&f.load){ try{ await Promise.race([document.fonts.load(f.load),new Promise(r=>setTimeout(r,2000))]); }catch{} } }
+
 function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
+  U.uOff.value.set(...state.off);
   U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
-    Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08,
+    Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
       transmission:S.trans, ior:1.5, thickness:S.trans?1.3:0, attenuationDistance:S.trans?1.1:Infinity});
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set(S.trans?state.colors[0]:'#000000'); mat.emissiveIntensity=.1; mat.needsUpdate=true;
   }
-  document.getElementById('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
-  syncUI();
+  $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
+  syncUI(); save();
 }
+const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(){
   state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed);
-  if(document.getElementById('randsub').checked) state.substrate=pick(Object.keys(SUBSTRATES),r);
-  state.colors=SUBSTRATES[state.substrate].pal(r);
-  U.uOff.value.set(r()*60,r()*60,r()*60); state.scale=1+r()*1.6;
-  if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r,state.paintMode);
-  applyLook();
+  if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
+  state.palettes[state.substrate]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[state.substrate];
+  state.off=[r()*60,r()*60,r()*60]; state.scale=1+r()*1.6;
+  repaint(r); applyLook();
 }
 
 /* ---------- UI ---------- */
-const $=id=>document.getElementById(id);
-for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12') b.style.gridColumn='span 2';
-  b.onclick=()=>{state.shape=id; buildDice(); syncUI();}; $('shapes').append(b); }
+for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2';
+  b.onclick=()=>{state.shape=id; buildDice(); }; $('shapes').append(b); }
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
-  b.onclick=()=>{state.substrate=id; state.colors=s.pal(mulberry32(state.seed)); if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,id,mulberry32(state.seed),state.paintMode); applyLook();}; $('subs').append(b); }
+  b.onclick=()=>{ setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
+for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
 function syncUI(){
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
-  $('paint').value=state.paint; $('scale').value=state.scale; $('paintmode').value=state.paintMode; $('radius').value=state.radius;
+  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('expsize').value=state.expsize;
+  for(const [id,k] of SLIDERS) $(id).value=state[k];
+  $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,mulberry32(state.seed),state.paintMode); applyLook();});
+const SLIDERS=[['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
+for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
+$('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
+['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
-$('paintmode').onchange=e=>{state.paintMode=e.target.value; if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,mulberry32((Math.random()*1e9)|0),state.paintMode); applyLook();};
-let rebuildQueued=false;
-$('radius').oninput=e=>{state.radius=+e.target.value; if(!rebuildQueued){rebuildQueued=true; requestAnimationFrame(()=>{rebuildQueued=false; buildDice();});}};
+$('paintmode').onchange=e=>{state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
+$('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
+$('expsize').onchange=e=>{state.expsize=e.target.value; save();};
 function exportImage(type){
-  const size=+$('expsize').value, w0=stage.clientWidth, h0=stage.clientHeight, pr=renderer.getPixelRatio();
+  const size=+$('expsize').value, pr=renderer.getPixelRatio();
   if(size){renderer.setPixelRatio(1); renderer.setSize(size,size,false); camera.aspect=1; camera.updateProjectionMatrix();}
   renderer.render(scene,camera);
   const mime=type==='jpg'?'image/jpeg':'image/png';
@@ -414,11 +471,37 @@ function exportImage(type){
     res(b);},mime,.93));
 }
 $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage('jpg');
-$('scale').oninput=e=>{state.scale=+e.target.value; applyLook();};
+/* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
+function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
+  paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
+  edge_radius:state.radius, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+function loadDesign(d){
+  if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
+  if(d.version!==1) throw new Error('Unsupported design version '+d.version);
+  if(!SHAPES[d.shape]) throw new Error('Unknown shape: '+d.shape);
+  if(!SUBSTRATES[d.substrate]) throw new Error('Unknown substrate: '+d.substrate);
+  const hex=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c), num=(v,lo,hi,def)=>Number.isFinite(+v)?Math.min(hi,Math.max(lo,+v)):def;
+  const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
+  const n=d.numbers||{}, p=d.pattern||{};
+  state.shape=d.shape; state.substrate=d.substrate; state.palettes[d.substrate]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[d.substrate];
+  state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
+  state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
+  state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
+  state.radius=num(d.edge_radius,0,.15,.04);
+  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
+  state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
+  return ensureFont(state.font).then(()=>buildDice());
+}
+$('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
+  a.download=`pretty-dice-${state.shape}-${state.substrate}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+$('loadjson').onclick=()=>$('jsonfile').click();
+$('jsonfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ await loadDesign(JSON.parse(await f.text())); }catch(err){ alert('Could not load design: '+err.message); } };
 $('rand').onclick=randomize;
-$('roll').onclick=roll;
+$('roll').onclick=()=>startRoll();
+$('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
 addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') roll(); });
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); });
 $('hint').textContent='drag to turn · scroll to zoom · space = randomize · r = roll';
 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
@@ -429,10 +512,10 @@ cv.addEventListener('pointerup',()=>dragging=false);
 cv.addEventListener('pointermove',e=>{ if(!dragging) return;
   const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY];
   const ax=new THREE.Vector3(dy,dx,0), len=ax.length(); if(!len) return;
-  rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
+  spinBy(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
   angVel.copy(ax).multiplyScalar(len*.9); });
-cv.addEventListener('wheel',e=>{e.preventDefault(); camZ=THREE.MathUtils.clamp(camZ*(1+e.deltaY*.001),3,12);},{passive:false});
-function roll(){ startRoll(); }
+cv.addEventListener('wheel',e=>{e.preventDefault(); state.zoom=THREE.MathUtils.clamp(state.zoom*(1+e.deltaY*.001),.35,2.4); save();},{passive:false});
+function spinBy(q){ if(state.shape==='set7') dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
@@ -445,9 +528,10 @@ function startRoll(){
   const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
-  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfW=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.2), halfD=1.9;
+  const k=dice.length>2?1.5:1; ROLL_CAM.y=6.2*k; ROLL_CAM.z=7.6*k; table.scale.setScalar(k);   // bigger tray + farther camera for sets
+  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfW=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.2*k), halfD=1.9*k;
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
-  world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=+$('bounce').value;
+  world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=state.bounce;
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfW,0,0],[0,-Math.PI/2,0]); plane([-halfW,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfD],[0,Math.PI,0]); plane([0,0,-halfD],[0,0,0]);
@@ -455,17 +539,20 @@ function startRoll(){
     const b=new CANNON.Body({mass:1, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
-    b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),Math.max(p.y,TABLE_Y+1.6),p.z);
+    const n=dice.length, R=()=>Math.random()-.5;
+    if(n>2){ const cols=4, col=i%cols, row=Math.floor(i/cols); const x=-halfW+1+(cols>1?col*(2*halfW-2)/(cols-1):0);
+      b.position.set(x,TABLE_Y+2+row*1.8+i*.5,row?1.5:-1.5); }
+    else b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),Math.max(p.y,TABLE_Y+1.6),p.z);
     b.quaternion.set(q.x,q.y,q.z,q.w);
-    const R=()=>Math.random()-.5;
-    b.velocity.set(R()*9+(i?2:-2), 7+Math.random()*4, R()*6-1);
+    if(n>2) b.velocity.set(-b.position.x*.5+R()*3, 3+Math.random()*3, R()*3);
+    else b.velocity.set(R()*9+(i?2:-2), 7+Math.random()*4, R()*6-1);
     b.angularVelocity.set(R()*40,R()*40,R()*40);
     world.addBody(b); return b;});
 }
 function exitRoll(instant){
   if(!rolling&&!instant) return;
   rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); $('back').hidden=true;
-  dice.forEach(d=>{d.mesh.position.set(d.x,0,0); d.mesh.quaternion.identity();});
+  dice.forEach(d=>{d.mesh.position.set(d.x,d.y,0); d.mesh.quaternion.identity();});
   rig.position.set(0,0,0); if(!instant) rig.quaternion.identity();
 }
 function readResult(){
@@ -479,29 +566,33 @@ function readResult(){
   return parts;
 }
 function restCheck(dt){   // own rest detection: cannon's sleep can hover in 'sleepy' for rounded-ish dice
-  const still=bodies.every(b=>b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5&&b.position.y<TABLE_Y+1.6);
+  const still=bodies.every(b=>b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5&&b.position.y<TABLE_Y+2.4);
   restT=still?restT+dt:Math.max(0,restT-dt*.5); return restT>.5;
 }
 function finishRoll(){ restT=0;
   const parts=readResult();
-  console.log('FLAT',retries,parts.map(p=>p.flat.toFixed(3)).join(','));
-  if(parts.some(p=>p.flat<.985) && retries<4){ retries++; bodies.forEach(b=>{b.wakeUp(); b.velocity.set(-b.position.x*1.5,4.5,-b.position.z*1.5); b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14);}); return; }
+  const bad=bodies.map((b,i)=>parts[i].flat<.985||b.position.y>TABLE_Y+1.45);   // cocked (leaning) or stacked on another die
+  if(bad.some(Boolean) && retries<8){ retries++;
+    bodies.forEach((b,i)=>{ if(!bad[i]) return; b.wakeUp(); b.velocity.set(-b.position.x*1.2+(Math.random()-.5)*5,5,-b.position.z*1.2+(Math.random()-.5)*4);
+      b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14); }); return; }
   settled=true;
+  const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   let txt;
-  if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; txt=String(t===0?100:t); }
-  else txt=String(state.shape==='d10'&&parts[0].label===0?10:parts[0].label);
+  if(state.shape==='set7') txt=parts.map((p,i)=>fmt(dice[i],p)).join(' · ');
+  else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; txt=String(t===0?100:t); }
+  else txt=String(fmt(dice[0],parts[0]));
+  $('result').style.fontSize=state.shape==='set7'?'30px':'';
   $('result').textContent=txt; $('result').classList.add('on'); console.log('ROLL_RESULT',txt);
 }
 $('back').onclick=()=>exitRoll();
-$('bounce').oninput=e=>{ if(world) world.defaultContactMaterial.restitution=+e.target.value; };
 
 const clock=new THREE.Clock();
 renderer.setAnimationLoop(()=>{
   const dt=Math.min(clock.getDelta(),.05);
   if(!dragging&&!rolling){
-    const idle = $('rotate').checked ? new THREE.Vector3(.12,.55,.05) : new THREE.Vector3();
+    const idle = new THREE.Vector3(.12,.55,.05).multiplyScalar(state.spin*1.5);
     angVel.copy(idle).add(angVel.clone().sub(idle).multiplyScalar(Math.exp(-dt*1.6)));
-    const a=angVel.length()*dt; if(a>1e-6) rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
+    const a=angVel.length()*dt; if(a>1e-6) spinBy(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
   }
   if(rolling&&world){
     world.step(1/60,dt,4); rollT+=dt;
@@ -510,21 +601,24 @@ renderer.setAnimationLoop(()=>{
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
-  camera.position.set(0,camBlend*ROLL_CAM.y,THREE.MathUtils.lerp(camZ,ROLL_CAM.z,camBlend)); camera.lookAt(0,-camBlend*1.0,0);
-  table.visible=camBlend>.01; table.material.opacity=camBlend; shadow.visible=camBlend<.3;
+  camera.position.set(0,camBlend*ROLL_CAM.y,THREE.MathUtils.lerp(baseZ*state.zoom,ROLL_CAM.z,camBlend)); camera.lookAt(0,-camBlend*1.0,0);
+  table.visible=camBlend>.01; table.material.opacity=camBlend; shadow.visible=camBlend<.3&&dice.length<3;
   renderer.render(scene,camera);
 });
 
 /* ---------- go ---------- */
-try{ await Promise.race([document.fonts.load('700 120px Cinzel'),new Promise(r=>setTimeout(r,1500))]); fontsOK=document.fonts.check('700 120px Cinzel'); }catch{}
-{ const q=new URLSearchParams(location.search); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(SUBSTRATES[q.get('sub')]) {$('randsub').checked=false; state.substrate=q.get('sub');} }
-randomize(); buildDice();
-if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ roll(); // fast-forward the sim for headless testing
+await ensureFont(state.font);
+{ const q=new URLSearchParams(location.search); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius');
+  if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')) randomize(); }
+if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize();
+buildDice();
+if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ startRoll(); // fast-forward the sim for headless testing
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
-window.__dice={state,randomize,buildDice,roll,applyLook,SHAPES};
+if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
+window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
 </script>
 </body>
 </html>
