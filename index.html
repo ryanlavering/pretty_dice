@@ -617,6 +617,10 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ s
     if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
+if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
+  randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
+  document.querySelector(`#subs button[data-id=${other}]`).click(); document.querySelector(`#subs button[data-id=${sub}]`).click();
+  console.log('SUBS_STABLE',before===JSON.stringify(state.colors),sub,other); }
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
 window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
 </script>
