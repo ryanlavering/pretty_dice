@@ -77,6 +77,10 @@
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
 
+    <div id="stonectl"><h2>Stone</h2>
+      <div class="row"><label>Type</label><select id="stone"></select></div>
+      <div class="row"><label>Accent</label><input type="range" id="accent" min="0" max="1" step="0.01"></div>
+    </div>
     <div id="epoxyctl"><h2>Epoxy</h2>
       <div class="row"><label>Glitter</label><input type="range" id="glitter" min="0" max="1" step="0.01"></div>
       <div class="row"><label>Bubbles</label><input type="range" id="bubbles" min="0" max="1" step="0.01"></div>
@@ -281,7 +285,7 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
 
 /* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
 const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
-  uMode:{value:1}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
+  uMode:{value:1}, uStone:{value:0}, uAccent:{value:.5}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
 
 const GLSL_NOISE = `
 float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -290,6 +294,44 @@ float vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
  return mix(mix(mix(h13(i),h13(i+vec3(1,0,0)),f.x),mix(h13(i+vec3(0,1,0)),h13(i+vec3(1,1,0)),f.x),f.y),
             mix(mix(h13(i+vec3(0,0,1)),h13(i+vec3(1,0,1)),f.x),mix(h13(i+vec3(0,1,1)),h13(i+vec3(1,1,1)),f.x),f.y),f.z);}
 float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn(p);p=p*2.03+17.1;a*=.5;}return s;}
+vec3 stonePattern(vec3 p, vec3 q){
+  float a=uAccent; vec3 c;
+  if(uStone==0){                                   // marble: veins
+    float v=1.-abs(sin(q.x*4.+q.z*2.+fbm(q*2.)*7.));
+    vec3 base=mix(uC1,uC2,smoothstep(.2,.7,fbm(q*.9)));
+    return mix(base,uC3,smoothstep(1.-(.03+.17*a),1.,v)*.85);
+  }
+  if(uStone==1){                                   // granite: speckle
+    vec3 base=mix(uC1,uC2,smoothstep(.35,.65,fbm(p*3.)));
+    float dark=smoothstep(1.-(.05+.17*a),1.-(.05+.17*a)+.04,vn(p*58.)), pale=smoothstep(.84,.88,vn(p*46.+11.));
+    c=mix(base,uC3,dark*.95); return mix(c,mix(uC1,vec3(1.),.55),pale*.45);
+  }
+  if(uStone==2){                                   // malachite: concentric bands
+    vec3 q2=p+.55*vec3(fbm(p),fbm(p+vec3(5.2,1.3,2.8)),fbm(p+vec3(9.1,4.7,7.3)));
+    float w=fbm(q2*1.1), b1=.5+.5*sin(w*70.), b2=.5+.5*sin(w*28.);
+    c=mix(uC1,uC2,smoothstep(.3,.7,b1)); return mix(c,uC3,smoothstep(.72,.95,b2)*(.35+.65*a));
+  }
+  if(uStone==3){                                   // lapis lazuli: deep blue, calcite streaks, pyrite flecks
+    c=mix(uC1,uC2,smoothstep(.3,.75,fbm(q*1.1)));
+    c=mix(c,vec3(.86,.89,.96),smoothstep(.62,.8,fbm(q*2.3+4.))*.5*(.2+a));
+    vec3 g=p*95.; float fd=length(fract(g)-.5); return mix(c,uC3,step(1.-(.02+.08*a),h13(floor(g)))*smoothstep(.42,.18,fd));
+  }
+  if(uStone==4){                                   // agate / onyx: banded layers
+    float t=q.y*7.+fbm(q*1.5)*5., s=.5+.5*sin(t*6.2832);
+    c=mix(uC1,uC2,s); c=mix(c,uC3,smoothstep(.8,.97,.5+.5*sin(t*3.1416+1.))*(.3+.7*a));
+    return mix(c,vec3(1.),smoothstep(.96,1.,s)*.3);
+  }
+  if(uStone==5){                                   // jasper: blotches with dark hairlines
+    c=mix(uC1,uC2,smoothstep(.35,.6,fbm(q*1.3))); c=mix(c,uC3,smoothstep(.55,.7,fbm(q*2.1+9.))*(.35+.65*a));
+    float w=1.-abs(sin(q.z*12.+fbm(q*4.)*8.)); return c*(1.-.35*smoothstep(.93,1.,w));
+  }
+  if(uStone==6){                                   // obsidian: glassy, faint flow bands
+    c=uC1*(.6+.4*fbm(q*.8)); float flow=smoothstep(.9,1.,.5+.5*sin(q.x*9.+fbm(q*2.)*6.));
+    return mix(c,uC3,flow*.4*(.3+a));
+  }
+  float w=1.-abs(fbm(q*3.)*2.-1.);                 // turquoise: matrix webbing
+  return mix(mix(uC1,uC2,fbm(q*.9)),uC3,smoothstep(.88,.99,w)*(.4+.6*a));
+}
 vec3 pattern(vec3 p){
   if(uMode==0) return uC1;
   vec3 q=p+1.7*vec3(fbm(p),fbm(p+vec3(5.2,1.3,2.8)),fbm(p+vec3(9.1,4.7,7.3)));
@@ -298,9 +340,7 @@ vec3 pattern(vec3 p){
     vec3 c=mix(uC1,uC2,smoothstep(.2,.8,w));
     return mix(c,uC3,smoothstep(.55,.85,fbm(q*1.6+3.))*.9);
   }
-  float v=1.-abs(sin(q.x*4.+q.z*2.+fbm(q*2.)*7.));
-  vec3 base=mix(uC1,uC2,smoothstep(.2,.7,fbm(q*.9)));
-  return mix(base,uC3,smoothstep(.9,1.,v)*.8);
+  return stonePattern(p,q);
 }`;
 
 const GLSL_VOLUME = `
@@ -333,7 +373,7 @@ function makeMaterial(atlas){
         vOP=position; vPUv=uv; vCell=cellB; vView=position-(inverse(modelMatrix)*vec4(cameraPosition,1.)).xyz; vONrm=normal;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>',`#include <common>
-        uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode; uniform float uScale,uFlake,uBrush; uniform sampler2D uMask;
+        uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode, uStone; uniform float uScale,uFlake,uBrush,uAccent; uniform sampler2D uMask;
         varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
         uniform float uGlitter,uBubbles,uTint;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
@@ -380,9 +420,26 @@ const SUBSTRATES = {
           pal:r=>[pick(METALS,r),'#000000','#000000']},
   epoxy: {label:'Clear epoxy',      mode:3, metal:0,  rough:.05, coat:.4, trans:1, flake:0,  brush:0,
           pal:r=>{const h=r(),d=.06+r()*.2;return [hsl(h,.85,.5),hsl(h+d,.85,.6),hsl(h-d,.7,.78)];}},
-  marble:{label:'Marble / stone',   mode:2, metal:0,  rough:.22, coat:.6, trans:0, flake:0,   brush:0,
-          pal:r=>{const h=r();return [hsl(h,.08,.88),hsl(h,.2,.55),hsl(h+.5,.3,.12)];}},
+  marble:{label:'Stone (marble, granite…)', mode:2, metal:0,  rough:.22, coat:.6, trans:0, flake:0,   brush:0,
+          pal:r=>STONES[state.stone].pal(r)},
 };
+const rnd=(r,a,b)=>a+(b-a)*r();
+const ACCENTS=['#c9a24a','#b0541f','#2f6f4f','#8a1c2b','#e8e4dc','#2b2d35','#7f9bd6','#b46a8a'];   // gold, rust, emerald, crimson, bone, charcoal, steel blue, rose
+const STONES = {
+  marble:   {label:'Marble',            id:0, rough:.22, coat:.6,  pal:r=>{ const k=r();
+    const [b1,b2]= k<.5?[hsl(rnd(r,.05,.15),.06,.93),hsl(rnd(r,.55,.7),.1,.72)] : k<.7?[hsl(rnd(r,.05,.1),.08,.1),hsl(.6,.1,.22)] : k<.85?[hsl(rnd(r,.36,.45),.35,.22),hsl(rnd(r,.36,.45),.3,.38)] : [hsl(rnd(r,.93,.99),.3,.82),hsl(rnd(r,.0,.08),.25,.68)];
+    return [b1,b2, k<.7&&k>=.5 ? pick(['#c9a24a','#e8e4dc','#b0541f'],r) : pick(ACCENTS,r)]; }},
+  granite:  {label:'Granite',           id:1, rough:.32, coat:.3,  pal:r=>{ const h=rnd(r,.0,.12), pink=r()<.4;
+    return [pink?hsl(rnd(r,.0,.05),.3,.62):hsl(h,.05,.62), pink?hsl(.05,.22,.8):hsl(h,.04,.4), pick(['#1a1a1e','#3a2a22','#2a4a4a','#5a2a2a'],r)]; }},
+  malachite:{label:'Malachite',         id:2, rough:.2,  coat:.7,  pal:r=>[hsl(rnd(r,.36,.42),.75,.08),hsl(rnd(r,.38,.46),.65,.26),pick(['#0a1f12','#9fd6b0','#3c7a58','#d8e6c8'],r)]},
+  lapis:    {label:'Lapis lazuli',      id:3, rough:.25, coat:.5,  pal:r=>[hsl(rnd(r,.6,.67),.9,.1),hsl(rnd(r,.58,.66),.8,.15),pick(['#d4af37','#c0c4cc','#b87333','#e6c36a'],r)]},
+  agate:    {label:'Agate / onyx',      id:4, rough:.12, coat:.8,  pal:r=>{ const h=r(), d=rnd(r,.04,.18); return [hsl(h,rnd(r,.3,.8),rnd(r,.25,.5)),hsl(h+d,rnd(r,.3,.8),rnd(r,.6,.85)),r()<.5?pick(ACCENTS,r):hsl(h+rnd(r,.3,.6),.7,.5)]; }},
+  jasper:   {label:'Jasper',            id:5, rough:.28, coat:.5,  pal:r=>{ const sets=[[.0,.7,.24],[.06,.7,.32],[.11,.6,.38],[.33,.4,.2],[.02,.35,.18]]; const [h,s,l]=pick(sets,r);
+    return [hsl(h,s,l),hsl(h+rnd(r,.04,.1),s,l+.12),r()<.6?hsl(h+rnd(r,-.1,.1),.6,.12):pick(ACCENTS,r)]; }},
+  obsidian: {label:'Obsidian',          id:6, rough:.06, coat:.9,  pal:r=>[hsl(rnd(r,.6,.8),.15,.05),hsl(rnd(r,.7,.95),.3,.1),pick(['#c9a24a','#2fb8a8','#b04ad0','#d8dde6','#d0603a'],r)]},
+  turquoise:{label:'Turquoise',         id:7, rough:.3,  coat:.4,  pal:r=>[hsl(rnd(r,.46,.52),.55,.58),hsl(rnd(r,.5,.57),.6,.45),pick(['#3a2a1c','#1c1c20','#8a6a2a','#5a3a2a'],r)]},
+};
+const STONE_KEYS=Object.keys(STONES);
 const lum=hex=>{const c=new THREE.Color(hex),o={};c.getRGB(o,THREE.SRGBColorSpace);return .299*o.r+.587*o.g+.114*o.b;};
 function pickPaint(cols,sub,r,mode='auto'){
   if(mode==='random') return hsl(r(),.3+r()*.7,.1+r()*.8);
@@ -425,12 +482,16 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
 function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} }
-function setSubstrate(id,r){ state.substrate=id; if(!state.palettes[id]) state.palettes[id]=SUBSTRATES[id].pal(r||mulberry32(state.seed)); state.colors=state.palettes[id]; }
+const palKey=()=>state.substrate==='marble'?'marble:'+state.stone:state.substrate;      // each stone type keeps its own palette
+function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palettes[k]=SUBSTRATES[state.substrate].pal(r||mulberry32(state.seed)); state.colors=state.palettes[k]; }
+function setSubstrate(id,r){ state.substrate=id; ensurePalette(r); }
+function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }
+if(!STONES[state.stone]) state.stone='marble';
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
 let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
@@ -497,14 +558,15 @@ function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
   U.uOff.value.set(...state.off);
-  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
+  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
-    Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
+    const ST=state.substrate==='marble'?STONES[state.stone]:null;
+    Object.assign(mat,{metalness:S.metal, roughness:ST?ST.rough:S.rough, clearcoat:ST?ST.coat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
       transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
       side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
-  $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
+  $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
   syncUI(); save(); scheduleCheckpoint();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
@@ -512,7 +574,8 @@ function randomize(noBuild){
   checkpoint(); state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
   if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
-  state.palettes[state.substrate]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[state.substrate];
+  if(state.substrate==='marble') state.stone=pick(STONE_KEYS,r);
+  state.palettes[palKey()]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[palKey()]; state.stoneAccent=f(r(),2);
   state.off=[r()*60,r()*60,r()*60]; state.scale=f(1+r()*1.6,2);
   state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
   state.numSize=f(.5+r()*.3,2); state.numRot=r()<.7?0:Math.round((r()*2-1)*45); state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
@@ -524,7 +587,7 @@ function randomize(noBuild){
 }
 
 /* ---------- undo / redo of design settings ---------- */
-const DESIGN_KEYS=['shape','substrate','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
+const DESIGN_KEYS=['shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
 let history=[], hIdx=-1, hTimer=null;
 function checkpoint(){                                   // record the current design if it differs from the last recorded one
@@ -561,6 +624,7 @@ const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').valu
 $('notapply').onclick=applyNotation; $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
   b.onclick=()=>{ checkpoint(); setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
+for(const [k,f] of Object.entries(STONES)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('stone').append(o); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
 function syncUI(){
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
@@ -569,12 +633,14 @@ function syncUI(){
   $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=state[k];
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
+  $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
+$('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
@@ -596,7 +662,7 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  notation:state.notation, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+  notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
@@ -607,7 +673,8 @@ function loadDesign(d){
   const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
   const n=d.numbers||{}, p=d.pattern||{};
   if(typeof d.notation==='string'&&!parseNotation(d.notation).error) state.notation=d.notation;
-  state.shape=d.shape; state.substrate=d.substrate; state.palettes[d.substrate]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[d.substrate];
+  const st=d.stone||{}; state.stone=STONES[st.type]?st.type:'marble'; state.stoneAccent=num(st.accent,0,1,.5);
+  state.shape=d.shape; state.substrate=d.substrate; state.palettes[palKey()]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[palKey()];
   state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
   state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
@@ -752,7 +819,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity');
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(STONES[q.get('stone')]) state.stone=q.get('stone');
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
