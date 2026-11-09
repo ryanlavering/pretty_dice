@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pretty Dice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+  :root{--bg:#0e1015;--panel:#161922;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
+  #app{display:flex;height:100%}
+  aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
+  h1{font:800 22px Cinzel,serif;letter-spacing:.08em;margin:0 0 2px;color:var(--accent)}
+  .sub{color:var(--dim);font-size:12px;margin-bottom:18px}
+  h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:20px 0 8px;font-weight:600}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .grid.two{grid-template-columns:repeat(2,1fr)}
+  button{font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:8px 4px;cursor:pointer}
+  button:hover{border-color:#3a4052}
+  button.on{border-color:var(--accent);background:#2a2619;color:var(--accent)}
+  button.big{width:100%;padding:11px;font-weight:600;background:var(--accent);color:#1a1405;border:0;margin-top:6px}
+  button.big.alt{background:#1d212c;color:var(--ink);border:1px solid var(--line)}
+  .row{display:flex;gap:8px;align-items:center;margin:6px 0}
+  .row label{flex:1;color:var(--dim)}
+  input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
+  select{flex:1;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px}
+  input[type=color]:disabled{opacity:.25}
+  input[type=range]{flex:1;accent-color:var(--accent)}
+  .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
+  #stage{flex:1;position:relative;min-width:0}
+  #stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+  #stage canvas:active{cursor:grabbing}
+  #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
+  #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
+  @media (max-width:760px){
+    #app{flex-direction:column-reverse}
+    aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
+  }
+</style>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <h1>PRETTY DICE</h1>
+    <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
+
+    <h2>Shape</h2>
+    <div class="grid" id="shapes"></div>
+
+    <h2>Substrate</h2>
+    <div class="grid two" id="subs"></div>
+
+    <h2>Colors</h2>
+    <div class="row"><label>Base</label><input type="color" id="c1"><input type="color" id="c2"><input type="color" id="c3"></div>
+    <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
+    <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
+    <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
+    <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
+
+    <h2>Generate</h2>
+    <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
+    <div class="chk"><input type="checkbox" id="rotate" checked><span>Idle rotation</span></div>
+    <button class="big" id="rand">Randomize</button>
+    <button class="big alt" id="roll">Roll</button>
+
+    <h2>Export</h2>
+    <div class="row"><label>Size</label><select id="expsize"><option value="0">Current view</option><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="4096">4096 px</option></select></div>
+    <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
+  </aside>
+  <div id="stage"><div id="name"></div><div id="hint"></div></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* ---------- utils ---------- */
+const mulberry32 = a => () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+const pick = (arr, r) => arr[Math.floor(r()*arr.length)];
+const range = (a,b) => Array.from({length:b-a+1},(_,i)=>a+i);
+const PHI = (1+Math.sqrt(5))/2;
+const V = (x,y,z) => new THREE.Vector3(x,y,z);
+const signs = (x,y,z) => { const o=[]; for(const a of [1,-1]) for(const b of [1,-1]) for(const c of [1,-1]) o.push(V(a*x,b*y,c*z)); return o; };
+
+/* ---------- polyhedra: vertex sets -> hull -> merged coplanar faces ---------- */
+const trapezohedron = n => {           // d10 (n=5), d14 (n=7)
+  const H=1, c=Math.cos(Math.PI/n), t=H*(1-c)/(1+c), v=[V(0,H,0),V(0,-H,0)];
+  for(let k=0;k<2*n;k++){const a=k*Math.PI/n; v.push(V(Math.cos(a),k%2?-t:t,Math.sin(a)));}
+  return v;
+};
+const dipyramid = (n,h) => { const v=[V(0,h,0),V(0,-h,0)]; for(let k=0;k<n;k++){const a=2*Math.PI*k/n; v.push(V(Math.cos(a),0,Math.sin(a)));} return v; };
+const SHAPES = {
+  d4:  {label:'d4',  verts:()=>[V(1,1,1),V(1,-1,-1),V(-1,1,-1),V(-1,-1,1)], labels:range(1,4)},
+  d6:  {label:'d6',  verts:()=>signs(1,1,1), labels:range(1,6)},
+  d8:  {label:'d8',  verts:()=>[V(1,0,0),V(-1,0,0),V(0,1,0),V(0,-1,0),V(0,0,1),V(0,0,-1)], labels:range(1,8)},
+  d10: {label:'d10', verts:()=>trapezohedron(5), labels:range(0,9)},
+  d100:{label:'d%',  pair:true},
+  d12: {label:'d12', verts:()=>{const i=1/PHI,o=signs(1,1,1);
+        for(const a of [1,-1])for(const b of [1,-1]){o.push(V(0,a*i,b*PHI),V(a*i,b*PHI,0),V(b*PHI,0,a*i));} return o;}, labels:range(1,12)},
+  d20: {label:'d20', verts:()=>{const o=[];
+        for(const a of [1,-1])for(const b of [1,-1]){o.push(V(0,a,b*PHI),V(a,b*PHI,0),V(b*PHI,0,a));} return o;}, labels:range(1,20)},
+  d14: {label:'d14', verts:()=>trapezohedron(7), labels:range(1,14)},
+  d16: {label:'d16', verts:()=>dipyramid(8,0.9), labels:range(1,16)},
+  rd12:{label:'rhombic d12', verts:()=>{const o=signs(1,1,1); for(const s of [2,-2]) o.push(V(s,0,0),V(0,s,0),V(0,0,s)); return o;}, labels:range(1,12)},
+};
+
+function hull(verts){
+  const eps=1e-4, n=verts.length, out=[], seen=new Set();
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
+    const nr=new THREE.Vector3().subVectors(verts[j],verts[i]).cross(new THREE.Vector3().subVectors(verts[k],verts[i]));
+    if(nr.lengthSq()<1e-12) continue; nr.normalize();
+    let d=nr.dot(verts[i]), pos=0, neg=0;
+    for(const v of verts){const s=nr.dot(v)-d; if(s>eps)pos++; else if(s<-eps)neg++;}
+    if(pos&&neg) continue;
+    if(pos){nr.negate(); d=-d;}
+    const idx=[]; verts.forEach((v,m)=>{if(Math.abs(nr.dot(v)-d)<=eps) idx.push(m);});
+    const key=idx.join(','); if(seen.has(key)) continue; seen.add(key);
+    const c=new THREE.Vector3(); idx.forEach(m=>c.add(verts[m])); c.multiplyScalar(1/idx.length);
+    const e1=new THREE.Vector3().subVectors(verts[idx[0]],c).normalize(), e2=new THREE.Vector3().crossVectors(nr,e1);
+    idx.sort((a,b)=>{const pa=new THREE.Vector3().subVectors(verts[a],c),pb=new THREE.Vector3().subVectors(verts[b],c);
+      return Math.atan2(pa.dot(e2),pa.dot(e1))-Math.atan2(pb.dot(e2),pb.dot(e1));});
+    out.push({n:nr, d, idx:[...idx], pts:idx.map(m=>verts[m].clone())});
+  }
+  return out;
+}
+
+function assignLabels(faces, labels, rng){
+  const N=faces.length, out=Array(N).fill(null); let lo=0, hi=N-1;
+  for(let i=0;i<N;i++){
+    if(out[i]!==null) continue;
+    const j=faces.findIndex((f,m)=>m!==i&&out[m]===null&&f.n.dot(faces[i].n)<-0.999);
+    if(j>=0){out[i]=labels[lo++]; out[j]=labels[hi--];} else out[i]=labels[lo++];
+  }
+  return out;
+}
+
+/* ---------- number atlas (bump + paint mask) ---------- */
+function makeAtlas(N, labels, fontsOK){
+  const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=256;
+  const mk=(bg)=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,c.width,c.height); return [c,g];};
+  const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000');
+  const font=`700 ${labels.some(l=>String(l).length>1)?118:140}px ${fontsOK?'Cinzel,':''}Georgia,serif`;
+  labels.forEach((lab,i)=>{
+    let txt=String(lab); if(lab===6||lab===9) txt+='.';
+    const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
+    for(const [g,fill,blur] of [[bg,'#000',3],[mg,'#fff',0.6]]){
+      g.font=font; g.textAlign='center'; g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none';
+      const m=g.measureText(txt); g.fillText(txt,cx,cy+(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2);
+      g.filter='none';
+    }
+  });
+  const tex=c=>{const t=new THREE.CanvasTexture(c); t.anisotropy=8; return t;};
+  return {bump:tex(bc), mask:tex(mc), cols, rows};
+}
+
+/* ---------- geometry: flat numbered faces + (optional) rounded edge strips and vertex patches ---------- */
+const slerp=(a,b,t)=>{const th=Math.acos(THREE.MathUtils.clamp(a.dot(b),-1,1)); if(th<1e-6) return a.clone();
+  return a.clone().multiplyScalar(Math.sin((1-t)*th)).addScaledVector(b,Math.sin(t*th)).multiplyScalar(1/Math.sin(th));};
+
+function buildGeometry(faces, atlas, radius){
+  const pos=[],nor=[],uv=[];
+  const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v);};
+  let R=0, SV=null;                                   // R: clamped radius, SV: shrunk vertex per original vertex id
+  if(radius>0){
+    R=Math.min(radius, 0.3*Math.min(...faces.map(f=>f.d)));
+    const byV=new Map(); faces.forEach(f=>f.idx.forEach(v=>{if(!byV.has(v))byV.set(v,[]); byV.get(v).push(f);}));
+    SV=new Map();
+    for(const [v,fs] of byV){
+      const A=new THREE.Matrix3().set(0,0,0,0,0,0,0,0,0), b=new THREE.Vector3(), e=A.elements;
+      for(const f of fs){ const n=f.n, q=[n.x,n.y,n.z];
+        for(let r=0;r<3;r++)for(let c=0;c<3;c++) e[c*3+r]+=q[r]*q[c];
+        b.addScaledVector(n,f.d-R); }
+      SV.set(v,{p:b.applyMatrix3(A.invert()), fs});
+    }
+    faces=faces.map(f=>({...f, pts:f.idx.map(v=>SV.get(v).p.clone().addScaledVector(f.n,R))}));
+  }
+  // flat faces
+  faces.forEach((f,i)=>{
+    const P=f.pts, n=f.n, m=P.length, p0=P[0], C=new THREE.Vector3(); let A=0;
+    for(let k=1;k<m-1;k++){const a=new THREE.Vector3().subVectors(P[k],p0).cross(new THREE.Vector3().subVectors(P[k+1],p0)).length();
+      C.add(new THREE.Vector3().add(p0).add(P[k]).add(P[k+1]).multiplyScalar(a/3)); A+=a;}
+    C.multiplyScalar(1/A);
+    let far=P[0]; P.forEach(p=>{if(p.distanceTo(C)>far.distanceTo(C)+1e-6) far=p;});
+    const up=new THREE.Vector3().subVectors(far,C).normalize(), right=new THREE.Vector3().crossVectors(up,n);
+    let r=1e9; for(let k=0;k<m;k++){const a=P[k],b=P[(k+1)%m],o=new THREE.Vector3().subVectors(b,a).cross(n).normalize();
+      r=Math.min(r,-new THREE.Vector3().subVectors(C,a).dot(o));}
+    const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows, K=1.25*r;
+    const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/K*.5/atlas.cols, cv+d.dot(up)/K*.5/atlas.rows);};
+    for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
+  });
+  if(R>0){
+    const BU=.001, BV=.999;                           // blank atlas corner: no paint, no bump
+    const tri=(p0,n0,p1,n1,p2,n2)=>{ const c=new THREE.Vector3().subVectors(p1,p0).cross(new THREE.Vector3().subVectors(p2,p0));
+      const avg=n0.clone().add(n1).add(n2); if(c.dot(avg)<0){[p1,p2]=[p2,p1];[n1,n2]=[n2,n1];}
+      push(p0,n0,BU,BV);push(p1,n1,BU,BV);push(p2,n2,BU,BV); };
+    const S=8, L=3, at=(v,n)=>SV.get(v).p.clone().addScaledVector(n,R);
+    // edge strips
+    const edges=new Map();
+    faces.forEach(f=>f.idx.forEach((v,k)=>{const w=f.idx[(k+1)%f.idx.length], key=Math.min(v,w)+'_'+Math.max(v,w);
+      if(!edges.has(key)) edges.set(key,{v,w,fs:[]}); edges.get(key).fs.push(f);}));
+    for(const {v,w,fs} of edges.values()){ if(fs.length!==2) continue;
+      for(let s=0;s<S;s++){ const na=slerp(fs[0].n,fs[1].n,s/S), nb=slerp(fs[0].n,fs[1].n,(s+1)/S);
+        tri(at(v,na),na,at(w,na),na,at(w,nb),nb); tri(at(v,na),na,at(w,nb),nb,at(v,nb),nb); } }
+    // vertex patches: spherical fan over the ordered face normals
+    for(const [v,{p,fs}] of SV){
+      const ax=p.clone().normalize(), e1=new THREE.Vector3().crossVectors(ax,Math.abs(ax.y)<.9?V(0,1,0):V(1,0,0)).normalize(), e2=new THREE.Vector3().crossVectors(ax,e1);
+      const ns=fs.map(f=>f.n).sort((a,b)=>Math.atan2(a.dot(e2),a.dot(e1))-Math.atan2(b.dot(e2),b.dot(e1)));
+      const c=ns.reduce((a,n)=>a.add(n),new THREE.Vector3()).normalize();
+      const sub=(a,b,cc,l)=>{ if(l===0){tri(p.clone().addScaledVector(a,R),a,p.clone().addScaledVector(b,R),b,p.clone().addScaledVector(cc,R),cc);return;}
+        const ab=a.clone().add(b).normalize(), bc=b.clone().add(cc).normalize(), ca=cc.clone().add(a).normalize();
+        sub(a,ab,ca,l-1); sub(ab,b,bc,l-1); sub(ca,bc,cc,l-1); sub(ab,bc,ca,l-1); };
+      ns.forEach((n,i)=>sub(n,ns[(i+1)%ns.length],c,L));
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  return g;
+}
+
+/* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
+const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
+  uMode:{value:1}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
+
+const GLSL_NOISE = `
+float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
+vec3 h33(vec3 p){p=fract(p*vec3(.1031,.1030,.0973));p+=dot(p,p.yxz+33.33);return fract((p.xxy+p.yxx)*p.zyx);}
+float vn(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(mix(h13(i),h13(i+vec3(1,0,0)),f.x),mix(h13(i+vec3(0,1,0)),h13(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(h13(i+vec3(0,0,1)),h13(i+vec3(1,0,1)),f.x),mix(h13(i+vec3(0,1,1)),h13(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<4;i++){s+=a*vn(p);p=p*2.03+17.1;a*=.5;}return s;}
+vec3 pattern(vec3 p){
+  if(uMode==0) return uC1;
+  vec3 q=p+1.7*vec3(fbm(p),fbm(p+vec3(5.2,1.3,2.8)),fbm(p+vec3(9.1,4.7,7.3)));
+  if(uMode==1){
+    float w=.5+.5*sin(q.x*3.+q.y*2.+fbm(q*1.3)*9.);
+    vec3 c=mix(uC1,uC2,smoothstep(.2,.8,w));
+    return mix(c,uC3,smoothstep(.55,.85,fbm(q*1.6+3.))*.9);
+  }
+  float v=1.-abs(sin(q.x*4.+q.z*2.+fbm(q*2.)*7.));
+  vec3 base=mix(uC1,uC2,smoothstep(.2,.7,fbm(q*.9)));
+  return mix(base,uC3,smoothstep(.9,1.,v)*.8);
+}`;
+
+function makeMaterial(atlas){
+  const m=new THREE.MeshPhysicalMaterial({color:0xffffff, bumpMap:atlas.bump, bumpScale:2.2});
+  m.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U, {uMask:{value:atlas.mask}});
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>',`#include <common>
+        varying vec3 vOP; varying vec2 vPUv;`)
+      .replace('#include <begin_vertex>',`#include <begin_vertex>
+        vOP=position; vPUv=uv;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>',`#include <common>
+        uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode; uniform float uScale,uFlake,uBrush; uniform sampler2D uMask;
+        varying vec3 vOP; varying vec2 vPUv;
+        ${GLSL_NOISE}`)
+      .replace('#include <color_fragment>',`#include <color_fragment>
+        float pm = smoothstep(.35,.65,texture2D(uMask,vPUv).r);
+        diffuseColor.rgb = mix(pattern(vOP*uScale+uOff), uPaint, pm);`)
+      .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+        roughnessFactor = mix(roughnessFactor + uBrush*(vn(vOP*vec3(2.,90.,2.))-.5), .5, pm);`)
+      .replace('#include <metalnessmap_fragment>',`#include <metalnessmap_fragment>
+        metalnessFactor *= (1.-pm);`)
+      .replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+        if(uFlake>0.){ vec3 fc=floor(vOP*140.); vec3 r=h33(fc)-.5; float on=step(.55,h13(fc+7.));
+          normal = normalize(normal + (normalMatrix_dummy(r))*uFlake*on*(1.-pm)); }`)
+      .replace('#include <lights_physical_fragment>',`#include <lights_physical_fragment>
+        #ifdef USE_TRANSMISSION
+          material.transmission *= (1.-pm);
+        #endif`);
+    // flakes perturb in view space; tiny helper so the line above stays readable
+    sh.fragmentShader = sh.fragmentShader.replace('normalMatrix_dummy(r)','(r*2.)');
+  };
+  return m;
+}
+
+/* ---------- substrates & palettes ---------- */
+const hsl=(h,s,l)=>'#'+new THREE.Color().setHSL(((h%1)+1)%1,s,l).getHexString();
+const METALS=['#d4af37','#cfd3d8','#b87333','#a97142','#6b7280','#c9a24a','#8fa3b5'];
+const SUBSTRATES = {
+  solid: {label:'Solid plastic',    mode:0, metal:0,  rough:.38, coat:.5, trans:0, flake:0,   brush:0,
+          pal:r=>{const h=r();return [hsl(h,.6+r()*.3,.38+r()*.15),'#000000','#000000'];}},
+  swirl: {label:'Swirled plastic',  mode:1, metal:0,  rough:.3,  coat:.8, trans:0, flake:0,   brush:0,
+          pal:r=>{const h=r(),d=.08+r()*.3;return [hsl(h,.7,.42),hsl(h+d,.75,.55),hsl(h-d*(r()<.5?1:-1.6),.7,.68)];}},
+  pearl: {label:'Metallic plastic', mode:1, metal:.75,rough:.3,  coat:.4, trans:0, flake:.35, brush:0,
+          pal:r=>{const h=r();return [hsl(h,.6,.45),hsl(h+.05,.65,.32),hsl(h-.04,.5,.6)];}},
+  metal: {label:'Solid metal',      mode:0, metal:1,  rough:.3,  coat:0,  trans:0, flake:0,   brush:.08,
+          pal:r=>[pick(METALS,r),'#000000','#000000']},
+  epoxy: {label:'Clear epoxy',      mode:1, metal:0,  rough:.04, coat:0,  trans:1, flake:0,  brush:0,
+          pal:r=>{const h=r(),d=.06+r()*.2;return [hsl(h,.75,.62),hsl(h+d,.8,.72),hsl(h-d,.6,.85)];}},
+  marble:{label:'Marble / stone',   mode:2, metal:0,  rough:.22, coat:.6, trans:0, flake:0,   brush:0,
+          pal:r=>{const h=r();return [hsl(h,.08,.88),hsl(h,.2,.55),hsl(h+.5,.3,.12)];}},
+};
+const lum=hex=>{const c=new THREE.Color(hex),o={};c.getRGB(o,THREE.SRGBColorSpace);return .299*o.r+.587*o.g+.114*o.b;};
+function pickPaint(cols,sub,r,mode='auto'){
+  if(mode==='random') return hsl(r(),.3+r()*.7,.1+r()*.8);
+  const S=SUBSTRATES[sub], L=S.mode===0?lum(cols[0]):(lum(cols[0])+lum(cols[1]))/2;
+  const hue=new THREE.Color(cols[0]).getHSL({}).h, light=L<.5;
+  const ink=light?.88:.12;                              // lightness opposite the base => contrast
+  const kind=r();
+  if(kind<.4) return light?pick(['#f4f1e8','#f2c14e','#d9dde3'],r):pick(['#0b0b10','#2a1a12'],r);   // neutrals / metallics
+  if(kind<.75) return hsl(hue+.5,.55+r()*.35,ink);       // complementary
+  return hsl(hue+(r()<.5?.08:-.08),.6+r()*.3,light?.9:.1);   // analogous
+}
+
+/* ---------- scene ---------- */
+const stage=document.getElementById('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.5;
+stage.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+{ const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d');
+  const gr=g.createRadialGradient(256,230,20,256,256,380); gr.addColorStop(0,'#262b3a'); gr.addColorStop(1,'#0b0c11');
+  g.fillStyle=gr; g.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
+scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
+const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,5,4); scene.add(key);
+const camera=new THREE.PerspectiveCamera(32,1,.1,50); camera.position.set(0,0,5.4);
+const rig=new THREE.Group(); scene.add(rig);
+const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(64,64,0,64,64,64);gr.addColorStop(0,'rgba(0,0,0,.55)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(3,3),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+  m.rotation.x=-Math.PI/2; m.position.y=-1.55; scene.add(m); return m;})();
+
+/* ---------- state ---------- */
+const state={shape:'d20', substrate:'swirl', colors:['#000000','#000000','#000000'], paint:'#ffffff', paintMode:'auto', scale:1.6, radius:0.04, seed:1};
+let dice=[], fontsOK=false;
+
+function buildDice(){
+  rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
+  const specs = SHAPES[state.shape].pair
+    ? [{verts:SHAPES.d10.verts(), labels:[0,10,20,30,40,50,60,70,80,90], x:-1.2},{verts:SHAPES.d10.verts(), labels:range(0,9), x:1.2}]
+    : [{verts:SHAPES[state.shape].verts(), labels:SHAPES[state.shape].labels, x:0}];
+  specs.forEach(s=>{
+    const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
+    const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
+    if(faces.length!==s.labels.length) console.warn(`${state.shape}: hull has ${faces.length} faces, expected ${s.labels.length}`);
+    const atlas=makeAtlas(faces.length,labs,fontsOK), geo=buildGeometry(faces,atlas,state.radius), mat=makeMaterial(atlas);
+    const mesh=new THREE.Mesh(geo,mat); mesh.position.x=s.x; rig.add(mesh); dice.push({mesh,geo,mat,atlas});
+  });
+  camera.position.z = specs.length>1 ? 7.6 : 5.4;
+  document.getElementById('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+SUBSTRATES[state.substrate].label.toUpperCase();
+  applyLook();
+}
+function applyLook(){
+  const S=SUBSTRATES[state.substrate];
+  U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
+  U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
+  for(const {mat} of dice){
+    Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08,
+      transmission:S.trans, ior:1.5, thickness:S.trans?1.3:0, attenuationDistance:S.trans?1.1:Infinity});
+    mat.attenuationColor.set(state.colors[0]); mat.emissive.set(S.trans?state.colors[0]:'#000000'); mat.emissiveIntensity=.1; mat.needsUpdate=true;
+  }
+  document.getElementById('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
+  syncUI();
+}
+function randomize(){
+  state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed);
+  if(document.getElementById('randsub').checked) state.substrate=pick(Object.keys(SUBSTRATES),r);
+  state.colors=SUBSTRATES[state.substrate].pal(r);
+  U.uOff.value.set(r()*60,r()*60,r()*60); state.scale=1+r()*1.6;
+  if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r,state.paintMode);
+  applyLook();
+}
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12') b.style.gridColumn='span 2';
+  b.onclick=()=>{state.shape=id; buildDice(); syncUI();}; $('shapes').append(b); }
+for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
+  b.onclick=()=>{state.substrate=id; state.colors=s.pal(mulberry32(state.seed)); if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,id,mulberry32(state.seed),state.paintMode); applyLook();}; $('subs').append(b); }
+function syncUI(){
+  document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
+  document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
+  ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
+  $('paint').value=state.paint; $('scale').value=state.scale; $('paintmode').value=state.paintMode; $('radius').value=state.radius;
+}
+['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,mulberry32(state.seed),state.paintMode); applyLook();});
+$('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
+$('paintmode').onchange=e=>{state.paintMode=e.target.value; if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,mulberry32((Math.random()*1e9)|0),state.paintMode); applyLook();};
+let rebuildQueued=false;
+$('radius').oninput=e=>{state.radius=+e.target.value; if(!rebuildQueued){rebuildQueued=true; requestAnimationFrame(()=>{rebuildQueued=false; buildDice();});}};
+function exportImage(type){
+  const size=+$('expsize').value, w0=stage.clientWidth, h0=stage.clientHeight, pr=renderer.getPixelRatio();
+  if(size){renderer.setPixelRatio(1); renderer.setSize(size,size,false); camera.aspect=1; camera.updateProjectionMatrix();}
+  renderer.render(scene,camera);
+  const mime=type==='jpg'?'image/jpeg':'image/png';
+  return new Promise(res=>cv.toBlob(b=>{ if(size){renderer.setPixelRatio(pr); resize();}
+    if(!window.__noDownload){const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+      a.download=`pretty-${state.shape}-${state.substrate}-${state.seed}.${type}`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+    res(b);},mime,.93));
+}
+$('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage('jpg');
+$('scale').oninput=e=>{state.scale=+e.target.value; applyLook();};
+$('rand').onclick=randomize;
+$('roll').onclick=roll;
+addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') roll(); });
+$('hint').textContent='drag to turn · scroll to zoom · space = randomize · r = roll';
+
+/* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
+const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null, vy=0, py=0;
+const cv=renderer.domElement;
+cv.addEventListener('pointerdown',e=>{dragging=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointerup',()=>dragging=false);
+cv.addEventListener('pointermove',e=>{ if(!dragging) return;
+  const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY];
+  const ax=new THREE.Vector3(dy,dx,0), len=ax.length(); if(!len) return;
+  rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
+  angVel.copy(ax).multiplyScalar(len*.9); });
+cv.addEventListener('wheel',e=>{e.preventDefault(); camera.position.z=THREE.MathUtils.clamp(camera.position.z*(1+e.deltaY*.001),3,12);},{passive:false});
+function roll(){ angVel.set(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize().multiplyScalar(14+Math.random()*8); vy=5.2; }
+
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage); resize();
+
+const clock=new THREE.Clock();
+renderer.setAnimationLoop(()=>{
+  const dt=Math.min(clock.getDelta(),.05);
+  if(!dragging){
+    const idle = $('rotate').checked ? new THREE.Vector3(.12,.55,.05) : new THREE.Vector3();
+    angVel.copy(idle).add(angVel.clone().sub(idle).multiplyScalar(Math.exp(-dt*1.6)));
+    const a=angVel.length()*dt; if(a>1e-6) rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
+  }
+  vy-=18*dt; py+=vy*dt; if(py<0){py=0; vy=Math.abs(vy)>1.2?-vy*.45:0;}
+  rig.position.y=py; const s=1/(1+py*.7); shadow.scale.setScalar(s); shadow.material.opacity=s;
+  renderer.render(scene,camera);
+});
+
+/* ---------- go ---------- */
+try{ await Promise.race([document.fonts.load('700 120px Cinzel'),new Promise(r=>setTimeout(r,1500))]); fontsOK=document.fonts.check('700 120px Cinzel'); }catch{}
+{ const q=new URLSearchParams(location.search); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(SUBSTRATES[q.get('sub')]) {$('randsub').checked=false; state.substrate=q.get('sub');} }
+randomize(); buildDice();
+if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
+window.__dice={state,randomize,buildDice,roll,applyLook,SHAPES};
+</script>
+</body>
+</html>
