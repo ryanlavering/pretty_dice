@@ -433,10 +433,10 @@ function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,J
 function setSubstrate(id,r){ state.substrate=id; if(!state.palettes[id]) state.palettes[id]=SUBSTRATES[id].pal(r||mulberry32(state.seed)); state.colors=state.palettes[id]; }
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
-let dice=[], baseZ=5.4, customZoom=13;
+let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
 
 const TENS=range(0,9).map(n=>n*10);
-const SET7=[['d4',-3.4,1.25],['d6',-1.13,1.25],['d8',1.13,1.25],['d10',3.4,1.25],['dpct',-2.27,-1.25],['d12',0,-1.25],['d20',2.27,-1.25]];
+const SET7=[['d4',-3.4,1.25],['d6',-1.13,1.25],['d8',1.13,1.25],['d12',3.4,1.25],['d10',-2.27,-1.25],['dpct',0,-1.25],['d20',2.27,-1.25]];   // d10 sits beside d%
 const SIDES={4:'d4',6:'d6',8:'d8',10:'d10',12:'d12',14:'d14',16:'d16',20:'d20'}, MAXDICE=24;
 function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}], mod}
   const terms=[]; let mod=0, n=0;
@@ -457,7 +457,7 @@ function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}],
 const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
-  return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
+  return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
 function specsFor(shape){
   if(shape==='custom'){
     const p=parseNotation(state.notation), list=[];
@@ -465,7 +465,7 @@ function specsFor(shape){
     p.terms.forEach((t,ti)=>{ for(let c=0;c<t.count;c++){
       if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,part:'tens'}, {id:'d10',labels:null,name:'d10',term:ti,part:'ones'}); }
       else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti}); } });
-    const L=gridLayout(list.length); customZoom=L.zoom;
+    const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
     return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,part:d.part}));
   }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
@@ -485,6 +485,7 @@ function buildDice(keepRoll){
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
     dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part});
   });
+  needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 0;
   baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
   applyLook();
 }
@@ -718,7 +719,7 @@ function finishRoll(){ restT=0;
     main=String(total);
     if(P.terms.length>1||P.terms[0].count>1||P.mod) sub=P.terms.map((t,i)=>`${t.count}d${t.sides===100?'%':t.sides}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`).join('  ·  ')+(P.mod?`  ·  ${P.mod>0?'+':''}${P.mod}`:'');
   }
-  else if(state.shape==='set7') main=parts.map((p,i)=>fmt(dice[i],p)).join(' · ');
+  else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value
   else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; main=String(t===0?100:t); }
   else main=String(fmt(dice[0],parts[0]));
   const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
@@ -742,7 +743,7 @@ renderer.setAnimationLoop(()=>{
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
-  { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(baseZ,ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
+  { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
     const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
