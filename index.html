@@ -279,7 +279,7 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
 
 /* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
 const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
-  uMode:{value:1}, uGlitter:{value:.5}, uBubbles:{value:.3}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
+  uMode:{value:1}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
 
 const GLSL_NOISE = `
 float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -333,7 +333,7 @@ function makeMaterial(atlas){
       .replace('#include <common>',`#include <common>
         uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode; uniform float uScale,uFlake,uBrush; uniform sampler2D uMask;
         varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
-        uniform float uGlitter,uBubbles;
+        uniform float uGlitter,uBubbles,uTint;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
         vec4 bumpSample(sampler2D t, vec2 u){return inCell(u)?texture2D(t,u):vec4(1.);}
         ${GLSL_NOISE}
@@ -341,9 +341,10 @@ function makeMaterial(atlas){
       .replace('#include <bumpmap_pars_fragment>', THREE.ShaderChunk.bumpmap_pars_fragment.split('texture2D( bumpMap, ').join('bumpSample( bumpMap, '))
       .replace('#include <color_fragment>',`#include <color_fragment>
         float pm = inCell(vPUv) ? smoothstep(.35,.65,texture2D(uMask,vPUv).r) : 0.;
-        vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? volume(vOP,vView,vONrm,volGlow) : pattern(vOP*uScale+uOff);
-        diffuseColor.rgb = mix(baseCol, uPaint, pm);
-        volGlow = (volGlow + (uMode==3 ? baseCol*.2 : vec3(0.))) * (1.-pm);`)
+        vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? (gl_FrontFacing ? volume(vOP,vView,vONrm,volGlow) : uC1) : pattern(vOP*uScale+uOff);
+        // epoxy: the colour only tints what is seen through the die (transmission multiplies by diffuse), so keep it light
+        diffuseColor.rgb = mix(uMode==3 ? mix(vec3(1.),baseCol,uTint) : baseCol, uPaint, pm);
+        volGlow = (volGlow + (uMode==3 ? baseCol*.06 : vec3(0.))) * (1.-pm);`)
       .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
         totalEmissiveRadiance += volGlow;`)
       .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
@@ -402,7 +403,10 @@ stage.prepend(renderer.domElement);
 const scene=new THREE.Scene();
 { const c=document.createElement('canvas'); c.width=c.height=512; const g=c.getContext('2d');
   const gr=g.createRadialGradient(256,230,20,256,256,380); gr.addColorStop(0,'#262b3a'); gr.addColorStop(1,'#0b0c11');
-  g.fillStyle=gr; g.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
+  g.fillStyle=gr; g.fillRect(0,0,512,512);
+  { const rr=mulberry32(7); for(let i=0;i<46;i++){ const x=rr()*512,y=rr()*512,rad=8+rr()*34,a=.05+rr()*.09; const bg=g.createRadialGradient(x,y,0,x,y,rad);
+      bg.addColorStop(0,`rgba(200,215,255,${a})`); bg.addColorStop(.8,`rgba(200,215,255,${a*.8})`); bg.addColorStop(1,'rgba(200,215,255,0)'); g.fillStyle=bg; g.fillRect(x-rad,y-rad,rad*2,rad*2); } }
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
 scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
 const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,6,4); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-.0004; key.shadow.normalBias=.03;
 Object.assign(key.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:.5,far:30}); scene.add(key);
@@ -492,10 +496,11 @@ function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
   U.uOff.value.set(...state.off);
-  U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
+  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
     Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
-      transmission:S.trans?.2+.7*state.clarity:0, ior:1.5, thickness:S.trans?1.4:0, attenuationDistance:S.trans?2.2:Infinity});
+      transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
+      side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
@@ -604,7 +609,7 @@ $('hint').textContent='drag = turn dice · right-drag = orbit camera · scroll =
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
 const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
 const cv=renderer.domElement;
-const orbit={az:0,el:0}; let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
+const orbit={az:0,el:0}; if(new URLSearchParams(location.search).get('zoom')) state.zoom=+new URLSearchParams(location.search).get('zoom');; let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('dblclick',()=>{orbit.az=0; orbit.el=0; state.zoom=1; save();});
 cv.addEventListener('pointerdown',e=>{ if(e.button===2){ orbiting=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId); return; }
@@ -713,7 +718,7 @@ renderer.setAnimationLoop(()=>{
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
-  { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y,THREE.MathUtils.lerp(baseZ*state.zoom,ROLL_CAM.z,camBlend)).sub(tgt);
+  { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(baseZ,ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
     const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend; shadow.visible=camBlend<.3&&dice.length<3;
@@ -722,7 +727,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius');
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity');
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
