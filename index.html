@@ -550,15 +550,16 @@ function specsFor(shape){
 }
 /* ---------- inclusion: a miniature model cast inside clear epoxy ---------- */
 function makeDuck(){                                   // original procedural rubber duck (no third-party asset)
-  const g=new THREE.Group(), yellow=new THREE.MeshStandardMaterial({color:0xffd21f,roughness:.35}), orange=new THREE.MeshStandardMaterial({color:0xff8a1f,roughness:.4}), black=new THREE.MeshStandardMaterial({color:0x111111,roughness:.2});
+  const g=new THREE.Group(), yellow=new THREE.MeshStandardMaterial({color:0xd98a00,roughness:.42}), orange=new THREE.MeshStandardMaterial({color:0xd24a00,roughness:.45}),
+    black=new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:.15}), white=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.3});
   const add=(geo,mat,p,sc=[1,1,1],rot=[0,0,0])=>{ const m=new THREE.Mesh(geo,mat); m.position.set(...p); m.scale.set(...sc); m.rotation.set(...rot); g.add(m); return m; };
-  const sph=new THREE.SphereGeometry(1,40,28);
-  add(sph,yellow,[0,0,0],[1,.78,1.2]);                  // body
-  add(sph,yellow,[0,.95,.55],[.58,.58,.58]);            // head
-  add(sph,yellow,[0,.38,-1.15],[.34,.3,.5],[-.7,0,0]);  // tail
-  add(sph,yellow,[.82,.15,-.05],[.2,.42,.7],[0,0,-.25]); add(sph,yellow,[-.82,.15,-.05],[.2,.42,.7],[0,0,.25]);   // wings
-  add(sph,orange,[0,.86,1.08],[.3,.14,.38]);            // beak
-  add(sph,black,[.24,1.08,.98],[.07,.07,.07]); add(sph,black,[-.24,1.08,.98],[.07,.07,.07]);                       // eyes
+  const sph=new THREE.SphereGeometry(1,48,32);
+  add(sph,yellow,[0,0,0],[.95,.8,1.25]);                          // body
+  add(new THREE.ConeGeometry(.42,1,32),yellow,[0,.42,-1.25],[1,1,.7],[-1.9,0,0]);   // upturned tail
+  add(sph,yellow,[0,1.0,.5],[.66,.62,.64]);                       // head
+  add(sph,yellow,[.84,.1,-.1],[.17,.45,.75],[0,0,-.3]); add(sph,yellow,[-.84,.1,-.1],[.17,.45,.75],[0,0,.3]);   // wings
+  add(sph,orange,[0,.9,1.1],[.34,.11,.34]); add(sph,orange,[0,.8,1.08],[.28,.07,.28]);                            // beak (upper, lower)
+  for(const x of [.26,-.26]){ add(sph,black,[x,1.15,1.0],[.1,.12,.08]); add(sph,white,[x*1.05,1.19,1.07],[.03,.03,.03]); }   // eyes + glints
   return g;
 }
 let customTemplate=null;
