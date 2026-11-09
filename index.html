@@ -76,6 +76,8 @@
     <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
+    <div class="row"><label>Finish</label><input type="range" id="polish" min="0" max="1" step="0.01" title="matte ← → gloss"></div>
+    <div style="display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin:-4px 0 4px 96px"><span>matte</span><span>gloss</span></div>
 
     <div id="stonectl"><h2>Stone</h2>
       <div class="row"><label>Type</label><select id="stone"></select></div>
@@ -482,7 +484,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
@@ -561,7 +563,8 @@ function applyLook(){
   U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
     const ST=state.substrate==='marble'?STONES[state.stone]:null;
-    Object.assign(mat,{metalness:S.metal, roughness:ST?ST.rough:S.rough, clearcoat:ST?ST.coat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
+    const P=state.polish, baseR=ST?ST.rough:S.rough, baseC=ST?ST.coat:S.coat;   // polish .5 = the substrate's designed finish
+    Object.assign(mat,{metalness:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,S.metal>.5?.25:.03,1)   // metals stop short of a mirror: a mirror only shows the dim room and reads black, clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:state.numDepth,
       transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
       side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
@@ -579,7 +582,7 @@ function randomize(noBuild){
   state.off=[r()*60,r()*60,r()*60]; state.scale=f(1+r()*1.6,2);
   state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
   state.numSize=f(.5+r()*.3,2); state.numRot=r()<.7?0:Math.round((r()*2-1)*45); state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
-  state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
+  state.polish=f(.2+r()*.75,2); state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
   repaint(r);
   if(noBuild){ applyLook(); return; }
   checkpoint();
@@ -587,7 +590,7 @@ function randomize(noBuild){
 }
 
 /* ---------- undo / redo of design settings ---------- */
-const DESIGN_KEYS=['shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
+const DESIGN_KEYS=['polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
 let history=[], hIdx=-1, hTimer=null;
 function checkpoint(){                                   // record the current design if it differs from the last recorded one
@@ -637,7 +640,7 @@ function syncUI(){
   $('customctl').hidden=state.shape!=='custom'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
@@ -662,7 +665,7 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+  finish:{polish:state.polish}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
@@ -678,7 +681,7 @@ function loadDesign(d){
   state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
   state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
-  state.radius=num(d.edge_radius,0,.15,.04); const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
+  state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5); const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
   state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   return ensureFont(state.font).then(()=>buildDice());
@@ -819,7 +822,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(STONES[q.get('stone')]) state.stone=q.get('stone');
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
