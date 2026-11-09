@@ -563,8 +563,9 @@ function applyLook(){
   U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
     const ST=state.substrate==='marble'?STONES[state.stone]:null;
+    // metals stop short of a mirror (roughness floor .25): a mirror only shows the dim room and reads black
     const P=state.polish, baseR=ST?ST.rough:S.rough, baseC=ST?ST.coat:S.coat;   // polish .5 = the substrate's designed finish
-    Object.assign(mat,{metalness:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,S.metal>.5?.25:.03,1)   // metals stop short of a mirror: a mirror only shows the dim room and reads black, clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:state.numDepth,
+    Object.assign(mat,{metalness:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,S.metal>.5?.25:.03,1), clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:state.numDepth,
       transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
       side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
