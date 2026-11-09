@@ -18,6 +18,7 @@
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .grid.two{grid-template-columns:repeat(2,1fr)}
   button{font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:8px 4px;cursor:pointer}
+  button:disabled{opacity:.35;cursor:default}
   button:hover{border-color:#3a4052}
   button.on{border-color:var(--accent);background:#2a2619;color:var(--accent)}
   button.big{width:100%;padding:11px;font-weight:600;background:var(--accent);color:#1a1405;border:0;margin-top:6px}
@@ -93,6 +94,7 @@
     <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
     <div class="chk"><input type="checkbox" id="randshape"><span>Randomize shape too</span></div>
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
+    <div class="grid two" style="margin-bottom:6px"><button id="undo" title="Ctrl+Z">↶ Undo</button><button id="redo" title="Ctrl+Shift+Z / Ctrl+Y">Redo ↷</button></div>
     <button class="big" id="rand">Randomize</button>
     <button class="big alt" id="roll">Roll</button>
     <button class="big alt" id="back" hidden>Back to showcase</button>
@@ -504,11 +506,11 @@ function applyLook(){
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
-  syncUI(); save();
+  syncUI(); save(); scheduleCheckpoint();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
-  state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
+  checkpoint(); state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
   if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   state.palettes[state.substrate]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[state.substrate];
@@ -518,17 +520,37 @@ function randomize(noBuild){
   state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
   repaint(r);
   if(noBuild){ applyLook(); return; }
+  checkpoint();
   ensureFont(state.font).then(()=>buildDice(state.shape===oldShape));   // geometry/atlas depend on radius, font and number settings
 }
 
+/* ---------- undo / redo of design settings ---------- */
+const DESIGN_KEYS=['shape','substrate','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
+const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
+let history=[], hIdx=-1, hTimer=null;
+function checkpoint(){                                   // record the current design if it differs from the last recorded one
+  clearTimeout(hTimer); hTimer=null; if(hIdx<0) return;
+  const snap=snapshot(); if(snap!==history[hIdx]){ history.length=hIdx+1; history.push(snap); if(history.length>100) history.shift(); hIdx=history.length-1; }
+  syncHistoryUI();
+}
+const scheduleCheckpoint=()=>{ if(hIdx<0) return; clearTimeout(hTimer); hTimer=setTimeout(checkpoint,500); syncHistoryUI(); };   // coalesces slider drags
+function syncHistoryUI(){ $('undo').disabled=!(hIdx>0||hTimer); $('redo').disabled=!(hIdx>=0&&hIdx<history.length-1); }
+async function restore(snap){
+  const o=JSON.parse(snap), oldShape=state.shape; Object.assign(state,o); setSubstrate(state.substrate);
+  await ensureFont(state.font); buildDice(state.shape===oldShape); syncHistoryUI();
+}
+async function undo(){ checkpoint(); if(hIdx>0){ hIdx--; await restore(history[hIdx]); } }
+async function redo(){ checkpoint(); if(hIdx<history.length-1){ hIdx++; await restore(history[hIdx]); } }
+$('undo').onclick=undo; $('redo').onclick=redo;
+
 /* ---------- UI ---------- */
 for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2';
-  b.onclick=()=>{state.shape=id; buildDice(); }; $('shapes').append(b); }
+  b.onclick=()=>{checkpoint(); state.shape=id; buildDice(); }; $('shapes').append(b); }
 
 /* custom set: stepper UI <-> notation text */
 const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
 function counts(){ const p=parseNotation(state.notation), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
-function setCounts(c,mod){ const terms=STEP_TYPES.filter(t=>c[t]>0).map(t=>({count:c[t],sides:t})); if(!terms.length) return;
+function setCounts(c,mod){ checkpoint(); const terms=STEP_TYPES.filter(t=>c[t]>0).map(t=>({count:c[t],sides:t})); if(!terms.length) return;
   const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   state.notation=n; state.shape='custom'; buildDice(); }
 STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step'; d.style.cssText='display:flex;align-items:center;gap:2px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:3px 4px;justify-content:space-between';
@@ -536,10 +558,10 @@ STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step
   d.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const {c,mod}=counts(); c[t]=Math.max(0,c[t]+ +b.dataset.d); setCounts(c,mod); };
   $('steppers').append(d); });
 $('modm').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod-1); }; $('modp').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod+1); };
-const applyNotation=()=>{ const p=parseNotation($('notation').value); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; buildDice(); };
+const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').value); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; buildDice(); };
 $('notapply').onclick=applyNotation; $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
-  b.onclick=()=>{ setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
+  b.onclick=()=>{ checkpoint(); setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
 function syncUI(){
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
@@ -557,7 +579,7 @@ for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REB
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
-$('paintmode').onchange=e=>{state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
+$('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
 $('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
 $('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
 $('expsize').onchange=e=>{state.expsize=e.target.value; save();};
@@ -577,6 +599,7 @@ function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.sh
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
   notation:state.notation, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
+  checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
   if(d.version!==1) throw new Error('Unsupported design version '+d.version);
   if(!SHAPES[d.shape]) throw new Error('Unknown shape: '+d.shape);
@@ -602,7 +625,10 @@ $('jsonfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; 
 $('rand').onclick=randomize;
 $('roll').onclick=()=>startRoll();
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
-addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
+addEventListener('keydown',e=>{
+  const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
+  if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
+  if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
   if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); });
 $('hint').textContent='drag = turn dice · right-drag = orbit camera · scroll = zoom · double-click = reset view · space = randomize · r = roll';
 
@@ -731,6 +757,10 @@ await ensureFont(state.font);
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
+history=[snapshot()]; hIdx=0; syncHistoryUI();
+if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
+  state.radius=.1; applyLook(); await undo(); const e2=snapshot();
+  console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
 if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ startRoll(); // fast-forward the sim for headless testing
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); }
