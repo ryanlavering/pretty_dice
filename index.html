@@ -182,15 +182,15 @@ function assignLabels(faces, labels, rng){
 const FONTS={ cinzel:{label:'Cinzel (classic)',css:'Cinzel,Georgia,serif',load:'700 100px Cinzel'}, metamorphous:{label:'Metamorphous (fantasy)',css:'Metamorphous,Georgia,serif',load:'400 100px Metamorphous'},
   uncial:{label:'Uncial Antiqua (runic)',css:'"Uncial Antiqua",Georgia,serif',load:'400 100px "Uncial Antiqua"'}, inter:{label:'Inter (clean sans)',css:'Inter,Arial,sans-serif',load:'800 100px Inter'},
   georgia:{label:'Georgia (serif)',css:'Georgia,serif',load:null}, mono:{label:'Courier (mono)',css:'"Courier New",monospace',load:null} };
-function makeAtlas(N, labels, fontKey, soft){
+function makeAtlas(N, labels, fontKey, soft, pad2){      // pad2: percentile (tens) die prints 00, 10 ... 90
   const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=256, F=FONTS[fontKey]||FONTS.cinzel;
   const mk=(bg)=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,c.width,c.height); return [c,g];};
   const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), info=[];
-  const px=labels.some(l=>String(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
+  const show=l=>pad2?String(l).padStart(2,'0'):String(l), px=labels.some(l=>show(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
   labels.forEach((lab,i)=>{
-    let txt=String(lab); if(lab===6||lab===9) txt+='.';
+    let txt=show(lab); if(!pad2&&(lab===6||lab===9)) txt+='.';
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
-    mg.font=`${weight} ${px}px ${F.css}`; const m=mg.measureText(txt);
+    mg.font=`${weight} ${px}px ${F.css}`; mg.textAlign='center'; const m=mg.measureText(txt);   // align must be set before measuring or the first label is off-centre
     const w=m.actualBoundingBoxLeft+m.actualBoundingBoxRight, h=m.actualBoundingBoxAscent+m.actualBoundingBoxDescent;
     info.push({halfDiag:Math.hypot(w,h)/2});            // text box half-diagonal in atlas px, used to fit it inside the face
     for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){
@@ -436,7 +436,7 @@ if(!SHAPES[state.shape]) state.shape='d20';
 let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
 
 const TENS=range(0,9).map(n=>n*10);
-const SET7=[['d4',-3.4,1.25],['d6',-1.13,1.25],['d8',1.13,1.25],['d12',3.4,1.25],['d10',-2.27,-1.25],['dpct',0,-1.25],['d20',2.27,-1.25]];   // d10 sits beside d%
+const SET7=[['d4',-2.27,1.25],['d6',0,1.25],['d8',2.27,1.25],['d10',-3.4,-1.25],['dpct',-1.13,-1.25],['d12',1.13,-1.25],['d20',3.4,-1.25]];   // 3 on top; bottom row d10, d%, d12, d20
 const SIDES={4:'d4',6:'d6',8:'d8',10:'d10',12:'d12',14:'d14',16:'d16',20:'d20'}, MAXDICE=24;
 function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}], mod}
   const terms=[]; let mod=0, n=0;
@@ -481,7 +481,7 @@ function buildDice(keepRoll){
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
     const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
     if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
-    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
+    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%'), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
     dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part});
   });
@@ -757,6 +757,11 @@ await ensureFont(state.font);
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
 history=[snapshot()]; hIdx=0; syncHistoryUI();
+if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of Object.keys(FONTS)){ await ensureFont(f); const labs=[0,1,6,8,9,10,20,90], at=makeAtlas(labs.length,labs,f,3,false), c=at.mask.image, g=c.getContext('2d'), out=[];
+    labs.forEach((l,i)=>{ const cx=(i%at.cols)*at.cell, cy=Math.floor(i/at.cols)*at.cell, d=g.getImageData(cx,cy,at.cell,at.cell).data; let x0=1e9,x1=-1,y0=1e9,y1=-1;
+      for(let y=0;y<at.cell;y++)for(let x=0;x<at.cell;x++) if(d[(y*at.cell+x)*4]>128){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+      out.push(`${l}:(${((x0+x1)/2-128).toFixed(1)},${((y0+y1)/2-128).toFixed(1)})`); });
+    console.log('ATLAS',f,out.join(' ')); } }
 if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
