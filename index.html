@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;800&family=Uncial+Antiqua&family=Metamorphous&display=swap">
 <style>
   :root{--bg:#0e1015;--panel:#161922;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c}
-  *{box-sizing:border-box}
+  *{box-sizing:border-box} [hidden]{display:none!important}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
   #app{display:flex;height:100%}
   aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
@@ -34,6 +34,7 @@
   #stage canvas:active{cursor:grabbing}
   #result{position:absolute;top:46px;left:0;right:0;text-align:center;font:800 54px Cinzel,serif;color:var(--accent);opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 2px 18px #000}
   #result.on{opacity:1}
+  #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   @media (max-width:760px){
@@ -57,6 +58,14 @@
     <h2>Shape</h2>
     <div class="grid" id="shapes"></div>
 
+    <div id="customctl">
+      <h2>Custom set</h2>
+      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button></div>
+      <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
+      <div class="grid" id="steppers" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+      <div class="row"><label>Modifier</label><button id="modm" style="padding:4px 10px">−</button><b id="modv" style="min-width:26px;text-align:center">0</b><button id="modp" style="padding:4px 10px">+</button></div>
+    </div>
+
     <h2>Substrate</h2>
     <div class="grid two" id="subs"></div>
 
@@ -67,6 +76,12 @@
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
 
+    <div id="epoxyctl"><h2>Epoxy</h2>
+      <div class="row"><label>Glitter</label><input type="range" id="glitter" min="0" max="1" step="0.01"></div>
+      <div class="row"><label>Bubbles</label><input type="range" id="bubbles" min="0" max="1" step="0.01"></div>
+      <div class="row"><label>Clarity</label><input type="range" id="clarity" min="0.2" max="1" step="0.01"></div>
+    </div>
+
     <h2>Numbers</h2>
     <div class="row"><label>Font</label><select id="font"></select></div>
     <div class="row"><label>Size</label><input type="range" id="numsize" min="0.3" max="1" step="0.01"></div>
@@ -76,6 +91,7 @@
 
     <h2>Generate</h2>
     <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
+    <div class="chk"><input type="checkbox" id="randshape"><span>Randomize shape too</span></div>
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
     <button class="big" id="rand">Randomize</button>
     <button class="big alt" id="roll">Roll</button>
@@ -126,6 +142,7 @@ const SHAPES = {
   d14: {label:'d14', verts:()=>trapezohedron(7), labels:range(1,14)},
   d16: {label:'d16', verts:()=>dipyramid(8,0.9), labels:range(1,16)},
   set7:{label:'Standard 7', set:true},
+  custom:{label:'Custom set', set:true},
   rd12:{label:'rhombic d12', verts:()=>{const o=signs(1,1,1); for(const s of [2,-2]) o.push(V(s,0,0),V(0,s,0),V(0,0,s)); return o;}, labels:range(1,12)},
 };
 
@@ -191,6 +208,7 @@ const slerp=(a,b,t)=>{const th=Math.acos(THREE.MathUtils.clamp(a.dot(b),-1,1)); 
 function buildGeometry(faces, atlas, radius, numSize, numRot){
   const pos=[],nor=[],uv=[],cb=[];
   let curCell=[0,0,1,1];
+  const maxHD=Math.max(...atlas.info.map(i=>i.halfDiag));   // one scale for every label so 8 and 10 print at the same size
   const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v); cb.push(...curCell);};
   let R=0, SV=null;                                   // R: clamped radius, SV: shrunk vertex per original vertex id
   if(radius>0){
@@ -221,7 +239,7 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
     let r=1e9; for(let k=0;k<m;k++){const a=P[k],b=P[(k+1)%m],o=new THREE.Vector3().subVectors(b,a).cross(n).normalize();
       r=Math.min(r,-new THREE.Vector3().subVectors(C,a).dot(o));}
     const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows;
-    const opx=numSize*r/atlas.info[i].halfDiag;                       // object units per atlas pixel: text box fits numSize * inradius
+    const opx=numSize*r/maxHD;                       // object units per atlas pixel: text box fits numSize * inradius
     curCell=[col/atlas.cols,1-(row+1)/atlas.rows,(col+1)/atlas.cols,1-row/atlas.rows];
     const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/opx/(atlas.cols*atlas.cell), cv+d.dot(up)/opx/(atlas.rows*atlas.cell));};
     for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
@@ -261,7 +279,7 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
 
 /* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
 const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
-  uMode:{value:1}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
+  uMode:{value:1}, uGlitter:{value:.5}, uBubbles:{value:.3}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
 
 const GLSL_NOISE = `
 float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -283,26 +301,51 @@ vec3 pattern(vec3 p){
   return mix(base,uC3,smoothstep(.9,1.,v)*.8);
 }`;
 
+const GLSL_VOLUME = `
+// fake the inside of a cast-resin die: march a few layers along the refracted ray through dye clouds, glitter and bubbles
+vec3 volume(vec3 p, vec3 v, vec3 n, out vec3 glow){
+  vec3 d=refract(normalize(v),normalize(n),1./1.5); vec3 acc=vec3(0.); float ws=0.; glow=vec3(0.);
+  for(int i=0;i<6;i++){
+    float t=(float(i)+.5)/6.*1.5, w=exp(-t*.9);
+    vec3 q=(p+d*t)*uScale+uOff;
+    float c=fbm(q*.9);
+    vec3 col=mix(uC1,uC2,smoothstep(.3,.7,c)); col=mix(col,uC3,smoothstep(.6,.85,fbm(q*1.7+3.))*.8);
+    acc+=col*w; ws+=w;
+    vec3 g=(p+d*t)*8.; vec3 cell=floor(g); float h=h13(cell);                       // glitter
+    if(h>1.-uGlitter*.09){ vec3 o=h33(cell)-.5; float dd=length(fract(g)-.5-o*.5); float tw=.5+.5*sin(dot(v,h33(cell+1.)*30.)+h*40.);
+      glow+=vec3(1.,.96,.88)*smoothstep(.2,.0,dd)*tw*2.2*w; }
+    vec3 b=(p+d*t)*3.5+vec3(7.,3.,1.); vec3 bc=floor(b); float bh=h13(bc);          // bubbles
+    if(bh>1.-uBubbles*.1){ vec3 o=h33(bc)-.5; float r=length(fract(b)-.5-o*.4); float rim=smoothstep(.2,.17,r)-smoothstep(.17,.13,r);
+      glow+=vec3(.8,.9,1.)*rim*.9*w; acc*=1.-.12*smoothstep(.17,.0,r); }
+  }
+  return acc/ws;
+}`;
 function makeMaterial(atlas){
   const m=new THREE.MeshPhysicalMaterial({color:0xffffff, bumpMap:atlas.bump, bumpScale:2.2});
   m.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, U, {uMask:{value:atlas.mask}});
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>',`#include <common>
-        attribute vec4 cellB; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv;`)
+        attribute vec4 cellB; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;`)
       .replace('#include <begin_vertex>',`#include <begin_vertex>
-        vOP=position; vPUv=uv; vCell=cellB;`);
+        vOP=position; vPUv=uv; vCell=cellB; vView=position-(inverse(modelMatrix)*vec4(cameraPosition,1.)).xyz; vONrm=normal;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>',`#include <common>
         uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode; uniform float uScale,uFlake,uBrush; uniform sampler2D uMask;
-        varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv;
+        varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
+        uniform float uGlitter,uBubbles;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
         vec4 bumpSample(sampler2D t, vec2 u){return inCell(u)?texture2D(t,u):vec4(1.);}
-        ${GLSL_NOISE}`)
+        ${GLSL_NOISE}
+        ${GLSL_VOLUME}`)
       .replace('#include <bumpmap_pars_fragment>', THREE.ShaderChunk.bumpmap_pars_fragment.split('texture2D( bumpMap, ').join('bumpSample( bumpMap, '))
       .replace('#include <color_fragment>',`#include <color_fragment>
         float pm = inCell(vPUv) ? smoothstep(.35,.65,texture2D(uMask,vPUv).r) : 0.;
-        diffuseColor.rgb = mix(pattern(vOP*uScale+uOff), uPaint, pm);`)
+        vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? volume(vOP,vView,vONrm,volGlow) : pattern(vOP*uScale+uOff);
+        diffuseColor.rgb = mix(baseCol, uPaint, pm);
+        volGlow = (volGlow + (uMode==3 ? baseCol*.2 : vec3(0.))) * (1.-pm);`)
+      .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+        totalEmissiveRadiance += volGlow;`)
       .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
         roughnessFactor = mix(roughnessFactor + uBrush*(vn(vOP*vec3(2.,90.,2.))-.5), .5, pm);`)
       .replace('#include <metalnessmap_fragment>',`#include <metalnessmap_fragment>
@@ -332,8 +375,8 @@ const SUBSTRATES = {
           pal:r=>{const h=r();return [hsl(h,.6,.45),hsl(h+.05,.65,.32),hsl(h-.04,.5,.6)];}},
   metal: {label:'Solid metal',      mode:0, metal:1,  rough:.3,  coat:0,  trans:0, flake:0,   brush:.08,
           pal:r=>[pick(METALS,r),'#000000','#000000']},
-  epoxy: {label:'Clear epoxy',      mode:1, metal:0,  rough:.04, coat:0,  trans:1, flake:0,  brush:0,
-          pal:r=>{const h=r(),d=.06+r()*.2;return [hsl(h,.75,.62),hsl(h+d,.8,.72),hsl(h-d,.6,.85)];}},
+  epoxy: {label:'Clear epoxy',      mode:3, metal:0,  rough:.05, coat:.4, trans:1, flake:0,  brush:0,
+          pal:r=>{const h=r(),d=.06+r()*.2;return [hsl(h,.85,.5),hsl(h+d,.85,.6),hsl(h-d,.7,.78)];}},
   marble:{label:'Marble / stone',   mode:2, metal:0,  rough:.22, coat:.6, trans:0, flake:0,   brush:0,
           pal:r=>{const h=r();return [hsl(h,.08,.88),hsl(h,.2,.55),hsl(h+.5,.3,.12)];}},
 };
@@ -378,7 +421,7 @@ const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
@@ -386,11 +429,41 @@ function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,J
 function setSubstrate(id,r){ state.substrate=id; if(!state.palettes[id]) state.palettes[id]=SUBSTRATES[id].pal(r||mulberry32(state.seed)); state.colors=state.palettes[id]; }
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
-let dice=[], baseZ=5.4;
+let dice=[], baseZ=5.4, customZoom=13;
 
 const TENS=range(0,9).map(n=>n*10);
 const SET7=[['d4',-3.4,1.25],['d6',-1.13,1.25],['d8',1.13,1.25],['d10',3.4,1.25],['dpct',-2.27,-1.25],['d12',0,-1.25],['d20',2.27,-1.25]];
+const SIDES={4:'d4',6:'d6',8:'d8',10:'d10',12:'d12',14:'d14',16:'d16',20:'d20'}, MAXDICE=24;
+function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}], mod}
+  const terms=[]; let mod=0, n=0;
+  const toks=String(str).toLowerCase().replace(/\s+/g,'').replace(/-/g,'+-').split('+').filter(Boolean);
+  if(!toks.length) return {error:'Enter some dice, e.g. 4d6+2d10+3'};
+  for(const t of toks){
+    let m;
+    if((m=t.match(/^(\d*)d(\d+|%)$/))){ const count=m[1]===''?1:+m[1], sides=m[2]==='%'?100:+m[2];
+      if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides}); }
+    else if(/^-?\d+$/.test(t)) mod+=+t;
+    else return {error:`Can't read "${t}"`};
+  }
+  if(!terms.length) return {error:'Add at least one die'};
+  if(n>MAXDICE) return {error:`Too many dice (${n}); max ${MAXDICE}`};
+  return {terms,mod};
+}
+const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const isMulti=()=>state.shape==='set7'||state.shape==='custom';
+function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
+  return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
 function specsFor(shape){
+  if(shape==='custom'){
+    const p=parseNotation(state.notation), list=[];
+    if(p.error) return specsFor('d20');
+    p.terms.forEach((t,ti)=>{ for(let c=0;c<t.count;c++){
+      if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,part:'tens'}, {id:'d10',labels:null,name:'d10',term:ti,part:'ones'}); }
+      else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti}); } });
+    const L=gridLayout(list.length); customZoom=L.zoom;
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,part:d.part}));
+  }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
   if(SHAPES[shape].pair) return [mk('d10',-1.2,0,TENS,'d%'), mk('d10',1.2,0,null,'d10')];
@@ -406,9 +479,9 @@ function buildDice(keepRoll){
     if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
     const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
-    dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name});
+    dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part});
   });
-  baseZ = state.shape==='set7' ? 13 : specs.length>1 ? 7.6 : 5.4;
+  baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
   applyLook();
 }
 let rebuildQueued=false;
@@ -419,27 +492,47 @@ function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
   U.uOff.value.set(...state.off);
-  U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
+  U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
     Object.assign(mat,{metalness:S.metal, roughness:S.rough, clearcoat:S.coat, clearcoatRoughness:.08, bumpScale:state.numDepth,
-      transmission:S.trans, ior:1.5, thickness:S.trans?1.3:0, attenuationDistance:S.trans?1.1:Infinity});
-    mat.attenuationColor.set(state.colors[0]); mat.emissive.set(S.trans?state.colors[0]:'#000000'); mat.emissiveIntensity=.1; mat.needsUpdate=true;
+      transmission:S.trans?.2+.7*state.clarity:0, ior:1.5, thickness:S.trans?1.4:0, attenuationDistance:S.trans?2.2:Infinity});
+    mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+S.label.toUpperCase();
   syncUI(); save();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
-function randomize(){
-  state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed);
+function randomize(noBuild){
+  state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
+  if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   state.palettes[state.substrate]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[state.substrate];
-  state.off=[r()*60,r()*60,r()*60]; state.scale=1+r()*1.6;
-  repaint(r); applyLook();
+  state.off=[r()*60,r()*60,r()*60]; state.scale=f(1+r()*1.6,2);
+  state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
+  state.numSize=f(.5+r()*.3,2); state.numRot=r()<.7?0:Math.round((r()*2-1)*45); state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
+  state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
+  repaint(r);
+  if(noBuild){ applyLook(); return; }
+  ensureFont(state.font).then(()=>buildDice(state.shape===oldShape));   // geometry/atlas depend on radius, font and number settings
 }
 
 /* ---------- UI ---------- */
 for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2';
   b.onclick=()=>{state.shape=id; buildDice(); }; $('shapes').append(b); }
+
+/* custom set: stepper UI <-> notation text */
+const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
+function counts(){ const p=parseNotation(state.notation), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
+function setCounts(c,mod){ const terms=STEP_TYPES.filter(t=>c[t]>0).map(t=>({count:c[t],sides:t})); if(!terms.length) return;
+  const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
+  state.notation=n; state.shape='custom'; buildDice(); }
+STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step'; d.style.cssText='display:flex;align-items:center;gap:2px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:3px 4px;justify-content:space-between';
+  d.innerHTML=`<button data-d="-1" style="padding:2px 6px">−</button><span><b data-n="${t}">0</b><small style="color:var(--dim)"> d${t===100?'%':t}</small></span><button data-d="1" style="padding:2px 6px">+</button>`;
+  d.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const {c,mod}=counts(); c[t]=Math.max(0,c[t]+ +b.dataset.d); setCounts(c,mod); };
+  $('steppers').append(d); });
+$('modm').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod-1); }; $('modp').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod+1); };
+const applyNotation=()=>{ const p=parseNotation($('notation').value); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; buildDice(); };
+$('notapply').onclick=applyNotation; $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
   b.onclick=()=>{ setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
@@ -449,9 +542,11 @@ function syncUI(){
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
   $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=state[k];
+  { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
+  $('customctl').hidden=state.shape!=='custom'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
@@ -459,6 +554,7 @@ $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
 $('paintmode').onchange=e=>{state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
 $('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
+$('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
 $('expsize').onchange=e=>{state.expsize=e.target.value; save();};
 function exportImage(type){
   const size=+$('expsize').value, pr=renderer.getPixelRatio();
@@ -474,7 +570,7 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  edge_radius:state.radius, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+  notation:state.notation, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
   if(d.version!==1) throw new Error('Unsupported design version '+d.version);
@@ -483,11 +579,12 @@ function loadDesign(d){
   const hex=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c), num=(v,lo,hi,def)=>Number.isFinite(+v)?Math.min(hi,Math.max(lo,+v)):def;
   const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
   const n=d.numbers||{}, p=d.pattern||{};
+  if(typeof d.notation==='string'&&!parseNotation(d.notation).error) state.notation=d.notation;
   state.shape=d.shape; state.substrate=d.substrate; state.palettes[d.substrate]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[d.substrate];
   state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
   state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
-  state.radius=num(d.edge_radius,0,.15,.04);
+  state.radius=num(d.edge_radius,0,.15,.04); const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
   state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   return ensureFont(state.font).then(()=>buildDice());
@@ -515,7 +612,7 @@ cv.addEventListener('pointermove',e=>{ if(!dragging) return;
   spinBy(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
   angVel.copy(ax).multiplyScalar(len*.9); });
 cv.addEventListener('wheel',e=>{e.preventDefault(); state.zoom=THREE.MathUtils.clamp(state.zoom*(1+e.deltaY*.001),.35,2.4); save();},{passive:false});
-function spinBy(q){ if(state.shape==='set7') dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
+function spinBy(q){ if(isMulti()) dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
@@ -528,7 +625,8 @@ function startRoll(){
   const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
-  const k=dice.length>2?1.5:1; ROLL_CAM.y=6.2*k; ROLL_CAM.z=7.6*k; table.scale.setScalar(k);   // bigger tray + farther camera for sets
+  const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=6.2*k; ROLL_CAM.z=7.6*k; table.scale.setScalar(k);
+  Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
   const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfW=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.2*k), halfD=1.9*k;
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=state.bounce;
@@ -540,8 +638,8 @@ function startRoll(){
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
     const n=dice.length, R=()=>Math.random()-.5;
-    if(n>2){ const cols=4, col=i%cols, row=Math.floor(i/cols); const x=-halfW+1+(cols>1?col*(2*halfW-2)/(cols-1):0);
-      b.position.set(x,TABLE_Y+2+row*1.8+i*.5,row?1.5:-1.5); }
+    if(n>2){ const cols=Math.min(n,Math.max(3,Math.round(2*halfW/2.2))), rows=Math.ceil(n/cols), col=i%cols, row=Math.floor(i/cols);
+      b.position.set(-halfW+1+col*(2*halfW-2)/Math.max(1,cols-1), TABLE_Y+2+row*1.8+i*.35, -halfD+1+row*(2*halfD-2)/Math.max(1,rows-1)); }
     else b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),Math.max(p.y,TABLE_Y+1.6),p.z);
     b.quaternion.set(q.x,q.y,q.z,q.w);
     if(n>2) b.velocity.set(-b.position.x*.5+R()*3, 3+Math.random()*3, R()*3);
@@ -577,12 +675,20 @@ function finishRoll(){ restT=0;
       b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14); }); return; }
   settled=true;
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
-  let txt;
-  if(state.shape==='set7') txt=parts.map((p,i)=>fmt(dice[i],p)).join(' · ');
-  else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; txt=String(t===0?100:t); }
-  else txt=String(fmt(dice[0],parts[0]));
-  $('result').style.fontSize=state.shape==='set7'?'30px':'';
-  $('result').textContent=txt; $('result').classList.add('on'); console.log('ROLL_RESULT',txt);
+  let main, sub='';
+  if(state.shape==='custom'){
+    const P=parseNotation(state.notation), groups=P.terms.map(()=>[]);
+    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
+    const sums=groups.map(g=>g.reduce((a,b)=>a+b,0)), total=sums.reduce((a,b)=>a+b,0)+P.mod;
+    main=String(total);
+    if(P.terms.length>1||P.terms[0].count>1||P.mod) sub=P.terms.map((t,i)=>`${t.count}d${t.sides===100?'%':t.sides}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`).join('  ·  ')+(P.mod?`  ·  ${P.mod>0?'+':''}${P.mod}`:'');
+  }
+  else if(state.shape==='set7') main=parts.map((p,i)=>fmt(dice[i],p)).join(' · ');
+  else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; main=String(t===0?100:t); }
+  else main=String(fmt(dice[0],parts[0]));
+  const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
+  if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub);
 }
 $('back').onclick=()=>exitRoll();
 
@@ -608,9 +714,9 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius');
-  if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')) randomize(); }
-if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize();
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius');
+  if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
+if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
 if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ startRoll(); // fast-forward the sim for headless testing
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
