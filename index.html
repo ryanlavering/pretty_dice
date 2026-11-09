@@ -32,6 +32,8 @@
   #stage{flex:1;position:relative;min-width:0}
   #stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
+  #result{position:absolute;top:46px;left:0;right:0;text-align:center;font:800 54px Cinzel,serif;color:var(--accent);opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 2px 18px #000}
+  #result.on{opacity:1}
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   @media (max-width:760px){
@@ -42,6 +44,7 @@
 <script type="importmap">
 {"imports":{
   "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "cannon-es":"https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js",
   "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
 </script>
 </head>
@@ -69,16 +72,19 @@
     <div class="chk"><input type="checkbox" id="rotate" checked><span>Idle rotation</span></div>
     <button class="big" id="rand">Randomize</button>
     <button class="big alt" id="roll">Roll</button>
+    <button class="big alt" id="back" hidden>Back to showcase</button>
+    <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02" value="0.4"></div>
 
     <h2>Export</h2>
     <div class="row"><label>Size</label><select id="expsize"><option value="0">Current view</option><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="4096">4096 px</option></select></div>
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
   </aside>
-  <div id="stage"><div id="name"></div><div id="hint"></div></div>
+  <div id="stage"><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
 
 <script type="module">
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 /* ---------- utils ---------- */
@@ -317,6 +323,7 @@ function pickPaint(cols,sub,r,mode='auto'){
 const stage=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.5;
 stage.prepend(renderer.domElement);
 const scene=new THREE.Scene();
@@ -324,7 +331,13 @@ const scene=new THREE.Scene();
   const gr=g.createRadialGradient(256,230,20,256,256,380); gr.addColorStop(0,'#262b3a'); gr.addColorStop(1,'#0b0c11');
   g.fillStyle=gr; g.fillRect(0,0,512,512); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
 scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
-const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,5,4); scene.add(key);
+const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,6,4); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-.0004; key.shadow.normalBias=.03;
+Object.assign(key.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:.5,far:25}); scene.add(key);
+const TABLE_Y=-1.6;
+const table=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');
+  const gr=g.createRadialGradient(128,128,40,128,128,128);gr.addColorStop(0,'#fff');gr.addColorStop(1,'#000');g.fillStyle=gr;g.fillRect(0,0,256,256);
+  const m=new THREE.Mesh(new THREE.CircleGeometry(7.5,64),new THREE.MeshStandardMaterial({color:0x1b2b24,roughness:.95,metalness:0,alphaMap:new THREE.CanvasTexture(c),transparent:true,opacity:0}));
+  m.rotation.x=-Math.PI/2; m.position.y=TABLE_Y-.002; m.receiveShadow=true; m.visible=false; scene.add(m); return m;})();
 const camera=new THREE.PerspectiveCamera(32,1,.1,50); camera.position.set(0,0,5.4);
 const rig=new THREE.Group(); scene.add(rig);
 const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
@@ -334,10 +347,10 @@ const shadow=(()=>{const c=document.createElement('canvas');c.width=c.height=128
 
 /* ---------- state ---------- */
 const state={shape:'d20', substrate:'swirl', colors:['#000000','#000000','#000000'], paint:'#ffffff', paintMode:'auto', scale:1.6, radius:0.04, seed:1};
-let dice=[], fontsOK=false;
+let dice=[], fontsOK=false, camZ=5.4;
 
 function buildDice(){
-  rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
+  exitRoll(true); rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
   const specs = SHAPES[state.shape].pair
     ? [{verts:SHAPES.d10.verts(), labels:[0,10,20,30,40,50,60,70,80,90], x:-1.2},{verts:SHAPES.d10.verts(), labels:range(0,9), x:1.2}]
     : [{verts:SHAPES[state.shape].verts(), labels:SHAPES[state.shape].labels, x:0}];
@@ -346,9 +359,9 @@ function buildDice(){
     const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
     if(faces.length!==s.labels.length) console.warn(`${state.shape}: hull has ${faces.length} faces, expected ${s.labels.length}`);
     const atlas=makeAtlas(faces.length,labs,fontsOK), geo=buildGeometry(faces,atlas,state.radius), mat=makeMaterial(atlas);
-    const mesh=new THREE.Mesh(geo,mat); mesh.position.x=s.x; rig.add(mesh); dice.push({mesh,geo,mat,atlas});
+    const mesh=new THREE.Mesh(geo,mat); mesh.position.x=s.x; mesh.castShadow=true; rig.add(mesh); dice.push({mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x});
   });
-  camera.position.z = specs.length>1 ? 7.6 : 5.4;
+  camZ = specs.length>1 ? 7.6 : 5.4;
   document.getElementById('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+SUBSTRATES[state.substrate].label.toUpperCase();
   applyLook();
 }
@@ -409,31 +422,96 @@ addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'&&e.target.type!=='
 $('hint').textContent='drag to turn · scroll to zoom · space = randomize · r = roll';
 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
-const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null, vy=0, py=0;
+const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
 const cv=renderer.domElement;
-cv.addEventListener('pointerdown',e=>{dragging=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointerdown',e=>{ if(rolling) return; dragging=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId);});
 cv.addEventListener('pointerup',()=>dragging=false);
 cv.addEventListener('pointermove',e=>{ if(!dragging) return;
   const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY];
   const ax=new THREE.Vector3(dy,dx,0), len=ax.length(); if(!len) return;
   rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
   angVel.copy(ax).multiplyScalar(len*.9); });
-cv.addEventListener('wheel',e=>{e.preventDefault(); camera.position.z=THREE.MathUtils.clamp(camera.position.z*(1+e.deltaY*.001),3,12);},{passive:false});
-function roll(){ angVel.set(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize().multiplyScalar(14+Math.random()*8); vy=5.2; }
+cv.addEventListener('wheel',e=>{e.preventDefault(); camZ=THREE.MathUtils.clamp(camZ*(1+e.deltaY*.001),3,12);},{passive:false});
+function roll(){ startRoll(); }
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
 
+/* ---------- physics roll (cannon-es) ---------- */
+let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, camBlend=0;
+const ROLL_CAM={y:6.2,z:7.6};
+function startRoll(){
+  if(!dice.length) return;
+  const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
+  const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
+  rig.position.set(0,0,0); rig.quaternion.identity();
+  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfW=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.2), halfD=1.9;
+  world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
+  world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=+$('bounce').value;
+  const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
+  plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfW,0,0],[0,-Math.PI/2,0]); plane([-halfW,0,0],[0,Math.PI/2,0]);
+  plane([0,0,halfD],[0,Math.PI,0]); plane([0,0,-halfD],[0,0,0]);
+  bodies=dice.map((d,i)=>{
+    const b=new CANNON.Body({mass:1, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
+      shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
+    const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
+    b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),Math.max(p.y,TABLE_Y+1.6),p.z);
+    b.quaternion.set(q.x,q.y,q.z,q.w);
+    const R=()=>Math.random()-.5;
+    b.velocity.set(R()*9+(i?2:-2), 7+Math.random()*4, R()*6-1);
+    b.angularVelocity.set(R()*40,R()*40,R()*40);
+    world.addBody(b); return b;});
+}
+function exitRoll(instant){
+  if(!rolling&&!instant) return;
+  rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); $('back').hidden=true;
+  dice.forEach(d=>{d.mesh.position.set(d.x,0,0); d.mesh.quaternion.identity();});
+  rig.position.set(0,0,0); if(!instant) rig.quaternion.identity();
+}
+function readResult(){
+  let total=0, parts=[];
+  dice.forEach((d,i)=>{
+    const q=new THREE.Quaternion(bodies[i].quaternion.x,bodies[i].quaternion.y,bodies[i].quaternion.z,bodies[i].quaternion.w);
+    const four=d.faces.length===4; let best=0, bv=four?1e9:-1e9;
+    d.faces.forEach((f,k)=>{const y=f.n.clone().applyQuaternion(q).y; if(four?y<bv:y>bv){bv=y;best=k;}});
+    parts.push({label:d.labs[best], flat:Math.abs(bv)});
+  });
+  return parts;
+}
+function restCheck(dt){   // own rest detection: cannon's sleep can hover in 'sleepy' for rounded-ish dice
+  const still=bodies.every(b=>b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5&&b.position.y<TABLE_Y+1.6);
+  restT=still?restT+dt:Math.max(0,restT-dt*.5); return restT>.5;
+}
+function finishRoll(){ restT=0;
+  const parts=readResult();
+  console.log('FLAT',retries,parts.map(p=>p.flat.toFixed(3)).join(','));
+  if(parts.some(p=>p.flat<.985) && retries<4){ retries++; bodies.forEach(b=>{b.wakeUp(); b.velocity.set(-b.position.x*1.5,4.5,-b.position.z*1.5); b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14);}); return; }
+  settled=true;
+  let txt;
+  if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; txt=String(t===0?100:t); }
+  else txt=String(state.shape==='d10'&&parts[0].label===0?10:parts[0].label);
+  $('result').textContent=txt; $('result').classList.add('on'); console.log('ROLL_RESULT',txt);
+}
+$('back').onclick=()=>exitRoll();
+$('bounce').oninput=e=>{ if(world) world.defaultContactMaterial.restitution=+e.target.value; };
+
 const clock=new THREE.Clock();
 renderer.setAnimationLoop(()=>{
   const dt=Math.min(clock.getDelta(),.05);
-  if(!dragging){
+  if(!dragging&&!rolling){
     const idle = $('rotate').checked ? new THREE.Vector3(.12,.55,.05) : new THREE.Vector3();
     angVel.copy(idle).add(angVel.clone().sub(idle).multiplyScalar(Math.exp(-dt*1.6)));
     const a=angVel.length()*dt; if(a>1e-6) rig.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
   }
-  vy-=18*dt; py+=vy*dt; if(py<0){py=0; vy=Math.abs(vy)>1.2?-vy*.45:0;}
-  rig.position.y=py; const s=1/(1+py*.7); shadow.scale.setScalar(s); shadow.material.opacity=s;
+  if(rolling&&world){
+    world.step(1/60,dt,4); rollT+=dt;
+    if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
+    dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
+    if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
+  }
+  camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
+  camera.position.set(0,camBlend*ROLL_CAM.y,THREE.MathUtils.lerp(camZ,ROLL_CAM.z,camBlend)); camera.lookAt(0,-camBlend*1.0,0);
+  table.visible=camBlend>.01; table.material.opacity=camBlend; shadow.visible=camBlend<.3;
   renderer.render(scene,camera);
 });
 
@@ -441,6 +519,10 @@ renderer.setAnimationLoop(()=>{
 try{ await Promise.race([document.fonts.load('700 120px Cinzel'),new Promise(r=>setTimeout(r,1500))]); fontsOK=document.fonts.check('700 120px Cinzel'); }catch{}
 { const q=new URLSearchParams(location.search); if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(SUBSTRATES[q.get('sub')]) {$('randsub').checked=false; state.substrate=q.get('sub');} }
 randomize(); buildDice();
+if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ roll(); // fast-forward the sim for headless testing
+  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
+    if(rollT>.6&&restCheck(1/60)) finishRoll(); }
+  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 window.__dice={state,randomize,buildDice,roll,applyLook,SHAPES};
 </script>
