@@ -24,6 +24,10 @@ TBD
 - **Substrates**: one physical material with an injected 3D noise shader (domain-warped swirl, marble veins, metal flakes). Solid, swirl, metallic plastic, metal, clear epoxy (transmission), marble.
 - **Edges**: real rounded geometry (faces inset by the radius, cylindrical edge strips, spherical vertex patches); radius is adjustable.
 - **Paint**: Auto (contrast + harmony), Random, or Custom.
-- **Export**: PNG/JPG at current view, 1024, 2048 or 4096 px.
+- **Export**: PNG/JPG at current view, 1024, 2048 or 4096 px; save/load design as JSON.
+- **Roll**: cannon-es rigid-body physics on a table; **Standard 7** view shows the full set.
+- **Settings** persist in localStorage.
+
+Design file format: [docs/design/design-format.md](docs/design/design-format.md). Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md). Work is tracked in `backlog/` (backlog.md; `backlog board`).
 
 Known gaps: epoxy lacks internal depth/inclusions, no d24/d30.
