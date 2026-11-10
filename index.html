@@ -818,8 +818,13 @@ function randomize(noBuild){
   state.palettes[palKey()]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[palKey()]; state.stoneAccent=f(r(),2);
   state.off=[r()*60,r()*60,r()*60]; state.scale=f(1+r()*1.6,2);
   state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
-  state.numSize=f(.5+r()*.3,2); state.numRot=r()<.7?0:Math.round((r()*2-1)*45); state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
+  state.numSize=f(.5+r()*.3,2); state.numRot=0; state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
   state.polish=f(.2+r()*.75,2); state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
+  state.d4Style=r()<.85?'tips':'center'; state.d6Style=r()<.7?'numbers':'pips';
+  state.numRaised=r()<.3; state.numPaint=state.numRaised?r()<.5:true;
+  state.panel=r()<.5?f(.08+r()*.14,2):0; state.panelDepth=f(.3+r()*.6,2); state.patina=state.panel>0&&r()<.6?f(.25+r()*.65,2):0;
+  state.filigree=r()<.4?pick(['scroll','beads','deco'],r):'none'; state.filiFill=r()<.8; state.enamelSame=r()<.5; state.enamel=hsl(r(),.55+r()*.3,.4+r()*.25);
+  if(state.substrate==='epoxy'&&state.inclusion!=='custom'){ state.inclusion=r()<.45?pick(Object.keys(MODELS),r):'none'; state.inclSize=f(.45+r()*.35,2); state.inclTurn=Math.round((r()*2-1)*180); state.inclY=f((r()*2-1)*.25,2); }
   repaint(r);
   if(noBuild){ applyLook(); return; }
   checkpoint();
@@ -1249,6 +1254,7 @@ if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: ra
 if(new URLSearchParams(location.search).get('test')==='json2'){ state.shape='custom'; state.notation='3d8+2d6+4'; state.substrate='swirl'; $('dname').value='Giant club attack'; buildDice();
   const j=JSON.stringify(designToJSON()); state.shape='d20'; state.notation='d20'; $('dname').value=''; buildDice(); await loadDesign(JSON.parse(j));
   console.log('JSON2',state.shape,state.notation,$('dname').value,dice.length,JSON.parse(j).name); }
+if(new URLSearchParams(location.search).get('test')==='rand'){ const seen={}; for(let i=0;i<60;i++){ randomize(true); for(const k of ['numRot','d4Style','d6Style','panel','numRaised','numPaint','patina','filigree','inclusion','substrate']) (seen[k]??=new Set()).add(state[k]); } console.log('RAND',JSON.stringify(Object.fromEntries(Object.entries(seen).map(([k,v])=>[k,[...v].length>6?'many('+v.size+')':[...v]])))); }
 if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
   cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
   console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
