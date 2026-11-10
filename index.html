@@ -859,32 +859,32 @@ new ResizeObserver(resize).observe(stage); resize();
 
 /* ---------- physics roll (cannon-es) ---------- */
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, camBlend=0;
-const ROLL_CAM={y:6.2,z:7.6};
+const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 function startRoll(){
   if(!dice.length) return;
   clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
-  const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=6.2*k; ROLL_CAM.z=7.6*k; table.scale.setScalar(k);
+  const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k; table.scale.setScalar(k);
   Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
-  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfW=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.2*k), halfD=1.9*k;
+  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.6*k), halfX=1.9*k;
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=state.bounce;
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
-  plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfW,0,0],[0,-Math.PI/2,0]); plane([-halfW,0,0],[0,Math.PI/2,0]);
-  plane([0,0,halfD],[0,Math.PI,0]); plane([0,0,-halfD],[0,0,0]);
-  const dropH=3.5+5*state.zoom;   // drop height above the table grows as the camera zooms out
+  plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
+  plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
+  const starts=[], dropH=3.5+5*state.zoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
     const b=new CANNON.Body({mass:1, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
-    const n=dice.length, R=()=>Math.random()-.5;
-    if(n>2){ const cols=Math.min(n,Math.max(3,Math.round(2*halfW/2.2))), rows=Math.ceil(n/cols), col=i%cols, row=Math.floor(i/cols);
-      b.position.set(-halfW+1+col*(2*halfW-2)/Math.max(1,cols-1), TABLE_Y+dropH+row*1.8+i*.35, -halfD+1+row*(2*halfD-2)/Math.max(1,rows-1)); }
-    else b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),TABLE_Y+dropH,p.z);
-    b.quaternion.set(q.x,q.y,q.z,q.w);
-    if(n>2) b.velocity.set(-b.position.x*.5+R()*3, -2-Math.random()*3, R()*3);
-    else b.velocity.set(R()*7+(i?1.5:-1.5), -3-Math.random()*3, R()*5-1);
+    const n=dice.length, R=()=>Math.random()-.5, rq=new THREE.Quaternion().random();
+    let px=0,pz=0; for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(halfX-1.1); pz=(Math.random()*2-1)*(halfZ-1.1);
+      if(starts.every(o=>Math.hypot(o[0]-px,o[1]-pz)>2.3)) break; }                      // random drop spot, kept apart from the other dice when there is room
+    starts.push([px,pz]);
+    b.position.set(px,TABLE_Y+dropH+i*1.1+Math.random()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
+    b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
+    b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40);
     world.addBody(b); return b;});
 }
@@ -993,7 +993,7 @@ renderer.setAnimationLoop(()=>{
   updateFx(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
   { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
-    const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
+    const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
