@@ -828,7 +828,7 @@ function randomize(noBuild){
   const relief=r()<.2;                                // face panel (and its patina) appears on 20% of randomizes
   state.numRaised=r()<.3; state.numPaint=state.numRaised?r()<.5:true;
   state.panel=relief?f(.08+r()*.14,2):0; state.panelDepth=f(.3+r()*.6,2); state.patina=relief&&r()<.7?f(.25+r()*.65,2):0;
-  state.filigree=r()<.4?pick(['scroll','beads','deco'],r):'none'; state.filiFill=r()<.8; state.enamelSame=r()<.5; state.enamel=hsl(r(),.55+r()*.3,.4+r()*.25);
+  state.filigree=r()<.2?pick(['scroll','beads','deco'],r):'none'; state.filiFill=r()<.8; state.enamelSame=r()<.5; state.enamel=hsl(r(),.55+r()*.3,.4+r()*.25);
   if(state.substrate==='epoxy'&&state.inclusion!=='custom'){ state.inclusion=r()<.45?pick(Object.keys(MODELS),r):'none'; state.inclSize=f(.45+r()*.35,2); state.inclTurn=Math.round((r()*2-1)*180); state.inclY=f((r()*2-1)*.25,2); }
   repaint(r);
   if(noBuild){ applyLook(); return; }
@@ -972,7 +972,7 @@ $('loadjson').onclick=()=>$('jsonfile').click();
 $('jsonfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ await loadDesign(JSON.parse(await f.text())); }catch(err){ alert('Could not load design: '+err.message); } };
 $('dname').onkeydown=e=>e.stopPropagation();
-$('rand').onclick=randomize;
+$('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>startRoll();
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
 addEventListener('keydown',e=>{
@@ -1285,6 +1285,11 @@ if(new URLSearchParams(location.search).get('test')==='flick'){ const ev=(t,id,x
 if(new URLSearchParams(location.search).get('test')==='launch') setTimeout(()=>{ startRoll(); for(let i=0;i<400;i++){ world.step(1/60); rollT+=1/60; } const before=bodies.map(b=>b.position.y.toFixed(2)).join(','); startRoll(true); console.log('LAUNCH before y',before,'after y',bodies.map(b=>b.position.y.toFixed(2)).join(','),'vy',bodies.map(b=>b.velocity.y.toFixed(1)).join(',')); startRoll(); console.log('DROP y',bodies.map(b=>b.position.y.toFixed(1)).join(',')); },500);
 if(new URLSearchParams(location.search).get('test')==='rr') setTimeout(async()=>{ startRoll(); state.randshape=false; const m0=dice[0].mat; randomize(); randomize(); await new Promise(r=>setTimeout(r,500));
   console.log('RR same shape: rolling',rolling,'mat replaced',dice[0].mat!==m0,'body/dice',bodies.length===dice.length); const sh=state.shape; state.randshape=true; for(let i=0;i<6&&state.shape===sh;i++) randomize(); await new Promise(r=>setTimeout(r,500)); console.log('RR shape changed: rolling',rolling,'shape',state.shape!==sh,'dice',dice.length,'bodies',bodies.length); },500);
+if(new URLSearchParams(location.search).get('test')==='btn') setTimeout(async()=>{ state.randshape=true; const g0=dice[0].geo; $('rand').click(); await new Promise(r=>setTimeout(r,800)); console.log('BTN geo replaced',dice[0].geo!==g0); },500);
+if(new URLSearchParams(location.search).get('test')==='rs') setTimeout(async()=>{ startRoll(); for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
+  console.log('RS settled',settled); const m0=dice[0].mat, g0=dice[0].geo; state.randshape=true; randomize(); await new Promise(r=>setTimeout(r,800));
+  console.log('RS after randomize: shape',state.shape,'rolling',rolling,'settled',settled,'mat replaced',dice[0].mat!==m0,'geo replaced',dice[0].geo!==g0,'inRig',dice[0].mesh.parent===rig,'filigree',state.filigree); },500);
+if(new URLSearchParams(location.search).get('test')==='rf') setTimeout(async()=>{ state.randshape=false; let n=0; do{ randomize(); n++; }while(state.filigree==='none'&&n<40); await new Promise(r=>setTimeout(r,800)); const c=dice[0].atlas.mask.image.getContext('2d').getImageData(0,0,dice[0].atlas.mask.image.width,dice[0].atlas.mask.image.height).data; let green=0; for(let i=0;i<c.length;i+=4) if(c[i+1]>128&&c[i]<64) green++; console.log('RF filigree',state.filigree,'after',n,'randomizes; enamel px',green,'panel',state.panel); },500);
 if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
   cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
   console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
