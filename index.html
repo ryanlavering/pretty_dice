@@ -10,6 +10,7 @@
   html{box-sizing:border-box} body{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
   #app{display:flex;height:100%}
+  @supports (height:100dvh){ html,body,#app{height:100dvh} }   /* follows the phone's collapsing address bar */
   aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
   body.full aside{display:none}
   h1{font:800 22px Cinzel,serif;letter-spacing:.08em;margin:0 0 2px;color:var(--accent)}
@@ -989,7 +990,8 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-function setFull(on,keep){ document.body.classList.toggle('full',on); $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
+function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
+function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ refit(); requestAnimationFrame(refit); setTimeout(refit,300); } $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
 $('layout').onclick=()=>setFull(!document.body.classList.contains('full'));
 { let on=false; try{ on=localStorage.getItem('prettydice.full')==='1'; }catch{} if(new URLSearchParams(location.search).get('full')) on=new URLSearchParams(location.search).get('full')==='1'; setFull(on,true); }
 $('info').innerHTML=ICON_I; $('info').onclick=()=>{ const on=$('hint').classList.toggle('show'); $('info').classList.toggle('on',on); $('info').setAttribute('aria-expanded',on); };
@@ -1044,6 +1046,7 @@ function spinBy(q){ if(isMulti()) dice.forEach(d=>d.mesh.quaternion.premultiply(
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
+addEventListener('resize',()=>{ resize(); }); addEventListener('orientationchange',()=>setTimeout(()=>{ resize(); window.scrollTo(0,0); },250)); if(window.visualViewport) visualViewport.addEventListener('resize',resize);
 
 /* ---------- physics roll (cannon-es) ---------- */
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
