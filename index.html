@@ -36,7 +36,7 @@
   .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
   #stage{flex:1;position:relative;min-width:0}
   #info,#layout{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
-  #layout{bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}
+  #info{left:auto;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}   /* info sits above the roll/showcase toggle; the layout toggle is bottom-left */
   #info:hover,#layout:hover,#info.on{border-color:var(--accent);color:var(--accent)} #info svg,#layout svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
@@ -633,7 +633,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
@@ -988,7 +988,7 @@ function loadDesign(d){
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
-  ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg>';
+  ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function setFull(on,keep){ document.body.classList.toggle('full',on); $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
 $('layout').onclick=()=>setFull(!document.body.classList.contains('full'));
 { let on=false; try{ on=localStorage.getItem('prettydice.full')==='1'; }catch{} if(new URLSearchParams(location.search).get('full')) on=new URLSearchParams(location.search).get('full')==='1'; setFull(on,true); }
@@ -1011,9 +1011,12 @@ $('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
 const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
 const cv=renderer.domElement;
-const orbit={az:0,el:0}; if(new URLSearchParams(location.search).get('zoom')) state.zoom=+new URLSearchParams(location.search).get('zoom');; let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
+const views={show:{az:0,el:0}, roll:{az:0,el:0}};   // each view keeps its own camera angle and zoom, so repositioning the roll view leaves the showcase alone
+const orbit={ get az(){return (rolling?views.roll:views.show).az;}, set az(v){(rolling?views.roll:views.show).az=v;}, get el(){return (rolling?views.roll:views.show).el;}, set el(v){(rolling?views.roll:views.show).el=v;} };
+const getZoom=()=>rolling?state.rollZoom:state.zoom, setZoom=z=>{ if(rolling) state.rollZoom=z; else state.zoom=z; };
+if(new URLSearchParams(location.search).get('zoom')) state.zoom=state.rollZoom=+new URLSearchParams(location.search).get('zoom'); let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-cv.addEventListener('dblclick',()=>{orbit.az=0; orbit.el=0; state.zoom=1; save();});
+cv.addEventListener('dblclick',()=>{orbit.az=0; orbit.el=0; setZoom(1); save();});   // resets the view you are in
 const ptrs=new Map(); let pinch=null;       // active touch/mouse pointers: one finger turns the dice, two fingers pinch-zoom and orbit
 const pinchState=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, m:[(a[0]+b[0])/2,(a[1]+b[1])/2]}; };
 cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY]); cv.setPointerCapture(e.pointerId);
@@ -1028,7 +1031,7 @@ cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',end
 cv.addEventListener('pointermove',e=>{
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,[e.clientX,e.clientY]);
   if(ptrs.size>=2&&pinch){ const p=pinchState();
-    state.zoom=THREE.MathUtils.clamp(state.zoom*pinch.d/p.d,.35,2.4);                       // fingers apart -> closer
+    setZoom(THREE.MathUtils.clamp(getZoom()*pinch.d/p.d,.35,2.4));                       // fingers apart -> closer
     orbit.az-=(p.m[0]-pinch.m[0])*.006; orbit.el=THREE.MathUtils.clamp(orbit.el+(p.m[1]-pinch.m[1])*.006,-1.4,1.4); pinch=p; save(); return; }
   if(orbiting){ const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY]; orbit.az-=dx*.006; orbit.el=THREE.MathUtils.clamp(orbit.el+dy*.006,-1.4,1.4); return; }
   if(!dragging) return;
@@ -1036,7 +1039,7 @@ cv.addEventListener('pointermove',e=>{
   const ax=new THREE.Vector3(dy,dx,0), len=ax.length(); if(!len) return;
   spinBy(new THREE.Quaternion().setFromAxisAngle(ax.normalize(),len*.012));
   angVel.copy(ax).multiplyScalar(len*.9); });
-cv.addEventListener('wheel',e=>{e.preventDefault(); state.zoom=THREE.MathUtils.clamp(state.zoom*(1+e.deltaY*.001),.35,2.4); save();},{passive:false});
+cv.addEventListener('wheel',e=>{e.preventDefault(); setZoom(THREE.MathUtils.clamp(getZoom()*(1+e.deltaY*.001),.35,2.4)); save();},{passive:false});
 function spinBy(q){ if(isMulti()) dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
@@ -1044,7 +1047,7 @@ new ResizeObserver(resize).observe(stage); resize();
 
 /* ---------- physics roll (cannon-es) ---------- */
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
-const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
+const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
@@ -1053,12 +1056,10 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
   rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
-  const nD=dice.length, k=state.shape==='set7'?2.25:nD>2?1.5+Math.max(0,nD-7)*.15:1;   // Standard 7 has big dice (d20, d%, d10 pair): it needs a roomier tray than seven small dice
-  ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k;
-  const K=k*Math.max(1,state.zoom);   // zoomed out: the tray grows with the view, so it keeps filling the screen instead of shrinking to a small patch
-  table.scale.setScalar(K);
-  Object.assign(key.shadow.camera,{left:-7.3*K,right:7.3*K,top:7.3*K,bottom:-7.3*K,far:20+10*K}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
-  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z)*state.zoom, halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,nD>2?2.2*K:1.4,3.6*K), halfX=1.9*K;
+  const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
+  const halfX=Math.max(1.9,Math.sqrt(4*foot/4/1.5)), halfZ=Math.max(2.8,1.5*halfX);   // the tray is sized by how many (and how big) the dice are, not by the screen
+  const sc=Math.max(1,halfZ/3.6); table.scale.setScalar(sc);
+  Object.assign(key.shadow.camera,{left:-7.3*sc,right:7.3*sc,top:7.3*sc,bottom:-7.3*sc,far:20+10*sc}); key.shadow.camera.updateProjectionMatrix();
   rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
@@ -1066,7 +1067,7 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,material:matMat,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
-  const starts=[], dropH=3.5+5*state.zoom;   // drop height above the table grows as the camera zooms out
+  const starts=[], dropH=3.5+5*state.rollZoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
     const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:1,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
@@ -1230,7 +1231,7 @@ function rerollLeans(){                       // the leaning dice vanish from th
   const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; dropIn(idx);
 }
 function dropIn(idx){
-  const dropH=3.5+5*state.zoom, R=()=>Math.random()-.5;
+  const dropH=3.5+5*state.rollZoom, R=()=>Math.random()-.5;
   idx.forEach((i,k)=>{ const b=bodies[i]; let px=0,pz=0;
     for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(rollHalf.x-1.1); pz=(Math.random()*2-1)*(rollHalf.z-1.1); if(bodies.every((o,j)=>j===i||Math.hypot(o.position.x-px,o.position.z-pz)>2.3)) break; }
     const rq=new THREE.Quaternion().random(); b.position.set(px,TABLE_Y+dropH+k*1.1+Math.random()*2,pz); b.quaternion.set(rq.x,rq.y,rq.z,rq.w);
@@ -1292,9 +1293,11 @@ renderer.setAnimationLoop(()=>{
   }
   updateFx(dt); updateRumble(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
-  { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
-    const fit=1+(Math.max(1,rollHalf.z/(.8*Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect*Math.hypot(ROLL_CAM.y,ROLL_CAM.z)*state.zoom))-1)*camBlend;   // narrower stage: pull back so the whole tray stays in view
-    const r=off.length()*fit, th=Math.atan2(off.x,off.z)+orbit.az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
+  { const tgt=new THREE.Vector3(0,-camBlend,0), L=THREE.MathUtils.lerp, tan=Math.tan(THREE.MathUtils.degToRad(16));
+    const rd=Math.max(9.76,(rollHalf.z+.5)/(tan*camera.aspect),(rollHalf.x*ROLL_DIR.y+1)/tan)*state.rollZoom;   // default roll distance keeps the whole tray in view for this stage shape; zoom is the user's multiplier on top
+    const showZ=Math.max(baseZ,needHalfW/(tan*camera.aspect))*state.zoom;
+    const off=new THREE.Vector3(0,camBlend*rd*ROLL_DIR.y,L(showZ,rd*ROLL_DIR.z,camBlend)).sub(tgt);
+    const r=off.length(), az=L(views.show.az,views.roll.az,camBlend), el=L(views.show.el,views.roll.el,camBlend), th=Math.atan2(off.x,off.z)+az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
@@ -1331,6 +1334,7 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()
     if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
+if(new URLSearchParams(location.search).get('test')==='views'){ startRoll(); await new Promise(r=>setTimeout(r,500)); const z0=[state.zoom,state.rollZoom]; cv.dispatchEvent(new WheelEvent('wheel',{deltaY:-300,cancelable:true})); orbit.az=1.1; orbit.el=.3; const inRoll=[state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.roll.az,views.show.az]; exitRoll(); await new Promise(r=>setTimeout(r,300)); cv.dispatchEvent(new WheelEvent('wheel',{deltaY:200,cancelable:true})); console.log('VIEWS before',z0.join('/'),'rolled',inRoll.join('/'),'showcase',state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.show.az,views.roll.az); }
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
   randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
