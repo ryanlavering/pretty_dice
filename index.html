@@ -1091,8 +1091,18 @@ function tiltInfo(i){                                   // how far die i is from
   const v0=d.verts[bf.idx[0]], h=Math.abs(bf.n.x*v0.x+bf.n.y*v0.y+bf.n.z*v0.z); d.r=d.r||Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)));
   return {flat:Math.abs(bv), n:best, four, lift:(b.position.y-TABLE_Y-h)/d.r};   // lift: how far the die's centre sits above where it would if lying on the mat (> ~.1 = propped on another die)
 }
-function assistSettle(dt){          // tracks how long each die has been nearly still (restCheck uses it). Leaning/propped dice are not nudged: finishRoll re-rolls them
-  bodies.forEach(b=>{ const slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; b.slowT=slow?(b.slowT||0)+dt:0; });
+function assistSettle(dt){          // dice that stop while leaning on a neighbour get a small tip-over nudge instead of waiting for the retry cycle
+  bodies.forEach((b,i)=>{
+    const slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; b.slowT=slow?(b.slowT||0)+dt:0; b.cool=Math.max(0,(b.cool||0)-dt);
+    if((b.slowT<.25&&!(rollT>8&&tiltInfo(i).lift>.1))||b.cool>0) return;   // after 8 s even a jittering die that is still propped on another gets kicked
+    const t=tiltInfo(i), stacked=t.lift>.1, lean=t.flat<.985&&!stacked;
+    if(lean) b.fails=(b.fails||0)+1;
+    if(stacked||(lean&&b.fails>=2)){          // stacked, or already nudged once without success: hop away from the neighbours it is leaning on
+      b.fails=0; let ox=0,oz=0; bodies.forEach((o,j)=>{ if(j!==i){ const dx=b.position.x-o.position.x, dz=b.position.z-o.position.z, dd=Math.hypot(dx,dz)||1; if(dd<2.4){ ox+=dx/dd; oz+=dz/dd; } } });
+      if(!ox&&!oz){ ox=Math.random()-.5; oz=Math.random()-.5; } b.wakeUp(); b.velocity.set(ox*1.8,2.2,oz*1.8); b.cool=.6; }
+    else if(lean){ const target=new THREE.Vector3(0,t.four?-1:1,0), axis=new THREE.Vector3().crossVectors(t.n,target); const ang=Math.asin(Math.min(1,axis.length()));
+      if(axis.lengthSq()>1e-8){ axis.normalize().multiplyScalar(4+ang*8); b.wakeUp(); b.angularVelocity.vadd(new CANNON.Vec3(axis.x,axis.y,axis.z),b.angularVelocity); b.cool=.35; } }
+  });
 }
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
   return bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);
@@ -1102,8 +1112,7 @@ function finishRoll(){ restT=0;
   const flatOK=rollT>3.5?.95:.985;   // after a few seconds, a die a few degrees off flat is still accepted -- but never one propped on another die
   const bad=bodies.map((b,i)=>{ const t=tiltInfo(i); return t.lift>.1||t.flat<flatOK||b.position.y>TABLE_Y+1.45; });   // propped/piled on another die, or cocked (leaning)
   if(bad.some(Boolean) && retries<12 && rollT<20){ retries++;
-    const again=bodies.map((b,i)=>bad[i]||bodies.some((o,j)=>bad[j]&&j!==i&&Math.hypot(b.position.x-o.position.x,b.position.z-o.position.z)<(dice[i].r+dice[j].r)*.9));   // a propped die is re-rolled along with the dice it rests on / against
-    bodies.forEach((b,i)=>{ if(!again[i]) return; b.wakeUp(); b.velocity.set(-b.position.x*1.2+(Math.random()-.5)*5,5,-b.position.z*1.2+(Math.random()-.5)*4);
+    bodies.forEach((b,i)=>{ if(!bad[i]) return; b.wakeUp(); b.velocity.set(-b.position.x*1.2+(Math.random()-.5)*5,5,-b.position.z*1.2+(Math.random()-.5)*4);
       b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14); }); return; }
   settled=true;
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
