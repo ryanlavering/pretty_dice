@@ -1,10 +1,10 @@
 ---
 id: PD-92
 title: Roll tray scales with zoom-out and Standard 7 gets a roomier tray
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T22:05:00Z'
-updated_date: '2026-11-10T22:23:00Z'
+updated_date: '2026-11-10T22:38:00Z'
 labels:
   - bug
   - physics
