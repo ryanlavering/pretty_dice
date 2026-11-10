@@ -980,18 +980,22 @@ function tone(ctx,out,t,type,f0,f1,gain,dur,delay=0){ const o=ctx.createOscillat
   g.gain.setValueAtTime(.0001,t+delay); g.gain.linearRampToValueAtTime(gain,t+delay+.006); g.gain.exponentialRampToValueAtTime(.0004,t+delay+dur); o.connect(g); g.connect(out); o.start(t+delay); o.stop(t+delay+dur+.05); }
 function onImpact(speed,kind){
   sfx.count++; if(!audioReady()||speed<.8) return; const now=performance.now(); if(now-sfx.last<10) return; sfx.last=now;
-  const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', heavy=sub==='marble'||sub==='epoxy', dice=kind==='dice', r=()=>.85+Math.random()*.3;
-  voice(.2,(ctx,out,t)=>{
-    if(dice){                                                    // die on die: a dry, quick clack (two tiny strikes a few ms apart)
+  const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', stone=sub==='marble', heavy=sub==='epoxy', dice=kind==='dice', r=()=>.85+Math.random()*.3;
+  voice(.3,(ctx,out,t)=>{
+    if(stone){                                                   // stone: very crisp, hard and short
+      if(dice){ noiseHit(ctx,out,t,5200*r(),3.2,g*.95,.014); noiseHit(ctx,out,t+.004*r(),3400*r(),2.6,g*.5,.02); tone(ctx,out,t,'square',2600*r(),1500,g*.05,.012); }
+      else { noiseHit(ctx,out,t,4300*r(),2.8,g*.7,.016); noiseHit(ctx,out,t,420*r(),.7,g*.22,.06,'lowpass'); tone(ctx,out,t,'sine',105*r(),52,g*.16,.06); }
+    } else if(dice){                                             // die on die: a dry, quick clack (two tiny strikes a few ms apart)
       noiseHit(ctx,out,t,(heavy?2600:3600)*r(),2.2,g*.85,.022);
       noiseHit(ctx,out,t+.006*r(),(heavy?1800:2500)*r(),1.8,g*.5,.03);
       tone(ctx,out,t,'triangle',1500*r(),700,g*.07,.025);
     } else {                                                     // die on table: short clack on top, muffled low thud underneath
       noiseHit(ctx,out,t,(heavy?1700:2300)*r(),1.6,g*.55,.03);
-      noiseHit(ctx,out,t,380*r(),.7,g*.28,.07,'lowpass');
-      tone(ctx,out,t,'sine',95*r()*(heavy?.85:1),48,g*.2,.07);
+      noiseHit(ctx,out,t,(metal?260:380)*r(),.7,g*(metal?.4:.28),metal?.1:.07,'lowpass');
+      tone(ctx,out,t,'sine',(metal?72:95)*r()*(heavy?.85:1),metal?36:48,g*(metal?.34:.2),metal?.12:.07);   // metal: deeper, weightier
     }
-    if(metal){ for(let i=0;i<3;i++) noiseHit(ctx,out,t+Math.random()*.004,(4200+Math.random()*3800),9+Math.random()*10,g*.16,.035+Math.random()*.03); }   // brief, un-pitched metallic tick (no sustained ring)
+    if(metal){ for(let i=0;i<2;i++) noiseHit(ctx,out,t+Math.random()*.004,(4200+Math.random()*3800),9+Math.random()*10,g*.14,.03+Math.random()*.025);
+      const f=2300*r(); tone(ctx,out,t,'sine',f,f*.98,g*.05,.09); tone(ctx,out,t,'sine',f*2.41,f*2.38,g*.025,.06); }       // a tiny, quickly-damped ring in the clack
   });
 }
 function playChime(j){ if(!audioReady()) return; const m=Math.pow(2,j*2/12);
