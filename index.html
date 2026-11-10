@@ -51,6 +51,16 @@
 </script>
 </head>
 <body>
+<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#0e1015;color:#8b90a0;font:14px Inter,sans-serif;z-index:50;text-align:center;padding:24px">Loading Pretty Dice…</div>
+<script>
+(function(){ var b=document.getElementById('boot'), shown=false;
+  function show(msg){ shown=true; b.style.display='grid'; b.innerHTML='<div><div style="color:#e2b85c;font-size:18px;margin-bottom:10px">Pretty Dice could not start</div><div style="max-width:560px">'+msg+'</div><p><a style="color:#e2b85c" href="?reset=1">Reset saved settings and reload</a></p></div>'; }
+  window.__bootDone=function(){ b.style.display='none'; };
+  window.addEventListener('error',function(e){ if(!window.__ready) show('Error: '+(e.message||'unknown')+(e.lineno?' (line '+e.lineno+')':'')); });
+  window.addEventListener('unhandledrejection',function(e){ if(!window.__ready) show('Error: '+((e.reason&&e.reason.message)||e.reason)); });
+  setTimeout(function(){ if(!window.__ready&&!shown) show('Still loading after 10 s. three.js and cannon-es load from cdn.jsdelivr.net, so check the network connection, then reload.'); },10000);
+})();
+</script>
 <div id="app">
   <aside>
     <h1>PRETTY DICE</h1>
@@ -498,7 +508,13 @@ const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', pa
   numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
-try{ Object.assign(state, JSON.parse(localStorage.getItem(STORE)||'{}')); }catch{}
+if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
+function history_replace_clean(){ try{ window.history.replaceState(null,'',location.pathname); }catch{} }
+try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
+  for(const k of Object.keys(DEFAULTS)) if(k in saved && typeof saved[k]===typeof DEFAULTS[k] && saved[k]!==null) state[k]=saved[k];   // ignore wrongly-typed or corrupt values
+  if(!Array.isArray(state.off)||state.off.length!==3) state.off=[...DEFAULTS.off];
+  if(Array.isArray(state.palettes)) state.palettes={};
+}catch{}
 function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} }
 const palKey=()=>state.substrate==='marble'?'marble:'+state.stone:state.substrate;      // each stone type keeps its own palette
 function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palettes[k]=SUBSTRATES[state.substrate].pal(r||mulberry32(state.seed)); state.colors=state.palettes[k]; }
@@ -908,6 +924,7 @@ if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: ra
   document.querySelector(`#subs button[data-id=${other}]`).click(); document.querySelector(`#subs button[data-id=${sub}]`).click();
   console.log('SUBS_STABLE',before===JSON.stringify(state.colors),sub,other); }
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
+window.__ready=true; window.__bootDone&&window.__bootDone();
 window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
 </script>
 </body>
