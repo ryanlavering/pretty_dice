@@ -1,37 +1,98 @@
 # Pretty Dice
 
-I want to see pretty dice.
+I like to play with pretty dice.
 
-This is a project to generate random DnD dice "renders" using a synthetic 3d texture application.
+Pretty Dice generates random polyhedral "DnD" dice renders using a synthetic 3D texture shader, in the browser. Design a die, randomize one, roll it on a table, and export an image or a design file.
 
-The user should be able to choose any of the standard 7 DnD dice, as well as popular variant polyhedral shapes.
+- **Shapes**: the standard 7 (d4, d6, d8, d10, d%, d12, d20) plus d14, d16 and the rhombic d12.
+- **Numbers**: inset or embossed, with choice of font, size, rotation, depth and edge softness.
+- **Substrates**: solid or swirled plastic, metallic plastic, metal, clear/dyed epoxy and marble.
+- **Paint**: auto-picked for contrast and harmony with the base, random, or custom.
 
-Numbers on the dice should be rendered inset / embossed.
+## Quick start
 
-Dice paint color is randomized or chosen with respect to the dice base.
+No install or build step. Serve the folder and open it:
 
-Dice base is chosen from a pool of common dice substrates (single color plastic, swirled, metalic plastic, metal, clear/dyed expoxy, etc.).
+```sh
+python3 -m http.server 8123
+# open http://localhost:8123/index.html
+```
+
+URL parameters preselect a look, e.g. `?shape=d20&sub=swirl` (also `?radius=`).
+
+Online, the page loads three.js, cannon-es and fonts from cdn.jsdelivr.net and Google Fonts. If the CDN can't be reached (3 s check) it falls back to the local `vendor/` folder; `?libs=local` or `?libs=cdn` force one. For a single double-clickable file with no network needed, run `python3 scripts/build-static.py` and open `dist/pretty-dice-offline.html`.
+
+# Using
+
+## Designing Dice
+
+- **Shape / Generate**: pick a die, or generate a new one.
+- **Randomize** (or press Space): rerolls the look. **Undo / Redo** (Ctrl+Z, Ctrl+Y) step through changes, including randomizes.
+- **Substrate, Colors, Swirl scale, Finish**: control the base material, from matte to gloss.
+- **Numbers**: font, size, rotation, depth, edge softness. The d4 can show corner-tip or face numbers; the d6 can use numbers or pips.
+- **Edge radius**: how rounded the edges and corners are.
+- **Paint mode**: Auto, Random or Custom.
+- **Relief & patina**: recessed face panels with a sloped rim, raised or inset numbers, darker patina in recesses, and an Antique relief preset.
+- **Filigree**: scroll, beaded or art-deco etching filled with enamel (not available on d4 corner-tip dice).
+- **Epoxy**: clarity, bubbles, glitter, and an **inclusion**, either a built-in rubber duck or your own glb/obj/stl miniature cast inside the die.
+- **Reset to defaults** clears everything.
+
+Drag to orbit, scroll or pinch to zoom, double-click to reset the view.
+
+## Rolling Dice
+
+Press **Roll** (or `r`) to throw the die onto a table using rigid-body physics (cannon-es), with roll and impact sounds (volume is adjustable). Click or flick the table to roll again. Natural 20s and natural 1s get their own effects. **Showcase** switches back to the spinning display view; spin speed is adjustable.
+
+### Rolling Multiple Dice
+
+- **Standard 7** shows and rolls the full set together.
+- **Custom set** takes dice notation such as `4d6+2d10+3`, or use the steppers. It supports d4 to d20, d14, d16, d%, a +/- modifier and up to 24 dice, and shows the total with a per-term breakdown.
+
+## Desktop vs. Mobile
+
+The layout fits narrow windows. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
+
+## Saving and Loading
+
+- **Settings** persist automatically in localStorage.
+- **Export** the current view as PNG or JPG at current size, 1024, 2048 or 4096 px.
+- **Save design / Load design** writes and reads a versioned JSON file (with a design name). Format: [docs/design/design-format.md](docs/design/design-format.md).
+
+## Other Features
+
+- Keyboard: Space randomizes, `r` rolls, Ctrl+Z / Ctrl+Y undo and redo.
+- Opposite faces always sum to N+1.
 
 # Design
 
-TBD
-# Design (initial prototype)
+`index.html` is a single-file, zero-build Three.js app.
 
-`index.html` is a zero-build Three.js prototype (serve with `python3 -m http.server`, open `/index.html`; `?shape=d20&sub=swirl` preselects).
+- **Shapes**: vertex set -> convex hull -> coplanar faces merged. Adding a shape means adding a vertex list.
+- **Numbers**: per-face UV atlas; a bump map gives the inset, a mask paints the recess.
+- **Substrates**: one physical material with an injected 3D noise shader (domain-warped swirl, marble veins, metal flakes); clear epoxy uses transmission.
+- **Edges**: real rounded geometry (faces inset by the radius, cylindrical edge strips, spherical vertex patches).
+- **Physics**: cannon-es rigid bodies on a table.
+- **State**: one settings object, persisted to localStorage (`prettydice.v1`) and serialised to the design JSON.
+- **Libraries**: `vendor/` holds local copies of three.js, cannon-es and fonts ([vendor/README.md](vendor/README.md)). `scripts/build-static.py` inlines everything into `dist/` (git-ignored); keep the `<!--BOOTSTRAP-->` markers in `index.html`.
 
-- **Shapes**: vertex set -> convex hull -> coplanar faces merged. d4/d6/d8/d10/d%/d12/d20 plus d14, d16, rhombic d12. Adding a shape = adding a vertex list. Opposite faces sum to N+1.
-- **Numbers**: per-face UV atlas; a bump map gives the inset, a mask paints the recess. Paint is auto-picked for contrast against the base (overridable).
-- **Substrates**: one physical material with an injected 3D noise shader (domain-warped swirl, marble veins, metal flakes). Solid, swirl, metallic plastic, metal, clear epoxy (transmission), marble.
-- **Edges**: real rounded geometry (faces inset by the radius, cylindrical edge strips, spherical vertex patches); radius is adjustable.
-- **Paint**: Auto (contrast + harmony), Random, or Custom.
-- **Export**: PNG/JPG at current view, 1024, 2048 or 4096 px; save/load design as JSON.
-- **Roll**: cannon-es rigid-body physics on a table; **Standard 7** view shows the full set.
-- **Relief & filigree**: recessed face panels with a sloped rim, raised or inset numbers, darker/duller patina in recesses, and scroll/beaded/art-deco filigree etched into each face and filled with enamel (not on d4 corner-tip dice).
-- **Epoxy inclusion**: a built-in rubber duck or your own glb/obj/stl miniature cast inside clear epoxy.
-- **Settings** persist in localStorage.
+# Development
 
-**Running it.** `index.html` is the whole app. Online it loads three.js, cannon-es and the fonts from cdn.jsdelivr.net and Google Fonts. If the CDN cannot be reached (3 s check) it falls back to the local `vendor/` folder (serve over http, e.g. `python3 -m http.server`); `?libs=local` / `?libs=cdn` force one. For a fully static, no-network, double-clickable copy run `python3 scripts/build-static.py` and use `dist/pretty-dice-offline.html`.
+- Work is tracked in `backlog/` using [backlog.md](https://github.com/MrLesk/Backlog.md) (task prefix `pd`; `backlog board`).
+- Headless test hooks: `?test=roll`, `?test=export`, `?test=json`, `?test=shake`.
+- Clear localStorage when testing defaults.
+- To test offline, block the CDNs, e.g. with Chrome's `--host-resolver-rules="MAP cdn.jsdelivr.net ~NOTFOUND, MAP fonts.googleapis.com ~NOTFOUND, MAP fonts.gstatic.com ~NOTFOUND"`.
 
-Design file format: [docs/design/design-format.md](docs/design/design-format.md). Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md). Work is tracked in `backlog/` (backlog.md; `backlog board`).
+# Further reading
 
-Known gaps: epoxy lacks internal depth/inclusions, no d24/d30.
+- Design file format: [docs/design/design-format.md](docs/design/design-format.md)
+- Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md)
+
+# Known gaps
+
+- Epoxy lacks internal depth.
+- No d24 or d30 yet.
+- No manufacturer-ready export (STL/STEP) yet.
+
+# License
+
+Apache License 2.0. See [LICENSE](LICENSE). Bundled libraries and fonts keep their own licenses (MIT, SIL OFL); see [vendor/README.md](vendor/README.md).
