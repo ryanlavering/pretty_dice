@@ -911,7 +911,7 @@ $('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repain
 /* shake to roll: needs a phone with motion sensors in a secure (https) page; iOS also asks permission on the tap */
 let shakeOn=false, shakeLast=0;
 function onShake(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return; const g=Math.hypot(a.x,a.y,a.z), now=performance.now();
-  if(g>26&&now-shakeLast>1500&&!rolling){ shakeLast=now; startRoll(); } }
+  if(g>26&&now-shakeLast>1500&&true){ shakeLast=now; startRoll(true); } }
 async function setShake(on){
   if(on&&!shakeOn){ try{ if(typeof DeviceMotionEvent.requestPermission==='function'&&await DeviceMotionEvent.requestPermission()!=='granted') on=false; }catch{ on=false; } }
   if(on&&!shakeOn){ addEventListener('devicemotion',onShake); audioInit(); } else if(!on&&shakeOn) removeEventListener('devicemotion',onShake);
@@ -991,7 +991,7 @@ cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY
   flick=rolling&&e.button===0?{x:e.clientX,y:e.clientY,t:performance.now()}:null;
   if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
 let flick=null;           // roll view: a quick one-finger swipe throws the dice again
-const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll();
+const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll(true);
   ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
@@ -1014,8 +1014,9 @@ new ResizeObserver(resize).observe(stage); resize();
 /* ---------- physics roll (cannon-es) ---------- */
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, camBlend=0;
 const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
-function startRoll(){
+function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; audioInit();
+  const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
   clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
@@ -1036,10 +1037,14 @@ function startRoll(){
     let px=0,pz=0; for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(halfX-1.1); pz=(Math.random()*2-1)*(halfZ-1.1);
       if(starts.every(o=>Math.hypot(o[0]-px,o[1]-pz)>2.3)) break; }                      // random drop spot, kept apart from the other dice when there is room
     starts.push([px,pz]);
+    if(prev){                                                                              // thrown up off the mat from where it lay
+      const pp=prev[i]; b.position.set(pp.p.x,pp.p.y+.25,pp.p.z); b.quaternion.copy(pp.q); d.mesh.quaternion.set(pp.q.x,pp.q.y,pp.q.z,pp.q.w);
+      b.velocity.set(-pp.p.x*.5+R()*6,13+Math.random()*7,-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
+    } else {
     b.position.set(px,TABLE_Y+dropH+i*1.1+Math.random()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4);
-    b.angularVelocity.set(R()*40,R()*40,R()*40);
+    b.angularVelocity.set(R()*40,R()*40,R()*40); }
     b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; onImpact(Math.abs(e.contact.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table'); });   // one sound per pair
     world.addBody(b); return b;});
 }
@@ -1272,6 +1277,7 @@ if(new URLSearchParams(location.search).get('test')==='rand'){ const seen={}; le
 if(new URLSearchParams(location.search).get('test')==='shake'){ await setShake(true); const fire=g=>dispatchEvent(new DeviceMotionEvent('devicemotion',{accelerationIncludingGravity:{x:g,y:0,z:0}})); fire(12); console.log('SHAKE soft',rolling); fire(35); console.log('SHAKE hard',rolling); }
 if(new URLSearchParams(location.search).get('test')==='flick'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); cv.setPointerCapture=()=>{};
   startRoll(); let n=0; startRoll=()=>{n++;}; ev('pointerdown',1,100,300); ev('pointerup',1,100,300); const tap=n; ev('pointerdown',2,100,300); ev('pointermove',2,100,150); ev('pointerup',2,100,150); console.log('FLICK tap rolls:',tap,'swipe rolls:',n-tap); }
+if(new URLSearchParams(location.search).get('test')==='launch') setTimeout(()=>{ startRoll(); for(let i=0;i<400;i++){ world.step(1/60); rollT+=1/60; } const before=bodies.map(b=>b.position.y.toFixed(2)).join(','); startRoll(true); console.log('LAUNCH before y',before,'after y',bodies.map(b=>b.position.y.toFixed(2)).join(','),'vy',bodies.map(b=>b.velocity.y.toFixed(1)).join(',')); startRoll(); console.log('DROP y',bodies.map(b=>b.position.y.toFixed(1)).join(',')); },500);
 if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
   cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
   console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
