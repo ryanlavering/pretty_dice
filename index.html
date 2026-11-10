@@ -521,7 +521,7 @@ function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palett
 function setSubstrate(id,r){ state.substrate=id; ensurePalette(r); }
 function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }
 if(!STONES[state.stone]) state.stone='marble';
-if(state.inclusion==='custom'||(state.inclusion!=='none'&&!MODELS[state.inclusion])) state.inclusion='none';   // custom models are not persisted
+if(state.inclusion==='custom') state.inclusion='none';   // custom models are not persisted (unknown built-in names are checked once MODELS exists, at startup)
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
 let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
@@ -952,6 +952,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
+if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
 { const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
