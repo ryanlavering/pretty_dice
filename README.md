@@ -29,6 +29,8 @@ TBD
 - **Epoxy inclusion**: a built-in rubber duck or your own glb/obj/stl miniature cast inside clear epoxy.
 - **Settings** persist in localStorage.
 
+**Running it.** `index.html` is the whole app. Online it loads three.js, cannon-es and the fonts from cdn.jsdelivr.net and Google Fonts. If the CDN cannot be reached (3 s check) it falls back to the local `vendor/` folder (serve over http, e.g. `python3 -m http.server`); `?libs=local` / `?libs=cdn` force one. For a fully static, no-network, double-clickable copy run `python3 scripts/build-static.py` and use `dist/pretty-dice-offline.html`.
+
 Design file format: [docs/design/design-format.md](docs/design/design-format.md). Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md). Work is tracked in `backlog/` (backlog.md; `backlog board`).
 
 Known gaps: epoxy lacks internal depth/inclusions, no d24/d30.
