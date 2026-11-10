@@ -4,7 +4,7 @@ title: Detect and call out leaning rolls
 status: Needs Review
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-10T18:55:00Z'
+updated_date: '2026-11-10T19:34:00Z'
 labels:
   - feature
   - physics
@@ -36,4 +36,6 @@ Implemented: tiltInfo now reports lift (centre height above lying-on-mat height)
 2026-11-10 (v3, owner-directed): no hopping and no auto re-roll. Dice settle on their own; leaning/propped dice (lift>.1, flat<.95, or stacked) get a pulsing orange ring on the mat, the result panel shows '⚠ n dice are leaning' and a 'Re-roll leaning' button. The button makes only the leaning dice vanish and drop in again from above (others stay put); repeat until none lean. assistSettle now only tracks stillness; restCheck gives up waiting after 12 s. Headless (10d4, 3d4+8d8, 12d6): leans flagged in ~70% of big rolls, cleared in 1-6 re-rolls. Test hook: ?test=roll&n=<notation>[&norel=1]. Per-die tap and Zen mode remain PD-63.
 
 2026-11-10: lean rings lie on the mat under all dice (depth-tested). Leaning dice with no other die in reach (bounding-sphere test) are woken with a tiny spin so gravity finishes the job (up to 5 tries); sleep thresholds tightened (speed .1, time 1 s) to stop dice falling asleep balanced on an edge.
+
+2026-11-10: (1) lean rings now sit above the mat (torus, y=floor+tube) and pulse 0.64-1.0 opacity; (2) rings/note/button refresh live: a die that settles after the rings go up loses its ring, and the note+button clear with the last lean; (3) camera far plane 50->600 (near .1->.3) - zoomed-out view clipped the back of the stage; (4) single die leaning on nothing: physics solver can hold a die balanced on an edge (~10% of d4 rolls, ~3% d20, 0% d6; not a wall - widening the tray changed nothing). Lone leaners get 2 gravity-direction tip attempts, then drop in again from above automatically (0/40 stuck in headless d4 runs).
 <!-- SECTION:NOTES:END -->

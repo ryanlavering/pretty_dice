@@ -4,8 +4,10 @@ title: Attack Roll + Damage
 status: To Do
 assignee: []
 created_date: '2026-11-10T18:14:00Z'
+updated_date: '2026-11-10T19:23:00Z'
 labels: []
 dependencies: []
+priority: low
 ordinal: 90000
 ---
 
