@@ -35,6 +35,8 @@
   #stage canvas:active{cursor:grabbing}
   #result{position:absolute;top:46px;left:0;right:0;text-align:center;font:800 54px Cinzel,serif;color:var(--accent);opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 2px 18px #000}
   #result.on{opacity:1}
+  #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
+  #result.fumble{color:#8c919e;text-shadow:0 2px 18px #000}
   #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
@@ -387,8 +389,9 @@ vec3 volume(vec3 p, vec3 v, vec3 n, out vec3 glow){
 }`;
 function makeMaterial(atlas){
   const m=new THREE.MeshPhysicalMaterial({color:0xffffff, bumpMap:atlas.bump, bumpScale:2.2});
+  m.userData.fx={uGlow:{value:0},uGray:{value:0},uGlowCol:{value:new THREE.Color(0xffcf4a)}};   // nat 20 glow / nat 1 desaturation
   m.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, U, {uMask:{value:atlas.mask}});
+    Object.assign(sh.uniforms, U, m.userData.fx, {uMask:{value:atlas.mask}});
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>',`#include <common>
         attribute vec4 cellB; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;`)
@@ -396,7 +399,7 @@ function makeMaterial(atlas){
         vOP=position; vPUv=uv; vCell=cellB; vView=position-(inverse(modelMatrix)*vec4(cameraPosition,1.)).xyz; vONrm=normal;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>',`#include <common>
-        uniform vec3 uC1,uC2,uC3,uPaint,uOff; uniform int uMode, uStone; uniform float uScale,uFlake,uBrush,uAccent; uniform sampler2D uMask;
+        uniform vec3 uC1,uC2,uC3,uPaint,uOff,uGlowCol; uniform float uGlow,uGray; uniform int uMode, uStone; uniform float uScale,uFlake,uBrush,uAccent; uniform sampler2D uMask;
         varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
         uniform float uGlitter,uBubbles,uTint;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
@@ -409,7 +412,9 @@ function makeMaterial(atlas){
         vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? (gl_FrontFacing ? volume(vOP,vView,vONrm,volGlow) : uC1) : pattern(vOP*uScale+uOff);
         // epoxy: the colour only tints what is seen through the die (transmission multiplies by diffuse), so keep it light
         diffuseColor.rgb = mix(uMode==3 ? mix(vec3(1.),baseCol,uTint) : baseCol, uPaint, pm);
-        volGlow = (volGlow + (uMode==3 ? baseCol*.06 : vec3(0.))) * (1.-pm);`)
+        float lumD=dot(diffuseColor.rgb,vec3(.3,.59,.11)); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(lumD*.6),uGray)*(1.-.4*uGray);
+        volGlow = (volGlow + (uMode==3 ? baseCol*.06 : vec3(0.))) * (1.-pm);
+        volGlow = mix(volGlow, vec3(0.), uGray) + uGlowCol*uGlow;`)
       .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
         totalEmissiveRadiance += volGlow;`)
       .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
@@ -857,7 +862,7 @@ let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retri
 const ROLL_CAM={y:6.2,z:7.6};
 function startRoll(){
   if(!dice.length) return;
-  const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
+  clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=6.2*k; ROLL_CAM.z=7.6*k; table.scale.setScalar(k);
@@ -884,6 +889,7 @@ function startRoll(){
     world.addBody(b); return b;});
 }
 function exitRoll(instant){
+  clearFx();
   if(!rolling&&!instant) return;
   rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); $('back').hidden=true;
   dice.forEach(d=>{d.mesh.position.set(d.x,d.y,0); d.mesh.quaternion.identity();});
@@ -924,10 +930,52 @@ function finishRoll(){ restT=0;
   else main=String(fmt(dice[0],parts[0]));
   const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
-  R.classList.add('on'); console.log('ROLL_RESULT',main,sub);
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts);
 }
 $('back').onclick=()=>exitRoll();
 
+/* ---------- nat 20 / nat 1 effects ---------- */
+const sprTex=(()=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.35,'rgba(255,255,255,.6)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
+const BURST_N=260, burst={pts:null,vel:null,active:false,age:0,life:2.0};
+{ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3)); geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3));
+  burst.pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.3,map:sprTex,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
+  burst.pts.frustumCulled=false; burst.pts.visible=false; scene.add(burst.pts); burst.vel=new Float32Array(BURST_N*3); }
+const flash=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:sprTex,color:0xffd35a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0})); flash.visible=false; scene.add(flash);
+const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
+const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
+const fx={t:0,crit:[],fumble:[],dim:0,hold:false,origin:new THREE.Vector3()};
+function clearFx(){ for(const d of dice){ const u=d.mat.userData.fx; if(u){ u.uGlow.value=0; u.uGray.value=0; } }
+  fx.crit=[]; fx.fumble=[]; fx.t=0; fx.dim=0; burst.active=false; burst.pts.visible=false; flash.visible=false; critLight.intensity=0;
+  key.intensity=BASE_KEY; renderer.toneMappingExposure=BASE_EXPOSURE; $('result').classList.remove('crit','fumble'); }
+function triggerFx(parts){
+  clearFx(); parts.forEach((p,i)=>{ const d=dice[i]; if(!d||d.name!=='d20') return; if(p.label===20) fx.crit.push(d); else if(p.label===1) fx.fumble.push(d); });
+  if(fx.crit.length){ const d=fx.crit[0]; fx.origin.copy(d.mesh.position); burst.active=true; burst.age=0; burst.pts.visible=true; flash.visible=true;
+    const pos=burst.pts.geometry.attributes.position.array, col=burst.pts.geometry.attributes.color.array, pal=[[1,.85,.3],[1,.65,.2],[1,1,.8],[1,.5,.15]];
+    for(let i=0;i<BURST_N;i++){ pos[i*3]=fx.origin.x; pos[i*3+1]=fx.origin.y+.3; pos[i*3+2]=fx.origin.z;
+      const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), sp=2.5+Math.random()*7, c=pal[i%4], b=.5+Math.random()*.5;
+      burst.vel[i*3]=Math.sin(ph)*Math.cos(th)*sp; burst.vel[i*3+1]=Math.abs(Math.cos(ph))*sp*.9+1.5; burst.vel[i*3+2]=Math.sin(ph)*Math.sin(th)*sp;
+      col[i*3]=c[0]*b; col[i*3+1]=c[1]*b; col[i*3+2]=c[2]*b; }
+    burst.pts.geometry.attributes.position.needsUpdate=true; burst.pts.geometry.attributes.color.needsUpdate=true; $('result').classList.add('crit'); }
+  else if(fx.fumble.length) $('result').classList.add('fumble');
+  fx.t=0;
+  const tag=document.createElement('div'); tag.className='brk'; tag.style.cssText='letter-spacing:.2em;text-transform:uppercase;margin-top:6px';
+  if(fx.crit.length){ tag.textContent='✦ Natural 20 ✦'; $('result').append(tag); } else if(fx.fumble.length){ tag.textContent='Natural 1'; $('result').append(tag); }
+}
+function updateFx(dt){
+  if(!fx.crit.length&&!fx.fumble.length&&fx.dim===0&&!burst.active) return;
+  if(!fx.hold) fx.t+=dt; const t=fx.t;
+  for(const d of fx.crit){ d.mat.userData.fx.uGlow.value=Math.min(1,t*3)*(.28+.1*Math.sin(t*3.2)); }
+  if(burst.active){ burst.age=t; const a=burst.age, pos=burst.pts.geometry.attributes.position.array, step=fx.hold?0:dt;
+    for(let i=0;i<BURST_N;i++){ const k=Math.exp(-step*1.4); burst.vel[i*3]*=k; burst.vel[i*3+1]=burst.vel[i*3+1]*k-2.2*step; burst.vel[i*3+2]*=k;
+      pos[i*3]+=burst.vel[i*3]*step; pos[i*3+1]+=burst.vel[i*3+1]*step; pos[i*3+2]+=burst.vel[i*3+2]*step; }
+    burst.pts.geometry.attributes.position.needsUpdate=true; burst.pts.material.opacity=Math.max(0,1-a/burst.life); if(a>burst.life){ burst.active=false; burst.pts.visible=false; }
+    const fa=a/.7; flash.visible=fa<1; if(flash.visible){ flash.position.copy(fx.origin); flash.position.y+=.3; flash.quaternion.copy(camera.quaternion); flash.scale.setScalar(1.5+fa*9); flash.material.opacity=(1-fa)*.9; }
+    critLight.position.set(fx.origin.x,fx.origin.y+1.6,fx.origin.z); critLight.intensity=90*Math.exp(-a*2.6); }
+  else critLight.intensity=0;
+  if(fx.fumble.length&&!fx.crit.length){ const r=Math.min(1,t/1.1), e=1-Math.pow(1-r,2); for(const d of fx.fumble) d.mat.userData.fx.uGray.value=.9*e; fx.dim=e;
+    key.intensity=BASE_KEY*(1-.7*e); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*e); }
+}
 const clock=new THREE.Clock();
 renderer.setAnimationLoop(()=>{
   const dt=Math.min(clock.getDelta(),.05);
@@ -942,6 +990,7 @@ renderer.setAnimationLoop(()=>{
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
+  updateFx(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
   { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
     const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
@@ -968,6 +1017,10 @@ if(new URLSearchParams(location.search).get('test')==='incl'){ // loaders: OBJ +
   const obj='v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n';
   const stl='solid t\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid t\n';
   for(const [n,t] of [['t.obj',obj],['t.stl',stl]]){ try{ const o=await loadModelFile(new File([t],n)); customTemplate=normalizeModel(o); state.inclusion='custom'; buildDice(true); console.log('INCL_OK',n,dice.filter(d=>d.inc).length); }catch(e){ console.log('INCL_FAIL',n,e.message); } } }
+if(new URLSearchParams(location.search).get('test')==='fx'){ const want=+new URLSearchParams(location.search).get('face')||20; startRoll();
+  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
+  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
+  triggerFx(dice.map(()=>({label:want}))); { const T=+new URLSearchParams(location.search).get('t')||.5; for(let i=0;i<Math.round(T*60);i++) updateFx(1/60); fx.hold=true; } console.log('FX_SET',fx.crit.length,fx.fumble.length); }
 if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
