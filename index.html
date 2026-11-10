@@ -1196,7 +1196,7 @@ const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,hold:false};
 let leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
 function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
-function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.7,r,64),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
+function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
   m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
 function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }

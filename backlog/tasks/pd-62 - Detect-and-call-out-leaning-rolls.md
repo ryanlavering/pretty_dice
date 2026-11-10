@@ -1,10 +1,10 @@
 ---
 id: PD-62
 title: Detect and call out leaning rolls
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-10T19:46:00Z'
+updated_date: '2026-11-10T20:08:00Z'
 labels:
   - feature
   - physics
@@ -40,4 +40,6 @@ Implemented: tiltInfo now reports lift (centre height above lying-on-mat height)
 2026-11-10: (1) lean rings now sit above the mat (torus, y=floor+tube) and pulse 0.64-1.0 opacity; (2) rings/note/button refresh live: a die that settles after the rings go up loses its ring, and the note+button clear with the last lean; (3) camera far plane 50->600 (near .1->.3) - zoomed-out view clipped the back of the stage; (4) single die leaning on nothing: physics solver can hold a die balanced on an edge (~10% of d4 rolls, ~3% d20, 0% d6; not a wall - widening the tray changed nothing). Lone leaners get 2 gravity-direction tip attempts, then drop in again from above automatically (0/40 stuck in headless d4 runs).
 
 2026-11-10: rings back to a flat band just above the mat (owner preference). Disappearing-on-orbit cause: the mat is a transparent mesh that writes depth, so three.js's camera-distance sort of transparent objects sometimes drew the mat over the ring; ring now has renderOrder 10 + polygonOffset. Test hook: &az=<rad>&el=<rad> sets the orbit.
+
+Owner approved 2026-11-10; ring band back to r*.84 inner radius. Remaining lean interaction (tap a single die, Zen mode) is PD-63.
 <!-- SECTION:NOTES:END -->
