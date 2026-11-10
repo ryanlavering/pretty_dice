@@ -1196,8 +1196,9 @@ const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,hold:false};
 let leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
 function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
-function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, tube=Math.max(.05,r*.07), m=new THREE.Mesh(new THREE.TorusGeometry(r,tube,8,64),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.9,depthWrite:false}));   // lies on the mat, under every die; wider than the die so it shows around it
-  m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+tube+.015}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
+function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.7,r,64),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
+  m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
+  m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
 function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
 function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!nl||!settled) return;
@@ -1208,7 +1209,7 @@ function refreshLeans(){                        // a die that settles after the 
     if(!isLean(i)){ leanDice[i]=false; m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); leanRings.splice(leanRings.indexOf(m),1); changed=true; }
     else m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); }
   if(changed) updateLeanUI(); }
-function pulseLeans(t){ const o=.82+.18*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
+function pulseLeans(t){ const o=.8+.2*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
 function rerollLeans(){                       // the leaning dice vanish from the mat and drop in again from above; the others stay where they are
   if(!rolling||!world||!settled||!leanDice.some(Boolean)) return;
   const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; dropIn(idx);
@@ -1308,7 +1309,7 @@ if(new URLSearchParams(location.search).get('test')==='fx'){ const want=+new URL
 if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
-if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()=>{ const nt=new URLSearchParams(location.search).get('n'); if(nt){ state.shape='custom'; state.notation=nt; await buildDice(); await new Promise(r=>setTimeout(r,1500)); } startRoll(); // fast-forward the sim for headless testing
+if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()=>{ if(new URLSearchParams(location.search).get('az')){ orbit.az=+new URLSearchParams(location.search).get('az'); orbit.el=+(new URLSearchParams(location.search).get('el')||0); } const nt=new URLSearchParams(location.search).get('n'); if(nt){ state.shape='custom'; state.notation=nt; await buildDice(); await new Promise(r=>setTimeout(r,1500)); } startRoll(); // fast-forward the sim for headless testing
   const sim=()=>{ for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
