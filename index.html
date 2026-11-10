@@ -124,6 +124,8 @@
 
     <h2>Numbers</h2>
     <div class="row"><label>Font</label><select id="font"></select></div>
+    <div class="row"><label>d4 numbers</label><select id="d4style"><option value="tips">Corner tips (standard)</option><option value="center">Face centre</option></select></div>
+    <div class="row"><label>d6 faces</label><select id="d6style"><option value="numbers">Numbers</option><option value="pips">Pips</option></select></div>
     <div class="row"><label>Size</label><input type="range" id="numsize" min="0.3" max="1" step="0.01"></div>
     <div class="row"><label>Rotation</label><input type="range" id="numrot" min="-180" max="180" step="1"><output id="numrotv" style="width:38px;text-align:right;color:var(--dim)"></output></div>
     <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
@@ -227,8 +229,30 @@ function assignLabels(faces, labels, rng){
 const FONTS={ cinzel:{label:'Cinzel (classic)',css:'Cinzel,Georgia,serif',load:'700 100px Cinzel'}, metamorphous:{label:'Metamorphous (fantasy)',css:'Metamorphous,Georgia,serif',load:'400 100px Metamorphous'},
   uncial:{label:'Uncial Antiqua (runic)',css:'"Uncial Antiqua",Georgia,serif',load:'400 100px "Uncial Antiqua"'}, inter:{label:'Inter (clean sans)',css:'Inter,Arial,sans-serif',load:'800 100px Inter'},
   georgia:{label:'Georgia (serif)',css:'Georgia,serif',load:null}, mono:{label:'Courier (mono)',css:'"Courier New",monospace',load:null} };
-function makeAtlas(N, labels, fontKey, soft, pad2){      // pad2: percentile (tens) die prints 00, 10 ... 90
+const PIPS={1:[[0,0]],2:[[-1,1],[1,-1]],3:[[-1,1],[0,0],[1,-1]],4:[[-1,1],[1,1],[-1,-1],[1,-1]],5:[[-1,1],[1,1],[0,0],[-1,-1],[1,-1]],6:[[-1,1],[1,1],[-1,0],[1,0],[-1,-1],[1,-1]]};
+const LAYOUT_UNIT={tips:80, pips:140};                 // atlas px that correspond to one face inradius (geometry scales to match)
+// opts.layout: 'tips' -> opts.tips[i] = the 3 corner numbers of triangular face i; 'pips' -> labels are 1..6 drawn as dots
+function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2: percentile (tens) die prints 00, 10 ... 90
   const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=256, F=FONTS[fontKey]||FONTS.cinzel;
+  if(opts.layout){
+    const mk=bgc=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bgc; g.fillRect(0,0,c.width,c.height); return [c,g];};
+    const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600, px=72, D=LAYOUT_UNIT.tips, info=[];
+    labels.forEach((lab,i)=>{
+      const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell; info.push({halfDiag:1});
+      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){
+        g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none';
+        if(opts.layout==='pips'){ for(const [px_,py_] of PIPS[lab]||[]){ g.beginPath(); g.arc(cx+px_*70,cy-py_*70,21,0,7); g.fill(); } }
+        else for(let k=0;k<3;k++){                       // numbers sit in the corners, their tops pointing at the vertex
+          const th=(90+120*k)*Math.PI/180, txt=String(opts.tips[i][k]);
+          g.save(); g.translate(cx+D*Math.cos(th),cy-D*Math.sin(th)); g.rotate(-(th-Math.PI/2));
+          g.font=`${weight} ${px}px ${F.css}`; g.textAlign='center'; const m=g.measureText(txt);
+          g.fillText(txt,(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2,(m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2); g.restore(); }
+        g.filter='none';
+      }
+    });
+    const tex=c=>{const t=new THREE.CanvasTexture(c); t.anisotropy=8; return t;};
+    return {bump:tex(bc), mask:tex(mc), cols, rows, cell, info, layout:opts.layout};
+  }
   const mk=(bg)=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,c.width,c.height); return [c,g];};
   const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), info=[];
   const show=l=>pad2?String(l).padStart(2,'0'):String(l), px=labels.some(l=>show(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
@@ -281,12 +305,12 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
     const equi=P.every(p=>Math.abs(p.distanceTo(C)-far.distanceTo(C))<1e-4*far.distanceTo(C)+1e-6);
     const up=new THREE.Vector3().subVectors(far,C).normalize();
     if(m===4&&equi){ up.copy(new THREE.Vector3().subVectors(P[1],P[0]).cross(n).normalize()); }   // squares: edge-aligned, like real d6 pips
-    up.applyAxisAngle(n,THREE.MathUtils.degToRad(numRot));
+    if(atlas.layout!=='tips') up.applyAxisAngle(n,THREE.MathUtils.degToRad(numRot));   // corner numbers must keep pointing at their vertices
     const right=new THREE.Vector3().crossVectors(up,n);
     let r=1e9; for(let k=0;k<m;k++){const a=P[k],b=P[(k+1)%m],o=new THREE.Vector3().subVectors(b,a).cross(n).normalize();
       r=Math.min(r,-new THREE.Vector3().subVectors(C,a).dot(o));}
     const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows;
-    const opx=numSize*r/maxHD;                       // object units per atlas pixel: text box fits numSize * inradius
+    const opx=atlas.layout?(numSize/.65)*r/LAYOUT_UNIT[atlas.layout]:numSize*r/maxHD;                      // object units per atlas pixel: text box fits numSize * inradius
     curCell=[col/atlas.cols,1-(row+1)/atlas.rows,(col+1)/atlas.cols,1-row/atlas.rows];
     const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/opx/(atlas.cols*atlas.cell), cv+d.dot(up)/opx/(atlas.rows*atlas.cell));};
     for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
@@ -526,7 +550,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
@@ -684,7 +708,12 @@ function buildDice(keepRoll){
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
     const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
     if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
-    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%'), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
+    let opts={};
+    if(s.labels.length===4&&faces.length===4&&state.d4Style==='tips'){          // vertex value = label of the face opposite it
+      const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
+      opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
+    } else if(faces.length===6&&s.labels.length===6&&state.d6Style==='pips') opts={layout:'pips'};
+    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
     const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,inradius:Math.min(...faces.map(f=>f.d))};
     if(state.substrate==='epoxy'){ const inc=makeInclusion(); if(inc){ mesh.add(inc); entry.inc=inc; } }
@@ -733,7 +762,7 @@ function randomize(noBuild){
 }
 
 /* ---------- undo / redo of design settings ---------- */
-const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','glitter','bubbles','clarity','notation','seed'];
+const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
 let history=[], hIdx=-1, hTimer=null;
 function checkpoint(){                                   // record the current design if it differs from the last recorded one
@@ -782,7 +811,7 @@ function syncUI(){
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
-  $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
+  $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
 const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
@@ -793,6 +822,8 @@ $('loadmodel').onclick=()=>$('modelfile').click();
 $('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
+$('d4style').onchange=e=>{ state.d4Style=e.target.value; checkpoint(); scheduleRebuild(); };
+$('d6style').onchange=e=>{ state.d6Style=e.target.value; checkpoint(); scheduleRebuild(); };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
@@ -815,7 +846,7 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, name:($('dname').value||'').trim().slice(0,80), shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
+  finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, d4_style:state.d4Style, d6_style:state.d6Style, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
@@ -834,7 +865,7 @@ function loadDesign(d){
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
   state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5);
   { const ic=d.inclusion||{}; state.inclusion=MODELS[ic.type]?ic.type:'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
-  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
+  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0); state.d4Style=n.d4_style==='center'?'center':'tips'; state.d6Style=n.d6_style==='pips'?'pips':'numbers';
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   return ensureFont(state.font).then(()=>buildDice());
 }
@@ -1098,7 +1129,7 @@ renderer.setAnimationLoop(()=>{
 /* ---------- go ---------- */
 await ensureFont(state.font);
 if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish"); if(q.get('d4style')) state.d4Style=q.get('d4style')==='center'?'center':'tips'; if(q.get('d6style')) state.d6Style=q.get('d6style')==='pips'?'pips':'numbers';
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
