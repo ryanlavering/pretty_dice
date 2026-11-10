@@ -9,12 +9,9 @@
   *{box-sizing:border-box} [hidden]{display:none!important}
   html{box-sizing:border-box} body{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
-  #app{position:relative;height:100%;overflow:hidden}
-  aside{position:absolute;left:0;top:0;bottom:0;width:310px;z-index:6;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto;transform:translateX(-102%);visibility:hidden;transition:transform .25s,visibility 0s .25s;box-shadow:0 0 28px rgba(0,0,0,.55)}
-  body.panel aside{transform:none;visibility:visible;transition:transform .25s}
-  #info{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.78);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:7;backdrop-filter:blur(6px);transition:left .25s,bottom .25s}
-  #info:hover{border-color:var(--accent);color:var(--accent)} #info svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  body.panel #info{left:324px} body.inst aside,body.inst #info{transition:none!important}
+  #app{display:flex;height:100%}
+  aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
+  body.full aside{display:none}
   h1{font:800 22px Cinzel,serif;letter-spacing:.08em;margin:0 0 2px;color:var(--accent)}
   .sub{color:var(--dim);font-size:12px;margin-bottom:18px}
   h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:20px 0 8px;font-weight:600}
@@ -37,7 +34,10 @@
   input[type=color]:disabled{opacity:.25}
   input[type=range]{flex:1;accent-color:var(--accent)}
   .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
-  #stage{position:absolute;inset:0}
+  #stage{flex:1;position:relative;min-width:0}
+  #info,#layout{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
+  #layout{bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}
+  #info:hover,#layout:hover,#info.on{border-color:var(--accent);color:var(--accent)} #info svg,#layout svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
   #mode{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
@@ -51,11 +51,12 @@
   #result .relean:hover{background:rgba(60,34,24,.9)}
   #result .brk.lean{color:#ffb48a}
   #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
+  #hint{display:none} #hint.show{display:block}
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   @media (max-width:760px){
-    aside{width:100%;height:46%;top:auto;border-right:0;border-top:1px solid var(--line);transform:translateY(102%)}
-    body.panel #info{left:max(14px,env(safe-area-inset-left,0px));bottom:calc(46% + 14px)}
+    #app{flex-direction:column-reverse}
+    aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
   }
 </style>
 <!--BOOTSTRAP-->
@@ -184,8 +185,7 @@
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
   </aside>
-  <button id="info" aria-label="Show or hide the controls" aria-expanded="false" title="Controls"></button>
-  <div id="stage"><button id="mode" aria-label="Switch between showcase and roll view"></button><div id="name"></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="layout"></button><button id="mode" aria-label="Switch between showcase and roll view"></button><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
 
 <script type="text/plain" id="main-src">
@@ -987,10 +987,12 @@ function loadDesign(d){
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
-const ICON_INFO='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_CLOSE='<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-function setPanel(on,keep){ document.body.classList.toggle('inst',!!keep); document.body.classList.toggle('panel',on); $('info').innerHTML=on?ICON_CLOSE:ICON_INFO; $('info').setAttribute('aria-expanded',on); if(!keep){ try{localStorage.setItem('prettydice.panel',on?'1':'0');}catch{} } }
-$('info').onclick=()=>setPanel(!document.body.classList.contains('panel'));
-{ let on=false; try{ on=localStorage.getItem('prettydice.panel')==='1'; }catch{} if(new URLSearchParams(location.search).get('panel')) on=new URLSearchParams(location.search).get('panel')==='1'; setPanel(on,true); }
+const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8"/></svg>';
+function setFull(on,keep){ document.body.classList.toggle('full',on); $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
+$('layout').onclick=()=>setFull(!document.body.classList.contains('full'));
+{ let on=false; try{ on=localStorage.getItem('prettydice.full')==='1'; }catch{} if(new URLSearchParams(location.search).get('full')) on=new URLSearchParams(location.search).get('full')==='1'; setFull(on,true); }
+$('info').innerHTML=ICON_I; $('info').onclick=()=>{ const on=$('hint').classList.toggle('show'); $('info').classList.toggle('on',on); $('info').setAttribute('aria-expanded',on); };
 $('loadjson').onclick=()=>$('jsonfile').click();
 const readText=f=>f.text?f.text():new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(new Error('Could not read file')); fr.readAsText(f); });
 $('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
@@ -1051,9 +1053,12 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
   rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
-  const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k; table.scale.setScalar(k);
-  Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
-  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.6*k), halfX=1.9*k;
+  const nD=dice.length, k=state.shape==='set7'?2.25:nD>2?1.5+Math.max(0,nD-7)*.15:1;   // Standard 7 has big dice (d20, d%, d10 pair): it needs a roomier tray than seven small dice
+  ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k;
+  const K=k*Math.max(1,state.zoom);   // zoomed out: the tray grows with the view, so it keeps filling the screen instead of shrinking to a small patch
+  table.scale.setScalar(K);
+  Object.assign(key.shadow.camera,{left:-7.3*K,right:7.3*K,top:7.3*K,bottom:-7.3*K,far:20+10*K}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
+  const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z)*state.zoom, halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,nD>2?2.2*K:1.4,3.6*K), halfX=1.9*K;
   rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
@@ -1288,7 +1293,8 @@ renderer.setAnimationLoop(()=>{
   updateFx(dt); updateRumble(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
   { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
-    const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
+    const fit=1+(Math.max(1,rollHalf.z/(.8*Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect*Math.hypot(ROLL_CAM.y,ROLL_CAM.z)*state.zoom))-1)*camBlend;   // narrower stage: pull back so the whole tray stays in view
+    const r=off.length()*fit, th=Math.atan2(off.x,off.z)+orbit.az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
