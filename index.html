@@ -43,6 +43,9 @@
   #result.on{opacity:1}
   #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
   #result.fumble{color:#8c919e;text-shadow:0 2px 18px #000}
+  #result .relean{pointer-events:auto;margin-top:10px;font:600 13px Inter,sans-serif;letter-spacing:0;padding:7px 16px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
+  #result .relean:hover{background:rgba(60,34,24,.9)}
+  #result .brk.lean{color:#ffb48a}
   #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
@@ -1035,13 +1038,13 @@ function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.f
 function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  rollKey=state.shape+'|'+state.notation; clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); syncMode();
+  rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k; table.scale.setScalar(k);
   Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
   const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.6*k), halfX=1.9*k;
-  world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
+  rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
   world.addContactMaterial(ccDD=new CANNON.ContactMaterial(diceMat,diceMat)); world.addContactMaterial(ccDM=new CANNON.ContactMaterial(diceMat,matMat)); applyContacts();
@@ -1069,7 +1072,7 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
     world.addBody(b); return b;});
 }
 function exitRoll(instant){
-  clearFx();
+  clearFx(); clearLeans();
   if(!rolling&&!instant) return;
   rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); syncMode();
   dice.forEach(d=>{d.mesh.position.set(d.x,d.y,0); d.mesh.quaternion.identity();});
@@ -1091,30 +1094,16 @@ function tiltInfo(i){                                   // how far die i is from
   const v0=d.verts[bf.idx[0]], h=Math.abs(bf.n.x*v0.x+bf.n.y*v0.y+bf.n.z*v0.z); d.r=d.r||Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)));
   return {flat:Math.abs(bv), n:best, four, lift:(b.position.y-TABLE_Y-h)/d.r};   // lift: how far the die's centre sits above where it would if lying on the mat (> ~.1 = propped on another die)
 }
-function assistSettle(dt){          // dice that stop while leaning on a neighbour get a small tip-over nudge instead of waiting for the retry cycle
-  bodies.forEach((b,i)=>{
-    const slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; b.slowT=slow?(b.slowT||0)+dt:0; b.cool=Math.max(0,(b.cool||0)-dt);
-    if((b.slowT<.25&&!(rollT>8&&tiltInfo(i).lift>.1))||b.cool>0) return;   // after 8 s even a jittering die that is still propped on another gets kicked
-    const t=tiltInfo(i), stacked=t.lift>.1, lean=t.flat<.985&&!stacked;
-    if(lean) b.fails=(b.fails||0)+1;
-    if(stacked||(lean&&b.fails>=2)){          // stacked, or already nudged once without success: hop away from the neighbours it is leaning on
-      b.fails=0; let ox=0,oz=0; bodies.forEach((o,j)=>{ if(j!==i){ const dx=b.position.x-o.position.x, dz=b.position.z-o.position.z, dd=Math.hypot(dx,dz)||1; if(dd<2.4){ ox+=dx/dd; oz+=dz/dd; } } });
-      if(!ox&&!oz){ ox=Math.random()-.5; oz=Math.random()-.5; } b.wakeUp(); b.velocity.set(ox*1.8,2.2,oz*1.8); b.cool=.6; }
-    else if(lean){ const target=new THREE.Vector3(0,t.four?-1:1,0), axis=new THREE.Vector3().crossVectors(t.n,target); const ang=Math.asin(Math.min(1,axis.length()));
-      if(axis.lengthSq()>1e-8){ axis.normalize().multiplyScalar(4+ang*8); b.wakeUp(); b.angularVelocity.vadd(new CANNON.Vec3(axis.x,axis.y,axis.z),b.angularVelocity); b.cool=.35; } }
-  });
+function assistSettle(dt){          // tracks how long each die has been nearly still (restCheck uses it). Dice are never nudged; leaning ones are flagged and re-rolled on request
+  bodies.forEach(b=>{ const slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; b.slowT=slow?(b.slowT||0)+dt:0; });
 }
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
-  return bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);
+  return rollT>12 || bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);   // after 12 s stop waiting on a die that will not go still
 }
 function finishRoll(){ restT=0;
   const parts=readResult();
-  const flatOK=rollT>3.5?.95:.985;   // after a few seconds, a die a few degrees off flat is still accepted -- but never one propped on another die
-  const bad=bodies.map((b,i)=>{ const t=tiltInfo(i); return t.lift>.1||t.flat<flatOK||b.position.y>TABLE_Y+1.45; });   // propped/piled on another die, or cocked (leaning)
-  if(bad.some(Boolean) && retries<12 && rollT<20){ retries++;
-    bodies.forEach((b,i)=>{ if(!bad[i]) return; b.wakeUp(); b.velocity.set(-b.position.x*1.2+(Math.random()-.5)*5,5,-b.position.z*1.2+(Math.random()-.5)*4);
-      b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14); }); return; }
-  settled=true;
+  leanDice=bodies.map((b,i)=>{ const t=tiltInfo(i); return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; });   // propped on another die, or cocked: flagged, never re-thrown automatically
+  settled=true; showLeans();
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   let main, sub='';
   if(state.shape==='custom'){
@@ -1129,6 +1118,9 @@ function finishRoll(){ restT=0;
   else main=String(fmt(dice[0],parts[0]));
   const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
+  const nl=leanDice.filter(Boolean).length;
+  if(nl){ const d3=document.createElement('div'); d3.className='brk lean'; d3.textContent='\u26A0 '+nl+(nl>1?' dice are':' die is')+' leaning'; R.append(d3);
+    const bt=document.createElement('button'); bt.className='relean'; bt.textContent='Re-roll leaning'; bt.onclick=rerollLeans; R.append(bt); }
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts);
 }
 $('back').onclick=()=>exitRoll();
@@ -1199,6 +1191,23 @@ function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('po
 const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,hold:false};
+let leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
+function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.1, m=new THREE.Mesh(new THREE.RingGeometry(r*.86,r,48),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide}));
+  m.rotation.x=-Math.PI/2; m.position.set(bodies[i].position.x,TABLE_Y+.02,bodies[i].position.z); rig.add(m); leanRings.push(m); }); }
+function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
+function clearLeans(){ dropRings(); leanDice=[]; }
+function pulseLeans(t){ const o=.55+.35*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
+function rerollLeans(){                       // the leaning dice vanish from the mat and drop in again from above; the others stay where they are
+  if(!rolling||!world||!settled||!leanDice.some(Boolean)) return;
+  const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on');
+  settled=false; rollT=0; restT=0; const dropH=3.5+5*state.zoom, R=()=>Math.random()-.5;
+  idx.forEach((i,k)=>{ const b=bodies[i]; let px=0,pz=0;
+    for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(rollHalf.x-1.1); pz=(Math.random()*2-1)*(rollHalf.z-1.1); if(bodies.every((o,j)=>j===i||Math.hypot(o.position.x-px,o.position.z-pz)>2.3)) break; }
+    const rq=new THREE.Quaternion().random(); b.position.set(px,TABLE_Y+dropH+k*1.1+Math.random()*2,pz); b.quaternion.set(rq.x,rq.y,rq.z,rq.w);
+    b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4); b.angularVelocity.set(R()*40,R()*40,R()*40); b.angularDamping=.1; b.linearDamping=.04; b.slowT=0; b.wakeUp();
+    dice[i].mesh.position.copy(b.position); dice[i].mesh.quaternion.copy(rq); });
+  bodies.forEach(b=>b.slowT=0);
+}
 function clearFx(){ for(const d of dice){ const u=d.mat.userData.fx; if(u){ u.uGlow.value=0; u.uGray.value=0; } }
   fx.crit=[]; fx.fumble=[]; fx.t=0; fx.dim=0; for(const b of bursts){ b.pts.visible=false; b.fl.visible=false; b.done=true; b.fired=false; } critLight.intensity=0;
   key.intensity=BASE_KEY; renderer.toneMappingExposure=BASE_EXPOSURE; $('result').classList.remove('crit','fumble'); }
@@ -1246,7 +1255,7 @@ renderer.setAnimationLoop(()=>{
   }
   if(rolling&&world){
     world.step(1/60,dt,4); rollT+=dt;
-    if(!settled) assistSettle(dt);
+    if(!settled) assistSettle(dt); else if(leanRings.length) pulseLeans(performance.now()/1000);
     if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
@@ -1286,10 +1295,10 @@ if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
 if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()=>{ const nt=new URLSearchParams(location.search).get('n'); if(nt){ state.shape='custom'; state.notation=nt; await buildDice(); await new Promise(r=>setTimeout(r,1500)); } startRoll(); // fast-forward the sim for headless testing
-  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
+  const sim=()=>{ for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
     if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
-    if(rollT>.6&&restCheck(1/60)) finishRoll(); }
-  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('BAD',bodies.filter((b,i)=>{const t=tiltInfo(i); return t.lift>.1||t.flat<.95;}).length,'of',bodies.length,'retries',retries); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
+    if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
+  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
   randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
