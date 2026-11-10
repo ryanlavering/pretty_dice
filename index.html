@@ -820,7 +820,7 @@ function randomize(noBuild){
   state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
   state.numSize=f(.5+r()*.3,2); state.numRot=0; state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
   state.polish=f(.2+r()*.75,2); state.glitter=f(r(),2); state.bubbles=f(r()*.7,2); state.clarity=f(.35+r()*.55,2);
-  state.d4Style=r()<.85?'tips':'center'; state.d6Style=r()<.7?'numbers':'pips';
+  state.d4Style='tips'; state.d6Style=r()<.7?'numbers':'pips';
   state.numRaised=r()<.3; state.numPaint=state.numRaised?r()<.5:true;
   state.panel=r()<.5?f(.08+r()*.14,2):0; state.panelDepth=f(.3+r()*.6,2); state.patina=state.panel>0&&r()<.6?f(.25+r()*.65,2):0;
   state.filigree=r()<.4?pick(['scroll','beads','deco'],r):'none'; state.filiFill=r()<.8; state.enamelSame=r()<.5; state.enamel=hsl(r(),.55+r()*.3,.4+r()*.25);
