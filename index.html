@@ -766,7 +766,10 @@ function makeInclusion(){ const tpl=MODELS[state.inclusion]?getTemplate(state.in
   const inc=new THREE.Group(); const c=tpl.clone(true); c.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } }); inc.add(c); return inc; }
 function updateInclusions(){ for(const d of dice){ if(!d.inc) continue;
   d.inc.scale.setScalar(d.inradius*state.inclSize); d.inc.position.set(0,state.inclY*d.inradius,0); d.inc.rotation.set(0,THREE.MathUtils.degToRad(state.inclTurn),0); } }
+let buildTok=0, rollKey='';          // buildTok: only the newest async rebuild runs; rollKey: what the running roll was built for
 function buildDice(keepRoll){
+  buildTok++;
+  if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)
   if(!keepRoll) exitRoll(true);
   rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
   const specs=specsFor(state.shape);
@@ -830,7 +833,9 @@ function randomize(noBuild){
   repaint(r);
   if(noBuild){ applyLook(); return; }
   checkpoint();
-  ensureFont(state.font).then(()=>buildDice(state.shape===oldShape));   // geometry/atlas depend on radius, font and number settings
+  const tok=buildTok+1; buildTok=tok;                       // a newer build (slider, another randomize) supersedes this one
+  const wasRoll=rolling;
+  ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); if(wasRoll&&state.shape!==oldShape) startRoll(); });   // a new shape in roll view is thrown straight onto the mat   // geometry/atlas depend on radius, font and number settings
 }
 
 /* ---------- undo / redo of design settings ---------- */
@@ -846,7 +851,7 @@ const scheduleCheckpoint=()=>{ if(hIdx<0) return; clearTimeout(hTimer); hTimer=s
 function syncHistoryUI(){ $('undo').disabled=!(hIdx>0||hTimer); $('redo').disabled=!(hIdx>=0&&hIdx<history.length-1); }
 async function restore(snap){
   const o=JSON.parse(snap), oldShape=state.shape; Object.assign(state,o); setSubstrate(state.substrate);
-  await ensureFont(state.font); buildDice(state.shape===oldShape); syncHistoryUI();
+  const tok=++buildTok; await ensureFont(state.font); if(buildTok===tok) buildDice(state.shape===oldShape); syncHistoryUI();
 }
 async function undo(){ checkpoint(); if(hIdx>0){ hIdx--; await restore(history[hIdx]); } }
 async function redo(){ checkpoint(); if(hIdx<history.length-1){ hIdx++; await restore(history[hIdx]); } }
@@ -1017,7 +1022,7 @@ const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to
 function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
+  rollKey=state.shape+'|'+state.notation; clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const nD=dice.length, k=nD>2?1.5+Math.max(0,nD-7)*.15:1; ROLL_CAM.y=7.7*k; ROLL_CAM.z=6.0*k; table.scale.setScalar(k);
@@ -1278,10 +1283,13 @@ if(new URLSearchParams(location.search).get('test')==='shake'){ await setShake(t
 if(new URLSearchParams(location.search).get('test')==='flick'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); cv.setPointerCapture=()=>{};
   startRoll(); let n=0; startRoll=()=>{n++;}; ev('pointerdown',1,100,300); ev('pointerup',1,100,300); const tap=n; ev('pointerdown',2,100,300); ev('pointermove',2,100,150); ev('pointerup',2,100,150); console.log('FLICK tap rolls:',tap,'swipe rolls:',n-tap); }
 if(new URLSearchParams(location.search).get('test')==='launch') setTimeout(()=>{ startRoll(); for(let i=0;i<400;i++){ world.step(1/60); rollT+=1/60; } const before=bodies.map(b=>b.position.y.toFixed(2)).join(','); startRoll(true); console.log('LAUNCH before y',before,'after y',bodies.map(b=>b.position.y.toFixed(2)).join(','),'vy',bodies.map(b=>b.velocity.y.toFixed(1)).join(',')); startRoll(); console.log('DROP y',bodies.map(b=>b.position.y.toFixed(1)).join(',')); },500);
+if(new URLSearchParams(location.search).get('test')==='rr') setTimeout(async()=>{ startRoll(); state.randshape=false; const m0=dice[0].mat; randomize(); randomize(); await new Promise(r=>setTimeout(r,500));
+  console.log('RR same shape: rolling',rolling,'mat replaced',dice[0].mat!==m0,'body/dice',bodies.length===dice.length); const sh=state.shape; state.randshape=true; for(let i=0;i<6&&state.shape===sh;i++) randomize(); await new Promise(r=>setTimeout(r,500)); console.log('RR shape changed: rolling',rolling,'shape',state.shape!==sh,'dice',dice.length,'bodies',bodies.length); },500);
 if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
   cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
   console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
+Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
 window.__ready=true; window.__bootDone&&window.__bootDone();
 window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
 </script>
