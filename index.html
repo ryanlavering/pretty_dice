@@ -645,10 +645,20 @@ try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
   if(Array.isArray(state.palettes)) state.palettes={};
 }catch{}
 function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} }
-const palKey=()=>state.substrate==='marble'?'marble:'+state.stone:state.substrate;      // each stone type keeps its own palette
-function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palettes[k]=SUBSTRATES[state.substrate].pal(r||mulberry32(state.seed)); state.colors=state.palettes[k]; }
+/* One palette (3 colours) is shared by every substrate and stone type, so switching substrate keeps the colours (PD-61).
+   Only Randomize makes new colours, using the logic of the substrate that is active at that moment (metal picks a metal, a stone picks its own palette).
+   Substrates that use fewer than 3 colours (solid plastic, metal) still get 3, so every other substrate has a full set to show.
+   Colours edited here, or made while another substrate was active, apply to metal and stone even when outside their usual range. */
+const palKey=()=>'shared';
+function freshPalette(sub,r){ const p=[...SUBSTRATES[sub].pal(r)];
+  if(SUBSTRATES[sub].mode===0){ const o={}; new THREE.Color(p[0]).getHSL(o); const d=.08+r()*.3; p[1]=hsl(o.h+d,.7,.55); p[2]=hsl(o.h-d*(r()<.5?1:-1.6),.7,.68); }   // the unused slots get harmony colours of the first
+  return p; }
+function ensurePalette(r){ if(!state.palettes.shared){    // first run, or saved data from the per-substrate days: adopt the active substrate's old palette
+    const old=state.palettes[state.substrate==='marble'?'marble:'+state.stone:state.substrate]||Object.values(state.palettes).find(v=>Array.isArray(v)&&v.length===3);
+    state.palettes.shared=old?[...old]:freshPalette(state.substrate,r||mulberry32(state.seed)); }
+  state.colors=state.palettes.shared; }
 function setSubstrate(id,r){ state.substrate=id; ensurePalette(r); }
-function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }
+function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }   // colours stay; only the stone pattern changes
 if(!STONES[state.stone]) state.stone='marble';
 if(state.inclusion==='custom') state.inclusion='none';   // custom models are not persisted (unknown built-in names are checked once MODELS exists, at startup)
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
@@ -837,7 +847,7 @@ function randomize(noBuild){
   if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   if(state.substrate==='marble') state.stone=pick(STONE_KEYS,r);
-  state.palettes[palKey()]=SUBSTRATES[state.substrate].pal(r); state.colors=state.palettes[palKey()]; state.stoneAccent=f(r(),2);
+  state.palettes.shared=freshPalette(state.substrate,r); state.colors=state.palettes.shared; state.stoneAccent=f(r(),2);
   state.off=[r()*60,r()*60,r()*60]; state.scale=f(1+r()*1.6,2);
   state.radius=f(.015+r()*.075,3); state.font=pick(Object.keys(FONTS),r);
   state.numSize=f(.5+r()*.3,2); state.numRot=0; state.numDepth=f(1.2+r()*2.8,1); state.numSoft=f(1.5+r()*4.5,1);
@@ -1060,7 +1070,7 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
-  const halfX=Math.max(1.9,Math.sqrt(4*foot/4/1.5)), halfZ=Math.max(2.8,1.5*halfX);   // the tray is sized by how many (and how big) the dice are, not by the screen
+  const halfX=Math.max(2.4,Math.sqrt((foot+4)/1.5)), halfZ=Math.max(3.6,1.5*halfX);   // the tray is sized by how many (and how big) the dice are, not by the screen
   const sc=Math.max(1,halfZ/3.6); table.scale.setScalar(sc);
   Object.assign(key.shadow.camera,{left:-7.3*sc,right:7.3*sc,top:7.3*sc,bottom:-7.3*sc,far:20+10*sc}); key.shadow.camera.updateProjectionMatrix();
   rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
@@ -1338,6 +1348,13 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
 if(new URLSearchParams(location.search).get('test')==='layoutcycle'){ const log=l=>console.log('LAYOUT',l,'stage',stage.clientWidth+'x'+stage.clientHeight,'aside',document.querySelector('aside').offsetHeight,'app scroll',$('app').scrollTop,$('app').scrollHeight,'buf',renderer.domElement.height,'aspect',camera.aspect.toFixed(2)); log('start'); setFull(true); log('full'); setFull(false); log('split'); setFull(true); setFull(false); log('split2'); }
+if(new URLSearchParams(location.search).get('test')==='palette'){ const out=[]; const ok=(n,v)=>out.push(n+':'+(v?'ok':'FAIL'));
+  state.randsub=false; state.substrate='metal'; randomize(true); const m=[...state.colors]; ok('metal-extras-filled',m[1]!=='#000000'&&m[2]!=='#000000'&&m[1]!==m[0]);
+  setSubstrate('swirl'); ok('metal->swirl keeps',JSON.stringify(state.colors)===JSON.stringify(m));
+  state.colors[2]='#123456'; setSubstrate('metal'); ok('edit feeds metal',state.colors[2]==='#123456'&&state.palettes.shared[2]==='#123456'); state.colors[0]='#ff0000'; setSubstrate('marble'); ok('out-of-range metal colour reaches stone',state.colors[0]==='#ff0000');
+  setStone('lapis'); ok('stone type keeps colours',state.colors[0]==='#ff0000'); setSubstrate('solid'); randomize(true); const sp=[...state.colors]; ok('solid-extras-filled',sp[1]!=='#000000'&&sp[2]!=='#000000');
+  setSubstrate('epoxy'); ok('solid->epoxy keeps',JSON.stringify(state.colors)===JSON.stringify(sp));
+  state.palettes={old:['#111111','#222222','#333333']}; ensurePalette(); ok('migrates old palettes',state.colors[0]==='#111111'); console.log('PALETTE',out.join(' ')); }
 if(new URLSearchParams(location.search).get('test')==='views'){ startRoll(); await new Promise(r=>setTimeout(r,500)); const z0=[state.zoom,state.rollZoom]; cv.dispatchEvent(new WheelEvent('wheel',{deltaY:-300,cancelable:true})); orbit.az=1.1; orbit.el=.3; const inRoll=[state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.roll.az,views.show.az]; exitRoll(); await new Promise(r=>setTimeout(r,300)); cv.dispatchEvent(new WheelEvent('wheel',{deltaY:200,cancelable:true})); console.log('VIEWS before',z0.join('/'),'rolled',inRoll.join('/'),'showcase',state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.show.az,views.roll.az); }
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
