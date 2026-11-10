@@ -9,8 +9,12 @@
   *{box-sizing:border-box} [hidden]{display:none!important}
   html{box-sizing:border-box} body{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
-  #app{display:flex;height:100%}
-  aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
+  #app{position:relative;height:100%;overflow:hidden}
+  aside{position:absolute;left:0;top:0;bottom:0;width:310px;z-index:6;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto;transform:translateX(-102%);visibility:hidden;transition:transform .25s,visibility 0s .25s;box-shadow:0 0 28px rgba(0,0,0,.55)}
+  body.panel aside{transform:none;visibility:visible;transition:transform .25s}
+  #info{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.78);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:7;backdrop-filter:blur(6px);transition:left .25s,bottom .25s}
+  #info:hover{border-color:var(--accent);color:var(--accent)} #info svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  body.panel #info{left:324px} body.inst aside,body.inst #info{transition:none!important}
   h1{font:800 22px Cinzel,serif;letter-spacing:.08em;margin:0 0 2px;color:var(--accent)}
   .sub{color:var(--dim);font-size:12px;margin-bottom:18px}
   h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:20px 0 8px;font-weight:600}
@@ -33,7 +37,7 @@
   input[type=color]:disabled{opacity:.25}
   input[type=range]{flex:1;accent-color:var(--accent)}
   .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
-  #stage{flex:1;position:relative;min-width:0}
+  #stage{position:absolute;inset:0}
   #stage canvas{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
   #mode{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
@@ -50,8 +54,8 @@
   #hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   @media (max-width:760px){
-    #app{flex-direction:column-reverse}
-    aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
+    aside{width:100%;height:46%;top:auto;border-right:0;border-top:1px solid var(--line);transform:translateY(102%)}
+    body.panel #info{left:max(14px,env(safe-area-inset-left,0px));bottom:calc(46% + 14px)}
   }
 </style>
 <!--BOOTSTRAP-->
@@ -176,10 +180,11 @@
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
     <div class="row" style="margin-top:6px"><label>Name</label><input id="dname" type="text" maxlength="80" placeholder="e.g. Giant club attack" style="flex:2;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"></div>
     <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
-    <input type="file" id="jsonfile" accept=".json,application/json" hidden>
+    <input type="file" id="jsonfile" hidden>   <!-- no accept filter: phones label saved .json files text/plain or octet-stream and grey them out -->
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
   </aside>
+  <button id="info" aria-label="Show or hide the controls" aria-expanded="false" title="Controls"></button>
   <div id="stage"><button id="mode" aria-label="Switch between showcase and roll view"></button><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
 
@@ -800,7 +805,7 @@ function buildDice(keepRoll){
     if(state.substrate==='epoxy'){ const inc=makeInclusion(); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
-  needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 0;
+  needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 1.5;   // a single die must fit a narrow (portrait) screen too
   baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
   applyLook();
 }
@@ -982,9 +987,14 @@ function loadDesign(d){
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+const ICON_INFO='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_CLOSE='<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function setPanel(on,keep){ document.body.classList.toggle('inst',!!keep); document.body.classList.toggle('panel',on); $('info').innerHTML=on?ICON_CLOSE:ICON_INFO; $('info').setAttribute('aria-expanded',on); if(!keep){ try{localStorage.setItem('prettydice.panel',on?'1':'0');}catch{} } }
+$('info').onclick=()=>setPanel(!document.body.classList.contains('panel'));
+{ let on=false; try{ on=localStorage.getItem('prettydice.panel')==='1'; }catch{} if(new URLSearchParams(location.search).get('panel')) on=new URLSearchParams(location.search).get('panel')==='1'; setPanel(on,true); }
 $('loadjson').onclick=()=>$('jsonfile').click();
-$('jsonfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
-  try{ await loadDesign(JSON.parse(await f.text())); }catch(err){ alert('Could not load design: '+err.message); } };
+const readText=f=>f.text?f.text():new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(new Error('Could not read file')); fr.readAsText(f); });
+$('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
+  try{ const txt=await readText(f); inp.value=''; await loadDesign(JSON.parse(txt.replace(/^\uFEFF/,''))); }catch(err){ inp.value=''; alert('Could not load design: '+err.message); } };   // read first, then reset the input: clearing it early can empty the file on some phones
 $('dname').onkeydown=e=>e.stopPropagation();
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>startRoll();
@@ -1314,6 +1324,7 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()
     if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
+if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
   randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
