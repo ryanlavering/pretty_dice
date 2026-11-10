@@ -129,6 +129,7 @@
     <h2>Export</h2>
     <div class="row"><label>Size</label><select id="expsize"><option value="0">Current view</option><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="4096">4096 px</option></select></div>
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
+    <div class="row" style="margin-top:6px"><label>Name</label><input id="dname" type="text" maxlength="80" placeholder="e.g. Giant club attack" style="flex:2;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"></div>
     <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
     <input type="file" id="jsonfile" accept=".json,application/json" hidden>
     <h2>Settings</h2>
@@ -796,7 +797,7 @@ function exportImage(type){
 }
 $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage('jpg');
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
-function designToJSON(){ return {format:'pretty-dice', version:1, shape:state.shape, substrate:state.substrate, colors:[...state.colors],
+function designToJSON(){ return {format:'pretty-dice', version:1, name:($('dname').value||'').trim().slice(0,80), shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
   finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, depth:state.numDepth, softness:state.numSoft}}; }
 function loadDesign(d){
@@ -809,6 +810,7 @@ function loadDesign(d){
   const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
   const n=d.numbers||{}, p=d.pattern||{};
   if(typeof d.notation==='string'&&!parseNotation(d.notation).error) state.notation=d.notation;
+  $('dname').value=typeof d.name==='string'?d.name.slice(0,80):'';
   const st=d.stone||{}; state.stone=STONES[st.type]?st.type:'marble'; state.stoneAccent=num(st.accent,0,1,.5);
   state.shape=d.shape; state.substrate=d.substrate; state.palettes[palKey()]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[palKey()];
   state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
@@ -821,10 +823,11 @@ function loadDesign(d){
   return ensureFont(state.font).then(()=>buildDice());
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
-  a.download=`pretty-dice-${state.shape}-${state.substrate}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+  a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
 $('loadjson').onclick=()=>$('jsonfile').click();
 $('jsonfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ await loadDesign(JSON.parse(await f.text())); }catch(err){ alert('Could not load design: '+err.message); } };
+$('dname').onkeydown=e=>e.stopPropagation();
 $('rand').onclick=randomize;
 $('roll').onclick=()=>startRoll();
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
@@ -869,7 +872,7 @@ function startRoll(){
   Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
   const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.6*k), halfX=1.9*k;
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
-  world.defaultContactMaterial.friction=.4; world.defaultContactMaterial.restitution=state.bounce;
+  world.defaultContactMaterial.friction=.3; world.defaultContactMaterial.restitution=state.bounce;
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
@@ -905,14 +908,32 @@ function readResult(){
   });
   return parts;
 }
-function restCheck(dt){   // own rest detection: cannon's sleep can hover in 'sleepy' for rounded-ish dice
-  const still=bodies.every(b=>b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5&&b.position.y<TABLE_Y+2.4);
-  restT=still?restT+dt:Math.max(0,restT-dt*.5); return restT>.5;
+function tiltInfo(i){                                   // how far die i is from lying flat, and which way to tip it
+  const d=dice[i], b=bodies[i], q=new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w), four=d.faces.length===4;
+  let best=null, bv=four?1e9:-1e9; d.faces.forEach(f=>{ const n=f.n.clone().applyQuaternion(q); if(four?n.y<bv:n.y>bv){bv=n.y;best=n;} });
+  return {flat:Math.abs(bv), n:best, four};
+}
+function assistSettle(dt){          // dice that stop while leaning on a neighbour get a small tip-over nudge instead of waiting for the retry cycle
+  bodies.forEach((b,i)=>{
+    const slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; b.slowT=slow?(b.slowT||0)+dt:0; b.cool=Math.max(0,(b.cool||0)-dt);
+    if(b.slowT<.25||b.cool>0) return;
+    const stacked=b.position.y>TABLE_Y+1.35, t=tiltInfo(i), lean=t.flat<.985&&!stacked;
+    if(lean) b.fails=(b.fails||0)+1;
+    if(stacked||(lean&&b.fails>=2)){          // stacked, or already nudged once without success: hop away from the neighbours it is leaning on
+      b.fails=0; let ox=0,oz=0; bodies.forEach((o,j)=>{ if(j!==i){ const dx=b.position.x-o.position.x, dz=b.position.z-o.position.z, dd=Math.hypot(dx,dz)||1; if(dd<2.4){ ox+=dx/dd; oz+=dz/dd; } } });
+      if(!ox&&!oz){ ox=Math.random()-.5; oz=Math.random()-.5; } b.wakeUp(); b.velocity.set(ox*1.8,2.2,oz*1.8); b.cool=.6; }
+    else if(lean){ const target=new THREE.Vector3(0,t.four?-1:1,0), axis=new THREE.Vector3().crossVectors(t.n,target); const ang=Math.asin(Math.min(1,axis.length()));
+      if(axis.lengthSq()>1e-8){ axis.normalize().multiplyScalar(4+ang*8); b.wakeUp(); b.angularVelocity.vadd(new CANNON.Vec3(axis.x,axis.y,axis.z),b.angularVelocity); b.cool=.35; } }
+  });
+}
+function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
+  return bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);
 }
 function finishRoll(){ restT=0;
   const parts=readResult();
-  const bad=bodies.map((b,i)=>parts[i].flat<.985||b.position.y>TABLE_Y+1.45);   // cocked (leaning) or stacked on another die
-  if(bad.some(Boolean) && retries<8){ retries++;
+  const flatOK=rollT>6?.8:rollT>3.5?.9:.985;   // after a few seconds, a die leaning slightly (still clearly on one face) is accepted
+  const bad=bodies.map((b,i)=>parts[i].flat<flatOK||b.position.y>TABLE_Y+1.45);   // cocked (leaning) or stacked on another die
+  if(bad.some(Boolean) && retries<8 && rollT<14){ retries++;
     bodies.forEach((b,i)=>{ if(!bad[i]) return; b.wakeUp(); b.velocity.set(-b.position.x*1.2+(Math.random()-.5)*5,5,-b.position.z*1.2+(Math.random()-.5)*4);
       b.angularVelocity.set((Math.random()-.5)*14,(Math.random()-.5)*14,(Math.random()-.5)*14); }); return; }
   settled=true;
@@ -959,13 +980,14 @@ function fireBurst(b){ b.fired=true; b.done=false; b.origin.copy(b.die.mesh.posi
 function triggerFx(parts){
   clearFx(); parts.forEach((p,i)=>{ const d=dice[i]; if(!d||d.name!=='d20') return; if(p.label===20) fx.crit.push(d); else if(p.label===1) fx.fumble.push(d); });
   fx.crit.forEach((d,j)=>{ while(bursts.length<=j) bursts.push(makeBurst()); const b=bursts[j]; b.die=d; b.start=j*BURST_GAP; b.fired=false; b.done=false; });   // each 20 shoots its own burst in turn
-  if(fx.crit.length) $('result').classList.add('crit'); else if(fx.fumble.length) $('result').classList.add('fumble');
+  if(fx.crit.length>=fx.fumble.length&&fx.crit.length) $('result').classList.add('crit'); else if(fx.fumble.length) $('result').classList.add('fumble');
   fx.t=0;
   const tag=document.createElement('div'); tag.className='brk'; tag.style.cssText='letter-spacing:.2em;text-transform:uppercase;margin-top:6px';
-  if(fx.crit.length){ tag.textContent=fx.crit.length>1?`✦ ${fx.crit.length} × Natural 20 ✦`:'✦ Natural 20 ✦'; $('result').append(tag); } else if(fx.fumble.length){ tag.textContent='Natural 1'; $('result').append(tag); }
+  const c20=fx.crit.length>1?`${fx.crit.length} × Natural 20`:'Natural 20', c1=fx.fumble.length>1?`${fx.fumble.length} × Natural 1`:'Natural 1';
+  if(fx.crit.length||fx.fumble.length){ tag.textContent=fx.crit.length&&fx.fumble.length?`✦ ${c20} ✦  ·  ${c1}`:fx.crit.length?`✦ ${c20} ✦`:c1; $('result').append(tag); }
 }
 function updateFx(dt){
-  if(!fx.crit.length&&!fx.fumble.length&&fx.dim===0) return;
+  if(!fx.crit.length&&!fx.fumble.length) return;
   if(!fx.hold) fx.t+=dt; const t=fx.t, step=fx.hold?0:dt; let lightI=0, lightB=null;
   fx.crit.forEach((d,j)=>{ const b=bursts[j]; if(t>=b.start&&!b.fired) fireBurst(b);
     d.mat.userData.fx.uGlow.value=b.fired?Math.min(1,(t-b.start)*3)*(.15+.06*Math.sin(t*3.2)):0;       // glow starts when this die's burst fires
@@ -978,8 +1000,9 @@ function updateFx(dt){
     const fa=age/.7; b.fl.visible=fa<1; if(b.fl.visible){ b.fl.position.copy(b.origin); b.fl.position.y+=.3; b.fl.quaternion.copy(camera.quaternion); b.fl.scale.setScalar(1.5+fa*9); b.fl.material.opacity=(1-fa)*.9; }
     const li=90*Math.exp(-age*2.6); lightI+=li; if(!lightB||li>0) lightB=b; });
   if(lightB){ critLight.position.set(lightB.origin.x,lightB.origin.y+1.6,lightB.origin.z); critLight.intensity=Math.min(lightI,110); } else critLight.intensity=0;
-  if(fx.fumble.length&&!fx.crit.length){ const r=Math.min(1,t/1.1), e=1-Math.pow(1-r,2); for(const d of fx.fumble) d.mat.userData.fx.uGray.value=.9*e; fx.dim=e;
-    key.intensity=BASE_KEY*(1-.7*e); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*e); }
+  if(fx.fumble.length){ const r=Math.min(1,t/1.1), e=1-Math.pow(1-r,2); for(const d of fx.fumble) d.mat.userData.fx.uGray.value=.9*e;     // every nat 1 die fades to gray
+    fx.dim=fx.fumble.length>fx.crit.length?e:0;                                                                                          // the room only dims when 1s outnumber 20s
+    key.intensity=BASE_KEY*(1-.7*fx.dim); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*fx.dim); }
 }
 const clock=new THREE.Clock();
 renderer.setAnimationLoop(()=>{
@@ -991,7 +1014,8 @@ renderer.setAnimationLoop(()=>{
   }
   if(rolling&&world){
     world.step(1/60,dt,4); rollT+=dt;
-    if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
+    if(!settled) assistSettle(dt);
+    if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
@@ -1025,12 +1049,13 @@ if(new URLSearchParams(location.search).get('test')==='incl'){ // loaders: OBJ +
 if(new URLSearchParams(location.search).get('test')==='fx'){ const want=+new URLSearchParams(location.search).get('face')||20; startRoll();
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
-  triggerFx(dice.map(()=>({label:want}))); { const T=+new URLSearchParams(location.search).get('t')||.5; for(let i=0;i<Math.round(T*60);i++) updateFx(1/60); fx.hold=true; } console.log('FX_SET',fx.crit.length,fx.fumble.length); }
+  triggerFx(dice.map((_,i)=>({label:new URLSearchParams(location.search).get('mix')?(i%2?1:20):want}))); { const T=+new URLSearchParams(location.search).get('t')||.5; for(let i=0;i<Math.round(T*60);i++) updateFx(1/60); fx.hold=true; } console.log('FX_SET',fx.crit.length,fx.fumble.length,'dim',fx.dim.toFixed(2),'gray',fx.fumble.map(d=>d.mat.userData.fx.uGray.value.toFixed(2)).join(','),'glow',fx.crit.map(d=>d.mat.userData.fx.uGlow.value.toFixed(2)).join(',')); }
 if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
   state.radius=.1; applyLook(); await undo(); const e2=snapshot();
   console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
 if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ startRoll(); // fast-forward the sim for headless testing
-  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6);
+  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
+    if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
@@ -1038,6 +1063,9 @@ if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: ra
   randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
   document.querySelector(`#subs button[data-id=${other}]`).click(); document.querySelector(`#subs button[data-id=${sub}]`).click();
   console.log('SUBS_STABLE',before===JSON.stringify(state.colors),sub,other); }
+if(new URLSearchParams(location.search).get('test')==='json2'){ state.shape='custom'; state.notation='3d8+2d6+4'; state.substrate='swirl'; $('dname').value='Giant club attack'; buildDice();
+  const j=JSON.stringify(designToJSON()); state.shape='d20'; state.notation='d20'; $('dname').value=''; buildDice(); await loadDesign(JSON.parse(j));
+  console.log('JSON2',state.shape,state.notation,$('dname').value,dice.length,JSON.parse(j).name); }
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
 window.__ready=true; window.__bootDone&&window.__bootDone();
 window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
