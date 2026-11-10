@@ -1,14 +1,15 @@
 ---
 id: PD-29
 title: 'Epoxy: see-through translucency'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:58:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: high
-ordinal: 29000
+ordinal: 15000
 ---
 
 ## Description

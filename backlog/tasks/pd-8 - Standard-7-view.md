@@ -1,14 +1,15 @@
 ---
 id: PD-8
 title: Standard 7 view
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - view
 dependencies: []
 priority: high
-ordinal: 8000
+ordinal: 2000
 ---
 
 ## Description

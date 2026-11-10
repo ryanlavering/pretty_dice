@@ -1,14 +1,15 @@
 ---
 id: PD-33
 title: 'Standard 7 layout: d10 beside d%; fit multi-dice views to narrow windows'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T22:04:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - view
 dependencies: []
 priority: low
-ordinal: 33000
+ordinal: 19000
 ---
 
 ## Description

@@ -1,14 +1,15 @@
 ---
 id: PD-32
 title: Calmer backdrop; remove blob shadow
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T22:02:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: low
-ordinal: 32000
+ordinal: 18000
 ---
 
 ## Description

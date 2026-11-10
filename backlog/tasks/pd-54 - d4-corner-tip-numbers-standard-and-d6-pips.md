@@ -1,12 +1,13 @@
 ---
 id: PD-54
 title: d4 corner-tip numbers (standard) and d6 pips
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T02:54:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels: []
 dependencies: []
-ordinal: 54000
+ordinal: 38000
 ---
 
 ## Description

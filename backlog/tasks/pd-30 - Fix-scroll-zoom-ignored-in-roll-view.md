@@ -1,14 +1,15 @@
 ---
 id: PD-30
 title: 'Fix: scroll zoom ignored in roll view'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:58:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: medium
-ordinal: 30000
+ordinal: 16000
 ---
 
 ## Description

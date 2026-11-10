@@ -1,14 +1,15 @@
 ---
 id: PD-36
 title: Stone variants and accent randomization
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T22:15:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: medium
-ordinal: 36000
+ordinal: 22000
 ---
 
 ## Description

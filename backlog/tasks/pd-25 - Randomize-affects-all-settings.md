@@ -1,14 +1,15 @@
 ---
 id: PD-25
 title: Randomize affects all settings
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:52:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - ux
 dependencies: []
 priority: medium
-ordinal: 25000
+ordinal: 11000
 ---
 
 ## Description

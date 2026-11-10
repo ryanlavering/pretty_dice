@@ -1,14 +1,15 @@
 ---
 id: PD-42
 title: 'Fix: page failed to start when an inclusion model was saved'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T00:31:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: high
-ordinal: 42000
+ordinal: 27000
 ---
 
 ## Description

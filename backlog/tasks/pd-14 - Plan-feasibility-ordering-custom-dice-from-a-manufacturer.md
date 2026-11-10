@@ -1,15 +1,15 @@
 ---
 id: PD-14
 title: 'Plan + feasibility: ordering custom dice from a manufacturer'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
-updated_date: '2026-11-09T21:36:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - research
 dependencies: []
 priority: high
-ordinal: 14000
+ordinal: 8000
 ---
 
 ## Description

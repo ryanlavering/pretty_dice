@@ -1,14 +1,15 @@
 ---
 id: PD-28
 title: Right-drag orbits the camera
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:54:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - ux
 dependencies: []
 priority: medium
-ordinal: 28000
+ordinal: 14000
 ---
 
 ## Description

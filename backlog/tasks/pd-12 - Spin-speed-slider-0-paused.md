@@ -1,14 +1,15 @@
 ---
 id: PD-12
 title: Spin speed slider (0 = paused)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - ux
 dependencies: []
 priority: medium
-ordinal: 12000
+ordinal: 6000
 ---
 
 ## Description

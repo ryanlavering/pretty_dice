@@ -1,14 +1,15 @@
 ---
 id: PD-31
 title: Undo/redo for design changes (esp. Randomize)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:59:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - ux
 dependencies: []
 priority: high
-ordinal: 31000
+ordinal: 17000
 ---
 
 ## Description

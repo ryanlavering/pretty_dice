@@ -1,14 +1,15 @@
 ---
 id: PD-40
 title: 'Startup robustness: boot overlay, ?reset=1, sanitised saved state'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T00:14:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: high
-ordinal: 40000
+ordinal: 25000
 ---
 
 ## Description

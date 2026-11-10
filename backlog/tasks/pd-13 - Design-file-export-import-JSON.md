@@ -1,15 +1,15 @@
 ---
 id: PD-13
 title: Design file export/import (JSON)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
-updated_date: '2026-11-09T21:36:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - export
 dependencies: []
 priority: high
-ordinal: 13000
+ordinal: 7000
 ---
 
 ## Description

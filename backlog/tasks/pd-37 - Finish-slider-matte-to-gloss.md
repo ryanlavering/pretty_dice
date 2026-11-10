@@ -1,14 +1,15 @@
 ---
 id: PD-37
 title: Finish slider (matte to gloss)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T22:27:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: medium
-ordinal: 37000
+ordinal: 23000
 ---
 
 ## Description

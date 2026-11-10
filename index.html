@@ -112,6 +112,8 @@
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
     <div class="grid two" style="margin-bottom:6px"><button id="undo" title="Ctrl+Z">↶ Undo</button><button id="redo" title="Ctrl+Shift+Z / Ctrl+Y">Redo ↷</button></div>
     <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02"></div>
+    <div class="row"><label>Dice friction</label><input type="range" id="fricdice" min="0" max="1" step="0.02"></div>
+    <div class="row"><label>Mat friction</label><input type="range" id="fricmat" min="0" max="1" step="0.02"></div>
 
     <h2>Substrate</h2>
     <div class="grid two" id="subs"></div>
@@ -623,7 +625,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.1, fricMat:.2, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
@@ -900,9 +902,9 @@ function syncUI(){
   $('numstyle').value=state.numRaised?'raised':'inset'; $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
   $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce'],['fricdice','fricDice'],['fricmat','fricMat']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft','panel','panelDepth']);
-for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
+for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(world&&(k==='bounce'||k==='fricDice'||k==='fricMat')) applyContacts(); };
 $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
   checkpoint(); state.inclusion=v; buildDice(true); };
 $('loadmodel').onclick=()=>$('modelfile').click();
@@ -1028,6 +1030,8 @@ new ResizeObserver(resize).observe(stage); resize();
 /* ---------- physics roll (cannon-es) ---------- */
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, camBlend=0;
 const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
+let diceMat,matMat,ccDD,ccDM;
+function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
@@ -1038,13 +1042,15 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
   Object.assign(key.shadow.camera,{left:-7.3*k,right:7.3*k,top:7.3*k,bottom:-7.3*k,far:20+10*k}); key.shadow.camera.updateProjectionMatrix();   // bigger tray + farther camera for sets
   const dist=Math.hypot(ROLL_CAM.y,ROLL_CAM.z), halfZ=THREE.MathUtils.clamp(Math.tan(THREE.MathUtils.degToRad(16))*dist*camera.aspect*.8,1.4,3.6*k), halfX=1.9*k;
   world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
-  world.defaultContactMaterial.friction=.3; world.defaultContactMaterial.restitution=state.bounce;
-  const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
+  world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
+  diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
+  world.addContactMaterial(ccDD=new CANNON.ContactMaterial(diceMat,diceMat)); world.addContactMaterial(ccDM=new CANNON.ContactMaterial(diceMat,matMat)); applyContacts();
+  const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,material:matMat,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
   const starts=[], dropH=3.5+5*state.zoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
-    const b=new CANNON.Body({mass:1, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
+    const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
     const n=dice.length, R=()=>Math.random()-.5, rq=new THREE.Quaternion().random();

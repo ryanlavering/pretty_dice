@@ -1,14 +1,15 @@
 ---
 id: PD-44
 title: Roll camera from the left, higher; random drop positions
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T00:50:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: medium
-ordinal: 44000
+ordinal: 29000
 ---
 
 ## Description

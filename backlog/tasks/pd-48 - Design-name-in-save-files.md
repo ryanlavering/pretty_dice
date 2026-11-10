@@ -1,14 +1,15 @@
 ---
 id: PD-48
 title: Design name in save files
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T01:36:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - export
 dependencies: []
 priority: medium
-ordinal: 48000
+ordinal: 33000
 ---
 
 ## Description

@@ -1,14 +1,15 @@
 ---
 id: PD-11
 title: Persist settings (zoom, per-substrate palettes, all sliders)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - ux
 dependencies: []
 priority: high
-ordinal: 11000
+ordinal: 5000
 ---
 
 ## Description

@@ -1,14 +1,15 @@
 ---
 id: PD-46
 title: Nat 1 vs nat 20 shading rules
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T01:36:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: medium
-ordinal: 46000
+ordinal: 31000
 ---
 
 ## Description

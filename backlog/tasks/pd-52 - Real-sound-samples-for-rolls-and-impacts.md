@@ -4,6 +4,7 @@ title: Real sound samples for rolls and impacts
 status: To Do
 assignee: []
 created_date: '2026-11-10T01:58:00Z'
+updated_date: '2026-11-10T16:23:00Z'
 labels:
   - audio
 dependencies: []
@@ -23,3 +24,11 @@ Replace or blend the synthesised sounds with recorded samples. Sources: (a) user
 - [ ] #2 Impacts pick a sample by substrate and impact speed with randomised pitch and variation
 - [ ] #3 Synth sounds remain as fallback if samples fail to load
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-10 feedback: wants thud, clack, stone, glass samples; do some sound sampling.
+
+Sample budget (2026-11-10): takes(5) x surfaces(S) x substrates(D) x amounts(single/few/many 5-10) x shapes(6, optional). Random take per event keeps it organic. Code lists ~12 substrates (5 base + 7 stone), 1 surface today: 5x1x12x3x6 = 1080 clips full matrix. Grouping by material class (plastic/resin, metal, stone, glass = 4) gives 5x4x3x6 = 360 per surface; dropping shape = 60 per surface. Likely start with the 60-clip class set, add shape/surface variants only where audible.
+<!-- SECTION:NOTES:END -->

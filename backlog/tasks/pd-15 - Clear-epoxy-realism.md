@@ -1,15 +1,15 @@
 ---
 id: PD-15
 title: Clear epoxy realism
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:28:00Z'
-updated_date: '2026-11-09T21:52:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: medium
-ordinal: 15000
+ordinal: 9000
 ---
 
 ## Description

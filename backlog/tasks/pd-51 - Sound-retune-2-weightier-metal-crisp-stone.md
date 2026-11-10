@@ -1,14 +1,15 @@
 ---
 id: PD-51
 title: 'Sound retune 2: weightier metal, crisp stone'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T01:55:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: low
-ordinal: 51000
+ordinal: 36000
 ---
 
 ## Description

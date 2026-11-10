@@ -1,14 +1,15 @@
 ---
 id: PD-24
 title: 'Fix: palette lost after randomize -> switch substrate -> switch back'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:37:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: high
-ordinal: 24000
+ordinal: 10000
 ---
 
 ## Description

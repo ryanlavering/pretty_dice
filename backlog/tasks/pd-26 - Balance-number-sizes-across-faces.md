@@ -1,14 +1,15 @@
 ---
 id: PD-26
 title: Balance number sizes across faces
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:52:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: medium
-ordinal: 26000
+ordinal: 12000
 ---
 
 ## Description

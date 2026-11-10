@@ -1,15 +1,15 @@
 ---
 id: PD-49
 title: Roll and collision sounds
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T01:36:00Z'
-updated_date: '2026-11-10T01:43:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: low
-ordinal: 49000
+ordinal: 34000
 ---
 
 ## Description

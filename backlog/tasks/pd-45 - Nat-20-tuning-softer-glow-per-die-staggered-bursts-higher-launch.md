@@ -1,14 +1,15 @@
 ---
 id: PD-45
 title: 'Nat 20 tuning: softer glow, per-die staggered bursts, higher launch'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T00:56:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: low
-ordinal: 45000
+ordinal: 30000
 ---
 
 ## Description

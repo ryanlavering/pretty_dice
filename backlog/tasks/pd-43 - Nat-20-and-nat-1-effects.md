@@ -1,14 +1,15 @@
 ---
 id: PD-43
 title: Nat 20 and nat 1 effects
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T00:48:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - physics
 dependencies: []
 priority: medium
-ordinal: 43000
+ordinal: 28000
 ---
 
 ## Description

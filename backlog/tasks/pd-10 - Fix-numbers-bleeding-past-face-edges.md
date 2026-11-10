@@ -1,14 +1,15 @@
 ---
 id: PD-10
 title: Fix numbers bleeding past face edges
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T21:27:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - bug
 dependencies: []
 priority: high
-ordinal: 10000
+ordinal: 4000
 ---
 
 ## Description

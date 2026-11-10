@@ -1,14 +1,15 @@
 ---
 id: PD-53
 title: 'Offline support: vendor/ fallback and single-file static build'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T02:08:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - infra
 dependencies: []
 priority: medium
-ordinal: 53000
+ordinal: 37000
 ---
 
 ## Description

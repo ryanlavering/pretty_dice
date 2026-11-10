@@ -1,15 +1,15 @@
 ---
 id: PD-38
 title: Model inclusion in epoxy dice
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-09T22:41:00Z'
-updated_date: '2026-11-10T00:28:00Z'
+updated_date: '2026-11-10T16:28:00Z'
 labels:
   - look
 dependencies: []
 priority: low
-ordinal: 38000
+ordinal: 24000
 ---
 
 ## Description
