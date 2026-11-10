@@ -22,7 +22,10 @@
   button.on{border-color:var(--accent);background:#2a2619;color:var(--accent)}
   button.big{width:100%;padding:11px;font-weight:600;background:var(--accent);color:#1a1405;border:0;margin-top:6px}
   button.big.alt{background:#1d212c;color:var(--ink);border:1px solid var(--line)}
-  button.big.alt.on{border-color:var(--accent);color:var(--accent)}
+  #actions{margin-top:4px;display:grid;gap:8px}
+  #modesw{display:grid;grid-template-columns:1fr 1fr;padding:3px;background:#1d212c;border:1px solid var(--line);border-radius:999px}
+  #modesw button{border:0;background:transparent;color:var(--dim);font-weight:600;padding:9px 0;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
+  #modesw button.on{background:var(--accent);color:#1a1405}
   .row{display:flex;gap:8px;align-items:center;margin:6px 0}
   .row label{flex:1;color:var(--dim)}
   input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
@@ -86,7 +89,8 @@
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
 
-    <div class="grid two" id="actions" style="margin-top:4px"><button class="big" id="rand" style="grid-column:span 2">Randomize</button><button class="big" id="roll">Roll</button><button class="big alt" id="back">Showcase</button></div>
+    <div id="actions"><button class="big" id="rand">Randomize</button>
+      <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view (tap again to re-roll)">Roll</button></div></div>
 
     <h2>Shape</h2>
     <div class="grid" id="shapes"></div>
@@ -1122,7 +1126,7 @@ function finishRoll(){ restT=0;
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
-function syncMode(){ $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); }   // icon shows where a tap goes
+function syncMode(){ $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
 $('mode').onclick=()=>{ if(rolling) exitRoll(); else startRoll(); };
 syncMode();
 
