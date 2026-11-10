@@ -1,10 +1,10 @@
 ---
 id: PD-60
 title: Friction sliders (dice-dice, dice-mat) beside bounciness
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-10T16:35:00Z'
+updated_date: '2026-11-10T17:05:00Z'
 labels:
   - feature
   - physics
