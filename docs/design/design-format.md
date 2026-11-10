@@ -15,7 +15,9 @@ Dice designs are saved/loaded from the app (Export -> Save design / Load design)
   "paint_mode": "custom",
   "pattern": { "scale": 1.6, "offset": [11, 23, 37], "seed": 123456 },
   "edge_radius": 0.04,
-  "numbers": { "font": "cinzel", "size": 0.65, "rotation_deg": 0, "d4_style": "tips", "d6_style": "numbers", "depth": 2.2, "softness": 3 }
+  "numbers": { "font": "cinzel", "size": 0.65, "rotation_deg": 0, "d4_style": "tips", "d6_style": "numbers", "depth": 2.2, "softness": 3 },
+  "relief": { "panel": 0, "panel_depth": 0.5, "numbers": "inset", "paint_numbers": true, "patina": 0 },
+  "filigree": { "style": "none", "filled": true, "enamel": null }
 }
 ```
 

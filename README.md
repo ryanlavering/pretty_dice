@@ -26,6 +26,7 @@ TBD
 - **Paint**: Auto (contrast + harmony), Random, or Custom.
 - **Export**: PNG/JPG at current view, 1024, 2048 or 4096 px; save/load design as JSON.
 - **Roll**: cannon-es rigid-body physics on a table; **Standard 7** view shows the full set.
+- **Relief & filigree**: recessed face panels with a sloped rim, raised or inset numbers, darker/duller patina in recesses, and scroll/beaded/art-deco filigree etched into each face and filled with enamel (not on d4 corner-tip dice).
 - **Epoxy inclusion**: a built-in rubber duck or your own glb/obj/stl miniature cast inside clear epoxy.
 - **Settings** persist in localStorage.
 

@@ -131,6 +131,20 @@
     <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
     <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
 
+    <h2>Relief &amp; patina</h2>
+    <div class="row"><label>Face panel</label><input type="range" id="panel" min="0" max="0.3" step="0.01"></div>
+    <div class="row"><label>Panel depth</label><input type="range" id="paneldepth" min="0" max="1" step="0.01"></div>
+    <div class="row"><label>Numbers</label><select id="numstyle"><option value="inset">Inset</option><option value="raised">Raised (embossed)</option></select></div>
+    <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
+    <div class="row"><label>Patina</label><input type="range" id="patina" min="0" max="1" step="0.01"></div>
+    <button id="antique" style="width:100%;margin-bottom:6px">Antique relief preset</button>
+
+    <h2>Filigree</h2>
+    <div class="row"><label>Style</label><select id="filigree"><option value="none">None</option><option value="scroll">Scrollwork</option><option value="beads">Beaded border</option><option value="deco">Art-deco lines</option></select></div>
+    <div class="chk"><input type="checkbox" id="filifill"><span>Fill with enamel</span></div>
+    <div class="chk"><input type="checkbox" id="enamelsame"><span>Enamel matches number paint</span></div>
+    <div class="row"><label>Enamel</label><input type="color" id="enamel"></div>
+
     <h2>Generate</h2>
     <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
     <div class="chk"><input type="checkbox" id="randshape"><span>Randomize shape too</span></div>
@@ -276,11 +290,44 @@ function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2: perce
 const slerp=(a,b,t)=>{const th=Math.acos(THREE.MathUtils.clamp(a.dot(b),-1,1)); if(th<1e-6) return a.clone();
   return a.clone().multiplyScalar(Math.sin((1-t)*th)).addScaledVector(b,Math.sin(t*th)).multiplyScalar(1/Math.sin(th));};
 
-function buildGeometry(faces, atlas, radius, numSize, numRot){
-  const pos=[],nor=[],uv=[],cb=[];
+/* Filigree: vector ornament along each face edge, drawn into the number atlas. Etched into the bump map (darken) and
+   written to the mask's green channel (lighten) so the shader can fill it with enamel. poly = face corners in atlas px (x right, y up). */
+function drawFiligree(atlas,col,row,poly,rp,insetPx,style,soft){
+  const cell=atlas.cell, k=Math.max(.3,1-insetPx/rp), Q=poly.map(([x,y])=>[x*k,-y*k]), lw=Math.max(2.2,rp*.034);
+  for(const [img,colr,comp,blur] of [[atlas.bump.image,'#000','darken',soft*.5],[atlas.mask.image,'#0f0','lighten',.6]]){
+    const g=img.getContext('2d'); g.save(); g.beginPath(); g.rect(col*cell,row*cell,cell,cell); g.clip();
+    g.translate((col+.5)*cell,(row+.5)*cell); g.globalCompositeOperation=comp; g.strokeStyle=g.fillStyle=colr; g.lineCap=g.lineJoin='round'; g.lineWidth=lw; if(blur) g.filter=`blur(${blur}px)`;
+    const dot=(x,y,r,fill)=>{ g.beginPath(); g.arc(x,y,r,0,7); fill?g.fill():g.stroke(); };
+    for(let i=0;i<Q.length;i++){
+      const A=Q[i], B=Q[(i+1)%Q.length], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, mx=(A[0]+B[0])/2, my=(A[1]+B[1])/2;
+      let nx=-uy, ny=ux; if(nx*mx+ny*my>0){nx=-nx; ny=-ny;}                    // inward normal
+      const at=(s,o)=>[A[0]+ux*s+nx*o, A[1]+uy*s+ny*o], line=(s0,s1,o)=>{ g.beginPath(); g.moveTo(...at(s0,o)); g.lineTo(...at(s1,o)); g.stroke(); }, trim=rp*.13;
+      if(style==='scroll'){
+        const n=Math.max(2,Math.round((L-2*trim)/(rp*.8))), p=(L-2*trim)/n, amp=rp*.085, rc=rp*.05;
+        g.beginPath(); for(let s=0;s<=L-2*trim;s+=2){ const [x,y]=at(trim+s,amp*Math.sin(2*Math.PI*s/p)); s?g.lineTo(x,y):g.moveTo(x,y); } g.stroke();
+        for(let j=0;j<n;j++){ const [x,y]=at(trim+p*(j+.25),amp+rc); dot(x,y,rc,false); dot(x,y,lw*.7,true);
+          const [x2,y2]=at(trim+p*(j+.75),-amp-rc*.9); dot(x2,y2,rc*.55,true); }
+        line(trim*.5,L-trim*.5,-amp-rc*2.6);
+      } else if(style==='beads'){
+        const n=Math.max(3,Math.round((L-2*trim)/(rp*.15)));
+        for(let j=0;j<=n;j++){ const [x,y]=at(trim+(L-2*trim)*j/n,0); dot(x,y,lw*1.35,true); }
+        line(trim*.5,L-trim*.5,lw*4.2); line(trim*.5,L-trim*.5,-lw*4.2);
+      } else {
+        line(trim*.5,L-trim*.5,0); line(trim*.5,L-trim*.5,lw*3.4);
+        const n=Math.max(2,Math.round((L-2*trim)/(rp*.3))), p=(L-2*trim)/n;
+        for(let j=0;j<n;j++){ const s=trim+p*(j+.5); g.beginPath(); g.moveTo(...at(s-p*.22,lw*6.5)); g.lineTo(...at(s,lw*10)); g.lineTo(...at(s+p*.22,lw*6.5)); g.stroke(); }
+      }
+    }
+    for(const [x,y] of Q){ dot(x,y,rp*.05,false); dot(x,y,lw*1.1,true); }       // corner rosettes
+    g.restore();
+  }
+}
+
+function buildGeometry(faces, atlas, radius, numSize, numRot, opts={}){
+  const pos=[],nor=[],uv=[],cb=[],rc=[]; let curRC=0; const panelF=opts.panel||0;
   let curCell=[0,0,1,1];
   const maxHD=Math.max(...atlas.info.map(i=>i.halfDiag));   // one scale for every label so 8 and 10 print at the same size
-  const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v); cb.push(...curCell);};
+  const push=(p,n,u,v)=>{pos.push(p.x,p.y,p.z); nor.push(n.x,n.y,n.z); uv.push(u,v); cb.push(...curCell); rc.push(curRC);};
   let R=0, SV=null;                                   // R: clamped radius, SV: shrunk vertex per original vertex id
   if(radius>0){
     R=Math.min(radius, 0.3*Math.min(...faces.map(f=>f.d)));
@@ -312,8 +359,18 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
     const col=i%atlas.cols, row=Math.floor(i/atlas.cols), cu=(col+.5)/atlas.cols, cv=1-(row+.5)/atlas.rows;
     const opx=atlas.layout?(numSize/.65)*r/LAYOUT_UNIT[atlas.layout]:numSize*r/maxHD;                      // object units per atlas pixel: text box fits numSize * inradius
     curCell=[col/atlas.cols,1-(row+1)/atlas.rows,(col+1)/atlas.cols,1-row/atlas.rows];
-    const put=p=>{const d=new THREE.Vector3().subVectors(p,C); push(p,n,cu+d.dot(right)/opx/(atlas.cols*atlas.cell), cv+d.dot(up)/opx/(atlas.rows*atlas.cell));};
-    for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
+    const put=(p,nn=n,rcv=0)=>{const d=new THREE.Vector3().subVectors(p,C); curRC=rcv; push(p,nn,cu+d.dot(right)/opx/(atlas.cols*atlas.cell), cv+d.dot(up)/opx/(atlas.rows*atlas.cell));};
+    if(opts.filigree&&opts.filigree!=='none'&&atlas.layout!=='tips'){
+      const poly=P.map(p=>{const d=new THREE.Vector3().subVectors(p,C); return [d.dot(right)/opx, d.dot(up)/opx];});
+      drawFiligree(atlas,col,row,poly,r/opx,(panelF+.09)*r/opx,opts.filigree,opts.soft||3); }
+    if(panelF>0){                                      // recessed panel: sloped rim wall + lowered floor
+      const hP=(opts.panelDepth??.5)*.16*r, Cn=C.clone().addScaledVector(n,-hP), Q=P.map(p=>new THREE.Vector3().lerpVectors(C,p,1-panelF).addScaledVector(n,-hP));
+      for(let k=0;k<m;k++){ const k2=(k+1)%m, a=P[k], b=P[k2];
+        put(Cn,n,1); put(Q[k],n,1); put(Q[k2],n,1);
+        const o=new THREE.Vector3().subVectors(b,a).cross(n).normalize(), rk=-new THREE.Vector3().subVectors(C,a).dot(o);
+        const nw=n.clone().multiplyScalar(panelF*rk).addScaledVector(o,-hP).normalize();
+        put(a,nw,0); put(b,nw,0); put(Q[k2],nw,1);  put(a,nw,0); put(Q[k2],nw,1); put(Q[k],nw,1); }
+    } else for(let k=0;k<m;k++){put(C);put(P[k]);put(P[(k+1)%m]);}
   });
   curCell=[0,0,1,1];
   if(R>0){
@@ -345,12 +402,14 @@ function buildGeometry(faces, atlas, radius, numSize, numRot){
   g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
   g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
   g.setAttribute('cellB',new THREE.Float32BufferAttribute(cb,4));
+  g.setAttribute('rec',new THREE.Float32BufferAttribute(rc,1));
+  if(opts.filigree&&opts.filigree!=='none'){ atlas.bump.needsUpdate=true; atlas.mask.needsUpdate=true; }
   return g;
 }
 
 /* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
 const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
-  uMode:{value:1}, uStone:{value:0}, uAccent:{value:.5}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0} };
+  uMode:{value:1}, uStone:{value:0}, uAccent:{value:.5}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0}, uEnamel:{value:new THREE.Color()}, uFill:{value:1}, uPatina:{value:0}, uNumPaint:{value:1} };
 
 const GLSL_NOISE = `
 float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -434,33 +493,38 @@ function makeMaterial(atlas){
     Object.assign(sh.uniforms, U, m.userData.fx, {uMask:{value:atlas.mask}});
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>',`#include <common>
-        attribute vec4 cellB; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;`)
+        attribute vec4 cellB; attribute float rec; varying float vRec; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;`)
       .replace('#include <begin_vertex>',`#include <begin_vertex>
-        vOP=position; vPUv=uv; vCell=cellB; vView=position-(inverse(modelMatrix)*vec4(cameraPosition,1.)).xyz; vONrm=normal;`);
+        vOP=position; vPUv=uv; vCell=cellB; vRec=rec; vView=position-(inverse(modelMatrix)*vec4(cameraPosition,1.)).xyz; vONrm=normal;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>',`#include <common>
         uniform vec3 uC1,uC2,uC3,uPaint,uOff,uGlowCol; uniform float uGlow,uGray; uniform int uMode, uStone; uniform float uScale,uFlake,uBrush,uAccent; uniform sampler2D uMask;
         varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
-        uniform float uGlitter,uBubbles,uTint;
+        uniform float uGlitter,uBubbles,uTint; varying float vRec; uniform vec3 uEnamel; uniform float uFill,uPatina,uNumPaint;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
         vec4 bumpSample(sampler2D t, vec2 u){return inCell(u)?texture2D(t,u):vec4(1.);}
         ${GLSL_NOISE}
         ${GLSL_VOLUME}`)
       .replace('#include <bumpmap_pars_fragment>', THREE.ShaderChunk.bumpmap_pars_fragment.split('texture2D( bumpMap, ').join('bumpSample( bumpMap, '))
       .replace('#include <color_fragment>',`#include <color_fragment>
-        float pm = inCell(vPUv) ? smoothstep(.35,.65,texture2D(uMask,vPUv).r) : 0.;
+        vec3 mk = inCell(vPUv) ? texture2D(uMask,vPUv).rgb : vec3(0.);
+        float pm = smoothstep(.35,.65,mk.r)*uNumPaint;
+        float pfo = smoothstep(.35,.65,mk.g)*(1.-smoothstep(.35,.65,mk.r))*uFill;
         vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? (gl_FrontFacing ? volume(vOP,vView,vONrm,volGlow) : uC1) : pattern(vOP*uScale+uOff);
         // epoxy: the colour only tints what is seen through the die (transmission multiplies by diffuse), so keep it light
         diffuseColor.rgb = mix(uMode==3 ? mix(vec3(1.),baseCol,uTint) : baseCol, uPaint, pm);
+        diffuseColor.rgb = mix(diffuseColor.rgb, uEnamel, pfo); pm = max(pm,pfo);
+        float pat = clamp(uPatina*smoothstep(.05,.9,vRec)*(.6+.8*vn(vOP*26.))*(1.-pm),0.,1.);   // recessed panels go dark and dull
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb*vec3(.5,.58,.46), pat);
         float lumD=dot(diffuseColor.rgb,vec3(.3,.59,.11)); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(lumD*.6),uGray)*(1.-.4*uGray);
         volGlow = (volGlow + (uMode==3 ? baseCol*.06 : vec3(0.))) * (1.-pm);
         volGlow = mix(volGlow, vec3(0.), uGray) + uGlowCol*uGlow;`)
       .replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
         totalEmissiveRadiance += volGlow;`)
       .replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
-        roughnessFactor = mix(roughnessFactor + uBrush*(vn(vOP*vec3(2.,90.,2.))-.5), .5, pm);`)
+        roughnessFactor = mix(roughnessFactor + uBrush*(vn(vOP*vec3(2.,90.,2.))-.5), .5, pm); roughnessFactor = mix(roughnessFactor, .9, pat);`)
       .replace('#include <metalnessmap_fragment>',`#include <metalnessmap_fragment>
-        metalnessFactor *= (1.-pm);`)
+        metalnessFactor *= (1.-pm)*(1.-.7*pat);`)
       .replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
         if(uFlake>0.){ vec3 fc=floor(vOP*140.); vec3 r=h33(fc)-.5; float on=step(.55,h13(fc+7.));
           normal = normalize(normal + (normalMatrix_dummy(r))*uFlake*on*(1.-pm)); }`)
@@ -550,7 +614,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
@@ -713,7 +777,7 @@ function buildDice(keepRoll){
       const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
       opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
     } else if(faces.length===6&&s.labels.length===6&&state.d6Style==='pips') opts={layout:'pips'};
-    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot), mat=makeMaterial(atlas);
+    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot,{panel:state.panel,panelDepth:state.panelDepth,filigree:state.filigree,soft:state.numSoft}), mat=makeMaterial(atlas);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
     const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,inradius:Math.min(...faces.map(f=>f.d))};
     if(state.substrate==='epoxy'){ const inc=makeInclusion(); if(inc){ mesh.add(inc); entry.inc=inc; } }
@@ -730,13 +794,13 @@ async function ensureFont(k){ const f=FONTS[k]; if(f&&f.load){ try{ await Promis
 function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
-  U.uOff.value.set(...state.off);
+  U.uOff.value.set(...state.off); U.uEnamel.value.set(state.enamelSame?state.paint:state.enamel); U.uFill.value=state.filiFill?1:0; U.uPatina.value=state.patina; U.uNumPaint.value=state.numPaint?1:0;
   U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=S.brush;
   for(const {mat} of dice){
     const ST=state.substrate==='marble'?STONES[state.stone]:null;
     // metals stop short of a mirror (roughness floor .25): a mirror only shows the dim room and reads black
     const P=state.polish, baseR=ST?ST.rough:S.rough, baseC=ST?ST.coat:S.coat;   // polish .5 = the substrate's designed finish
-    Object.assign(mat,{metalness:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,S.metal>.5?.25:.03,1), clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:state.numDepth,
+    Object.assign(mat,{metalness:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,S.metal>.5?.25:.03,1), clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:(state.numRaised?-1:1)*state.numDepth,
       transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
       side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
@@ -762,7 +826,7 @@ function randomize(noBuild){
 }
 
 /* ---------- undo / redo of design settings ---------- */
-const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','glitter','bubbles','clarity','notation','seed'];
+const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
 let history=[], hIdx=-1, hTimer=null;
 function checkpoint(){                                   // record the current design if it differs from the last recorded one
@@ -811,10 +875,11 @@ function syncUI(){
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
+  $('numstyle').value=state.numRaised?'raised':'inset'; $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
   $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
-const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
+const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce']];
+const REBUILD=new Set(['radius','numSize','numRot','numSoft','panel','panelDepth']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
 $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
   checkpoint(); state.inclusion=v; buildDice(true); };
@@ -822,6 +887,13 @@ $('loadmodel').onclick=()=>$('modelfile').click();
 $('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
+$('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
+$('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
+$('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; scheduleRebuild(); applyLook(); };
+$('filifill').onchange=e=>{ checkpoint(); state.filiFill=e.target.checked; applyLook(); };
+$('enamelsame').onchange=e=>{ checkpoint(); state.enamelSame=e.target.checked; applyLook(); };
+$('enamel').oninput=e=>{ state.enamel=e.target.value; applyLook(); };
+$('antique').onclick=()=>{ checkpoint(); Object.assign(state,{panel:.14,panelDepth:.6,numRaised:true,numPaint:false,patina:.7}); buildDice(true); applyLook(); };
 $('d4style').onchange=e=>{ state.d4Style=e.target.value; checkpoint(); scheduleRebuild(); };
 $('d6style').onchange=e=>{ state.d6Style=e.target.value; checkpoint(); scheduleRebuild(); };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
@@ -846,7 +918,8 @@ $('exppng').onclick=()=>exportImage('png'); $('expjpg').onclick=()=>exportImage(
 /* ---------- design file: versioned JSON (see docs/design/design-format.md) ---------- */
 function designToJSON(){ return {format:'pretty-dice', version:1, name:($('dname').value||'').trim().slice(0,80), shape:state.shape, substrate:state.substrate, colors:[...state.colors],
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
-  finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, d4_style:state.d4Style, d6_style:state.d6Style, depth:state.numDepth, softness:state.numSoft}}; }
+  finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, d4_style:state.d4Style, d6_style:state.d6Style, depth:state.numDepth, softness:state.numSoft},
+  relief:{panel:state.panel, panel_depth:state.panelDepth, numbers:state.numRaised?'raised':'inset', paint_numbers:state.numPaint, patina:state.patina}, filigree:{style:state.filigree, filled:state.filiFill, enamel:state.enamelSame?null:state.enamel}}; }
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
@@ -867,6 +940,8 @@ function loadDesign(d){
   { const ic=d.inclusion||{}; state.inclusion=MODELS[ic.type]?ic.type:'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
   state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0); state.d4Style=n.d4_style==='center'?'center':'tips'; state.d6Style=n.d6_style==='pips'?'pips':'numbers';
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
+  { const rl=d.relief||{}, fg=d.filigree||{}; state.panel=num(rl.panel,0,.3,0); state.panelDepth=num(rl.panel_depth,0,1,.5); state.numRaised=rl.numbers==='raised'; state.numPaint=rl.paint_numbers!==false; state.patina=num(rl.patina,0,1,0);
+    state.filigree=['scroll','beads','deco'].includes(fg.style)?fg.style:'none'; state.filiFill=fg.filled!==false; state.enamelSame=!hex(fg.enamel); state.enamel=hex(fg.enamel)?fg.enamel:'#c9a24a'; }
   return ensureFont(state.font).then(()=>buildDice());
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
@@ -1129,7 +1204,7 @@ renderer.setAnimationLoop(()=>{
 /* ---------- go ---------- */
 await ensureFont(state.font);
 if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish"); if(q.get('d4style')) state.d4Style=q.get('d4style')==='center'?'center':'tips'; if(q.get('d6style')) state.d6Style=q.get('d6style')==='pips'?'pips':'numbers';
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish"); if(q.get('panel')) state.panel=+q.get('panel'); if(q.get('patina')) state.patina=+q.get('patina'); if(q.get('raised')) state.numRaised=true; if(q.get('nopaint')) state.numPaint=false; if(['scroll','beads','deco'].includes(q.get('fili'))) state.filigree=q.get('fili'); if(q.get('d4style')) state.d4Style=q.get('d4style')==='center'?'center':'tips'; if(q.get('d6style')) state.d6Style=q.get('d6style')==='pips'?'pips':'numbers';
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
