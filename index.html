@@ -119,6 +119,8 @@
     <h2>Generate</h2>
     <div class="chk"><input type="checkbox" id="randsub" checked><span>Randomize substrate too</span></div>
     <div class="chk"><input type="checkbox" id="randshape"><span>Randomize shape too</span></div>
+    <div class="chk"><input type="checkbox" id="sound"><span>Sound effects</span></div>
+    <div class="row"><label>Volume</label><input type="range" id="volume" min="0" max="1" step="0.01"></div>
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
     <div class="grid two" style="margin-bottom:6px"><button id="undo" title="Ctrl+Z">↶ Undo</button><button id="redo" title="Ctrl+Shift+Z / Ctrl+Y">Redo ↷</button></div>
     <button class="big" id="rand">Randomize</button>
@@ -511,7 +513,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  numSize:.65, numRot:0, numDepth:2.2, numSoft:3, spin:.3, bounce:.4, zoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
@@ -698,7 +700,7 @@ function applyLook(){
     mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
   }
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
-  updateInclusions(); syncUI(); save(); scheduleCheckpoint();
+  setVolume(); updateInclusions(); syncUI(); save(); scheduleCheckpoint();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
@@ -762,14 +764,14 @@ function syncUI(){
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
-  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('expsize').value=state.expsize;
+  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('sound').checked=state.sound; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=state[k];
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
-const SLIDERS=[['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
+const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['spin','spin'],['bounce','bounce']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(k==='bounce'&&world) world.defaultContactMaterial.restitution=state.bounce; };
 $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
@@ -782,6 +784,7 @@ $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
 $('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
+$('sound').onchange=e=>{ state.sound=e.target.checked; audioInit(); setVolume(); save(); };
 $('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
 $('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
 $('expsize').onchange=e=>{state.expsize=e.target.value; save();};
@@ -864,7 +867,7 @@ new ResizeObserver(resize).observe(stage); resize();
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, camBlend=0;
 const ROLL_CAM={y:7.7,z:6.0}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 function startRoll(){
-  if(!dice.length) return;
+  if(!dice.length) return; audioInit();
   clearFx(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; $('result').classList.remove('on'); $('back').hidden=false;
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
@@ -889,6 +892,7 @@ function startRoll(){
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40);
+    b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; onImpact(Math.abs(e.contact.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table'); });   // one sound per pair
     world.addBody(b); return b;});
 }
 function exitRoll(instant){
@@ -955,6 +959,46 @@ function finishRoll(){ restT=0;
 }
 $('back').onclick=()=>exitRoll();
 
+/* ---------- sound: everything is synthesised with Web Audio, no audio files ---------- */
+const sfx={ctx:null,master:null,noise:null,rGain:null,rFilter:null,voices:0,count:0,last:0};
+function audioInit(){
+  if(sfx.ctx){ if(sfx.ctx.state==='suspended') sfx.ctx.resume().catch(()=>{}); return sfx.ctx; }
+  try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; const ctx=new AC(); sfx.ctx=ctx;
+    sfx.master=ctx.createGain(); sfx.master.connect(ctx.destination);
+    const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; sfx.noise=buf;
+    const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; sfx.rFilter=ctx.createBiquadFilter(); sfx.rFilter.type='lowpass'; sfx.rFilter.frequency.value=260;
+    sfx.rGain=ctx.createGain(); sfx.rGain.gain.value=0; src.connect(sfx.rFilter); sfx.rFilter.connect(sfx.rGain); sfx.rGain.connect(sfx.master); src.start();   // rolling rumble loop
+    setVolume(); if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+  }catch{ sfx.ctx=null; } return sfx.ctx;
+}
+function setVolume(){ if(sfx.master) sfx.master.gain.value=state.sound?Math.pow(state.volume,1.6):0; }
+const audioReady=()=>state.sound&&sfx.ctx&&sfx.ctx.state==='running'&&state.volume>0;
+function voice(dur,build){ const ctx=sfx.ctx; if(sfx.voices>22) return; sfx.voices++; const out=ctx.createGain(); out.connect(sfx.master); build(ctx,out,ctx.currentTime); setTimeout(()=>{ sfx.voices--; try{out.disconnect();}catch{} },dur*1000+80); }
+function noiseHit(ctx,out,t,freq,q,gain,dur){ const src=ctx.createBufferSource(); src.buffer=sfx.noise; const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=q;
+  const g=ctx.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0008,t+dur); src.connect(f); f.connect(g); g.connect(out); src.start(t,Math.random()*.5,dur+.02); }
+function tone(ctx,out,t,type,f0,f1,gain,dur,delay=0){ const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(f0,t+delay); if(f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,t+delay+dur);
+  g.gain.setValueAtTime(.0001,t+delay); g.gain.linearRampToValueAtTime(gain,t+delay+.012); g.gain.exponentialRampToValueAtTime(.0004,t+delay+dur); o.connect(g); g.connect(out); o.start(t+delay); o.stop(t+delay+dur+.05); }
+function onImpact(speed,kind){
+  sfx.count++; if(!audioReady()||speed<.8) return; const now=performance.now(); if(now-sfx.last<10) return; sfx.last=now;
+  const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', heavy=sub==='marble'||sub==='epoxy', dice=kind==='dice';
+  voice(.4,(ctx,out,t)=>{
+    noiseHit(ctx,out,t,(dice?2700:1500)*(.8+Math.random()*.5)*(heavy?.7:1),dice?1.4:1,g*(dice?.9:.7),dice?.05:.075);
+    if(!dice) tone(ctx,out,t,'sine',150*(.9+Math.random()*.2)*(heavy?.8:1),60,g*.55,.09);                       // table thump
+    if(metal){ const f=1900*(.9+Math.random()*.25); tone(ctx,out,t,'sine',f,f,g*.16,.3); tone(ctx,out,t,'sine',f*1.58,f*1.58,g*.09,.22); }  // ring
+    else if(dice) tone(ctx,out,t,'triangle',900*(.9+Math.random()*.3),500,g*.12,.05);
+  });
+}
+function playChime(j){ if(!audioReady()) return; const m=Math.pow(2,j*2/12);
+  voice(1.4,(ctx,out,t)=>{ [659.25,830.6,987.8,1318.5].forEach((f,i)=>{ tone(ctx,out,t,'triangle',f*m,f*m,.14,.9,i*.07); tone(ctx,out,t,'sine',f*m*2,f*m*2,.05,.7,i*.07); }); }); }
+function playFumble(){ if(!audioReady()) return;
+  voice(1,(ctx,out,t)=>{ tone(ctx,out,t,'sine',150,42,.55,.7,.05); tone(ctx,out,t,'triangle',220,110,.12,.5,.0); noiseHit(ctx,out,t,300,.8,.3,.25); }); }
+function updateRumble(dt){
+  if(!sfx.rGain) return; let lvl=0;
+  if(rolling&&!settled&&bodies.length){ for(const b of bodies){ if(b.position.y<TABLE_Y+1.3) lvl+=Math.hypot(b.velocity.x,b.velocity.z)+.25*b.angularVelocity.length(); } }
+  const target=Math.min(.55,lvl*.022), t=sfx.ctx.currentTime; sfx.rGain.gain.setTargetAtTime(audioReady()?target:0,t,.06); sfx.rFilter.frequency.setTargetAtTime(160+Math.min(700,lvl*28),t,.08);
+}
+for(const ev of ['pointerdown','keydown']) addEventListener(ev,()=>audioInit(),{once:false,passive:true});
+
 /* ---------- nat 20 / nat 1 effects ---------- */
 const sprTex=(()=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.35,'rgba(255,255,255,.6)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
@@ -970,7 +1014,7 @@ const fx={t:0,crit:[],fumble:[],dim:0,hold:false};
 function clearFx(){ for(const d of dice){ const u=d.mat.userData.fx; if(u){ u.uGlow.value=0; u.uGray.value=0; } }
   fx.crit=[]; fx.fumble=[]; fx.t=0; fx.dim=0; for(const b of bursts){ b.pts.visible=false; b.fl.visible=false; b.done=true; b.fired=false; } critLight.intensity=0;
   key.intensity=BASE_KEY; renderer.toneMappingExposure=BASE_EXPOSURE; $('result').classList.remove('crit','fumble'); }
-function fireBurst(b){ b.fired=true; b.done=false; b.origin.copy(b.die.mesh.position); b.pts.visible=true; b.fl.visible=true;
+function fireBurst(b){ playChime(Math.max(0,bursts.indexOf(b))); b.fired=true; b.done=false; b.origin.copy(b.die.mesh.position); b.pts.visible=true; b.fl.visible=true;
   const pos=b.pts.geometry.attributes.position.array, col=b.pts.geometry.attributes.color.array, pal=[[1,.85,.3],[1,.65,.2],[1,1,.8],[1,.5,.15]];
   for(let i=0;i<BURST_N;i++){ pos[i*3]=b.origin.x; pos[i*3+1]=b.origin.y+.3; pos[i*3+2]=b.origin.z;
     const th=Math.random()*Math.PI*2, ph=Math.acos(2*Math.random()-1), sp=2.5+Math.random()*7, c=pal[i%4], br=.5+Math.random()*.5;
@@ -981,7 +1025,7 @@ function triggerFx(parts){
   clearFx(); parts.forEach((p,i)=>{ const d=dice[i]; if(!d||d.name!=='d20') return; if(p.label===20) fx.crit.push(d); else if(p.label===1) fx.fumble.push(d); });
   fx.crit.forEach((d,j)=>{ while(bursts.length<=j) bursts.push(makeBurst()); const b=bursts[j]; b.die=d; b.start=j*BURST_GAP; b.fired=false; b.done=false; });   // each 20 shoots its own burst in turn
   if(fx.crit.length>=fx.fumble.length&&fx.crit.length) $('result').classList.add('crit'); else if(fx.fumble.length) $('result').classList.add('fumble');
-  fx.t=0;
+  fx.t=0; if(fx.fumble.length) setTimeout(playFumble,250);
   const tag=document.createElement('div'); tag.className='brk'; tag.style.cssText='letter-spacing:.2em;text-transform:uppercase;margin-top:6px';
   const c20=fx.crit.length>1?`${fx.crit.length} × Natural 20`:'Natural 20', c1=fx.fumble.length>1?`${fx.fumble.length} × Natural 1`:'Natural 1';
   if(fx.crit.length||fx.fumble.length){ tag.textContent=fx.crit.length&&fx.fumble.length?`✦ ${c20} ✦  ·  ${c1}`:fx.crit.length?`✦ ${c20} ✦`:c1; $('result').append(tag); }
@@ -1019,7 +1063,7 @@ renderer.setAnimationLoop(()=>{
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
   }
-  updateFx(dt);
+  updateFx(dt); updateRumble(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
   { const tgt=new THREE.Vector3(0,-camBlend,0), off=new THREE.Vector3(0,camBlend*ROLL_CAM.y*state.zoom,THREE.MathUtils.lerp(Math.max(baseZ,needHalfW/(Math.tan(THREE.MathUtils.degToRad(16))*camera.aspect)),ROLL_CAM.z,camBlend)*state.zoom).sub(tgt);   // zoom applies in both views
     const r=off.length(), th=Math.atan2(off.x,off.z)+orbit.az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+orbit.el,rolling||camBlend>.5?.12:-1.4,1.4);
@@ -1057,7 +1101,7 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(()=>{ s
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{b.angularDamping=.5; b.linearDamping=.25;});
     if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); }
-  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
+  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
 if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
   randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
