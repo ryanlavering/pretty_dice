@@ -814,17 +814,18 @@ function startRoll(){
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfW,0,0],[0,-Math.PI/2,0]); plane([-halfW,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfD],[0,Math.PI,0]); plane([0,0,-halfD],[0,0,0]);
+  const dropH=3.5+5*state.zoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
     const b=new CANNON.Body({mass:1, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.25, sleepTimeLimit:.5,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
     const n=dice.length, R=()=>Math.random()-.5;
     if(n>2){ const cols=Math.min(n,Math.max(3,Math.round(2*halfW/2.2))), rows=Math.ceil(n/cols), col=i%cols, row=Math.floor(i/cols);
-      b.position.set(-halfW+1+col*(2*halfW-2)/Math.max(1,cols-1), TABLE_Y+2+row*1.8+i*.35, -halfD+1+row*(2*halfD-2)/Math.max(1,rows-1)); }
-    else b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),Math.max(p.y,TABLE_Y+1.6),p.z);
+      b.position.set(-halfW+1+col*(2*halfW-2)/Math.max(1,cols-1), TABLE_Y+dropH+row*1.8+i*.35, -halfD+1+row*(2*halfD-2)/Math.max(1,rows-1)); }
+    else b.position.set(THREE.MathUtils.clamp(p.x,-halfW+1.2,halfW-1.2),TABLE_Y+dropH,p.z);
     b.quaternion.set(q.x,q.y,q.z,q.w);
-    if(n>2) b.velocity.set(-b.position.x*.5+R()*3, 3+Math.random()*3, R()*3);
-    else b.velocity.set(R()*9+(i?2:-2), 7+Math.random()*4, R()*6-1);
+    if(n>2) b.velocity.set(-b.position.x*.5+R()*3, -2-Math.random()*3, R()*3);
+    else b.velocity.set(R()*7+(i?1.5:-1.5), -3-Math.random()*3, R()*5-1);
     b.angularVelocity.set(R()*40,R()*40,R()*40);
     world.addBody(b); return b;});
 }
