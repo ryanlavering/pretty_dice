@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Pretty Dice</title>
 <style>
   :root{--bg:#0e1015;--panel:#161922;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c}
   *{box-sizing:border-box} [hidden]{display:none!important}
+  html{box-sizing:border-box} body{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
   #app{display:flex;height:100%}
   aside{width:310px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:20px 18px;overflow:auto}
@@ -958,7 +959,7 @@ addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
   if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); });
-$('hint').textContent='drag = turn dice · right-drag = orbit camera · scroll = zoom · double-click = reset view · space = randomize · r = roll';
+$('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view · space = randomize · r = roll';
 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
 const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
@@ -966,10 +967,19 @@ const cv=renderer.domElement;
 const orbit={az:0,el:0}; if(new URLSearchParams(location.search).get('zoom')) state.zoom=+new URLSearchParams(location.search).get('zoom');; let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('dblclick',()=>{orbit.az=0; orbit.el=0; state.zoom=1; save();});
-cv.addEventListener('pointerdown',e=>{ if(e.button===2){ orbiting=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId); return; }
-  if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId);});
-cv.addEventListener('pointerup',()=>{dragging=false; orbiting=false;});
+const ptrs=new Map(); let pinch=null;       // active touch/mouse pointers: one finger turns the dice, two fingers pinch-zoom and orbit
+const pinchState=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, m:[(a[0]+b[0])/2,(a[1]+b[1])/2]}; };
+cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY]); cv.setPointerCapture(e.pointerId);
+  if(ptrs.size===2){ dragging=false; orbiting=false; pinch=pinchState(); return; }
+  if(e.button===2){ orbiting=true; last=[e.clientX,e.clientY]; return; }
+  if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
+const endPtr=e=>{ ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
+cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size>=2&&pinch){ const p=pinchState();
+    state.zoom=THREE.MathUtils.clamp(state.zoom*pinch.d/p.d,.35,2.4);                       // fingers apart -> closer
+    orbit.az-=(p.m[0]-pinch.m[0])*.006; orbit.el=THREE.MathUtils.clamp(orbit.el+(p.m[1]-pinch.m[1])*.006,-1.4,1.4); pinch=p; save(); return; }
   if(orbiting){ const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY]; orbit.az-=dx*.006; orbit.el=THREE.MathUtils.clamp(orbit.el+dy*.006,-1.4,1.4); return; }
   if(!dragging) return;
   const dx=e.clientX-last[0], dy=e.clientY-last[1]; last=[e.clientX,e.clientY];
@@ -1239,6 +1249,9 @@ if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: ra
 if(new URLSearchParams(location.search).get('test')==='json2'){ state.shape='custom'; state.notation='3d8+2d6+4'; state.substrate='swirl'; $('dname').value='Giant club attack'; buildDice();
   const j=JSON.stringify(designToJSON()); state.shape='d20'; state.notation='d20'; $('dname').value=''; buildDice(); await loadDesign(JSON.parse(j));
   console.log('JSON2',state.shape,state.notation,$('dname').value,dice.length,JSON.parse(j).name); }
+if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
+  cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
+  console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
 window.__ready=true; window.__bootDone&&window.__bootDone();
 window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
