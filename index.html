@@ -975,7 +975,7 @@ addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
   if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); });
-$('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view · space = randomize · r = roll';
+$('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view · space = randomize · r = roll · flick in roll view = roll again';
 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
 const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
@@ -986,10 +986,13 @@ cv.addEventListener('dblclick',()=>{orbit.az=0; orbit.el=0; state.zoom=1; save()
 const ptrs=new Map(); let pinch=null;       // active touch/mouse pointers: one finger turns the dice, two fingers pinch-zoom and orbit
 const pinchState=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, m:[(a[0]+b[0])/2,(a[1]+b[1])/2]}; };
 cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY]); cv.setPointerCapture(e.pointerId);
-  if(ptrs.size===2){ dragging=false; orbiting=false; pinch=pinchState(); return; }
+  if(ptrs.size===2){ dragging=false; orbiting=false; flick=null; pinch=pinchState(); return; }
   if(e.button===2){ orbiting=true; last=[e.clientX,e.clientY]; return; }
+  flick=rolling&&e.button===0?{x:e.clientX,y:e.clientY,t:performance.now()}:null;
   if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
-const endPtr=e=>{ ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
+let flick=null;           // roll view: a quick one-finger swipe throws the dice again
+const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll();
+  ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
   if(ptrs.has(e.pointerId)) ptrs.set(e.pointerId,[e.clientX,e.clientY]);
@@ -1267,6 +1270,8 @@ if(new URLSearchParams(location.search).get('test')==='json2'){ state.shape='cus
   console.log('JSON2',state.shape,state.notation,$('dname').value,dice.length,JSON.parse(j).name); }
 if(new URLSearchParams(location.search).get('test')==='rand'){ const seen={}; let on=0; for(let i=0;i<200;i++){ randomize(true); if(state.panel>0) on++; for(const k of ['numRot','d4Style','d6Style','panel','numRaised','numPaint','patina','filigree','inclusion','substrate']) (seen[k]??=new Set()).add(state[k]); } console.log('RAND_PANEL_PCT',on/2,'RAND',JSON.stringify(Object.fromEntries(Object.entries(seen).map(([k,v])=>[k,[...v].length>6?'many('+v.size+')':[...v]])))); }
 if(new URLSearchParams(location.search).get('test')==='shake'){ await setShake(true); const fire=g=>dispatchEvent(new DeviceMotionEvent('devicemotion',{accelerationIncludingGravity:{x:g,y:0,z:0}})); fire(12); console.log('SHAKE soft',rolling); fire(35); console.log('SHAKE hard',rolling); }
+if(new URLSearchParams(location.search).get('test')==='flick'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); cv.setPointerCapture=()=>{};
+  startRoll(); let n=0; startRoll=()=>{n++;}; ev('pointerdown',1,100,300); ev('pointerup',1,100,300); const tap=n; ev('pointerdown',2,100,300); ev('pointermove',2,100,150); ev('pointerup',2,100,150); console.log('FLICK tap rolls:',tap,'swipe rolls:',n-tap); }
 if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
   cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
   console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
