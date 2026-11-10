@@ -4,7 +4,7 @@ title: Model inclusion in epoxy dice
 status: Needs Review
 assignee: []
 created_date: '2026-11-09T22:41:00Z'
-updated_date: '2026-11-09T23:02:00Z'
+updated_date: '2026-11-10T00:28:00Z'
 labels:
   - look
 dependencies: []
@@ -21,5 +21,5 @@ Embed a miniature of a user-supplied model (GLB/OBJ/STL) inside clear epoxy, e.g
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Built option A (solid miniature, no fog). Procedural rubber duck is built in (original work, no licence issues). Custom GLB/glTF/OBJ/STL loader (max 25 MB); model is not persisted across reloads or in the design JSON (only type 'duck' is). Size/Turn/Height sliders. Third-party ducks checked: Khronos Duck is under the restrictive SCEA Shared Source License (not bundled); CC0 ducks on OpenGameArt (rubby_ducky, rubberduck, rubberduckie) are Blender .blend files only, so unusable without conversion. Tested loaders via ?test=incl.
+Added 10 more built-in procedural models (cat's eye, dragon eye, gold coin, black cat, skull, heart, crystal gem, goldfish, mushroom, gold star); model registry drives the Inclusion dropdown and the design JSON. Gallery test hook ?test=models. Eye/coin/gem rely on emissive so they stay bright inside the epoxy. Dragon eye brow ridge was nudged after the last render and not re-checked.
 <!-- SECTION:NOTES:END -->

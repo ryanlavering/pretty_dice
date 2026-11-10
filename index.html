@@ -97,7 +97,7 @@
       <div class="row"><label>Glitter</label><input type="range" id="glitter" min="0" max="1" step="0.01"></div>
       <div class="row"><label>Bubbles</label><input type="range" id="bubbles" min="0" max="1" step="0.01"></div>
       <div class="row"><label>Clarity</label><input type="range" id="clarity" min="0.2" max="1" step="0.01"></div>
-      <div class="row"><label>Inclusion</label><select id="incl"><option value="none">None</option><option value="duck">Rubber duck</option><option value="custom">Custom model…</option></select></div>
+      <div class="row"><label>Inclusion</label><select id="incl"></select></div>
       <div id="inclctl">
         <div class="row"><button id="loadmodel" style="flex:1">Load model file (glb, obj, stl)…</button></div>
         <input type="file" id="modelfile" accept=".glb,.gltf,.obj,.stl" hidden>
@@ -521,7 +521,7 @@ function ensurePalette(r){ const k=palKey(); if(!state.palettes[k]) state.palett
 function setSubstrate(id,r){ state.substrate=id; ensurePalette(r); }
 function setStone(t){ state.stone=STONES[t]?t:'marble'; ensurePalette(); }
 if(!STONES[state.stone]) state.stone='marble';
-if(state.inclusion==='custom') state.inclusion='none';   // custom models are not persisted
+if(state.inclusion==='custom'||(state.inclusion!=='none'&&!MODELS[state.inclusion])) state.inclusion='none';   // custom models are not persisted
 setSubstrate(SUBSTRATES[state.substrate]?state.substrate:'swirl');
 if(!SHAPES[state.shape]) state.shape='d20';
 let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalfW: half-width the layout needs on screen
@@ -565,25 +565,78 @@ function specsFor(shape){
   return [mk(shape,0,0)];
 }
 /* ---------- inclusion: a miniature model cast inside clear epoxy ---------- */
+const M=(c,o={})=>new THREE.MeshStandardMaterial({color:c,roughness:.45,...o});
+const SPH=new THREE.SphereGeometry(1,48,32);
+const mesh=(geo,mat,p=[0,0,0],sc=[1,1,1],rot=[0,0,0])=>{ const m=new THREE.Mesh(geo,mat); m.position.set(...p); m.scale.set(...sc); m.rotation.set(...rot); return m; };
+function starShape(n,outer,inner){ const sh=new THREE.Shape(); for(let i=0;i<n*2;i++){ const r=i%2?inner:outer, a=Math.PI/2+i*Math.PI/n; i?sh.lineTo(Math.cos(a)*r,Math.sin(a)*r):sh.moveTo(Math.cos(a)*r,Math.sin(a)*r); } sh.closePath(); return sh; }
+function makeEye(o){                                    // eyeball with iris rings and a slit pupil, looking along +z
+  const g=new THREE.Group(), cap=(r,theta,mat,sx=1)=>{ const geo=new THREE.SphereGeometry(r,48,24,0,Math.PI*2,0,theta); geo.scale(sx,1,1); geo.rotateX(Math.PI/2); g.add(new THREE.Mesh(geo,mat)); };
+  g.add(mesh(SPH,M(o.sclera,{roughness:.3})));
+  cap(1.004,1.0,M(o.limbus)); cap(1.008,.9,M(o.iris,{emissive:o.iris,emissiveIntensity:.2})); cap(1.012,.58,M(o.inner,{emissive:o.inner,emissiveIntensity:.25}));
+  cap(1.016,.66,M(0x040404,{roughness:.2}),o.slit); return g;
+}
 function makeDuck(){                                   // original procedural rubber duck (no third-party asset)
-  const g=new THREE.Group(), yellow=new THREE.MeshStandardMaterial({color:0xd98a00,roughness:.42}), orange=new THREE.MeshStandardMaterial({color:0xd24a00,roughness:.45}),
-    black=new THREE.MeshStandardMaterial({color:0x0a0a0a,roughness:.15}), white=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.3});
-  const add=(geo,mat,p,sc=[1,1,1],rot=[0,0,0])=>{ const m=new THREE.Mesh(geo,mat); m.position.set(...p); m.scale.set(...sc); m.rotation.set(...rot); g.add(m); return m; };
-  const sph=new THREE.SphereGeometry(1,48,32);
-  add(sph,yellow,[0,0,0],[.95,.8,1.25]);                          // body
+  const g=new THREE.Group(), yellow=M(0xd98a00,{roughness:.42}), orange=M(0xd24a00), black=M(0x0a0a0a,{roughness:.15}), white=M(0xffffff,{roughness:.3});
+  const add=(geo,mat,p,sc,rot)=>g.add(mesh(geo,mat,p,sc,rot));
+  add(SPH,yellow,[0,0,0],[.95,.8,1.25]);                          // body
   add(new THREE.ConeGeometry(.42,1,32),yellow,[0,.42,-1.25],[1,1,.7],[-1.9,0,0]);   // upturned tail
-  add(sph,yellow,[0,1.0,.5],[.66,.62,.64]);                       // head
-  add(sph,yellow,[.84,.1,-.1],[.17,.45,.75],[0,0,-.3]); add(sph,yellow,[-.84,.1,-.1],[.17,.45,.75],[0,0,.3]);   // wings
-  add(sph,orange,[0,.9,1.1],[.34,.11,.34]); add(sph,orange,[0,.8,1.08],[.28,.07,.28]);                            // beak (upper, lower)
-  for(const x of [.26,-.26]){ add(sph,black,[x,1.15,1.0],[.1,.12,.08]); add(sph,white,[x*1.05,1.19,1.07],[.03,.03,.03]); }   // eyes + glints
+  add(SPH,yellow,[0,1.0,.5],[.66,.62,.64]);                       // head
+  add(SPH,yellow,[.84,.1,-.1],[.17,.45,.75],[0,0,-.3]); add(SPH,yellow,[-.84,.1,-.1],[.17,.45,.75],[0,0,.3]);   // wings
+  add(SPH,orange,[0,.9,1.1],[.34,.11,.34]); add(SPH,orange,[0,.8,1.08],[.28,.07,.28]);                            // beak (upper, lower)
+  for(const x of [.26,-.26]){ add(SPH,black,[x,1.15,1.0],[.1,.12,.08]); add(SPH,white,[x*1.05,1.19,1.07],[.03,.03,.03]); }   // eyes + glints
   return g;
 }
+function makeCatEye(){ return makeEye({sclera:0xe9e2c4,limbus:0x2a3a10,iris:0x7fc21e,inner:0xe8e23a,slit:.2}); }
+function makeDragonEye(){ const g=makeEye({sclera:0xd9962a,limbus:0x3a0a05,iris:0xc8260f,inner:0xff9a1f,slit:.13});
+  g.add(mesh(SPH,M(0x5a1a10,{roughness:.6}),[0,.9,.3],[.9,.2,.45],[.5,0,0]));                                 // brow ridge
+  return g; }
+function makeCoin(){ const g=new THREE.Group(), gold=M(0xe0a915,{metalness:.6,roughness:.38,emissive:0x6a4500,emissiveIntensity:.9});
+  const disc=new THREE.CylinderGeometry(1,1,.14,72); disc.rotateX(Math.PI/2); g.add(mesh(disc,gold));
+  for(const z of [.07,-.07]) g.add(mesh(new THREE.TorusGeometry(.93,.05,12,72),gold,[0,0,z]));
+  const st=new THREE.ExtrudeGeometry(starShape(5,.55,.24),{depth:.05,bevelEnabled:false}); g.add(mesh(st,gold,[0,0,.07])); g.add(mesh(st,gold,[0,0,-.12],[1,1,1],[0,Math.PI,0]));
+  for(const z of [.075,-.075]) g.add(mesh(new THREE.TorusGeometry(.7,.025,8,64),gold,[0,0,z]));
+  g.rotation.x=.25; const w=new THREE.Group(); w.add(g); return w; }
+function makeBlackCat(){ const g=new THREE.Group(), fur=M(0x15151b,{roughness:.55}), glow=M(0x9cff3a,{emissive:0x7acc20,emissiveIntensity:.9}), pink=M(0xd98aa0);
+  g.add(mesh(SPH,fur,[0,0,0],[.8,1.0,.72]));                                                    // body
+  g.add(mesh(SPH,fur,[0,1.25,.12],[.58,.52,.52]));                                              // head
+  for(const x of [.3,-.3]){ g.add(mesh(new THREE.ConeGeometry(.2,.46,4),fur,[x,1.72,.05],[1,1,.6],[0,Math.PI/4,x>0?-.18:.18]));   // ears
+    g.add(mesh(SPH,glow,[x*.9,1.3,.55],[.12,.1,.06])); g.add(mesh(SPH,M(0x000000),[x*.9,1.3,.6],[.03,.09,.03]));                  // eyes with slit pupils
+    g.add(mesh(SPH,fur,[x*.8,-.8,.5],[.2,.18,.32])); }                                                                                  // front paws
+  g.add(mesh(SPH,pink,[0,1.15,.62],[.07,.05,.05]));                                              // nose
+  const tail=new THREE.CatmullRomCurve3([new THREE.Vector3(0,-.6,-.6),new THREE.Vector3(-.1,-.5,-1.15),new THREE.Vector3(-.3,.1,-1.3),new THREE.Vector3(-.2,.8,-1.05)]);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(tail,24,.12,10),fur)); return g; }
+function makeSkull(){ const g=new THREE.Group(), bone=M(0xe6dfc9,{roughness:.5}), dark=M(0x0b0b0b,{roughness:.9});
+  g.add(mesh(SPH,bone,[0,.2,0],[.95,.9,1.0])); g.add(mesh(SPH,bone,[0,-.75,.2],[.58,.34,.55]));
+  for(const x of [.38,-.38]) g.add(mesh(SPH,dark,[x,.1,.82],[.27,.3,.2]));
+  g.add(mesh(new THREE.ConeGeometry(.12,.3,3),dark,[0,-.3,.9],[1,1,.5],[Math.PI,0,0]));
+  for(let i=-2;i<=2;i++) g.add(mesh(new THREE.BoxGeometry(.13,.2,.08),M(0xf0ead8),[i*.15,-.95,.68]));
+  return g; }
+function makeHeart(){ const sh=new THREE.Shape(); sh.moveTo(0,-1); sh.bezierCurveTo(-.2,-.75,-1,-.25,-1,.3); sh.bezierCurveTo(-1,.85,-.35,1,0,.55); sh.bezierCurveTo(.35,1,1,.85,1,.3); sh.bezierCurveTo(1,-.25,.2,-.75,0,-1);
+  const geo=new THREE.ExtrudeGeometry(sh,{depth:.5,bevelEnabled:true,bevelThickness:.2,bevelSize:.15,bevelSegments:8,curveSegments:32}); geo.center();
+  return mesh(geo,M(0xd2132b,{roughness:.25,emissive:0x400008,emissiveIntensity:.4})); }
+function makeGem(){ return mesh(new THREE.OctahedronGeometry(1,0),M(0x2ec4ff,{roughness:.1,metalness:.1,flatShading:true,emissive:0x0a5a80,emissiveIntensity:.5}),[0,0,0],[.8,1.3,.8],[0,.4,0]); }
+function makeFish(){ const g=new THREE.Group(), orange=M(0xff7a1a,{roughness:.35}), fin=M(0xff9a3a,{roughness:.4});
+  g.add(mesh(SPH,orange,[0,0,0],[1.25,.62,.36])); g.add(mesh(new THREE.ConeGeometry(.5,.95,3),fin,[-1.5,0,0],[1,1,.25],[0,0,Math.PI/2]));
+  g.add(mesh(new THREE.ConeGeometry(.35,.7,3),fin,[-.1,.7,0],[1,1,.2],[0,0,-.3])); g.add(mesh(new THREE.ConeGeometry(.25,.5,3),fin,[.1,-.62,.1],[1,1,.2],[0,0,Math.PI+.4]));
+  for(const z of [.3,-.3]){ g.add(mesh(SPH,M(0xffffff),[.8,.15,z],[.13,.13,.06])); g.add(mesh(SPH,M(0x000000),[.84,.15,z*1.1],[.07,.07,.04])); }
+  for(const x of [-.2,.2]) g.add(mesh(new THREE.TorusGeometry(.5,.04,8,32),M(0xffffff),[x,0,0],[.5,1.05,.7],[0,Math.PI/2,0]));
+  return g; }
+function makeMushroom(){ const g=new THREE.Group(), cap=new THREE.SphereGeometry(1,48,24,0,Math.PI*2,0,Math.PI/2);
+  g.add(mesh(cap,M(0xd11f1f,{roughness:.35}),[0,.3,0],[1,.8,1])); g.add(mesh(new THREE.CylinderGeometry(.4,.5,.9,32),M(0xf0e6cc),[0,-.2,0]));
+  g.add(mesh(new THREE.CircleGeometry(1,48),M(0x6a2a20),[0,.3,0],[1,1,1],[Math.PI/2,0,0]));
+  for(const [x,y,z,r] of [[0,1.05,0,.22],[.55,.72,.45,.17],[-.55,.7,.4,.18],[.1,.6,-.8,.15],[-.6,.55,-.3,.16],[.75,.5,-.2,.13]]) g.add(mesh(SPH,M(0xffffff),[x,y*.92,z],[r,r*.55,r]));
+  return g; }
+function makeStar(){ const geo=new THREE.ExtrudeGeometry(starShape(5,1,.45),{depth:.35,bevelEnabled:true,bevelThickness:.12,bevelSize:.08,bevelSegments:4}); geo.center();
+  return mesh(geo,M(0xffc400,{metalness:.7,roughness:.3,emissive:0x5a4000,emissiveIntensity:.6})); }
+const MODELS={ duck:{label:'Rubber duck',make:makeDuck}, cateye:{label:"Cat's eye",make:makeCatEye}, dragoneye:{label:'Dragon eye',make:makeDragonEye}, coin:{label:'Gold coin',make:makeCoin},
+  blackcat:{label:'Black cat',make:makeBlackCat}, skull:{label:'Skull',make:makeSkull}, heart:{label:'Heart',make:makeHeart}, gem:{label:'Crystal gem',make:makeGem},
+  fish:{label:'Goldfish',make:makeFish}, mushroom:{label:'Mushroom',make:makeMushroom}, star:{label:'Gold star',make:makeStar} };
 let customTemplate=null;
 function normalizeModel(obj){                           // centre it and scale to a unit bounding sphere
   const box=new THREE.Box3().setFromObject(obj), c=box.getCenter(new THREE.Vector3()), r=box.getBoundingSphere(new THREE.Sphere()).radius||1;
   const inner=new THREE.Group(); inner.add(obj); obj.position.sub(c); const w=new THREE.Group(); inner.scale.setScalar(1/r); w.add(inner); return w;
 }
-const duckTemplate=(()=>{ let t=null; return ()=>t||(t=normalizeModel(makeDuck())); })();
+const tplCache={}, getTemplate=k=>tplCache[k]||(tplCache[k]=normalizeModel(MODELS[k].make()));
 function loadModelFile(file){
   return new Promise((res,rej)=>{
     if(file.size>25e6) return rej(new Error('Model is larger than 25 MB'));
@@ -598,7 +651,7 @@ function loadModelFile(file){
     ext==='obj'?fr.readAsText(file):fr.readAsArrayBuffer(file);
   });
 }
-function makeInclusion(){ const tpl=state.inclusion==='duck'?duckTemplate():state.inclusion==='custom'?customTemplate:null; if(!tpl) return null;
+function makeInclusion(){ const tpl=MODELS[state.inclusion]?getTemplate(state.inclusion):state.inclusion==='custom'?customTemplate:null; if(!tpl) return null;
   const inc=new THREE.Group(); const c=tpl.clone(true); c.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } }); inc.add(c); return inc; }
 function updateInclusions(){ for(const d of dice){ if(!d.inc) continue;
   d.inc.scale.setScalar(d.inradius*state.inclSize); d.inc.position.set(0,state.inclY*d.inradius,0); d.inc.rotation.set(0,THREE.MathUtils.degToRad(state.inclTurn),0); } }
@@ -696,6 +749,7 @@ const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').valu
 $('notapply').onclick=applyNotation; $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
   b.onclick=()=>{ checkpoint(); setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
+{ const o=(v,t)=>{ const e=document.createElement('option'); e.value=v; e.textContent=t; $('incl').append(e); }; o('none','None'); for(const [k,m] of Object.entries(MODELS)) o(k,m.label); o('custom','Custom model file…'); }
 for(const [k,f] of Object.entries(STONES)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('stone').append(o); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
 function syncUI(){
@@ -756,7 +810,7 @@ function loadDesign(d){
   state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
   state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5);
-  { const ic=d.inclusion||{}; state.inclusion=ic.type==='duck'?'duck':'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
+  { const ic=d.inclusion||{}; state.inclusion=MODELS[ic.type]?ic.type:'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
   state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0);
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   return ensureFont(state.font).then(()=>buildDice());
@@ -898,7 +952,7 @@ renderer.setAnimationLoop(()=>{
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
-{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(q.get('incl')==='duck') state.inclusion='duck'; if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
+{ const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish");
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
@@ -908,6 +962,7 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
       for(let y=0;y<at.cell;y++)for(let x=0;x<at.cell;x++) if(d[(y*at.cell+x)*4]>128){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
       out.push(`${l}:(${((x0+x1)/2-128).toFixed(1)},${((y0+y1)/2-128).toFixed(1)})`); });
     console.log('ATLAS',f,out.join(' ')); } }
+if(new URLSearchParams(location.search).get('test')==='models'){ rig.clear(); dice.forEach(d=>d.mesh.visible=false); const ks=Object.keys(MODELS); ks.forEach((k,i)=>{ const t=getTemplate(k).clone(true); const g=new THREE.Group(); g.add(t); g.scale.setScalar(1.15); g.position.set((i%4-1.5)*2.8,(1-Math.floor(i/4))*2.8,0); g.rotation.y=.5; rig.add(g); }); baseZ=14; state.zoom=1; }
 if(new URLSearchParams(location.search).get('test')==='incl'){ // loaders: OBJ + STL from inline text
   const obj='v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n';
   const stl='solid t\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid t\n';
