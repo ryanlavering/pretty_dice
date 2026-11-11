@@ -4,8 +4,10 @@ title: 'Characters/NPCs: dice sets, move groupings, stat bonuses'
 status: To Do
 assignee: []
 created_date: '2026-11-10T16:20:00Z'
+updated_date: '2026-11-11T19:58:00Z'
 labels:
   - epic
+milestone: m-0
 dependencies:
   - PD-68
 priority: low
