@@ -169,6 +169,10 @@ test('rotating the phone does not change the chosen design', async ({ app, page 
   await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; }); await page.waitForTimeout(900);
   expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
   // a real flick still picks the card that lands in the middle
+  // the loop above ends in landscape, where all the cards fit and the strip cannot scroll; flick in portrait, away from 0 first (a scroll to the same spot fires no event)
+  await page.setViewportSize({ width: 390, height: 780 }); await page.waitForTimeout(900);
+  await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 1e5; });
+  await page.waitForTimeout(900);
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; });
   await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('amethyst');
 });
