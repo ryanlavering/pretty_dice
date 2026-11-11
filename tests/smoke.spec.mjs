@@ -240,3 +240,15 @@ test('spin pause button and speed slider sit on the showcase mat and hide while 
   await app.run(pd => pd.startRoll());
   await expect(app.page.locator('#spinbar')).toBeHidden();
 });
+
+// Custom set: one tap back to a single d20.
+test('Clear resets the custom set to a single d20 with no modifier', async ({ app }) => {
+  await app.open();
+  await app.page.getByRole('button', { name: 'Custom set' }).click();   // the notation field only shows for a custom set
+  await app.page.fill('#notation', '3d6+2d10+4'); await app.page.click('#notapply');
+  await expect.poll(() => app.run(pd => pd.dice.length), { timeout: 20_000 }).toBe(5);
+  await app.page.click('#notclear');
+  await expect.poll(() => app.run(pd => pd.state.notation), { timeout: 20_000 }).toBe('1d20');
+  await expect.poll(() => app.run(pd => pd.dice.length), { timeout: 20_000 }).toBe(1);
+  expect(await app.run(pd => pd.state.shape)).toBe('custom');
+});

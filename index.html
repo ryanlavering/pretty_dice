@@ -113,7 +113,7 @@
 
     <div id="customctl">
       <h2>Custom set</h2>
-      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button></div>
+      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notclear" class="ico" type="button" title="Clear the set (a single d20)" aria-label="Clear the set (a single d20)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
       <div class="grid" id="steppers" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
       <div class="row"><label>Modifier</label><button id="modm" style="padding:4px 10px">−</button><b id="modv" style="min-width:26px;text-align:center">0</b><button id="modp" style="padding:4px 10px">+</button></div>
@@ -913,7 +913,8 @@ STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step
   $('steppers').append(d); });
 $('modm').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod-1); }; $('modp').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod+1); };
 const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').value); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; rebuildKeepMode(); };
-$('notapply').onclick=applyNotation; $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
+$('notapply').onclick=applyNotation; $('notclear').onclick=()=>{ $('notation').value='d20'; $('noterr').textContent=''; applyNotation(); };   // quick reset: one d20, no modifier
+ $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
   b.onclick=()=>{ checkpoint(); setSubstrate(id); repaint(); applyLook(); }; $('subs').append(b); }
 { const o=(v,t)=>{ const e=document.createElement('option'); e.value=v; e.textContent=t; $('incl').append(e); }; o('none','None'); for(const [k,m] of Object.entries(MODELS)) o(k,m.label); o('custom','Custom model file…'); }
