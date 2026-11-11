@@ -315,12 +315,13 @@ test.describe('distraction-free and top-down hide the controls', () => {
     expect(await shown(page, '#mode')).toBe(true);
   });
 
-  test('holding the total hides every control, release brings them back', async ({ app, page }) => {
+  test('holding the total hides the roll-area controls (settings stay), release brings them back', async ({ app, page }) => {
     await app.run(pd => { pd.simRoll(); });
     const tot = page.locator('#result .tot'); await expect(tot).toBeVisible();
     const b = await tot.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down();
     await expect.poll(() => shown(page, '#tools')).toBe(false);
-    for (const sel of ['aside', '#tools', '#shelf', '#name']) expect(await shown(page, sel), sel).toBe(false);
+    for (const sel of ['#tools', '#shelf', '#name']) expect(await shown(page, sel), sel).toBe(false);
+    expect(await shown(page, 'aside'), 'settings stay').toBe(true);
     await page.mouse.up();
     await expect.poll(() => shown(page, '#tools')).toBe(true);
     expect(await shown(page, 'aside')).toBe(true);

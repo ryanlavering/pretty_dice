@@ -4,7 +4,7 @@ title: 'Nat20 effect: Slight pre-dim before explosion'
 status: Needs Review
 assignee: []
 created_date: '2026-11-10T19:23:00Z'
-updated_date: '2026-11-11T22:43:00Z'
+updated_date: '2026-11-11T23:41:00Z'
 labels: []
 dependencies: []
 priority: low
@@ -23,4 +23,6 @@ The dimming effect should be subtle, so as not be confused with a nat1.
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-11: BURST_LEAD .55 s. Key light eases down to 86 % (nat 1 is 30 %), flashes +30 % at the starburst, returns in about half a second. Only when 20s >= 1s. Test in physics.spec.
+
+2026-11-11 owner feedback: the die's glow now starts rising at the same moment the lights start to dim (peaks at the burst, then settles to the steady glow).
 <!-- SECTION:NOTES:END -->

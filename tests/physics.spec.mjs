@@ -151,13 +151,14 @@ test.describe('nat 20 / nat 1 effects', () => {
       pd.simRoll(); pd.triggerFx(pd.dice.map(() => ({ label: 20 })));
       const base = pd.BASE_KEY, key = () => pd.key.intensity, out = {};
       for (let i = 0; i < 20; i++) pd.updateFx(1 / 60);          // 0.33 s: before the burst
-      out.before = key() / base; out.preFired = pd.fx.crit.length;
+      out.before = key() / base; out.preFired = pd.fx.crit.length; out.glowBefore = pd.fx.crit.map(d => d.mat.userData.fx.uGlow.value);
       for (let i = 0; i < 20; i++) pd.updateFx(1 / 60);          // 0.67 s: just after it
       out.after = key() / base;
       for (let i = 0; i < 240; i++) pd.updateFx(1 / 60);
       out.end = key() / base; return out; });
     expect(r.before, 'dimmed a little').toBeLessThan(.97);
     expect(r.before, 'but far less than a nat 1 (70 %)').toBeGreaterThan(.8);
+    for (const g of r.glowBefore) expect(g, 'the die is already glowing while the lights dim').toBeGreaterThan(.05);
     expect(r.after, 'flash').toBeGreaterThan(1);
     expect(r.end).toBeCloseTo(1, 2);
   });

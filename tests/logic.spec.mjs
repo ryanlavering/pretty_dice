@@ -121,14 +121,14 @@ test('colour shuffle changes only the base palette', async ({ shared: app }) => 
   expect(r).toEqual({ changed: true, restSame: true, shared: true, inputs: true });
 });
 
-test('stone dropdown keeps colours; paintbrush applies the stone palette', async ({ shared: app }) => {
+test('stone dropdown brings the stone colours; paintbrush draws again from them', async ({ shared: app }) => {
   const r = await app.run(pd => {
     const s = pd.state, $ = id => document.getElementById(id);
     s.substrate = 'marble'; pd.setSubstrate('marble'); s.colors[0] = '#ff00ff'; const before = JSON.stringify(s.colors);
     $('stone').value = 'lapis'; $('stone').dispatchEvent(new Event('change'));
-    const kept = JSON.stringify(s.colors) === before && s.stone === 'lapis';
+    const kept = JSON.stringify(s.colors) !== before && s.stone === 'lapis' && JSON.stringify(s.palettes.shared) === JSON.stringify(s.colors) && s.colors.every(c => /^#[0-9a-f]{6}$/i.test(c)); const afterPick = JSON.stringify(s.colors);
     $('stonepaint').click();
-    const painted = JSON.stringify(s.colors) !== before && s.colors.every(c => /^#[0-9a-f]{6}$/i.test(c)) && JSON.stringify(s.palettes.shared) === JSON.stringify(s.colors);
+    const painted = JSON.stringify(s.colors) !== afterPick && s.colors.every(c => /^#[0-9a-f]{6}$/i.test(c)) && JSON.stringify(s.palettes.shared) === JSON.stringify(s.colors);
     return { kept, painted };
   });
   expect(r).toEqual({ kept: true, painted: true });
