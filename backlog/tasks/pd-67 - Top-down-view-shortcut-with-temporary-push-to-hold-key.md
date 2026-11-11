@@ -1,9 +1,10 @@
 ---
 id: PD-67
 title: Top-down view shortcut with temporary push-to-hold key
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
+updated_date: '2026-11-11T23:13:00Z'
 labels:
   - ux
   - camera
@@ -15,10 +16,18 @@ ordinal: 67000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Quick top-down view for verifying results without moving the aesthetic viewpoint. Shortcut toggles; a held key gives a temporary view, then returns.
+Quick top-down look to verify results without moving the aesthetic viewpoint. Owner 2026-11-11: no new on-screen control; press and hold the dice total text (touch or mouse), plus the t key on desktop. Release returns to the player's viewpoint.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Camera returns to previous viewpoint on release
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-11: done in roll view. Total is a .tot element (pointer capture, touch-action none); the t key and window blur are handled; the total fades to 18 % while held. Test in physics.spec. Not a toggle: hold only.
+
+2026-11-11 follow-up: while held, all controls (panel, tools, shelf, name, hint, re-roll button) fade out without reflow; the total stays, dimmed. The camera also backs off enough that every die is in frame if the current zoom would cut some off.
+<!-- SECTION:NOTES:END -->

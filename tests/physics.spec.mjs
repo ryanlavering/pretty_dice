@@ -146,6 +146,21 @@ test.describe('nat 20 / nat 1 effects', () => {
     expect([r.crit, r.fumble, r.dim]).toEqual([2, 0, 0]);
     for (const g of r.glow) expect(g).toBeGreaterThan(0);
   });
+  test('nat 20: lights dip slightly before the starburst, flash, then return to normal (PD-91)', async ({ shared: app }) => {
+    const r = await app.run(pd => {
+      pd.simRoll(); pd.triggerFx(pd.dice.map(() => ({ label: 20 })));
+      const base = pd.BASE_KEY, key = () => pd.key.intensity, out = {};
+      for (let i = 0; i < 20; i++) pd.updateFx(1 / 60);          // 0.33 s: before the burst
+      out.before = key() / base; out.preFired = pd.fx.crit.length;
+      for (let i = 0; i < 20; i++) pd.updateFx(1 / 60);          // 0.67 s: just after it
+      out.after = key() / base;
+      for (let i = 0; i < 240; i++) pd.updateFx(1 / 60);
+      out.end = key() / base; return out; });
+    expect(r.before, 'dimmed a little').toBeLessThan(.97);
+    expect(r.before, 'but far less than a nat 1 (70 %)').toBeGreaterThan(.8);
+    expect(r.after, 'flash').toBeGreaterThan(1);
+    expect(r.end).toBeCloseTo(1, 2);
+  });
   test('all 1s go gray and the room dims', async ({ shared: app }) => {
     const r = await fxAfter(app, [1]);
     expect([r.crit, r.fumble]).toEqual([0, 2]);
@@ -187,4 +202,40 @@ test('a result read while dice are balanced is corrected when they come to rest'
   expect(r.leaning, 'flagged while tipped').toBeGreaterThan(0);
   expect(r.fx, 'no nat 20 / nat 1 fanfare for leaning dice').toBe(false);
   expect(r.shown, 'the display follows the dice').toBe(r.truth);
+});
+
+// PD-67: hold the total (or t) for a top-down look at the dice; release returns to the player's own viewpoint.
+test('holding the total or t swings the camera overhead and releasing returns it', async ({ shared: app }) => {
+  await open(app, 3);
+  const r = await app.run(pd => {
+    pd.simRoll();
+    const tilt = () => { const c = pd.camera.position; return Math.atan2(c.y, Math.hypot(c.x, c.z)); };
+    pd.renderOnce(); const before = tilt();
+    pd.holdTop(true); pd.renderOnce(); const held = tilt(), faded = document.getElementById('result').classList.contains('peek');
+    pd.holdTop(false); pd.renderOnce(); const after = tilt();
+    return { before, held, faded, after, hasTotal: !!document.querySelector('#result .tot') }; });
+  expect(r.hasTotal).toBe(true);
+  expect(r.held, 'looking nearly straight down').toBeGreaterThan(1.3);
+  expect(r.held).toBeGreaterThan(r.before + .3);
+  expect(r.faded, 'total fades while held').toBe(true);
+  expect(r.after).toBeCloseTo(r.before, 3);
+  await app.page.keyboard.down('t'); await app.run(pd => pd.renderOnce());
+  expect(await app.run(pd => pd.topBlend)).toBe(1);
+  await app.page.keyboard.up('t'); await app.run(pd => pd.renderOnce());
+  expect(await app.run(pd => pd.topBlend)).toBe(0);
+});
+
+test('top-down check backs off so every die is in view even when zoomed in', async ({ shared: app }) => {
+  await open(app, 7);
+  const r = await app.run(pd => {
+    pd.simRoll(); pd.state.rollZoom = .15;
+    const worst = () => { let m = 0; for (const d of pd.dice) { const v = d.mesh.position.clone().project(pd.camera); m = Math.max(m, Math.abs(v.x), Math.abs(v.y)); } return m; };
+    pd.renderOnce(); const zoomed = worst(), dist = pd.camera.position.length();
+    pd.holdTop(true); pd.renderOnce(); const held = worst(), heldDist = pd.camera.position.length();
+    pd.holdTop(false); pd.renderOnce();
+    return { zoomed, held, dist, heldDist, back: pd.camera.position.length() }; });
+  expect(r.zoomed, 'the zoomed-in view cuts dice off (premise)').toBeGreaterThan(1);
+  expect(r.held, 'all dice inside the frame').toBeLessThanOrEqual(1);
+  expect(r.heldDist).toBeGreaterThan(r.dist);
+  expect(r.back).toBeCloseTo(r.dist, 3);
 });

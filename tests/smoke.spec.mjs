@@ -86,6 +86,11 @@ test.describe('desktop', () => {
     saved.shape = saved.shape === 'd12' ? 'd8' : 'd12';
     await page.setInputFiles('#jsonfile', { name: 'design.json', mimeType: 'application/octet-stream', buffer: Buffer.from('﻿' + JSON.stringify(saved)) });   // BOM + octet-stream, as phones hand it over
     await expect.poll(() => app.run(pd => pd.state.shape)).toBe(saved.shape);
+    // it lands as a new design at the end of the bag; the original design is untouched
+    const r = await app.run(pd => ({ n: pd.bag.designs.length, last: pd.bag.designs.at(-1), active: pd.bag.active.design }));
+    expect(r.n).toBe(2);
+    expect(r.active).toBe(r.last.id);
+    expect(r.last.design.shape).toBe(saved.shape);
   });
 
   test('custom inclusion loads from OBJ and STL files', async ({ app, page }) => {
@@ -289,4 +294,35 @@ test('with sound off by default no audio starts on taps or rolls; the rumble is 
   await app.page.click('#snd');
   expect(await app.run(pd => pd.sfx.ctx !== null), 'turning sound on creates the context').toBe(true);
   expect(await app.page.isChecked('#rumble'), 'rumble stays off').toBe(false);
+});
+
+// PD-65 / PD-67: distraction-free mode and the hidden-controls top-down check.
+test.describe('distraction-free and top-down hide the controls', () => {
+  test.beforeEach(async ({ app }) => { await app.open(); });
+  const shown = (page, sel) => page.locator(sel).evaluate(e => getComputedStyle(e).display !== 'none' && getComputedStyle(e).opacity !== '0');
+
+  test('h and long-press on the layout button leave one button; a tap brings the controls back', async ({ app, page }) => {
+    await page.keyboard.press('h');
+    for (const sel of ['aside', '#shelf', '#mode', '#info', '#snd', '#bagbtn']) expect(await shown(page, sel), sel).toBe(false);
+    expect(await shown(page, '#layout')).toBe(true);
+    expect(await page.locator('#layout').getAttribute('aria-label')).toBe('Show controls');
+    await page.click('#layout');
+    expect(await shown(page, 'aside')).toBe(true); expect(await shown(page, '#mode')).toBe(true);
+    const b = await page.locator('#layout').boundingBox();
+    await page.mouse.move(b.x + 20, b.y + 20); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up();
+    expect(await shown(page, '#mode'), 'long press').toBe(false);
+    await page.keyboard.press('h');
+    expect(await shown(page, '#mode')).toBe(true);
+  });
+
+  test('holding the total hides every control, release brings them back', async ({ app, page }) => {
+    await app.run(pd => { pd.simRoll(); });
+    const tot = page.locator('#result .tot'); await expect(tot).toBeVisible();
+    const b = await tot.boundingBox(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down();
+    await expect.poll(() => shown(page, '#tools')).toBe(false);
+    for (const sel of ['aside', '#tools', '#shelf', '#name']) expect(await shown(page, sel), sel).toBe(false);
+    await page.mouse.up();
+    await expect.poll(() => shown(page, '#tools')).toBe(true);
+    expect(await shown(page, 'aside')).toBe(true);
+  });
 });
