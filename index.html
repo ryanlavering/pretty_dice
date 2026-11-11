@@ -45,6 +45,11 @@
   #stage canvas:active{cursor:grabbing}
   #result{position:absolute;top:46px;left:0;right:0;text-align:center;font:800 54px Cinzel,serif;color:var(--accent);opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 2px 18px #000}
   #result.on{opacity:1}
+  aside,#tools,#shelf,#name,#hint{transition:opacity .15s}
+  body.peek aside,body.peek #tools,body.peek #shelf,body.peek #name,body.peek #hint,body.peek #result .relean{opacity:0;pointer-events:none}   /* top-down check held: every control gets out of the way (no reflow) */
+  body.calm aside,body.calm #shelf,body.calm #name,body.calm #hint,body.calm #tr,body.calm #tools button:not(#layout){display:none}   /* distraction-free: only the 'show controls' button is left */
+  #result.peek{opacity:.18}   /* while the top-down check is held the total fades so the dice can be read */
+  #result .tot{display:table;margin:0 auto;pointer-events:auto;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}   /* press and hold the total for a top-down look at the dice (PD-67) */
   #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
   #result.fumble{color:#8c919e;text-shadow:0 2px 18px #000}
   #result .relean{pointer-events:auto;margin-top:10px;font:600 13px Inter,sans-serif;letter-spacing:0;padding:7px 16px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
@@ -527,6 +532,23 @@ vec3 stonePattern(vec3 p, vec3 q){
     c=uC1*(.6+.4*fbm(q*.8)); float flow=smoothstep(.9,1.,.5+.5*sin(q.x*9.+fbm(q*2.)*6.));
     return mix(c,uC3,flow*.4*(.3+a));
   }
+  if(uStone==8){                                   // amethyst: cloudy purple zoning with pale quartz veils
+    c=mix(uC1,uC2,smoothstep(.3,.7,fbm(q*1.2)));
+    float z=.5+.5*sin(q.y*9.+fbm(q*2.2)*7.);
+    c=mix(c,uC3,smoothstep(.78,.98,z)*(.12+.4*a));
+    return mix(c,mix(uC3,vec3(1.),.5),smoothstep(.7,.85,fbm(q*3.4+2.))*.14*(.3+a));
+  }
+  if(uStone==9){                                   // tiger's eye: fine fibres across the stone, shimmering gold and brown bands
+    float fib=fbm(vec3(p.x*2.2,p.y*46.,p.z*2.2)), band=.5+.5*sin(p.y*15.+fbm(p*1.6)*5.);
+    c=mix(uC1,uC2,smoothstep(.3,.7,band*.75+fib*.45));
+    return mix(c,uC3,smoothstep(.62,.95,band)*smoothstep(.4,.75,fib)*(.25+.7*a));
+  }
+  if(uStone==10){                                  // opal: milky body with drifting patches of play-of-colour
+    vec3 rb=.5+.5*cos(6.2832*(fbm(p*3.5)*1.6+vec3(0.,.33,.67)));
+    c=mix(uC1,uC2,smoothstep(.3,.7,fbm(q*.9)));
+    float pl=smoothstep(.4,.62,fbm(q*2.4+3.)), fleck=smoothstep(.45,.8,vn(p*16.));
+    return mix(c,mix(uC3,rb,.8),pl*(.45+.55*a)*(.5+.5*fleck));
+  }
   float w=1.-abs(fbm(q*3.)*2.-1.);                 // turquoise: matrix webbing
   return mix(mix(uC1,uC2,fbm(q*.9)),uC3,smoothstep(.88,.99,w)*(.4+.6*a));
 }
@@ -644,6 +666,10 @@ const STONES = {
     return [hsl(h,s,l),hsl(h+rnd(r,.04,.1),s,l+.12),r()<.6?hsl(h+rnd(r,-.1,.1),.6,.12):pick(ACCENTS,r)]; }},
   obsidian: {label:'Obsidian',          id:6, rough:.06, coat:.9,  pal:r=>[hsl(rnd(r,.6,.8),.15,.05),hsl(rnd(r,.7,.95),.3,.1),pick(['#c9a24a','#2fb8a8','#b04ad0','#d8dde6','#d0603a'],r)]},
   turquoise:{label:'Turquoise',         id:7, rough:.3,  coat:.4,  pal:r=>[hsl(rnd(r,.46,.52),.55,.58),hsl(rnd(r,.5,.57),.6,.45),pick(['#3a2a1c','#1c1c20','#8a6a2a','#5a3a2a'],r)]},
+  amethyst: {label:'Amethyst',         id:8, rough:.1,  coat:.7,  pal:r=>{ const h=rnd(r,.74,.8); return [hsl(h,rnd(r,.4,.6),rnd(r,.16,.26)),hsl(h+rnd(r,-.02,.03),rnd(r,.4,.6),rnd(r,.34,.5)),pick(['#e6dcf2','#f3effa','#b9a2e0'],r)]; }},
+  tigerseye:{label:"Tiger's eye",       id:9, rough:.14, coat:.8,  pal:r=>{ const h=rnd(r,.07,.11); return [hsl(h,rnd(r,.6,.8),rnd(r,.1,.18)),hsl(h+.01,rnd(r,.6,.85),rnd(r,.26,.36)),pick(['#e0b040','#f0c860','#c88a28'],r)]; }},
+  opal:     {label:'Opal',              id:10,rough:.1,  coat:.85, pal:r=>{ const dark=r()<.35;   // black opal or milky white/crystal opal
+    return [dark?hsl(rnd(r,.55,.75),rnd(r,.2,.5),rnd(r,.05,.12)):hsl(rnd(r,.08,.15),rnd(r,.05,.2),rnd(r,.68,.8)), dark?hsl(rnd(r,.5,.7),rnd(r,.3,.5),rnd(r,.12,.22)):hsl(rnd(r,.5,.7),rnd(r,.15,.35),rnd(r,.5,.66)), pick(['#7fe0d0','#e07fc8','#8fb0ff','#f0c060'],r)]; }},
 };
 const STONE_KEYS=Object.keys(STONES);
 const lum=hex=>{const c=new THREE.Color(hex),o={};c.getRGB(o,THREE.SRGBColorSpace);return .299*o.r+.587*o.g+.114*o.b;};
@@ -1177,13 +1203,15 @@ const bagOps={
     if(bag.active.design===id) bag.active.design=bag.designs[Math.min(k,bag.designs.length-1)].id;
     if(wasActive) await activate(bag.active.design,{skipSync:true}); else save(); return true; },
   move(id,to){ const k=bag.designs.findIndex(d=>d.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.designs.length-1,to)); const [e]=bag.designs.splice(k,1); bag.designs.splice(to,0,e); save(); },
+  async addLoaded(obj){ if(!obj||obj.format!=='pretty-dice') throw new Error(obj&&obj.format==='pretty-dice-bag'?'That is a bag file: use Add to the bag > From a file':'Not a pretty-dice design file');
+    const {bag:inc}=parseBag(obj); syncLive(); const d=inc.designs[0].design, e=addEntry(d,d.name||newDesignName()); await activate(e.id,{skipSync:true}); return e.id; },
   async addBlank(){ syncLive(); bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); setSubstrate(state.substrate); state.seed=(rng()*1e9)|0; repaint(); applyLook();
     await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
 };
 /* The background picture pass borrows the live state for a moment, so anything that changes the live design waits for it to finish. */
 let thumbBusy=false;
 const idleThumbs=async()=>{ while(thumbBusy) await new Promise(r=>setTimeout(r,25)); };
-for(const k of ['save','saveCopy','revert','keep','discard','duplicate','remove','addBlank']){ const f=bagOps[k]; bagOps[k]=async function(...a){ await idleThumbs(); return f.apply(bagOps,a); }; }
+for(const k of ['save','saveCopy','revert','keep','discard','duplicate','remove','addBlank','addLoaded']){ const f=bagOps[k]; bagOps[k]=async function(...a){ await idleThumbs(); return f.apply(bagOps,a); }; }
 /* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
 async function importBag(obj,{replace=false}={}){
   const {bag:inc,dropped}=parseBag(obj); await idleThumbs();
@@ -1332,15 +1360,23 @@ let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=setTimeout(
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
-function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ refit(); requestAnimationFrame(refit); setTimeout(refit,300); } $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
-$('layout').onclick=()=>setFull(!document.body.classList.contains('full'));
+function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ refit(); requestAnimationFrame(refit); setTimeout(refit,300); } $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } if(document.body.classList.contains('calm')) setCalm(true); }
+/* Distraction-free mode (PD-65): long-press the layout button, or press h. Only the layout button stays, now 'Show controls'. */
+function setCalm(on){ document.body.classList.toggle('calm',on); refit(); requestAnimationFrame(refit); setTimeout(refit,300);
+  const full=document.body.classList.contains('full'), show=on||full; $('layout').innerHTML=show?ICON_GEAR:ICON_EXPAND;
+  $('layout').title=on?'Show controls':full?'Show settings':'Hide settings (full view). Long-press: distraction-free'; $('layout').setAttribute('aria-label',$('layout').title); }
+{ let timer=null, long=false; const L=$('layout');
+  L.addEventListener('pointerdown',()=>{ long=false; clearTimeout(timer); if(document.body.classList.contains('calm')) return; timer=setTimeout(()=>{ long=true; setCalm(true); },550); });
+  for(const ev of ['pointerup','pointercancel','pointerleave']) L.addEventListener(ev,()=>clearTimeout(timer));
+  L.addEventListener('contextmenu',e=>e.preventDefault());
+  L.onclick=()=>{ if(long){ long=false; return; } if(document.body.classList.contains('calm')) setCalm(false); else setFull(!document.body.classList.contains('full')); }; }
 { let on=false; try{ on=localStorage.getItem('prettydice.full')==='1'; }catch{} if(new URLSearchParams(location.search).get('full')) on=new URLSearchParams(location.search).get('full')==='1'; setFull(on,true); }
 $('hint').onclick=()=>{ $('hint').classList.remove('show'); $('info').classList.remove('on'); $('info').setAttribute('aria-expanded',false); };
 $('info').innerHTML=ICON_I; $('info').onclick=()=>{ const on=$('hint').classList.toggle('show'); $('info').classList.toggle('on',on); $('info').setAttribute('aria-expanded',on); };
 $('loadjson').onclick=()=>$('jsonfile').click();
 const readText=f=>f.text?f.text():new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(new Error('Could not read file')); fr.readAsText(f); });
 $('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
-  try{ const txt=await readText(f); inp.value=''; await loadDesign(JSON.parse(txt.replace(/^\uFEFF/,''))); }catch(err){ inp.value=''; alert('Could not load design: '+err.message); } };   // read first, then reset the input: clearing it early can empty the file on some phones
+  try{ const txt=await readText(f); inp.value=''; await bagOps.addLoaded(JSON.parse(txt.replace(/^\uFEFF/,''))); }catch(err){ inp.value=''; alert('Could not load design: '+err.message); } };   // read first, then reset the input: clearing it early can empty the file on some phones
 $('dname').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') e.target.blur(); };   // Enter accepts the name
 $('dname').oninput=()=>save();   // a typed name is an edit: show Modified and keep it
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
@@ -1350,8 +1386,10 @@ addEventListener('keydown',e=>{
   const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); });
-$('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view · space = randomize · r = roll · flick in roll view = roll again';
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) setCalm(!document.body.classList.contains('calm')); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
+addEventListener('keyup',e=>{ if(e.key==='t'||e.key==='T') holdTop(false); });
+addEventListener('blur',()=>holdTop(false));
+$('hint').textContent='drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view · space = randomize · r = roll · h or long-press the layout button = distraction-free · hold the total or t = top-down look · flick in roll view = roll again';
 
 /* ---------- interaction: drag-rotate with inertia, roll with a bounce ---------- */
 const angVel=new THREE.Vector3(0,.5,0.08); let dragging=false, last=null;
@@ -1395,6 +1433,8 @@ new ResizeObserver(resize).observe(stage); resize();
 addEventListener('resize',()=>{ resize(); }); addEventListener('orientationchange',()=>setTimeout(()=>{ resize(); window.scrollTo(0,0); },250)); if(window.visualViewport) visualViewport.addEventListener('resize',resize);
 
 /* ---------- physics roll (cannon-es) ---------- */
+let topHold=false, topBlend=0;     // hold the total (or the t key) in the roll view: the camera swings straight overhead to check the dice, and returns on release
+function holdTop(on){ topHold=!!on&&rolling; $('result').classList.toggle('peek',topHold); document.body.classList.toggle('peek',topHold); }
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
@@ -1437,6 +1477,7 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
     world.addBody(b); return b;});
 }
 function exitRoll(instant){
+  holdTop(false);
   clearFx(); clearLeans();
   if(!rolling&&!instant) return;
   rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); syncMode();
@@ -1486,7 +1527,10 @@ function finishRoll(){ restT=0;
   else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value
   else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; main=String(t===0?100:t); }
   else main=String(fmt(dice[0],parts[0]));
-  const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
+  const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.className='tot'; m.title='Hold for a top-down view'; m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
+  for(const ev of ['pointerup','pointercancel','lostpointercapture']) m.addEventListener(ev,()=>holdTop(false));
+  m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
+  m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
   updateLeanUI();
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
@@ -1564,7 +1608,7 @@ function updateRumble(dt){
 /* ---------- nat 20 / nat 1 effects ---------- */
 const sprTex=(()=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,'rgba(255,255,255,1)'); gr.addColorStop(.35,'rgba(255,255,255,.6)'); gr.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=gr; g.fillRect(0,0,64,64); return new THREE.CanvasTexture(c); })();
-const BURST_N=260, BURST_GAP=.5, BURST_LIFE=2.4, bursts=[];
+const BURST_N=260, BURST_GAP=.5, BURST_LIFE=2.4, BURST_LEAD=.55, bursts=[];   // BURST_LEAD: the room dims slightly for this long before the first starburst (PD-91)
 function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3)); geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3));
   const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.3,map:sprTex,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
   pts.frustumCulled=false; pts.visible=false; scene.add(pts);
@@ -1572,7 +1616,7 @@ function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('po
   return {pts,fl,vel:new Float32Array(BURST_N*3),origin:new THREE.Vector3(),die:null,start:0,fired:false,done:true}; }
 const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
-const fx={t:0,crit:[],fumble:[],dim:0,hold:false};
+const fx={t:0,crit:[],fumble:[],dim:0,lead:0,hold:false};   // dim: nat 1 room dimming; lead: nat 20 light dip (+) / flash (-)
 let leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
 function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
 function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:0xff7a3a,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
@@ -1604,7 +1648,7 @@ function dropIn(idx){
   bodies.forEach(b=>b.slowT=0);
 }
 function clearFx(){ for(const d of dice){ const u=d.mat.userData.fx; if(u){ u.uGlow.value=0; u.uGray.value=0; } }
-  fx.crit=[]; fx.fumble=[]; fx.t=0; fx.dim=0; for(const b of bursts){ b.pts.visible=false; b.fl.visible=false; b.done=true; b.fired=false; } critLight.intensity=0;
+  fx.crit=[]; fx.fumble=[]; fx.t=0; fx.dim=0; fx.lead=0; for(const b of bursts){ b.pts.visible=false; b.fl.visible=false; b.done=true; b.fired=false; } critLight.intensity=0;
   key.intensity=BASE_KEY; renderer.toneMappingExposure=BASE_EXPOSURE; $('result').classList.remove('crit','fumble'); }
 function fireBurst(b){ playChime(Math.max(0,bursts.indexOf(b))); b.fired=true; b.done=false; b.origin.copy(b.die.mesh.position); b.pts.visible=true; b.fl.visible=true;
   const pos=b.pts.geometry.attributes.position.array, col=b.pts.geometry.attributes.color.array, pal=[[1,.85,.3],[1,.65,.2],[1,1,.8],[1,.5,.15]];
@@ -1615,7 +1659,7 @@ function fireBurst(b){ playChime(Math.max(0,bursts.indexOf(b))); b.fired=true; b
   b.pts.geometry.attributes.position.needsUpdate=true; b.pts.geometry.attributes.color.needsUpdate=true; }
 function triggerFx(parts){
   clearFx(); parts.forEach((p,i)=>{ const d=dice[i]; if(!d||d.name!=='d20') return; if(p.label===20) fx.crit.push(d); else if(p.label===1) fx.fumble.push(d); });
-  fx.crit.forEach((d,j)=>{ while(bursts.length<=j) bursts.push(makeBurst()); const b=bursts[j]; b.die=d; b.start=j*BURST_GAP; b.fired=false; b.done=false; });   // each 20 shoots its own burst in turn
+  fx.crit.forEach((d,j)=>{ while(bursts.length<=j) bursts.push(makeBurst()); const b=bursts[j]; b.die=d; b.start=BURST_LEAD+j*BURST_GAP; b.fired=false; b.done=false; });   // each 20 shoots its own burst in turn
   if(fx.crit.length>=fx.fumble.length&&fx.crit.length) $('result').classList.add('crit'); else if(fx.fumble.length) $('result').classList.add('fumble');
   fx.t=0; if(fx.fumble.length) setTimeout(playFumble,250);
   const tag=document.createElement('div'); tag.className='brk'; tag.style.cssText='letter-spacing:.2em;text-transform:uppercase;margin-top:6px';
@@ -1636,6 +1680,10 @@ function updateFx(dt){
     const fa=age/.7; b.fl.visible=fa<1; if(b.fl.visible){ b.fl.position.copy(b.origin); b.fl.position.y+=.3; b.fl.quaternion.copy(camera.quaternion); b.fl.scale.setScalar(1.5+fa*9); b.fl.material.opacity=(1-fa)*.9; }
     const li=90*Math.exp(-age*2.6); lightI+=li; if(!lightB||li>0) lightB=b; });
   if(lightB){ critLight.position.set(lightB.origin.x,lightB.origin.y+1.6,lightB.origin.z); critLight.intensity=Math.min(lightI,110); } else critLight.intensity=0;
+  if(fx.crit.length&&fx.crit.length>=fx.fumble.length){       // nat 20: the lights ease down a touch (the die 'inhales'), spike bright at the starburst, then settle back
+    const a=fx.crit[0]&&bursts[0]?t-bursts[0].start:-1;
+    fx.lead = t<BURST_LEAD ? .14*Math.sin(Math.PI/2*t/BURST_LEAD) : -.3*Math.exp(-a*7);        // dip up to 14 % (a nat 1 dims 70 %, so the two never look alike), then a flash that decays in about half a second
+    key.intensity=BASE_KEY*(1-fx.lead); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.5*fx.lead); }
   if(fx.fumble.length){ const r=Math.min(1,t/1.1), e=1-Math.pow(1-r,2); for(const d of fx.fumble) d.mat.userData.fx.uGray.value=.9*e;     // every nat 1 die fades to gray
     fx.dim=fx.fumble.length>fx.crit.length?e:0;                                                                                          // the room only dims when 1s outnumber 20s
     key.intensity=BASE_KEY*(1-.7*fx.dim); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*fx.dim); }
@@ -1658,12 +1706,18 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   }
   updateFx(dt); updateRumble(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
+  topBlend+=((topHold&&rolling?1:0)-topBlend)*(dtOver!=null?1:1-Math.exp(-dt*9));
   { const tgt=new THREE.Vector3(0,-camBlend,0), L=THREE.MathUtils.lerp, tan=Math.tan(THREE.MathUtils.degToRad(16));
     const rd=Math.max(9.76,(rollHalf.z+.5)/(tan*camera.aspect),(rollHalf.x*ROLL_DIR.y+1)/tan)*state.rollZoom;   // default roll distance keeps the whole tray in view for this stage shape; zoom is the user's multiplier on top
     const showZ=Math.max(baseZ,needHalfW/(tan*camera.aspect))*state.zoom;
     const off=new THREE.Vector3(0,camBlend*rd*ROLL_DIR.y,L(showZ,rd*ROLL_DIR.z,camBlend)).sub(tgt);
-    const r=off.length(), az=L(views.show.az,views.roll.az,camBlend), el=L(views.show.el,views.roll.el,camBlend), th=Math.atan2(off.x,off.z)+az+ROLL_AZ*camBlend, ph=THREE.MathUtils.clamp(Math.asin(off.y/r)+el,rolling||camBlend>.5?.12:-1.4,1.4);
-    camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
+    const r=off.length(), az=L(views.show.az,views.roll.az,camBlend), el=L(views.show.el,views.roll.el,camBlend), th=Math.atan2(off.x,off.z)+az+ROLL_AZ*camBlend, ph=L(THREE.MathUtils.clamp(Math.asin(off.y/r)+el,rolling||camBlend>.5?.12:-1.4,1.4),1.5,topBlend);
+    let rr=r;
+    if(topBlend>.001&&rolling&&dice.length){     // top-down check: back the camera off just enough that every die is in view, whatever the zoom
+      const sx=Math.cos(th), sz=-Math.sin(th), ux=Math.sin(th), uz=Math.cos(th), tv=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)); let wx=0, wu=0;
+      for(const d of dice){ const p=d.mesh.position, rad=(d.r||1)*1.15; wx=Math.max(wx,Math.abs((p.x-tgt.x)*sx+(p.z-tgt.z)*sz)+rad); wu=Math.max(wu,Math.abs((p.x-tgt.x)*ux+(p.z-tgt.z)*uz)+rad); }
+      rr=L(r,Math.max(r,1.08*Math.max(wx/(tv*camera.aspect),wu/tv)/Math.sin(ph)),topBlend); }
+    camera.position.set(tgt.x+rr*Math.cos(ph)*Math.sin(th),tgt.y+rr*Math.sin(ph),tgt.z+rr*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
 };
@@ -1691,8 +1745,8 @@ Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomiz
 window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
-window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagOps,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
+window.__pd={state,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagOps,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
