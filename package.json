@@ -8,7 +8,8 @@
     "test:docker": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh",
     "test:update": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh --update-snapshots",
     "test:slow": "sh scripts/with-test-lock.sh playwright test --project=slow --pass-with-no-tests",
-    "probe": "node scripts/probe.mjs"
+    "probe": "node scripts/probe.mjs",
+    "test:lock": "sh scripts/test-lock-status.sh"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"
