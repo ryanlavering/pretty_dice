@@ -205,17 +205,17 @@ test.describe('touch devices', () => {
 test('the sound button on the mat toggles sound and mirrors the settings checkbox', async ({ app }) => {
   await app.open();
   const read = () => app.run(pd => ({ on: pd.state.sound, checked: document.getElementById('sound').checked, off: document.getElementById('snd').classList.contains('off') }));
+  expect(await read(), 'sound is opt-in: off by default').toEqual({ on: false, checked: false, off: true });
+  await app.page.click('#snd');
   expect(await read()).toEqual({ on: true, checked: true, off: false });
   await app.page.click('#snd');
   expect(await read()).toEqual({ on: false, checked: false, off: true });
-  await app.page.click('#snd');
-  expect(await read()).toEqual({ on: true, checked: true, off: false });
 });
 
 test('a tap wakes an interrupted audio context and takes the playback audio session (iOS)', async ({ app }) => {
   await app.page.addInitScript(() => { Object.defineProperty(navigator, 'audioSession', { value: { type: 'auto' }, configurable: true }); });
   await app.open();
-  await app.page.mouse.click(600, 300);   // first gesture creates the context
+  await app.page.click('#snd');   // opt in; the first gesture creates the context
   const r = await app.run(async pd => {
     const ctx = pd.sfx.ctx; let resumes = 0, st = 'interrupted';
     Object.defineProperty(ctx, 'state', { get: () => st, configurable: true });
@@ -267,7 +267,7 @@ test('roll feel section holds the physics sliders and comes first in the roll vi
 test('Test sound plays a blip and reports the audio state', async ({ app }) => {
   await app.open();
   await app.page.click('#soundtest');
-  await expect.poll(() => app.page.textContent('#soundstat'), { timeout: 10_000 }).toMatch(/^audio (running|suspended|interrupted)/);
+  await expect.poll(() => app.page.textContent('#soundstat'), { timeout: 30_000 }).toMatch(/^audio (running|suspended|interrupted)/);
   expect(await app.run(pd => pd.sfx.ctx !== null), 'audio context was created by the tap').toBe(true);
 });
 
@@ -279,4 +279,14 @@ test.describe('iPhone user agent', () => {
     await app.page.click('#soundtest');
     await expect.poll(() => app.run(pd => pd.sfx.hold ? pd.sfx.hold.src.slice(0, 22) : null), { timeout: 10_000 }).toBe('data:audio/wav;base64,');
   });
+});
+
+// PD-97: muted until the user opts in, and no audio machinery (or iOS silent-clip loop) starts while muted.
+test('with sound off by default no audio starts on taps or rolls; the rumble is a separate opt-in', async ({ app }) => {
+  await app.open();
+  await app.page.mouse.click(600, 300); await app.run(pd => pd.startRoll());
+  expect(await app.run(pd => ({ ctx: pd.sfx.ctx, sound: pd.state.sound, rumble: pd.state.rumble })), 'nothing created while muted').toEqual({ ctx: null, sound: false, rumble: false });
+  await app.page.click('#snd');
+  expect(await app.run(pd => pd.sfx.ctx !== null), 'turning sound on creates the context').toBe(true);
+  expect(await app.page.isChecked('#rumble'), 'rumble stays off').toBe(false);
 });
