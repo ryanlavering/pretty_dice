@@ -13,7 +13,7 @@ export default defineConfig({
   retries: 1,   // a lone boot timeout under CPU load (software WebGL uses every core) shows as 'flaky' instead of failing; real bugs fail both tries
   forbidOnly: !!process.env.CI,
   ignoreSnapshots: !inDocker,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: process.env.CI ? [['github'], ['list'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],   // github: failures show as run annotations
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 800 },
