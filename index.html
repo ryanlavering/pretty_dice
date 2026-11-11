@@ -1138,8 +1138,8 @@ function finishRoll(){ restT=0;
   const parts=readResult();
   leanDice=bodies.map((b,i)=>isLean(i));   // propped on another die, or cocked: flagged, never re-thrown automatically
   const alone=leanDice.map((l,i)=>l&&!bodies.some((o,j)=>j!==i&&bodies[i].position.distanceTo(o.position)<(dice[i].r+dice[j].r)));   // leaning yet no other die within reach: it is not propped on anything
-  if(alone.some(Boolean)&&freeTries>=2&&freeTries<5){ freeTries++; dropIn(alone.map((a,i)=>a?i:-1).filter(i=>i>=0)); leanDice=[]; return; }   // topple attempts did not free it: it drops in again from above
-  if(alone.some(Boolean)&&freeTries<2){ freeTries++; bodies.forEach((b,i)=>{ if(!alone[i]) return; b.free=true; b.angularDamping=.05; b.linearDamping=.02; b.wakeUp(); b.slowT=-1.2;
+  if(alone.some(Boolean)&&freeTries>=2&&freeTries<5){ freeTries++; rollT=Math.min(rollT,4); dropIn(alone.map((a,i)=>a?i:-1).filter(i=>i>=0)); leanDice=[]; return; }   // topple attempts did not free it: it drops in again from above
+  if(alone.some(Boolean)&&freeTries<2){ freeTries++; rollT=Math.min(rollT,4); bodies.forEach((b,i)=>{ if(!alone[i]) return; b.free=true; b.angularDamping=.05; b.linearDamping=.02; b.wakeUp(); b.slowT=-1.2;
     const t=tiltInfo(i), ax=new THREE.Vector3().crossVectors(t.n,new THREE.Vector3(0,t.four?-1:1,0)), ang=Math.asin(Math.min(1,ax.length()));   // tip it the way gravity would: the die sits balanced on an edge/corner the solver will not release
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans();
@@ -1297,6 +1297,7 @@ function updateFx(dt){
 const clock=new THREE.Clock();
 const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)
   const dt=dtOver??Math.min(clock.getDelta(),.05);
+  if(rolling&&!settled&&rollT>25){ freeTries=99; finishRoll(); }   // watchdog: whatever the cause, a roll never waits on the dice for more than 25 s
   if(!dragging&&!rolling){
     const idle = new THREE.Vector3(.12,.55,.05).multiplyScalar(state.spin*1.5);
     angVel.copy(idle).add(angVel.clone().sub(idle).multiplyScalar(Math.exp(-dt*1.6)));
@@ -1320,7 +1321,10 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
 };
-renderer.setAnimationLoop(loop);
+
+let frameErrs=0;
+renderer.setAnimationLoop(t=>{ try{ loop(t); }catch(e){ if(frameErrs++<3) console.error('frame error',e); } });   // an exception in one frame used to end the loop for good (three.js stops scheduling frames), which looks like a hang
+addEventListener('visibilitychange',()=>{ if(!document.hidden){ clock.getDelta(); if(sfx.ctx&&sfx.ctx.state!=='running') sfx.ctx.resume().catch(()=>{}); resize(); } });   // coming back to the tab: drop the long gap and wake audio
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
