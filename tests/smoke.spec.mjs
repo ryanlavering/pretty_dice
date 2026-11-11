@@ -177,3 +177,15 @@ test.describe('phone', () => {
     expect(r).toEqual({ soft: false, hard: true });   // { enabled: false } means the permission prompt path refused
   });
 });
+
+// PD-58: one throwing frame used to end the render loop for good (three.js stops scheduling frames after a callback throws).
+test('the render loop survives a frame that throws', async ({ app }) => {
+  await app.open();
+  await app.run(pd => { let thrown = false;   // the idle-spin code reads state.spin every showcase frame: make it throw once
+    Object.defineProperty(pd.state, 'spin', { configurable: true, get() { if (!thrown) { thrown = true; throw new Error('boom'); } return 0.3; }, set() {} }); });
+  await expect.poll(() => app.errors.some(e => e.includes('frame error')), { message: 'the error is logged, not swallowed', timeout: 20_000 }).toBe(true);
+  app.errors.length = 0;   // expected; the fixture would otherwise fail the test on it
+  const q = () => app.run(pd => pd.rig.quaternion.toArray());
+  const a = await q();
+  await expect.poll(async () => JSON.stringify(await q()) !== JSON.stringify(a), { message: 'the scene keeps animating after the error', timeout: 20_000 }).toBe(true);
+});

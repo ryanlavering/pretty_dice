@@ -157,3 +157,12 @@ test.describe('nat 20 / nat 1 effects', () => {
     expect([r.crit, r.fumble, r.dim]).toEqual([1, 1, 0]);
   });
 });
+
+// PD-58: hang hardening. A roll must always finish, whatever the dice are doing.
+test('a roll that never settles is finished by the 25 s watchdog', async ({ shared }) => {
+  await open(shared, 7);
+  const r = await shared.run(pd => { pd.startRoll(); pd.rollT = 26; pd.renderOnce();   // as if the dice had been jittering for 26 s
+    return { settled: pd.settled, shown: document.getElementById('result').classList.contains('on') }; });
+  expect(r.settled, 'roll finished').toBe(true);
+  expect(r.shown, 'result is shown').toBe(true);
+});
