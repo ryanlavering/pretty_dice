@@ -270,3 +270,13 @@ test('Test sound plays a blip and reports the audio state', async ({ app }) => {
   await expect.poll(() => app.page.textContent('#soundstat'), { timeout: 10_000 }).toMatch(/^audio (running|suspended|interrupted)/);
   expect(await app.run(pd => pd.sfx.ctx !== null), 'audio context was created by the tap').toBe(true);
 });
+
+// PD-97: iPhone's ring/silent switch mutes Web Audio unless the page holds a media session; the silent clip must be a data: URI (blob: media is blocked in artifact frames).
+test.describe('iPhone user agent', () => {
+  test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1' });
+  test('a tap starts a silent audio loop from a data: URI so the silent switch does not mute the dice', async ({ app }) => {
+    await app.open();
+    await app.page.click('#soundtest');
+    await expect.poll(() => app.run(pd => pd.sfx.hold ? pd.sfx.hold.src.slice(0, 22) : null), { timeout: 10_000 }).toBe('data:audio/wav;base64,');
+  });
+});

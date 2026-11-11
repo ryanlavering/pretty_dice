@@ -4,7 +4,7 @@ title: Sound on mobile is flaky; sound on/off button on the mat
 status: Needs Review
 assignee: []
 created_date: '2026-11-11T07:17:00Z'
-updated_date: '2026-11-11T07:59:00Z'
+updated_date: '2026-11-11T08:06:00Z'
 labels:
   - bug
   - mobile
@@ -24,4 +24,6 @@ Owner 2026-11-10: sound on mobile works sometimes, lately less. Likely iOS cause
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-10 owner: no sound at all from the artifact on mobile (artifact is a sandboxed iframe; could not emulate that headless). Added diagnostics: 'Test sound' button in Roll feel & sound plays a blip inside the tap and shows the audio state ('audio running|suspended|interrupted, session playback'); the mat's sound button also plays a blip when turned on. Next step depends on what the phone reports.
+
+2026-11-11 cause confirmed by owner: the iPhone ring/silent switch (silent) muted all web sound; ringer on made it work. The 'playback' audio session alone was not enough in the artifact. Now on iOS the page ALSO loops a silent clip from a data: URI (blob: media is blocked in artifact frames), which moves it to the media channel so the switch should not mute the dice. Test sound status shows 'silent-mode bypass on' and an iOS hint. Needs a re-test with the switch on silent.
 <!-- SECTION:NOTES:END -->
