@@ -12,7 +12,7 @@ if (!(await fetch(base + '/index.html').then(r => r.ok, () => false))) {
   server = spawn(process.execPath, [new URL('./serve.mjs', import.meta.url).pathname, '8124'], { stdio: 'ignore' });
   for (let i = 0; i < 50 && !(await fetch(base + '/index.html').then(r => r.ok, () => false)); i++) await new Promise(r => setTimeout(r, 100));
 }
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas']   // same flags as playwright.config.mjs });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on('console', m => console.error(`[${m.type()}] ${m.text()}`));

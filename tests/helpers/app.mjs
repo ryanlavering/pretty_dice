@@ -53,7 +53,8 @@ const helpers = page => ({
 
 export const test = base.extend({
   /** Fresh page per test (empty localStorage). Call app.open() first. */
-  app: async ({ page }, use) => {
+  app: async ({ page }, use, testInfo) => {
+    if (testInfo.project.name === 'fast-state') throw new Error('fresh-page test in fast-state: move it to a spec outside STATE_SPECS (playwright.config.mjs)');
     const errors = watch(page);
     const app = {
       ...helpers(page),
@@ -78,6 +79,7 @@ export const test = base.extend({
    *  shared.reset(seed) exits any roll, restores every setting the page booted with and reseeds the app RNG,
    *  so each test starts from the same state whatever ran before it. Errors are still checked per test. */
   _sharedPage: [async ({ browser }, use, workerInfo) => {
+    if (workerInfo.project.name === 'fast-ui') throw new Error('shared-page test in fast-ui: add its spec to STATE_SPECS (playwright.config.mjs)');
     const ctx = await browser.newContext({ viewport: { width: 960, height: 600 }, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
     const page = await ctx.newPage(), errors = watch(page);
     await page.addInitScript(seedMath, 1);

@@ -6,4 +6,4 @@ IMG=mcr.microsoft.com/playwright:v1.64.1-noble
 cd "$(dirname "$0")/.."
 exec docker run --rm --ipc=host --init \
   --user "$(id -u):$(id -g)" -e HOME=/tmp -e PD_DOCKER=1 -e CI -e PD_WORKERS \
-  -v "$PWD":/work -w /work "$IMG" npx playwright test --project=fast "$@"
+  -v "$PWD":/work -w /work "$IMG" npx playwright test --project='fast-*' "$@"
