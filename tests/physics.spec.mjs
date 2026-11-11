@@ -166,3 +166,25 @@ test('a roll that never settles is finished by the 25 s watchdog', async ({ shar
   expect(r.settled, 'roll finished').toBe(true);
   expect(r.shown, 'result is shown').toBe(true);
 });
+
+// A d20 balanced on an edge showed a nat 20 (with fireworks), then tipped over onto a 15 and the display kept saying 20.
+test('a result read while dice are balanced is corrected when they come to rest', async ({ shared }) => {
+  await open(shared, 11);
+  const r = await shared.run(async pd => {
+    pd.state.shape = 'custom'; pd.state.notation = '2d20'; await pd.buildDice(); pd.simRoll();
+    const [a, b] = pd.bodies;   // two dice side by side (a lone die gets the tip/re-drop rescue instead), both in a tipped, mid-air pose
+    a.quaternion.setFromEuler(0.45, 0.2, 0.35); a.position.set(-0.7, pd.TABLE_Y + 1.6, 0);
+    b.quaternion.setFromEuler(0.3, 0.9, 0.5); b.position.set(0.7, pd.TABLE_Y + 2.4, 0);
+    for (const x of [a, b]) { x.velocity.set(0, 0, 0); x.angularVelocity.set(0, 0, 0); x.wakeUp(); }
+    pd.finishRoll();   // read in this pose: provisional, flagged as leaning
+    const text = () => document.getElementById('result').firstChild.textContent;
+    const out = { leaning: pd.leans.filter(Boolean).length, fx: document.getElementById('result').classList.contains('crit') || document.getElementById('result').classList.contains('fumble') };
+    pd.drift(900);     // they fall and come to rest
+    out.shown = text();
+    pd.finishRoll(); out.truth = text();   // a fresh reading of where they lie now
+    return out;
+  });
+  expect(r.leaning, 'flagged while tipped').toBeGreaterThan(0);
+  expect(r.fx, 'no nat 20 / nat 1 fanfare for leaning dice').toBe(false);
+  expect(r.shown, 'the display follows the dice').toBe(r.truth);
+});

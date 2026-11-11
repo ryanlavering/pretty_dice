@@ -1181,7 +1181,7 @@ function finishRoll(){ restT=0;
   const R=$('result'); R.textContent=''; const m=document.createElement('div'); m.textContent=main; m.style.fontSize=state.shape==='set7'?'30px':''; R.append(m);
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
   updateLeanUI();
-  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts);
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
@@ -1277,9 +1277,10 @@ function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean'
   const bt=document.createElement('button'); bt.className='relean'; bt.textContent='Re-roll leaning'; bt.onclick=rerollLeans; R.append(bt); }
 function refreshLeans(){                        // a die that settles after the rings went up loses its ring; the note and button go when the last lean clears
   let changed=false; for(const m of leanRings.slice()){ const i=m.userData.i;
-    if(!isLean(i)){ leanDice[i]=false; m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); leanRings.splice(leanRings.indexOf(m),1); changed=true; }
+    const b=bodies[i], still=b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5;
+    if(!isLean(i)&&still){ leanDice[i]=false; m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); leanRings.splice(leanRings.indexOf(m),1); changed=true; }
     else m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); }
-  if(changed) updateLeanUI(); }
+  if(changed) finishRoll(); }   // a die that was balanced or propped has come to rest on a face: read the dice again, so the result (and any nat 20 / nat 1 effect) matches what is on the table
 function pulseLeans(t){ const o=.8+.2*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
 function rerollLeans(){                       // the leaning dice vanish from the mat and drop in again from above; the others stay where they are
   if(!rolling||!world||!settled||!leanDice.some(Boolean)) return;
@@ -1383,7 +1384,8 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
-  get dice(){return dice;}, get leans(){return [...leanDice];}, get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
+  get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
