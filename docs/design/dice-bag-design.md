@@ -38,6 +38,27 @@ Hierarchy: **Bag → designs + bag sets + characters → each character's own se
 
 Key rule: **a design does not own a shape.** The same "Amethyst swirl" can be a d20 in one set and d6s in another. Today `shape` sits inside the design; in a bag it moves to the set term. The showcase keeps a per-design *preview shape* (the shape last shown) so the carousel has something to draw.
 
+## Editing, saving and randomizing
+
+**Modified designs.** Editing a saved design does not overwrite it straight away. The design picks up pending edits and shows a **Modified** badge: a dot on its shelf card and grid tile, and "Modified" beside its name in the editor. Three actions sit beside the badge:
+- **Save:** overwrite the saved design. If other sets use it, the button says so first ("Save · changes 3 sets").
+- **Save as copy:** a new design next to the original, which goes back to its saved state.
+- **Revert:** drop the pending edits.
+
+Pending edits are kept in localStorage, so a reload or switching to another design loses nothing. The badge stays until you save or revert. The showcase and the roll mat show what you see, pending edits included. The exported bag file holds only saved designs, plus a pending-edits block so nothing is lost on export or import.
+
+**Randomize makes a draft, not a scramble.** Randomize never scrambles a saved design. It makes a **random draft**: an unsaved design that appears as a ghost card at the end of the shelf, marked "Draft". There is one draft slot:
+- Pressing Randomize again replaces the draft, so mashing the button never fills the bag.
+- **Keep** adds the draft to the bag as a real design. Editing a draft keeps it a draft until you Keep it.
+- Choosing another design leaves the draft in its slot, and **Discard** drops it.
+- Undo and redo step back through earlier drafts, so a good roll of the randomizer that you mashed past can still be recovered.
+
+**Rearranging the bag.** Everything in the bag can be reordered:
+- **Designs:** drag on the shelf or in the grid (long-press then drag on a phone). The grid also has "Move to start / end".
+- **Sets and characters:** drag in their lists.
+
+The order is saved in the bag file. The shelf and grid show bag order. Sorting by name or material is only a view and doesn't change the stored order.
+
 ## Dice jail
 
 A die that has been rolling badly can be sent to jail by the player. It then sits out of the game until the player lets it out.
@@ -154,7 +175,7 @@ Each phase is its own card or branch and ships to `main` on its own. Tests: a ro
 ## Open questions for the owner
 
 1. **Shape in the design or in the set?** This plan moves it to the set (one look, any die). Is there a case for a design locked to a shape (e.g. a d20-only metal die)?
-2. **Editing a design used by several sets:** edit in place (every set changes) or "save as new"? Plan: in place, with Duplicate one tap away.
+2. **Editing a design used by several sets:** settled 2026-11-11. Edits stay pending behind a Modified badge, with Save, Save as copy and Revert (see "Editing, saving and randomizing"). Still open: should rolls use a design's pending edits (proposed: yes, what you see is what rolls), or only its saved version?
 3. **Does the carousel stay visible in Roll view,** or does Roll view always show the set panel (C)?
 4. **Characters:** settled 2026-11-11: bag sets come first, and characters are a separate later level that adds sheet rolls. Still open: which system's sheet comes first (5e skills and saves?) and whether the sheet is imported or typed in.
 5. **Bag size:** expected tens or hundreds of designs? Hundreds needs search and thumbnails cached as images.

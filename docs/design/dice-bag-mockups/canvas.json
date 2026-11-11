@@ -1,0 +1,29 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-11T19:30:00Z"},
+  "title": "Dice Bag Mock-ups",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "A · Carousel shelf", "is_interactive": true, "radius": 28},
+    "Drawer.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "B · Bag drawer", "is_interactive": true, "radius": 28},
+    "BagSets.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "B+ · Bag sets", "is_interactive": true, "radius": 28},
+    "Sets.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "C · Character sets", "is_interactive": true, "radius": 28},
+    "Flow.dc.html": {"x": 0, "y": 1440, "w": 1510, "h": 1100, "title": "Flow · main UI → bag → editing", "is_interactive": true},
+    "DeskShowcase.dc.html": {"x": 0, "y": 3020, "w": 1280, "h": 800, "title": "Desktop A · Showcase + shelf", "is_interactive": true},
+    "DeskBag.dc.html": {"x": 1360, "y": 3020, "w": 1280, "h": 800, "title": "Desktop B · Bag panel (designs + sets)", "is_interactive": true},
+    "DeskRoll.dc.html": {"x": 2720, "y": 3020, "w": 1280, "h": 800, "title": "Desktop C · Roll mat + sets", "is_interactive": true}
+  },
+  "order": ["Main.dc.html", "Drawer.dc.html", "BagSets.dc.html", "Sets.dc.html", "Flow.dc.html", "DeskShowcase.dc.html", "DeskBag.dc.html", "DeskRoll.dc.html"],
+  "notes": {
+    "title": {"x": 0, "y": -300, "text": "Pretty Dice · dice bag concepts (PD-102)", "kind": "title1", "maxW": 1800},
+    "noteA": {"x": 0, "y": 964, "w": 390, "fill": "purple", "text": "A · Design-first. Swipe the shelf; the centre card is the active design and fills the stage. Edit / Duplicate / Rename / Delete under the name. Tap a card to try it."},
+    "noteB": {"x": 470, "y": 964, "w": 390, "fill": "blue", "text": "B · Inventory-first. A bag button opens a sheet: Designs / Sets tabs, search, material filters, grid of tiles, import/export. Scales to big bags; one step further from the dice."},
+    "noteBS": {"x": 940, "y": 964, "w": 390, "fill": "teal", "text": "B+ · Bag sets: sets that belong to the bag, no character (Standard 7, Advantage, Fireball...). Characters sit below with their own sets. Big row = open on the roll mat, ready to roll. Lightning = quick roll in place."},
+    "noteC": {"x": 1410, "y": 964, "w": 390, "fill": "green", "text": "C · A character: own sets plus rolls generated from the sheet (skills, saves, attacks). Big row opens the roll mat with the dice set out (last roll's faces); Roll or flick. Lightning = quick roll without leaving."},
+    "controls": {"x": 1590, "y": 1440, "w": 380, "fill": "teal", "text": "Which of today's controls go where\n\nEditor (per design, unchanged): Randomize + undo/redo, Substrate, Colors, Stone, Epoxy, Numbers, Relief & patina, Filigree.\n\nMove out of the design:\n· Shape + Custom set → the set (a design no longer owns a shape)\n· Save / Load design → Save / Load bag, plus 'Export this design'\n\nStay app-wide (not saved per design): Showcase settings, Roll feel & sound, PNG/JPG export, Settings/Reset."},
+    "rec": {"x": 1880, "y": 0, "w": 340, "fill": "orange", "text": "Hierarchy: Bag → designs + bag sets + characters → character sets + sheet rolls.\n\nEvery set path leads INTO the 3D roll mat; quick roll is the shortcut, not the default.\n\nPlan: docs/design/dice-bag-design.md"},
+    "deskTitle": {"x": 0, "y": 2780, "text": "Desktop · the same concepts with the sidebar layout", "kind": "title1", "maxW": 4000}
+  },
+  "designSystems": []
+}

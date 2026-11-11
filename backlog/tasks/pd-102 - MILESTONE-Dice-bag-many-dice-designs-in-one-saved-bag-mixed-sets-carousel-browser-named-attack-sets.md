@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-11-11T07:51:00Z'
-updated_date: '2026-11-11T19:58:00Z'
+updated_date: '2026-11-11T20:05:00Z'
 labels:
   - epic
   - milestone
@@ -28,4 +28,13 @@ Owner 2026-11-10 (big idea). Today one config = one dice design = one JSON file.
 - [ ] #2 Carousel browser to pick, add, duplicate, delete designs
 - [ ] #3 A set can use more than one design
 - [ ] #4 Several named sets per bag
+- [ ] #5 Edited design shows a Modified badge with Save / Save as copy / Revert; pending edits survive reload
+- [ ] #6 Designs, sets and characters can be reordered and the order round-trips in the bag file
+- [ ] #7 Randomize makes one unsaved draft that the next Randomize replaces; Keep adds it to the bag
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Owner 2026-11-11 design additions (see docs/design/dice-bag-design.md, 'Editing, saving and randomizing'): (a) edited designs get a Modified badge with Save / Save as copy / Revert, and pending edits persist; (b) the bag is rearrangeable (designs, sets, characters; drag; order saved in the bag file); (c) Randomize makes a single unsaved draft (a ghost card): Randomize again replaces it, Keep adds it to the bag, undo/redo walks back through earlier drafts.
+<!-- SECTION:NOTES:END -->

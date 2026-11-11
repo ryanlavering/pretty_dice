@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop roll mat with sets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pd-scroll::-webkit-scrollbar{display:none}
+.pd-die,.pd-rest{position:absolute}
+.pd-die{animation:pdDrop 1s cubic-bezier(.2,.75,.3,1) both}
+.pd-rest{animation:pdSet .35s ease both}
+.pd-result{animation:pdFade .3s ease .95s both}
+@keyframes pdDrop{0%{transform:translate(var(--dx),-560px) rotate(var(--r0))}70%{transform:translate(0,8px) rotate(var(--r1))}100%{transform:translate(0,0) rotate(var(--r2))}}
+@keyframes pdSet{from{opacity:0;transform:scale(.85) rotate(var(--r2))}to{opacity:1;transform:rotate(var(--r2))}}
+@keyframes pdFade{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #0e1015; color: #e8e9ee; font: 14px/1.4 Inter, system-ui, sans-serif; display: flex; overflow: hidden">
+
+  <aside style="width: 340px; flex: none; background: #161922; border-right: 1px solid #262a36; display: flex; flex-direction: column; min-height: 0">
+    <div style="padding: 20px 18px 10px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span style="font: 800 22px Cinzel, serif; letter-spacing: .08em; color: #e2b85c">PRETTY DICE</span>
+        <a href="DeskBag.dc.html" style="font: 600 12px Inter, sans-serif; color: #e2b85c; text-decoration: none; padding: 10px 0">Ryan's bag</a>
+      </div>
+      <div role="group" aria-label="View" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: #1d212c; border: 1px solid #262a36; border-radius: 999px">
+        <a href="DeskShowcase.dc.html" style="border-radius: 999px; padding: 9px 0; text-align: center; color: #8b90a0; font: 600 13px Inter, sans-serif; text-decoration: none">Showcase</a>
+        <span aria-current="page" style="border-radius: 999px; padding: 9px 0; text-align: center; background: #e2b85c; color: #1a1405; font: 600 13px Inter, sans-serif">Roll</span>
+      </div>
+      <div role="tablist" aria-label="Whose sets" style="display: flex; gap: 6px">
+        <sc-for list="{{scopes}}" as="c" hint-placeholder-count="3">
+          <button type="button" role="tab" aria-selected="{{c.on}}" onClick="{{c.pick}}" style="{{c.style}}">{{c.label}}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{hasStats}}" hint-placeholder-val="{{true}}">
+        <div aria-label="Stats" style="display: flex; gap: 4px">
+          <sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+            <span style="flex: 1; display: flex; flex-direction: column; align-items: center; padding: 4px 0; border-radius: 8px; border: 1px solid #262a36; background: #1d212c">
+              <span style="font: 600 9px Inter, sans-serif; letter-spacing: .1em; color: #8b90a0">{{s.k}}</span>
+              <span style="font: 700 13px Inter, sans-serif">{{s.v}}</span>
+            </span>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div class="pd-scroll" style="flex-grow: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 0 18px 18px">
+      <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+        <h2 style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin: 12px 0 8px">{{g.title}}</h2>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{g.rows}}" as="s" hint-placeholder-count="3">
+            <li style="display: flex; gap: 6px; align-items: center">
+              <button type="button" onClick="{{s.open}}" aria-label="Set out {{s.name}} on the mat" style="{{s.rowStyle}}">
+                <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex-grow: 1; min-width: 0">
+                  <span style="font: 600 13px Inter, sans-serif">{{s.name}}</span>
+                  <span style="font-size: 11px; color: #8b90a0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px">{{s.notation}}</span>
+                </span>
+                <sc-if value="{{s.hasQuick}}" hint-placeholder-val="{{false}}">
+                  <span style="flex: none; min-width: 30px; height: 26px; padding: 0 6px; border-radius: 6px; background: #2a2619; color: #e2b85c; font: 700 13px Inter, sans-serif; display: grid; place-items: center">{{s.quickTotal}}</span>
+                </sc-if>
+              </button>
+              <button type="button" onClick="{{s.quick}}" aria-label="Quick roll {{s.name}} without changing the mat" title="Quick roll" style="flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #262a36; background: #1d212c; color: #b9bdc9; display: grid; place-items: center; cursor: pointer">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"></path></svg>
+              </button>
+            </li>
+          </sc-for>
+        </ul>
+      </sc-for>
+    </div>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; position: relative">
+    <div aria-hidden="true" style="position: absolute; left: 24px; right: 24px; top: 150px; bottom: 100px; border-radius: 26px; border: 1px solid #262a36; background: #12151c; box-shadow: inset 0 14px 50px rgba(0,0,0,.65)"></div>
+    <sc-if value="{{stage.ready}}" hint-placeholder-val="{{true}}">
+      <div style="position: absolute; left: 0; right: 0; top: 34px; display: flex; flex-direction: column; align-items: center; gap: 8px">
+        <span style="font: 700 30px Cinzel, serif">{{stage.name}}</span>
+        <span style="font: 500 14px Inter, sans-serif; color: #8b90a0">{{stage.note}}</span>
+      </div>
+      <sc-for list="{{stage.readyDice}}" as="d" hint-placeholder-count="1">
+        <div class="pd-rest" style="{{d.pos}}">
+          <svg viewBox="0 0 100 100" width="100%" height="100%" role="img" aria-label="{{d.label}}" style="filter: drop-shadow(0 12px 14px rgba(0,0,0,.6)); opacity: .9">
+            <polygon points="{{d.pts}}" fill="{{d.c2}}" stroke="{{d.c3}}" stroke-width="3" stroke-linejoin="round"></polygon>
+            <text x="50" y="{{d.ty}}" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="{{d.fs}}" fill="{{d.paint}}">{{d.v}}</text>
+          </svg>
+        </div>
+      </sc-for>
+    </sc-if>
+    <sc-if value="{{stage.rolled}}" hint-placeholder-val="{{false}}">
+      <div class="pd-result" aria-live="polite" style="position: absolute; left: 0; right: 0; top: 22px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <span style="{{stage.totalStyle}}">{{stage.total}}</span>
+        <span style="font: 500 14px Inter, sans-serif; color: #8b90a0">{{stage.name}} · {{stage.breakdown}}</span>
+      </div>
+      <sc-for list="{{stage.rolledDice}}" as="d" hint-placeholder-count="1">
+        <div class="pd-die" style="{{d.pos}}">
+          <svg viewBox="0 0 100 100" width="100%" height="100%" role="img" aria-label="{{d.label}}" style="filter: drop-shadow(0 12px 14px rgba(0,0,0,.6))">
+            <polygon points="{{d.pts}}" fill="{{d.c2}}" stroke="{{d.c3}}" stroke-width="3" stroke-linejoin="round"></polygon>
+            <text x="50" y="{{d.ty}}" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="{{d.fs}}" fill="{{d.paint}}">{{d.v}}</text>
+          </svg>
+        </div>
+      </sc-for>
+    </sc-if>
+    <div style="position: absolute; left: 0; right: 0; bottom: 26px; display: flex; justify-content: center; gap: 10px">
+      <button type="button" onClick="{{rollStage}}" style="width: 260px; height: 52px; border: 0; border-radius: 12px; background: #e2b85c; color: #1a1405; font: 700 16px Inter, sans-serif; cursor: pointer">{{stage.rollLabel}}</button>
+      <span style="align-self: center; font-size: 12px; color: #8b90a0">or Space · or flick the dice</span>
+    </div>
+  </main>
+
+  <aside aria-label="Roll log" style="width: 240px; flex: none; border-left: 1px solid #262a36; background: #12141b; padding: 20px 16px; display: flex; flex-direction: column; gap: 4px">
+    <h2 style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin: 0 0 6px">Roll log</h2>
+    <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+      <sc-for list="{{log}}" as="l" hint-placeholder-count="4">
+        <li style="display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid #1d212c">
+          <span style="display: flex; align-items: baseline; gap: 8px">
+            <span style="font: 700 16px Inter, sans-serif; color: #e2b85c; min-width: 26px">{{l.total}}</span>
+            <span style="font: 600 13px Inter, sans-serif">{{l.name}}</span>
+          </span>
+          <span style="font-size: 11px; color: #8b90a0; padding-left: 34px">{{l.detail}}</span>
+        </li>
+      </sc-for>
+    </ol>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this, st = this.state || {};
+    var D = {
+      amethyst: { name: 'Amethyst', c2: '#a784f5', c3: '#d8c4f5', paint: '#f4f1e8' },
+      obsidian: { name: 'Obsidian', c2: '#3e5c76', c3: '#9fd3e6', paint: '#e2b85c' },
+      bone: { name: 'Old Bone', c2: '#d9cba9', c3: '#fff6e4', paint: '#3a2c1a' },
+      ember: { name: 'Ember', c2: '#d0643a', c3: '#f2b07a', paint: '#fff4e6' },
+      jade: { name: 'Jade', c2: '#7cc39b', c3: '#e6f4ea', paint: '#16402c' },
+      gold: { name: "Dragon's Gold", c2: '#c9962e', c3: '#f0d27a', paint: '#2a1a05' }
+    };
+    var SH = {
+      4: { pts: '50,8 94,88 6,88', ty: 74, fs: 26 }, 6: { pts: '14,14 86,14 86,86 14,86', ty: 61, fs: 30 },
+      8: { pts: '50,4 94,50 50,96 6,50', ty: 60, fs: 28 }, 10: { pts: '50,4 92,42 50,96 8,42', ty: 56, fs: 26 },
+      100: { pts: '50,4 92,42 50,96 8,42', ty: 56, fs: 22 }, 12: { pts: '50,5 95,38 78,92 22,92 5,38', ty: 66, fs: 28 },
+      20: { pts: '50,4 90,27 90,73 50,96 10,73 10,27', ty: 61, fs: 28 }
+    };
+    function T(n, s, d) { return { n: n, s: s, d: d }; }
+    var GROUPS = {
+      bag: [{ title: 'Bag sets', sets: [
+        { id: 'std7', name: 'Standard 7', terms: [T(1, 4, 'amethyst'), T(1, 6, 'amethyst'), T(1, 8, 'amethyst'), T(1, 10, 'amethyst'), T(1, 100, 'amethyst'), T(1, 12, 'amethyst'), T(1, 20, 'amethyst')], mods: [] },
+        { id: 'adv', name: 'Advantage', terms: [T(2, 20, 'gold')], mods: [] },
+        { id: 'stats', name: 'Stats roll', terms: [T(4, 6, 'jade')], mods: [] },
+        { id: 'fireball', name: 'Fireball', terms: [T(8, 6, 'ember')], mods: [] },
+        { id: 'mixed', name: 'Showcase mix', terms: [T(1, 20, 'obsidian'), T(2, 6, 'bone'), T(1, 8, 'amethyst')], mods: [['', 3]] }
+      ] }],
+      vex: [
+        { title: "Vex's sets", sets: [
+          { id: 'eb-dmg', name: 'Eldritch blast · damage', terms: [T(2, 10, 'obsidian')], mods: [['CHA', 4]] },
+          { id: 'hex', name: 'Hex', terms: [T(1, 6, 'ember')], mods: [] },
+          { id: 'dagger', name: 'Dagger', terms: [T(1, 4, 'bone'), T(1, 6, 'ember')], mods: [['DEX', 2]] }
+        ] },
+        { title: "From Vex's sheet", sets: [
+          { id: 'eb-hit', name: 'Eldritch blast · to hit', terms: [T(1, 20, 'gold')], mods: [['CHA', 4], ['PROF', 3]] },
+          { id: 'perception', name: 'Perception', terms: [T(1, 20, 'gold')], mods: [['WIS', 1]] },
+          { id: 'deception', name: 'Deception', terms: [T(1, 20, 'gold')], mods: [['CHA', 4], ['PROF', 3]] },
+          { id: 'wis-save', name: 'Wisdom save', terms: [T(1, 20, 'gold')], mods: [['WIS', 1], ['PROF', 3]] },
+          { id: 'init', name: 'Initiative', terms: [T(1, 20, 'gold')], mods: [['DEX', 2]] }
+        ] }
+      ],
+      mira: [{ title: "Mira's sets", sets: [
+        { id: 'magic-missile', name: 'Magic missile', terms: [T(3, 4, 'jade')], mods: [['', 3]] },
+        { id: 'fire-bolt', name: 'Fire bolt', terms: [T(1, 10, 'ember')], mods: [] }
+      ] }]
+    };
+    var scope = st.scope || 'vex';
+    var byId = {};
+    Object.keys(GROUPS).forEach(function (k) { GROUPS[k].forEach(function (g) { g.sets.forEach(function (s) { byId[s.id] = s; }); }); });
+    function modText(m) { return m.map(function (x) { return '+ ' + (x[0] ? x[0] + ' ' : '') + x[1]; }).join(' '); }
+    function dl(s) { return s === 100 ? 'd%' : 'd' + s; }
+    function notation(s) { return s.terms.map(function (t) { return (t.n > 1 ? t.n : '') + dl(t.s) + ' ' + D[t.d].name; }).join(' + ') + (s.mods.length ? ' ' + modText(s.mods) : ''); }
+    function roll(set, n) {
+      var seed = (n * 2654435761 + set.id.length * 97 + set.id.charCodeAt(0) * 131) >>> 0;
+      function r(m) { seed = (seed * 1664525 + 1013904223) >>> 0; return 1 + ((seed >>> 8) % m); }
+      var dice = [];
+      set.terms.forEach(function (t) { for (var k = 0; k < t.n; k++) dice.push({ s: t.s, d: t.d, v: t.s === 100 ? (r(10) - 1) * 10 : r(t.s) }); });
+      var mod = set.mods.reduce(function (a, m) { return a + m[1]; }, 0);
+      var total = dice.reduce(function (a, x) { return a + x.v; }, 0) + mod;
+      var breakdown = dice.map(function (x) { return dl(x.s) + ' ' + x.v; }).join(' + ') + (set.mods.length ? ' ' + modText(set.mods) : '');
+      if (set.id === 'adv') { total = Math.max(dice[0].v, dice[1].v); breakdown = 'best of ' + dice[0].v + ' and ' + dice[1].v; }
+      if (set.id === 'stats') { var so = dice.map(function (x) { return x.v; }).sort(function (a, b) { return a - b; }); total = so[1] + so[2] + so[3]; breakdown = so.join(', ') + ', drop lowest'; }
+      var d20s = dice.filter(function (x) { return x.s === 20; });
+      return { dice: dice, total: total, breakdown: breakdown, nat20: d20s.length === 1 && d20s[0].v === 20, nat1: d20s.length === 1 && d20s[0].v === 1 };
+    }
+    function layout(dice, salt, landed) {
+      var n = dice.length, per = n <= 4 ? n : 4, rows = Math.ceil(n / per), size = 96, gap = 124;
+      var top0 = 150 + (550 - rows * (size + 28)) / 2;
+      return dice.map(function (x, k) {
+        var row = Math.floor(k / per), col = k % per, m = Math.min(per, n - row * per);
+        var startX = 350 - (m * gap - 28) / 2;
+        var j1 = ((salt * 7 + k * 13 + (landed ? x.v * 5 : 0)) % 31) - 15;
+        var j2 = ((salt * 11 + k * 17 + (landed ? x.v * 3 : 0)) % 31) - 15;
+        var rot = ((salt * 29 + k * 41 + (landed ? x.v * 7 : 0)) % 50) - 25;
+        var sh = SH[x.s] || SH[20], d = D[x.d];
+        return {
+          v: x.v, pts: sh.pts, ty: sh.ty, fs: sh.fs, c2: d.c2, c3: d.c3, paint: d.paint, label: dl(x.s) + ' ' + d.name + ' showing ' + x.v,
+          pos: 'left: ' + Math.round(startX + col * gap + j1) + 'px; top: ' + Math.round(top0 + row * (size + 28) + j2) + 'px; width: ' + size + 'px; height: ' + size + 'px; --dx: ' + ((k % 2 ? 1 : -1) * (80 + k * 24)) + 'px; --r0: ' + (rot - 540) + 'deg; --r1: ' + (rot + 30) + 'deg; --r2: ' + rot + 'deg; transform: rotate(' + rot + 'deg); animation-delay: ' + (landed ? k * 0.06 : k * 0.03) + 's'
+        };
+      });
+    }
+    var lastBy = st.lastBy || { 'eb-hit': { total: 21, dice: [{ s: 20, d: 'gold', v: 14 }] } };
+    var quickBy = st.quickBy || {};
+    var log = st.log || [
+      { total: 21, name: 'Eldritch blast · to hit', detail: 'd20 14 + CHA 4 + PROF 3' },
+      { total: 15, name: 'Eldritch blast · damage', detail: 'd10 6 + d10 5 + CHA 4' },
+      { total: 9, name: 'Perception', detail: 'd20 8 + WIS 1' },
+      { total: 26, name: 'Fireball', detail: '8d6 · bag set' }
+    ];
+    var n0 = st.n || 0;
+    var sg = st.stage || { id: 'eb-hit', phase: 'ready', dice: lastBy['eb-hit'].dice, lastTotal: 21 };
+    function record(set) {
+      var n = n0 + 1, res = roll(set, n);
+      var lb = Object.assign({}, lastBy); lb[set.id] = { total: res.total, dice: res.dice };
+      return { n: n, res: res, lastBy: lb, log: [{ total: res.total, name: set.name, detail: res.breakdown }].concat(log).slice(0, 9) };
+    }
+    function open(id) {
+      var last = lastBy[id];
+      self.setState({ stage: { id: id, phase: 'ready', dice: last ? last.dice : roll(byId[id], 999).dice, lastTotal: last ? last.total : null } });
+    }
+    function rollStage() {
+      var rec = record(byId[sg.id]);
+      var next = { n: rec.n, lastBy: rec.lastBy, log: rec.log, stage: { id: sg.id, phase: 'rolled', dice: rec.res.dice, res: rec.res } };
+      if (sg.phase === 'rolled') { self.setState({ stage: Object.assign({}, sg, { phase: 'ready' }) }); setTimeout(function () { self.setState(next); }, 30); }
+      else self.setState(next);
+    }
+    function quick(id) {
+      var rec = record(byId[id]), q = Object.assign({}, quickBy); q[id] = rec.res.total;
+      self.setState({ n: rec.n, lastBy: rec.lastBy, log: rec.log, quickBy: q });
+    }
+    var rowBase = 'flex-grow: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; gap: 8px; text-align: left; padding: 6px 10px; border-radius: 10px; color: #e8e9ee; cursor: pointer; ';
+    var sOn = 'flex: 1; height: 36px; border-radius: 8px; border: 1px solid #e2b85c; background: #2a2619; color: #e2b85c; font: 600 12px Inter, sans-serif; cursor: pointer';
+    var sOff = 'flex: 1; height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #b9bdc9; font: 500 12px Inter, sans-serif; cursor: pointer';
+    var cur = byId[sg.id], salt = sg.id.length * 7 + sg.id.charCodeAt(1);
+    var stage = { name: cur.name, ready: sg.phase === 'ready', rolled: sg.phase === 'rolled', rollLabel: sg.phase === 'rolled' ? 'Roll again' : 'Roll', readyDice: [], rolledDice: [] };
+    stage.note = sg.lastTotal != null ? 'Set out as your last roll (' + sg.lastTotal + ') · ready to roll' : 'Set out on the mat · ready to roll';
+    if (stage.ready) stage.readyDice = layout(sg.dice, salt, false);
+    if (stage.rolled) {
+      var res = sg.res;
+      stage.rolledDice = layout(res.dice, salt + n0, true);
+      stage.total = res.total;
+      stage.breakdown = res.breakdown + (res.nat20 ? ' · natural 20' : (res.nat1 ? ' · natural 1' : ''));
+      stage.totalStyle = 'font: 800 64px/1 Cinzel, serif; color: ' + (res.nat20 ? '#ffd24a; text-shadow: 0 0 22px #ff9d1a' : (res.nat1 ? '#8c919e' : '#e2b85c'));
+    }
+    return {
+      scopes: [['bag', 'Bag sets'], ['vex', 'Vex'], ['mira', 'Mira']].map(function (c) {
+        return { label: c[1], on: scope === c[0], style: scope === c[0] ? sOn : sOff, pick: function () { self.setState({ scope: c[0] }); } };
+      }),
+      hasStats: scope === 'vex',
+      stats: [{ k: 'CHA', v: '+4' }, { k: 'DEX', v: '+2' }, { k: 'WIS', v: '+1' }, { k: 'CON', v: '+1' }, { k: 'PROF', v: '+3' }],
+      groups: GROUPS[scope].map(function (g) {
+        return {
+          title: g.title,
+          rows: g.sets.map(function (s) {
+            return {
+              name: s.name, notation: notation(s),
+              rowStyle: rowBase + (s.id === sg.id ? 'border: 1px solid #e2b85c; background: #1f1c14' : 'border: 1px solid #262a36; background: #1d212c'),
+              hasQuick: quickBy[s.id] != null, quickTotal: quickBy[s.id],
+              open: function () { open(s.id); }, quick: function () { quick(s.id); }
+            };
+          })
+        };
+      }),
+      stage: stage, rollStage: rollStage, log: log
+    };
+  }
+}
+</script>
+</body>
+</html>

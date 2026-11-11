@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop showcase with shelf</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pd-scroll::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #0e1015; color: #e8e9ee; font: 14px/1.4 Inter, system-ui, sans-serif; display: flex; overflow: hidden">
+
+  <aside class="pd-scroll" style="width: 310px; flex: none; background: #161922; border-right: 1px solid #262a36; padding: 20px 18px; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font: 800 22px Cinzel, serif; letter-spacing: .08em; color: #e2b85c">PRETTY DICE</span>
+      <span style="font-size: 12px; color: #8b90a0">Design your dice, then roll them.</span>
+    </div>
+    <button type="button" style="width: 100%; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 8px; border-radius: 12px; border: 1px solid #e2b85c; background: #1f1c14; color: #e8e9ee; text-align: left; cursor: pointer">
+      <svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true"><polygon points="8,1 14.5,4.5 14.5,11.5 8,15 1.5,11.5 1.5,4.5" fill="{{active.c2}}" stroke="{{active.c3}}" stroke-width=".8"></polygon></svg>
+      <span style="display: flex; flex-direction: column; flex-grow: 1; line-height: 1.2">
+        <span style="font: 600 14px Inter, sans-serif">Editing {{active.name}}</span>
+        <span style="font-size: 12px; color: #8b90a0">{{active.where}}</span>
+      </span>
+      <span style="font: 600 12px Inter, sans-serif; color: #e2b85c">Bag</span>
+    </button>
+    <div style="display: flex; gap: 6px">
+      <button type="button" style="flex-grow: 1; height: 40px; border: 0; border-radius: 8px; background: #e2b85c; color: #1a1405; font: 600 14px Inter, sans-serif">Randomize</button>
+      <button type="button" aria-label="Undo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
+      <button type="button" aria-label="Redo" style="width: 40px; height: 40px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg></button>
+    </div>
+    <div role="group" aria-label="View" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: #1d212c; border: 1px solid #262a36; border-radius: 999px">
+      <button type="button" style="border: 0; border-radius: 999px; padding: 9px 0; background: #e2b85c; color: #1a1405; font: 600 13px Inter, sans-serif">Showcase</button>
+      <a href="DeskRoll.dc.html" style="border-radius: 999px; padding: 9px 0; text-align: center; color: #8b90a0; font: 600 13px Inter, sans-serif; text-decoration: none">Roll</a>
+    </div>
+    <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 10px">Substrate</span>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{subs}}" as="s" hint-placeholder-count="6">
+        <button type="button" style="{{s.style}}">{{s.label}}</button>
+      </sc-for>
+    </div>
+    <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 10px">Colors</span>
+    <div style="display: flex; gap: 8px; align-items: center">
+      <span aria-hidden="true" style="{{active.sw1}}"></span>
+      <span aria-hidden="true" style="{{active.sw2}}"></span>
+      <span aria-hidden="true" style="{{active.sw3}}"></span>
+      <span style="font-size: 12px; color: #8b90a0; margin-left: 6px">Paint</span>
+      <span aria-hidden="true" style="{{active.sw4}}"></span>
+    </div>
+    <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 10px">Numbers</span>
+    <label style="display: flex; gap: 8px; align-items: center; color: #8b90a0">Font
+      <select style="flex-grow: 1; font: inherit; color: #e8e9ee; background: #1d212c; border: 1px solid #262a36; border-radius: 6px; padding: 6px"><option>Cinzel</option></select>
+    </label>
+    <label style="display: flex; gap: 8px; align-items: center; color: #8b90a0">Size
+      <input type="range" min="0" max="100" value="45" style="flex-grow: 1; accent-color: #e2b85c">
+    </label>
+    <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 10px">Relief · Filigree · …</span>
+    <span style="font-size: 12px; color: #8b90a0">Every per-design control from today, unchanged, now editing the design picked on the shelf.</span>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; position: relative; display: flex; flex-direction: column">
+    <div style="position: absolute; top: 18px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none">
+      <span style="font: 700 26px Cinzel, serif; color: #e8e9ee">{{active.name}}</span>
+      <span style="font-size: 13px; color: #8b90a0">{{active.meta}}</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px">
+      <svg viewBox="0 0 100 100" width="300" height="300" role="img" aria-label="{{active.name}} d20" style="filter: drop-shadow(0 22px 30px rgba(0,0,0,.55)); margin-top: 30px">
+        <defs><linearGradient id="dsbig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{active.c3}}"></stop><stop offset="0.5" stop-color="{{active.c2}}"></stop><stop offset="1" stop-color="{{active.c1}}"></stop></linearGradient></defs>
+        <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#dsbig)" stroke="{{active.c3}}" stroke-width="1" stroke-linejoin="round"></polygon>
+        <polygon points="10,27 50,26 50,4" fill="rgba(255,255,255,.14)"></polygon>
+        <polygon points="90,27 74,66 90,73" fill="rgba(0,0,0,.16)"></polygon>
+        <polygon points="10,73 26,66 50,96" fill="rgba(0,0,0,.2)"></polygon>
+        <polygon points="90,73 74,66 50,96" fill="rgba(0,0,0,.28)"></polygon>
+        <g stroke="{{active.edge}}" stroke-width=".9" fill="none" stroke-linejoin="round"><polygon points="50,26 74,66 26,66"></polygon><path d="M50,4 L50,26 M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M10,73 L26,66 M90,73 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+        <text x="50" y="58" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="16" fill="{{active.paint}}">20</text>
+      </svg>
+      <div aria-hidden="true" style="width: 200px; height: 16px; border-radius: 50%; background: rgba(0,0,0,.5); filter: blur(7px)"></div>
+    </div>
+
+    <nav aria-label="Designs in the bag" style="display: flex; align-items: center; gap: 10px; padding: 10px 20px; margin: 0 auto 10px; border-radius: 18px; background: rgba(22,25,34,.85); border: 1px solid #262a36">
+      <sc-for list="{{cards}}" as="item" hint-placeholder-count="6">
+        <button type="button" onClick="{{item.pick}}" aria-label="{{item.name}}" title="{{item.name}}" style="position: relative; width: 84px; height: 96px; border-radius: 12px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; padding: 6px 4px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; cursor: pointer">
+          <sc-if value="{{item.selected}}" hint-placeholder-val="{{false}}">
+            <span aria-hidden="true" style="position: absolute; inset: -1px; border-radius: 12px; border: 2px solid #e2b85c; background: rgba(226,184,92,.08)"></span>
+          </sc-if>
+          <svg viewBox="0 0 100 100" width="54" height="54" aria-hidden="true">
+            <defs><linearGradient id="dsc-{{item.id}}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{item.c3}}"></stop><stop offset="0.5" stop-color="{{item.c2}}"></stop><stop offset="1" stop-color="{{item.c1}}"></stop></linearGradient></defs>
+            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#dsc-{{item.id}})" stroke="{{item.c3}}" stroke-width="1.5" stroke-linejoin="round"></polygon>
+            <polygon points="90,73 74,66 50,96" fill="rgba(0,0,0,.28)"></polygon>
+            <g stroke="{{item.edge}}" stroke-width="1.3" fill="none" stroke-linejoin="round"><polygon points="50,26 74,66 26,66"></polygon><path d="M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+          </svg>
+          <span style="position: relative; font-size: 11px; max-width: 78px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{item.short}}</span>
+        </button>
+      </sc-for>
+      <button type="button" aria-label="Add a design" style="width: 84px; height: 96px; border-radius: 12px; border: 1px dashed #3a4052; background: transparent; color: #8b90a0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 500 11px Inter, sans-serif; cursor: pointer">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        New
+      </button>
+      <span aria-hidden="true" style="width: 1px; height: 64px; background: #262a36; margin: 0 4px"></span>
+      <a href="DeskBag.dc.html" style="height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 600 13px Inter, sans-serif; display: flex; align-items: center; gap: 8px; text-decoration: none">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+        Whole bag
+      </a>
+    </nav>
+
+    <footer style="display: flex; justify-content: space-between; padding: 0 14px 12px">
+      <div style="display: flex; gap: 8px">
+        <button type="button" aria-label="Layout" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg></button>
+        <button type="button" aria-label="Sound off" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #8b90a0; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path d="M17 9l4 6M21 9l-4 6"></path></svg></button>
+      </div>
+      <div style="display: flex; gap: 8px">
+        <button type="button" aria-label="Hints" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg></button>
+        <a href="DeskRoll.dc.html" aria-label="Switch to the roll mat" style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; border: 1px solid #e2b85c; background: rgba(20,23,31,.72); color: #e2b85c; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z"></path><path d="M12 7l4.5 8h-9z"></path></svg></a>
+      </div>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var designs = [
+      { id: 'amethyst', name: 'Amethyst Swirl', short: 'Amethyst', sub: 'Swirl', meta: 'Swirl · Cinzel numbers · used in 3 sets', c1: '#6f8fe8', c2: '#a784f5', c3: '#d8c4f5', paint: '#f4f1e8', edge: 'rgba(255,255,255,.4)' },
+      { id: 'gold', name: "Dragon's Gold", short: "Dragon's Gold", sub: 'Metal', meta: 'Metal · antique relief · used in 2 sets', c1: '#7a5512', c2: '#c9962e', c3: '#f0d27a', paint: '#2a1a05', edge: 'rgba(60,35,0,.45)' },
+      { id: 'bone', name: 'Old Bone', short: 'Old Bone', sub: 'Marble', meta: 'Stone · inked numbers · used in 1 set', c1: '#b3a07a', c2: '#d9cba9', c3: '#fff6e4', paint: '#3a2c1a', edge: 'rgba(80,60,30,.35)' },
+      { id: 'obsidian', name: 'Obsidian Tide', short: 'Obsidian', sub: 'Epoxy', meta: 'Epoxy · gold paint · used in 2 sets', c1: '#1b1f2a', c2: '#3e5c76', c3: '#9fd3e6', paint: '#e2b85c', edge: 'rgba(160,220,240,.35)' },
+      { id: 'jade', name: 'Jade Marble', short: 'Jade', sub: 'Marble', meta: 'Marble · filigree · used in 1 set', c1: '#2f7d5b', c2: '#7cc39b', c3: '#e6f4ea', paint: '#f4f1e8', edge: 'rgba(255,255,255,.4)' },
+      { id: 'ember', name: 'Ember Stone', short: 'Ember', sub: 'Solid', meta: 'Stone · bold numbers · used in 2 sets', c1: '#7a2a1c', c2: '#d0643a', c3: '#f2b07a', paint: '#fff4e6', edge: 'rgba(255,230,200,.35)' }
+    ];
+    var self = this, activeId = (this.state && this.state.active) || 'amethyst', idx = 0;
+    var cards = designs.map(function (d, i) {
+      if (d.id === activeId) idx = i;
+      return Object.assign({}, d, { selected: d.id === activeId, pick: function () { self.setState({ active: d.id }); } });
+    });
+    var a = designs[idx];
+    function sw(c) { return 'width: 44px; height: 30px; border-radius: 6px; border: 1px solid #262a36; background: ' + c; }
+    var on = 'height: 34px; border-radius: 8px; border: 1px solid #e2b85c; background: #2a2619; color: #e2b85c; font: 13px Inter, sans-serif';
+    var off = 'height: 34px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif';
+    return {
+      cards: cards,
+      active: Object.assign({}, a, { where: (idx + 1) + ' of 6 in Ryan’s bag · saved', sw1: sw(a.c1), sw2: sw(a.c2), sw3: sw(a.c3), sw4: sw(a.paint) }),
+      subs: ['Solid', 'Swirl', 'Pearl', 'Metal', 'Epoxy', 'Marble'].map(function (s) { return { label: s, style: s === a.sub ? on : off }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

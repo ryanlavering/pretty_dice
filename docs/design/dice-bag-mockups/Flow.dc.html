@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main UI to bag flow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1510px; height: 1100px; box-sizing: border-box; padding: 48px; background: #0a0b0f; color: #e8e9ee; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <h1 style="margin: 0; font: 700 28px Cinzel, serif; color: #e2b85c">From the main UI to the bag, and back</h1>
+    <p style="margin: 0; font-size: 15px; color: #8b90a0; max-width: 980px">Concept A is not a new screen: it is today's showcase view with a "browse the bag" mode. The shelf takes the settings pane's place; "Edit look" brings the settings pane back as the editor for the chosen design (most of today's live controls, unchanged). Phone layout as it ships today: stage on top, settings pane below.</p>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 0">
+
+    <!-- Step 1 -->
+    <div style="display: flex; flex-direction: column; gap: 12px; width: 390px">
+      <div style="display: flex; flex-direction: column; gap: 4px; height: 64px">
+        <span style="font: 700 15px Inter, sans-serif"><span style="color: #e2b85c">1</span> · Main UI, two new ways in</span>
+        <span style="font-size: 13px; color: #8b90a0">A: bag button in the toolbar. B: the active-design row at the top of the settings pane.</span>
+      </div>
+      <div style="width: 390px; height: 844px; border-radius: 28px; overflow: hidden; background: #0e1015; display: flex; flex-direction: column; border: 1px solid #262a36">
+        <div style="position: relative; height: 456px; display: flex; flex-direction: column; align-items: center; justify-content: center">
+          <svg viewBox="0 0 100 100" width="190" height="190" role="img" aria-label="Amethyst Swirl d20" style="filter: drop-shadow(0 16px 22px rgba(0,0,0,.55))">
+            <defs><linearGradient id="f1g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8c4f5"></stop><stop offset="0.5" stop-color="#a784f5"></stop><stop offset="1" stop-color="#6f8fe8"></stop></linearGradient></defs>
+            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#f1g)" stroke="#d8c4f5" stroke-width="1" stroke-linejoin="round"></polygon>
+            <polygon points="90,73 74,66 50,96" fill="rgba(0,0,0,.28)"></polygon><polygon points="10,73 26,66 50,96" fill="rgba(0,0,0,.2)"></polygon>
+            <g stroke="rgba(255,255,255,.4)" stroke-width=".9" fill="none" stroke-linejoin="round"><polygon points="50,26 74,66 26,66"></polygon><path d="M50,4 L50,26 M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M10,73 L26,66 M90,73 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+            <text x="50" y="58" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="16" fill="#f4f1e8">20</text>
+          </svg>
+          <div style="position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; justify-content: space-between; align-items: center">
+            <div style="display: flex; gap: 8px">
+              <button type="button" aria-label="Layout" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 13h18"></path></svg></button>
+              <button type="button" aria-label="Sound off" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #8b90a0; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path d="M17 9l4 6M21 9l-4 6"></path></svg></button>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span style="position: relative; display: grid">
+                <button type="button" aria-label="Open the dice bag" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #e2b85c; background: #2a2619; color: #e2b85c; display: grid; place-items: center; box-shadow: 0 0 0 5px rgba(226,184,92,.18)"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6l-1.5 3h-3z"></path><path d="M10.5 7C6 9 4 13 4 16a5 5 0 0 0 5 5h6a5 5 0 0 0 5-5c0-3-2-7-6.5-9"></path><path d="M9 7.5h6"></path></svg></button>
+                <span style="position: absolute; top: -10px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #e2b85c; color: #1a1405; font: 700 12px Inter, sans-serif; display: grid; place-items: center">A</span>
+              </span>
+              <button type="button" aria-label="Hints" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg></button>
+              <button type="button" aria-label="Switch to roll view" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: rgba(20,23,31,.72); color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z"></path><path d="M12 7l4.5 8h-9z"></path></svg></button>
+            </div>
+          </div>
+        </div>
+        <aside style="flex-grow: 1; background: #161922; border-top: 1px solid #262a36; padding: 18px 18px 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font: 800 20px Cinzel, serif; letter-spacing: .08em; color: #e2b85c">PRETTY DICE</span>
+            <span style="font-size: 12px; color: #8b90a0">Design your dice, then roll them.</span>
+          </div>
+          <span style="position: relative; display: block">
+            <button type="button" style="width: 100%; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 8px; border-radius: 12px; border: 2px solid #e2b85c; background: #1f1c14; color: #e8e9ee; text-align: left; cursor: pointer">
+              <svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true"><polygon points="8,1 14.5,4.5 14.5,11.5 8,15 1.5,11.5 1.5,4.5" fill="#a784f5" stroke="#d8c4f5" stroke-width=".8"></polygon></svg>
+              <span style="display: flex; flex-direction: column; flex-grow: 1; line-height: 1.2">
+                <span style="font: 600 14px Inter, sans-serif">Amethyst Swirl</span>
+                <span style="font-size: 12px; color: #8b90a0">1 of 6 in Ryan's bag</span>
+              </span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#e2b85c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+            </button>
+            <span style="position: absolute; top: -10px; right: -8px; width: 22px; height: 22px; border-radius: 50%; background: #e2b85c; color: #1a1405; font: 700 12px Inter, sans-serif; display: grid; place-items: center">B</span>
+          </span>
+          <div style="display: flex; gap: 6px">
+            <button type="button" style="flex-grow: 1; height: 42px; border: 0; border-radius: 8px; background: #e2b85c; color: #1a1405; font: 600 14px Inter, sans-serif">Randomize</button>
+            <button type="button" aria-label="Undo" style="width: 42px; height: 42px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
+            <button type="button" aria-label="Redo" style="width: 42px; height: 42px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"></path><path d="M20 9H10a6 6 0 0 0 0 12h3"></path></svg></button>
+          </div>
+          <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 6px">Shape</span>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d4</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d6</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d8</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d10</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d12</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #e2b85c; background: #2a2619; color: #e2b85c; font: 13px Inter, sans-serif">d20</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">d%</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Set</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Arrow 1 -->
+    <div aria-hidden="true" style="width: 130px; height: 844px; margin-top: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 8px; box-sizing: border-box">
+      <span style="font: 600 13px Inter, sans-serif; color: #e2b85c; text-align: center">Tap A or B</span>
+      <svg viewBox="0 0 110 20" width="110" height="20"><path d="M2 10H104M96 3l8 7-8 7" fill="none" stroke="#e2b85c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span style="font-size: 12px; color: #8b90a0; text-align: center">The shelf slides up over the settings pane; the stage keeps the die</span>
+    </div>
+
+    <!-- Step 2: the real concept A artboard -->
+    <div style="display: flex; flex-direction: column; gap: 12px; width: 390px">
+      <div style="display: flex; flex-direction: column; gap: 4px; height: 64px">
+        <span style="font: 700 15px Inter, sans-serif"><span style="color: #e2b85c">2</span> · Carousel shelf (concept A)</span>
+        <span style="font-size: 13px; color: #8b90a0">Swipe and tap to switch designs. The stage updates live; back or swipe down closes it.</span>
+      </div>
+      <div style="width: 390px; height: 844px; border-radius: 28px; overflow: hidden; border: 1px solid #262a36">
+        <dc-import name="Main" hint-size="390px,844px"></dc-import>
+      </div>
+    </div>
+
+    <!-- Arrow 2 -->
+    <div aria-hidden="true" style="width: 130px; height: 844px; margin-top: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 8px; box-sizing: border-box">
+      <span style="font: 600 13px Inter, sans-serif; color: #e2b85c; text-align: center">Edit look</span>
+      <svg viewBox="0 0 110 20" width="110" height="20"><path d="M2 10H104M96 3l8 7-8 7" fill="none" stroke="#e2b85c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span style="font-size: 12px; color: #8b90a0; text-align: center">Picking a card without editing just closes the shelf (same as step 3)</span>
+    </div>
+
+    <!-- Step 3 -->
+    <div style="display: flex; flex-direction: column; gap: 12px; width: 390px">
+      <div style="display: flex; flex-direction: column; gap: 4px; height: 64px">
+        <span style="font: 700 15px Inter, sans-serif"><span style="color: #e2b85c">3</span> · Back in the main UI, editing that design</span>
+        <span style="font-size: 13px; color: #8b90a0">The usual settings now edit Dragon's Gold and save into the bag. The row at the top goes back to the shelf.</span>
+      </div>
+      <div style="width: 390px; height: 844px; border-radius: 28px; overflow: hidden; background: #0e1015; display: flex; flex-direction: column; border: 1px solid #262a36">
+        <div style="position: relative; height: 456px; display: flex; align-items: center; justify-content: center">
+          <svg viewBox="0 0 100 100" width="190" height="190" role="img" aria-label="Dragon's Gold d20" style="filter: drop-shadow(0 16px 22px rgba(0,0,0,.55))">
+            <defs><linearGradient id="f3g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0d27a"></stop><stop offset="0.5" stop-color="#c9962e"></stop><stop offset="1" stop-color="#7a5512"></stop></linearGradient></defs>
+            <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#f3g)" stroke="#f0d27a" stroke-width="1" stroke-linejoin="round"></polygon>
+            <polygon points="90,73 74,66 50,96" fill="rgba(0,0,0,.28)"></polygon><polygon points="10,73 26,66 50,96" fill="rgba(0,0,0,.2)"></polygon>
+            <g stroke="rgba(60,35,0,.45)" stroke-width=".9" fill="none" stroke-linejoin="round"><polygon points="50,26 74,66 26,66"></polygon><path d="M50,4 L50,26 M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M10,73 L26,66 M90,73 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+            <text x="50" y="58" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="16" fill="#2a1a05">20</text>
+          </svg>
+        </div>
+        <aside style="flex-grow: 1; background: #161922; border-top: 1px solid #262a36; padding: 18px 18px 0; display: flex; flex-direction: column; gap: 10px; overflow: hidden">
+          <button type="button" style="width: 100%; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 8px; border-radius: 12px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; text-align: left; cursor: pointer">
+            <svg viewBox="0 0 16 16" width="30" height="30" aria-hidden="true"><polygon points="8,1 14.5,4.5 14.5,11.5 8,15 1.5,11.5 1.5,4.5" fill="#c9962e" stroke="#f0d27a" stroke-width=".8"></polygon></svg>
+            <span style="display: flex; flex-direction: column; flex-grow: 1; line-height: 1.2">
+              <span style="font: 600 14px Inter, sans-serif">Editing Dragon's Gold</span>
+              <span style="font-size: 12px; color: #8b90a0">Saved to bag · in 2 sets</span>
+            </span>
+            <span style="font: 600 12px Inter, sans-serif; color: #e2b85c">Bag</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#e2b85c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+          <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 6px">Substrate</span>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Solid</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Swirl</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Pearl</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #e2b85c; background: #2a2619; color: #e2b85c; font: 13px Inter, sans-serif">Metal</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Epoxy</button>
+            <button type="button" style="height: 36px; border-radius: 8px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 13px Inter, sans-serif">Marble</button>
+          </div>
+          <span style="font: 600 11px Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #8b90a0; margin-top: 6px">Colors</span>
+          <div style="display: flex; gap: 8px; align-items: center">
+            <span aria-hidden="true" style="width: 44px; height: 30px; border-radius: 6px; border: 1px solid #262a36; background: #7a5512"></span>
+            <span aria-hidden="true" style="width: 44px; height: 30px; border-radius: 6px; border: 1px solid #262a36; background: #c9962e"></span>
+            <span aria-hidden="true" style="width: 44px; height: 30px; border-radius: 6px; border: 1px solid #262a36; background: #f0d27a"></span>
+            <span style="font-size: 12px; color: #8b90a0">Paint</span>
+            <span aria-hidden="true" style="width: 44px; height: 30px; border-radius: 6px; border: 1px solid #262a36; background: #2a1a05"></span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1510,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

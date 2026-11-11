@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bag drawer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.chips::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0e1015; color: #e8e9ee; font-family: Inter, system-ui, sans-serif; position: relative; overflow: hidden">
+
+  <div aria-hidden="true" style="position: absolute; top: 0; left: 0; right: 0; height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: .45">
+    <svg viewBox="0 0 100 100" width="120" height="120">
+      <defs><linearGradient id="gbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d8c4f5"></stop><stop offset="0.5" stop-color="#a784f5"></stop><stop offset="1" stop-color="#6f8fe8"></stop></linearGradient></defs>
+      <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#gbg)"></polygon>
+      <g stroke="rgba(255,255,255,.4)" stroke-width="1.2" fill="none"><polygon points="50,26 74,66 26,66"></polygon><path d="M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+    </svg>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(5,6,10,.55)"></div>
+
+  <section aria-label="Dice bag" style="position: absolute; left: 0; right: 0; top: 150px; bottom: 0; background: #161922; border-top: 1px solid #262a36; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; box-shadow: 0 -12px 40px rgba(0,0,0,.5)">
+    <div aria-hidden="true" style="align-self: center; width: 40px; height: 5px; border-radius: 3px; background: #3a4052; margin: 10px 0 4px"></div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 10px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <h1 style="margin: 0; font: 700 20px Cinzel, serif; color: #e2b85c">Ryan's bag</h1>
+        <span style="font-size: 12px; color: #8b90a0">6 designs · 5 sets · saved in this browser</span>
+      </div>
+      <button type="button" aria-label="Close bag" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; display: grid; place-items: center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+
+    <div role="tablist" aria-label="Bag sections" style="margin: 0 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; background: #1d212c; border: 1px solid #262a36; border-radius: 999px">
+      <button type="button" role="tab" aria-selected="{{tabDesigns}}" onClick="{{showDesigns}}" style="{{designsTabStyle}}">Designs</button>
+      <button type="button" role="tab" aria-selected="{{tabSets}}" onClick="{{showSets}}" style="{{setsTabStyle}}">Sets</button>
+    </div>
+
+    <sc-if value="{{tabDesigns}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px 0; min-height: 0; flex-grow: 1">
+        <label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #262a36; background: #1d212c; color: #8b90a0">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search designs</span>
+          <input type="search" placeholder="Search designs" style="flex-grow: 1; min-width: 0; border: 0; background: transparent; color: #e8e9ee; font: 16px Inter, sans-serif; outline: none">
+        </label>
+        <div class="chips" role="group" aria-label="Filter by substrate" style="display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none">
+          <sc-for list="{{chips}}" as="chip" hint-placeholder-count="6">
+            <button type="button" onClick="{{chip.pick}}" aria-pressed="{{chip.on}}" style="{{chip.style}}">{{chip.label}}</button>
+          </sc-for>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding-bottom: 12px">
+          <sc-for list="{{tiles}}" as="item" hint-placeholder-count="6">
+            <button type="button" onClick="{{item.pick}}" style="position: relative; height: 134px; border-radius: 14px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; padding: 10px 6px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer">
+              <sc-if value="{{item.selected}}" hint-placeholder-val="{{false}}">
+                <span aria-hidden="true" style="position: absolute; inset: -1px; border-radius: 14px; border: 2px solid #e2b85c"></span>
+                <span style="position: absolute; top: 6px; right: 6px; font: 700 9px Inter, sans-serif; letter-spacing: .06em; color: #1a1405; background: #e2b85c; padding: 2px 6px; border-radius: 999px">ACTIVE</span>
+              </sc-if>
+              <svg viewBox="0 0 100 100" width="60" height="60" aria-hidden="true">
+                <defs><linearGradient id="gt-{{item.id}}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{{item.c3}}"></stop><stop offset="0.5" stop-color="{{item.c2}}"></stop><stop offset="1" stop-color="{{item.c1}}"></stop></linearGradient></defs>
+                <polygon points="50,4 90,27 90,73 50,96 10,73 10,27" fill="url(#gt-{{item.id}})" stroke="{{item.c3}}" stroke-width="1.5" stroke-linejoin="round"></polygon>
+                <polygon points="90,73 74,66 50,96" fill="rgba(0,0,0,.28)"></polygon>
+                <polygon points="10,73 26,66 50,96" fill="rgba(0,0,0,.18)"></polygon>
+                <g stroke="{{item.edge}}" stroke-width="1.3" fill="none" stroke-linejoin="round"><polygon points="50,26 74,66 26,66"></polygon><path d="M10,27 L50,26 M90,27 L50,26 M10,27 L26,66 M90,27 L74,66 M50,96 L26,66 M50,96 L74,66"></path></g>
+                <text x="50" y="58" text-anchor="middle" font-family="Cinzel, serif" font-weight="800" font-size="17" fill="{{item.paint}}">20</text>
+              </svg>
+              <span style="font: 600 12px Inter, sans-serif; text-align: center; line-height: 1.2">{{item.name}}</span>
+              <span style="font-size: 11px; color: #8b90a0">{{item.sub}}</span>
+            </button>
+          </sc-for>
+          <button type="button" style="height: 134px; border-radius: 14px; border: 1px dashed #3a4052; background: transparent; color: #8b90a0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 12px Inter, sans-serif; cursor: pointer">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            New design
+          </button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{tabSets}}" hint-placeholder-val="{{false}}">
+      <ul style="list-style: none; margin: 0; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <sc-for list="{{sets}}" as="s" hint-placeholder-count="5">
+          <li style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; border: 1px solid #262a36; background: #1d212c">
+            <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0">
+              <span style="font: 600 14px Inter, sans-serif">{{s.name}}</span>
+              <code style="font: 12px ui-monospace, Menlo, monospace; color: #8b90a0">{{s.notation}}</code>
+            </div>
+            <span style="font-size: 11px; color: #8b90a0; white-space: nowrap">{{s.who}}</span>
+          </li>
+        </sc-for>
+      </ul>
+    </sc-if>
+
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 12px 16px 24px; border-top: 1px solid #262a36; background: #161922">
+      <button type="button" style="height: 44px; border-radius: 10px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 600 13px Inter, sans-serif">Import…</button>
+      <button type="button" style="height: 44px; border-radius: 10px; border: 1px solid #262a36; background: #1d212c; color: #e8e9ee; font: 600 13px Inter, sans-serif">Export bag</button>
+      <button type="button" style="height: 44px; border-radius: 10px; border: 0; background: #e2b85c; color: #1a1405; font: 600 13px Inter, sans-serif">Use design</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var st = this.state || {};
+    var self = this;
+    var tab = st.tab || 'designs';
+    var filter = st.filter || 'All';
+    var active = st.active || 'amethyst';
+    var designs = [
+      { id: 'amethyst', name: 'Amethyst Swirl', sub: 'Swirl', c1: '#6f8fe8', c2: '#a784f5', c3: '#d8c4f5', paint: '#f4f1e8', edge: 'rgba(255,255,255,.4)' },
+      { id: 'gold', name: "Dragon's Gold", sub: 'Metal', c1: '#7a5512', c2: '#c9962e', c3: '#f0d27a', paint: '#2a1a05', edge: 'rgba(60,35,0,.45)' },
+      { id: 'bone', name: 'Old Bone', sub: 'Stone', c1: '#b3a07a', c2: '#d9cba9', c3: '#fff6e4', paint: '#3a2c1a', edge: 'rgba(80,60,30,.35)' },
+      { id: 'obsidian', name: 'Obsidian Tide', sub: 'Epoxy', c1: '#1b1f2a', c2: '#3e5c76', c3: '#9fd3e6', paint: '#e2b85c', edge: 'rgba(160,220,240,.35)' },
+      { id: 'jade', name: 'Jade Marble', sub: 'Marble', c1: '#2f7d5b', c2: '#7cc39b', c3: '#e6f4ea', paint: '#f4f1e8', edge: 'rgba(255,255,255,.4)' },
+      { id: 'ember', name: 'Ember Stone', sub: 'Stone', c1: '#7a2a1c', c2: '#d0643a', c3: '#f2b07a', paint: '#fff4e6', edge: 'rgba(255,230,200,.35)' }
+    ];
+    var tabOn = 'border: 0; border-radius: 999px; padding: 10px 0; background: #e2b85c; color: #1a1405; font: 600 13px Inter, sans-serif; cursor: pointer';
+    var tabOff = 'border: 0; border-radius: 999px; padding: 10px 0; background: transparent; color: #8b90a0; font: 600 13px Inter, sans-serif; cursor: pointer';
+    var chipOn = 'flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #e2b85c; background: #2a2619; color: #e2b85c; font: 600 12px Inter, sans-serif; cursor: pointer';
+    var chipOff = 'flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid #262a36; background: #1d212c; color: #b9bdc9; font: 500 12px Inter, sans-serif; cursor: pointer';
+    var chips = ['All', 'Favourites', 'Swirl', 'Metal', 'Stone', 'Epoxy', 'Marble'].map(function (c) {
+      return { label: c, on: c === filter, style: c === filter ? chipOn : chipOff, pick: function () { self.setState({ filter: c }); } };
+    });
+    var tiles = designs.filter(function (d) {
+      if (filter === 'All') return true;
+      if (filter === 'Favourites') return d.id === 'amethyst' || d.id === 'gold';
+      return d.sub === filter;
+    }).map(function (d) {
+      return Object.assign({}, d, { selected: d.id === active, pick: function () { self.setState({ active: d.id }); } });
+    });
+    var sets = [
+      { name: 'Perception', notation: 'd20@amethyst + wis + prof', who: 'Vex' },
+      { name: 'Eldritch blast', notation: '2d10@obsidian + cha', who: 'Vex' },
+      { name: 'Dagger', notation: 'd20@gold + dex  ·  d4@bone + dex', who: 'Vex' },
+      { name: 'Fireball', notation: '8d6@ember', who: 'Mira' },
+      { name: 'Stats roll', notation: '4d6@jade', who: 'Any' }
+    ];
+    return {
+      tabDesigns: tab === 'designs', tabSets: tab === 'sets',
+      designsTabStyle: tab === 'designs' ? tabOn : tabOff,
+      setsTabStyle: tab === 'sets' ? tabOn : tabOff,
+      showDesigns: function () { self.setState({ tab: 'designs' }); },
+      showSets: function () { self.setState({ tab: 'sets' }); },
+      chips: chips, tiles: tiles, sets: sets
+    };
+  }
+}
+</script>
+</body>
+</html>
