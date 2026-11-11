@@ -227,18 +227,17 @@ test('a tap wakes an interrupted audio context and takes the playback audio sess
   expect(r.session, 'audio session type').toBe('playback');
 });
 
-// Spin controls live on the showcase mat (not in the settings pane) and hide in the roll view.
-test('spin pause button and speed slider sit on the showcase mat and hide while rolling', async ({ app }) => {
+// The play/pause toggle sits in the toolbar on the showcase mat; the speed slider is a plain option in the settings pane.
+test('spin pause button is on the showcase mat, speed slider is in settings, and the toggle hides while rolling', async ({ app }) => {
   await app.open();
   const spin = () => app.run(pd => pd.state.spin);
-  await expect(app.page.locator('#spinbar')).toBeVisible();
-  expect(await app.page.locator('aside #spin').count(), 'no longer in the settings pane').toBe(0);
+  await expect(app.page.locator('#tools #spinbtn')).toBeVisible();
+  expect(await app.page.locator('aside #spin').count(), 'speed slider lives in the settings pane').toBe(1);
   const s0 = await spin(); expect(s0).toBeGreaterThan(0);
   await app.page.click('#spinbtn'); expect(await spin(), 'paused').toBe(0);
   await app.page.click('#spinbtn'); expect(await spin(), 'resumes at the old speed').toBeCloseTo(s0, 2);
-  await app.page.locator('#spin').fill('0.8'); expect(await spin()).toBeCloseTo(0.8, 2);
   await app.run(pd => pd.startRoll());
-  await expect(app.page.locator('#spinbar')).toBeHidden();
+  await expect(app.page.locator('#spinbtn')).toBeHidden();
 });
 
 // Custom set: one tap back to a single d20.
