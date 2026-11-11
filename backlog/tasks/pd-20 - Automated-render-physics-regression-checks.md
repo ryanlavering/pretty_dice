@@ -1,10 +1,10 @@
 ---
 id: PD-20
 title: Automated test system (Playwright harness, smoke + logic tests)
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-09T21:28:00Z'
-updated_date: '2026-11-11T01:25:00Z'
+updated_date: '2026-11-11T02:00:00Z'
 labels:
   - testing
 dependencies: []
@@ -22,8 +22,14 @@ Turn the ad-hoc ?test= hooks into a repeatable Playwright Test suite. Design: do
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 npm test runs smoke + logic specs green on the host
-- [ ] #2 window.__pd test API (pause/renderOnce/setView/simRoll/memory) replaces window.__dice
-- [ ] #3 Every in-page ?test= hook is either migrated to a spec or listed as pending in a sub-card
-- [ ] #4 CLAUDE.md and README describe how to run tests
+- [x] #1 npm test runs smoke + logic specs green on the host
+- [x] #2 window.__pd test API (pause/renderOnce/setView/simRoll/memory) replaces window.__dice
+- [x] #3 Every in-page ?test= hook is either migrated to a spec or listed as pending in a sub-card
+- [x] #4 CLAUDE.md and README describe how to run tests
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Branch feat/pd-20-test-harness (worktree ../pretty_dice-pd20). 30 tests (smoke 17 incl. phone, logic 13) pass on host (4.3 min, 2 workers) and in Docker (4.3 min). Found + fixed: vendor/cannon-es/dist was git-ignored by 'dist/' (fresh clones had no offline cannon-es); boot/rolls not reproducible (three.js UUIDs consume Math.random) -> app rng() + ?seed=N + randQuat. 19 hooks migrated and removed; 7 remain, listed on PD-20.1/20.2. Note: headless Chrome now has DeviceMotionEvent.requestPermission, so setShake(true) without sensor permission silently stays off; may affect Android Chrome too (worth a phone check).
+<!-- SECTION:NOTES:END -->
