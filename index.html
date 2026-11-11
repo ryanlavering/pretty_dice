@@ -36,6 +36,7 @@
   input[type=range]{flex:1;accent-color:var(--accent)}
   .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
   #stage{flex:1;position:relative;min-width:0;min-height:0;overflow:hidden}   /* min-height:0 + absolute canvas: the canvas's old pixel size must never hold the stage open when the settings pane comes back */
+  button.ico{flex:none;width:34px;height:34px;padding:0;display:grid;place-items:center} button.ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #info,#layout{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
   #info{left:auto;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}   /* info sits above the roll/showcase toggle; the layout toggle is bottom-left */
   #info:hover,#layout:hover,#info.on{border-color:var(--accent);color:var(--accent)} #info svg,#layout svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -137,7 +138,7 @@
     <div style="display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin:-4px 0 4px 96px"><span>matte</span><span>gloss</span></div>
 
     <div id="stonectl"><h2>Stone</h2>
-      <div class="row"><label>Type</label><select id="stone"></select></div>
+      <div class="row"><label>Type</label><select id="stone"></select><button id="stonepaint" class="ico" type="button" title="Paint with this stone's natural colours" aria-label="Paint with this stone's natural colours"><svg viewBox="0 0 24 24"><path d="M20.5 3.5l-8 8"/><path d="M10.2 11.2l2.6 2.6" stroke-width="2.6"/><path d="M10.6 13.4c-3.1-1.1-5.9.9-5.9 3.6 0 1.8-.9 3-2.2 3.5 5 1.4 10.7-.9 10-5" fill="currentColor" fill-opacity=".85"/></svg></button></div>
       <div class="row"><label>Accent</label><input type="range" id="accent" min="0" max="1" step="0.01"></div>
     </div>
     <div id="epoxyctl"><h2>Epoxy</h2>
@@ -929,7 +930,8 @@ $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate
 $('loadmodel').onclick=()=>$('modelfile').click();
 $('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
-$('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };
+$('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };   // texture only: the colours stay
+$('stonepaint').onclick=()=>{ checkpoint(); state.palettes.shared=[...STONES[state.stone].pal(mulberry32((Math.random()*1e9)|0))]; state.colors=state.palettes.shared; repaint(); applyLook(); };   // the stone's own palette rules
 $('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
 $('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
 $('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; scheduleRebuild(); applyLook(); };
@@ -1348,6 +1350,7 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
 if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
 if(new URLSearchParams(location.search).get('test')==='layoutcycle'){ const log=l=>console.log('LAYOUT',l,'stage',stage.clientWidth+'x'+stage.clientHeight,'aside',document.querySelector('aside').offsetHeight,'app scroll',$('app').scrollTop,$('app').scrollHeight,'buf',renderer.domElement.height,'aspect',camera.aspect.toFixed(2)); log('start'); setFull(true); log('full'); setFull(false); log('split'); setFull(true); setFull(false); log('split2'); }
+if(new URLSearchParams(location.search).get('test')==='stonepaint'){ state.substrate='marble'; setSubstrate('marble'); state.colors[0]='#ff00ff'; const before=JSON.stringify(state.colors); $('stone').value='lapis'; $('stone').dispatchEvent(new Event('change')); const kept=JSON.stringify(state.colors)===before&&state.stone==='lapis'; $('stonepaint').click(); const painted=JSON.stringify(state.colors)!==before&&state.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))&&JSON.stringify(state.palettes.shared)===JSON.stringify(state.colors); console.log('STONEPAINT kept',kept,'painted',painted,state.colors.join(',')); }
 if(new URLSearchParams(location.search).get('test')==='palette'){ const out=[]; const ok=(n,v)=>out.push(n+':'+(v?'ok':'FAIL'));
   state.randsub=false; state.substrate='metal'; randomize(true); const m=[...state.colors]; ok('metal-extras-filled',m[1]!=='#000000'&&m[2]!=='#000000'&&m[1]!==m[0]);
   setSubstrate('swirl'); ok('metal->swirl keeps',JSON.stringify(state.colors)===JSON.stringify(m));
