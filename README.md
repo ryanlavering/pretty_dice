@@ -8,6 +8,9 @@ Pretty Dice generates random polyhedral "DnD" dice renders using a synthetic 3D 
 - **Numbers**: inset or embossed, with choice of font, size, rotation, depth and edge softness.
 - **Substrates**: solid or swirled plastic, metallic plastic, metal, clear/dyed epoxy and marble.
 - **Paint**: auto-picked for contrast and harmony with the base, random, or custom.
+- **Rolling**: a tray sized to the dice, adjustable bounce and friction, and leaning dice that are flagged and re-rolled in one tap.
+
+See [CHANGELOG.md](CHANGELOG.md) for what is new.
 
 ## Quick start
 
@@ -26,31 +29,39 @@ Online, the page loads three.js, cannon-es and fonts from cdn.jsdelivr.net and G
 
 ## Designing Dice
 
-- **Shape / Generate**: pick a die, or generate a new one.
-- **Randomize** (or press Space): rerolls the look. **Undo / Redo** (Ctrl+Z, Ctrl+Y) step through changes, including randomizes.
-- **Substrate, Colors, Swirl scale, Finish**: control the base material, from matte to gloss.
-- **Numbers**: font, size, rotation, depth, edge softness. The d4 can show corner-tip or face numbers; the d6 can use numbers or pips.
-- **Edge radius**: how rounded the edges and corners are.
-- **Paint mode**: Auto, Random or Custom.
+The controls sit in a settings pane beside the dice (above them on a phone). The round buttons along the bottom of the view show or hide the settings, turn sound on or off, pause the spin, show the control hints (ⓘ) and switch between Showcase and Roll.
+
+- **Randomize** (or press Space) rerolls the look; the arrows beside it are **Undo / Redo** (Ctrl+Z, Ctrl+Y), including randomizes. "Also randomize" chooses whether the substrate and the shape change too.
+- **Shape**: pick a die, or build a **Custom set** (see below).
+- **Substrate** and **Colors**: the three base colors are shared by every substrate and stone type, so switching substrate keeps your colors. Only Randomize and the two buttons beside the swatches make new ones: the shuffle button re-rolls just the base colors, and for stone the paintbrush paints in the chosen stone's natural colors.
+- **Swirl scale, Edge radius, Finish** (matte to gloss), **Paint mode** (Auto, Random or Custom for the numbers).
+- **Stone**: the type changes only the texture, not the colors.
+- **Numbers**: font, **size** (0.45 to 5 times the face, on a log scale; large sizes are cropped by the face edges on purpose), rotation, depth and edge softness. The d4 can show corner-tip or face numbers; the d6 can use numbers or pips.
 - **Relief & patina**: recessed face panels with a sloped rim, raised or inset numbers, darker patina in recesses, and an Antique relief preset.
 - **Filigree**: scroll, beaded or art-deco etching filled with enamel (not available on d4 corner-tip dice).
 - **Epoxy**: clarity, bubbles, glitter, and an **inclusion**, either a built-in rubber duck or your own glb/obj/stl miniature cast inside the die.
+- **Showcase**: spin speed. The pause button is on the view itself.
 - **Reset to defaults** clears everything.
 
-Drag to orbit, scroll or pinch to zoom, double-click to reset the view.
+Drag to orbit, scroll or pinch to zoom, double-click to reset the view. Showcase and Roll keep their own camera angle and zoom.
 
 ## Rolling Dice
 
-Press **Roll** (or `r`) to throw the die onto a table using rigid-body physics (cannon-es), with roll and impact sounds (volume is adjustable). Click or flick the table to roll again. Natural 20s and natural 1s get their own effects. **Showcase** switches back to the spinning display view; spin speed is adjustable.
+Press **Roll** (or `r`) to throw the dice onto a table using rigid-body physics (cannon-es). Flick the table (or click it) to roll again. Natural 20s and natural 1s get their own effects: a glow and fireworks, or a greyed die and a dimmed room.
+
+- **The tray** is sized from the dice (how many and how big), not from the screen, and the camera starts far enough back to show all of it. Zoom is yours to change.
+- **Roll feel & sound** (it moves to the top of the pane while you roll): **Bounciness**, **Dice friction** and **Mat friction** change how the dice behave; the defaults are slippery enough that dice slide apart instead of snagging.
+- **Leaning dice** are never hidden. A die that comes to rest propped on another, or balanced on an edge, gets an orange ring on the mat and a warning. **Re-roll leaning** drops only those dice in again from above. If one of them later tips over, the result and any natural 20 effect are read again.
+- **Sound** is off until you turn it on (the speaker button on the view, or the checkbox). Rolling rumble is a separate option. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** shows what the browser says about audio, which helps when a phone stays quiet.
 
 ### Rolling Multiple Dice
 
 - **Standard 7** shows and rolls the full set together.
-- **Custom set** takes dice notation such as `4d6+2d10+3`, or use the steppers. It supports d4 to d20, d14, d16, d%, a +/- modifier and up to 24 dice, and shows the total with a per-term breakdown.
+- **Custom set** takes dice notation such as `4d6+2d10+3`, or use the steppers. It supports d4 to d20, d14, d16, d%, a +/- modifier and up to 24 dice, and shows the total with a per-term breakdown. The cross button next to **Set** clears it back to a single d20.
 
 ## Desktop vs. Mobile
 
-The layout fits narrow windows. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
+The layout fits any window: the settings pane sits beside the view on a wide screen and below it on a narrow one. The button at the bottom left of the view hides the settings for a full-screen view and brings them back. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Text fields are 16 px so iOS Safari does not zoom in when you tap them. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
 
 ## Saving and Loading
 
@@ -90,6 +101,7 @@ The layout fits narrow windows. On touch devices, drag to orbit, pinch to zoom, 
 
 # Known gaps
 
+- Roll feel presets (wood, felt, glass...), a drawn tray, and a "dice bag" of many designs are planned (see `backlog/`).
 - Epoxy lacks internal depth.
 - No d24 or d30 yet.
 - No manufacturer-ready export (STL/STEP) yet.

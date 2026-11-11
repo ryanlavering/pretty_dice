@@ -1,9 +1,10 @@
 ---
 id: PD-99
 title: Quick clear for the custom dice set (back to a single d20)
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-11T07:30:00Z'
+updated_date: '2026-11-11T09:16:00Z'
 labels:
   - feature
   - ui

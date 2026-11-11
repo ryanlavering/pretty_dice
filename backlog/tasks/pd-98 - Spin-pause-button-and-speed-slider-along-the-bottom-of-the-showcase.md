@@ -1,9 +1,10 @@
 ---
 id: PD-98
 title: Spin pause button and speed slider along the bottom of the showcase
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-11T07:17:00Z'
+updated_date: '2026-11-11T09:16:00Z'
 labels:
   - feature
   - ui

@@ -1,10 +1,10 @@
 ---
 id: PD-101
 title: 'Settings pane design pass: sections, headers, controls where you need them'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-11T07:41:00Z'
-updated_date: '2026-11-11T07:51:00Z'
+updated_date: '2026-11-11T09:16:00Z'
 labels:
   - ux
   - ui

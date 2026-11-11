@@ -1,9 +1,10 @@
 ---
 id: PD-96
 title: 'Number size: bigger minimum, jumbo sizes up to 5x (cropped by face edges)'
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-11T07:17:00Z'
+updated_date: '2026-11-11T09:16:00Z'
 labels:
   - feature
   - numbers

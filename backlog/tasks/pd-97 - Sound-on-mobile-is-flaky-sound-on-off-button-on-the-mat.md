@@ -1,10 +1,10 @@
 ---
 id: PD-97
 title: Sound on mobile is flaky; sound on/off button on the mat
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-11T07:17:00Z'
-updated_date: '2026-11-11T08:52:00Z'
+updated_date: '2026-11-11T09:16:00Z'
 labels:
   - bug
   - mobile
