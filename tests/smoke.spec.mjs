@@ -189,3 +189,14 @@ test('the render loop survives a frame that throws', async ({ app }) => {
   const a = await q();
   await expect.poll(async () => JSON.stringify(await q()) !== JSON.stringify(a), { message: 'the scene keeps animating after the error', timeout: 20_000 }).toBe(true);
 });
+
+// PD-95: iOS Safari zooms the page in when a text field or select under 16px gets focus, and stays zoomed.
+test.describe('touch devices', () => {
+  test.use({ viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
+  test('text fields and selects are at least 16px so iOS does not zoom on focus', async ({ app }) => {
+    await app.open();
+    const small = await app.page.evaluate(() => [...document.querySelectorAll('input[type=text],input:not([type]),input[type=number],select,textarea')]
+      .map(e => ({ id: e.id || e.tagName, px: parseFloat(getComputedStyle(e).fontSize) })).filter(x => x.px < 16));
+    expect(small, 'fields under 16px (these make iOS zoom)').toEqual([]);
+  });
+});

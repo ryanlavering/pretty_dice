@@ -31,6 +31,7 @@
   .row{display:flex;gap:8px;align-items:center;margin:6px 0}
   .row label{flex:1;color:var(--dim)}
   input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
+  @media (pointer:coarse),(hover:none){ input[type=text],input:not([type]),input[type=number],input[type=search],select,textarea{font-size:16px!important} }   /* iOS Safari zooms the whole page when a field under 16px gets focus (and stays zoomed); !important beats the inline font:inherit */
   select{flex:1;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px}
   input[type=color]:disabled{opacity:.25}
   input[type=range]{flex:1;accent-color:var(--accent)}
