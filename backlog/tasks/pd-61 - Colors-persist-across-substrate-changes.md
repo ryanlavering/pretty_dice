@@ -1,16 +1,16 @@
 ---
 id: PD-61
 title: Colors persist across substrate changes
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-10T22:45:00Z'
+updated_date: '2026-11-11T01:07:00Z'
 labels:
   - feature
   - randomize
 dependencies: []
 priority: high
-ordinal: 61000
+ordinal: 1000
 ---
 
 ## Description
@@ -30,4 +30,6 @@ Randomize currently gives each substrate its own random colors, so changing subs
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-10 implemented (design pass: one shared 3-colour palette, state.palettes.shared). Randomize generates colours with the active substrate's own logic (metal picks a metal, stone its palette) and fills unused slots (solid plastic, metal) with harmony colours of colour 1, so every substrate has a full set. Switching substrate or stone type never changes colours; edits and colours made under another substrate carry to metal/stone even if out of their normal range. Old per-substrate saved palettes migrate to the active substrate's palette. Test: ?test=palette (8 checks ok). Also: roll tray floor raised for small counts (min 2.4 x 3.6, +4 virtual footprint) per owner feedback.
+
+Owner approved 2026-11-10; merged to main.
 <!-- SECTION:NOTES:END -->
