@@ -1,10 +1,10 @@
 ---
 id: PD-58
 title: Occasional hangs; switching away and back fixes it
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-11T02:28:00Z'
+updated_date: '2026-11-11T06:51:00Z'
 labels:
   - bug
   - perf
@@ -28,4 +28,6 @@ App occasionally hangs; switching to another app/tab and back sometimes recovers
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-10 investigated; owner has not seen it recently, so it may be fixed or transient. Could not reproduce. Physics is not a CPU hazard (set7 / 20d6 steps ~0.3 ms mean, max ~3 ms). Plausible causes found and hardened: (1) an exception in one frame ends the render loop for good (three.js stops scheduling frames after a throwing callback) -> frame body now wrapped in try/catch (logs up to 3 errors); (2) a roll that never settles -> watchdog finishes any roll after 25 s; (3) rescue attempts (tip / drop-in) tripped the 12 s settle fallback at once on late rolls -> they now restart the wait (rollT capped at 4); (4) coming back to the tab: visibilitychange drops the long clock gap, resumes a suspended AudioContext and re-measures the stage. Test: ?test=watchdog. If it recurs, note what was on screen (rolling? which shape/count?) and whether the console shows 'frame error'.
+
+Owner approved 2026-11-10 as safeguards; merged to main.
 <!-- SECTION:NOTES:END -->
