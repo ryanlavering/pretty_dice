@@ -61,6 +61,31 @@
   #hint{display:none} #hint.show{display:block}
   #hint{position:absolute;bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 56px);left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
+  /* dice bag: settings-pane row, shelf (carousel) and All-designs sheet */
+  #bagrow{display:flex;align-items:center;gap:8px;margin:12px 0 4px} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+  #bagname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #bagpos{color:var(--dim);font-size:11px}
+  #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
+  #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:6px} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
+  #bagact #bsave{background:var(--accent);color:#1a1405;border:0;font-weight:600}
+  #shelf{position:absolute;left:0;right:0;bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 56px);z-index:4;pointer-events:none}
+  #shelfall{position:absolute;right:10px;top:-30px;pointer-events:auto;padding:4px 10px;border-radius:999px;font-size:12px;background:rgba(20,23,31,.72);backdrop-filter:blur(6px)}
+  #cards{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px calc(50% - 36px);pointer-events:auto;scrollbar-width:none;overscroll-behavior-x:contain} #cards::-webkit-scrollbar{display:none}
+  body.inroll #shelf{display:none}
+  .card{flex:none;width:72px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;background:none;border:0;color:var(--dim);font-size:11px;cursor:pointer;position:relative;-webkit-touch-callout:none;user-select:none}
+  .card .th,.tile .th{width:64px;height:64px;border-radius:12px;border:2px solid var(--line);background:#1d212c center/cover no-repeat;position:relative;transition:transform .15s,border-color .15s}
+  .card.on .th,.tile.on .th{border-color:var(--accent)} .card.on{color:var(--accent)} .card.on .th{transform:scale(1.12)}
+  .card .nm{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 6px #000}
+  .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+  .ghost .th{border-style:dashed;opacity:.9} .plus .th{display:grid;place-items:center;font-size:28px;color:var(--dim);border-style:dashed;background:rgba(20,23,31,.6)}
+  #bagsheet{position:fixed;inset:0;z-index:20;background:rgba(14,16,21,.97);display:flex;flex-direction:column} #bagsheet[hidden]{display:none}
+  #sheethead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);padding-top:max(14px,env(safe-area-inset-top,0px))} #sheettitle{font:700 16px Cinzel,serif;letter-spacing:.06em;color:var(--accent)}
+  #tiles{flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px;align-content:start}
+  .tile{display:flex;flex-direction:column;gap:5px;align-items:stretch;position:relative;cursor:pointer;user-select:none;-webkit-touch-callout:none;border-radius:12px}
+  .tile .th{width:100%;height:auto;aspect-ratio:1} .tile.drag{opacity:.55;outline:2px dashed var(--accent)} .tile .nm{font-size:13px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tile .dots{position:absolute;top:4px;right:4px;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(20,23,31,.8);line-height:1}
+  .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
+  #cardmenu{position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
+  #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
   @media (max-width:760px){
     #app{flex-direction:column-reverse}
     aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
@@ -103,6 +128,8 @@
   <aside>
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
+    <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagname"></span><small id="bagpos"></small></button><span id="modbadge" hidden>Modified</span></div>
+    <div id="bagact" hidden><button id="bsave" type="button"></button><button id="bcopy" type="button">Save as copy</button><button id="brevert" type="button">Revert</button></div>
 
     <div id="actions"><div id="randrow"><button class="big" id="rand">Randomize</button><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
       <div id="randopts"><span>Also randomize</span><label class="chk"><input type="checkbox" id="randsub" checked><span>substrate</span></label><label class="chk"><input type="checkbox" id="randshape"><span>shape</span></label></div>
@@ -201,8 +228,10 @@
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
   </aside>
-  <div id="stage"><div id="tools"><div class="grp"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button></div><button id="spinbtn" type="button"></button><div class="grp"><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="mode" aria-label="Switch between showcase and roll view"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="shelf"><button id="shelfall" type="button">All designs</button><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="grp"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button></div><button id="spinbtn" type="button"></button><div class="grp"><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="mode" aria-label="Switch between showcase and roll view"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
+<div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><button id="sheetclose" type="button">Close</button></div><div id="tiles"></div></div>
+<div id="cardmenu" hidden></div>
 
 <script type="text/plain" id="main-src">
 import * as THREE from 'three';
@@ -664,7 +693,7 @@ try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
   if(!Array.isArray(state.off)||state.off.length!==3) state.off=[...DEFAULTS.off];
   if(Array.isArray(state.palettes)) state.palettes={};
 }catch{}
-function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); }
+function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); scheduleBagUI(); }
 /* One palette (3 colours) is shared by every substrate and stone type, so switching substrate keeps the colours (PD-61).
    Only Randomize makes new colours, using the logic of the substrate that is active at that moment (metal picks a metal, a stone picks its own palette).
    Substrates that use fewer than 3 colours (solid plastic, metal) still get 3, so every other substrate has a full set to show.
@@ -863,7 +892,7 @@ function applyLook(){
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
-  checkpoint(); state.seed=(rng()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
+  enterDraft(); checkpoint(); state.seed=(rng()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
   if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   if(state.substrate==='marble') state.stone=pick(STONE_KEYS,r);
@@ -1032,7 +1061,7 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
 /* ---------- dice bag: many designs in one file (see docs/design/dice-bag-design.md, phase 1) ---------- */
 const slug=(t,fallback)=>String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||fallback;
 function uniqueId(base,taken){ let id=base, n=2; while(taken.has(id)) id=`${base}-${n++}`; return id; }
-function emptyBag(name='My bag'){ return {format:'pretty-dice-bag', version:1, name, designs:[], sets:[], characters:[], jail:[], active:{design:null,set:null}, log:[]}; }
+function emptyBag(name='My bag'){ return {format:'pretty-dice-bag', version:1, name, designs:[], sets:[], characters:[], jail:[], pending:{}, draft:null, active:{design:null,set:null,draft:false}, log:[]}; }
 const designOK=d=>d&&d.format==='pretty-dice'&&d.version===1&&SHAPES[d.shape]&&SUBSTRATES[d.substrate];
 /* Parse any bag or single-design file into a bag. Pure: touches no app state. Returns {bag, dropped:[reasons]}. */
 function parseBag(obj){
@@ -1062,29 +1091,89 @@ function parseBag(obj){
     sets.add(copy.id); out.sets.push(copy); }
   out.characters=(Array.isArray(obj.characters)?obj.characters:[]).filter(c=>c&&typeof c.id==='string').map(c=>structuredClone(c));
   out.jail=(Array.isArray(obj.jail)?obj.jail:[]).filter(j=>j&&ref(j.design)).map(j=>({...structuredClone(j),design:ref(j.design)}));
-  const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null};
+  for(const [k,v] of Object.entries(obj.pending&&typeof obj.pending==='object'?obj.pending:{})){ if(ref(k)&&designOK(v)) out.pending[ref(k)]=structuredClone(v); else dropped.push(`pending edits for "${k}": design missing or invalid`); }
+  if(obj.draft!=null){ if(designOK(obj.draft)) out.draft=structuredClone(obj.draft); else dropped.push('the random draft was not a valid design'); }
+  const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null, draft:!!(a.draft&&out.draft)};
   out.log=(Array.isArray(obj.log)?obj.log:[]).slice(-LOG_MAX);
   return {bag:out, dropped};
 }
-/* The active design is the live state (phase 1 has no Modified badge yet), so refresh its entry before the bag is saved or exported. */
-function syncActive(){ if(!bag) return; const e=bag.designs.find(d=>d.id===bag.active.design); if(e){ const dj=designToJSON(); e.design=dj; e.preview_shape=dj.shape; if(dj.name) e.name=dj.name; } }
-function bagToJSON(){ syncActive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
-function saveBag(){ if(!bag) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
+/* ---- live design vs saved design (phase 2) ----
+   The live state (sliders, stage) is always "the active design plus any pending edits". The saved design only changes on Save.
+   Pending edits of the active design are recomputed from the live state whenever the bag is saved, so they survive reloads and design switches.
+   shape and notation travel with the look but do not count as edits (shape is only the preview shape). */
+const sortKeys=v=>Array.isArray(v)?v.map(sortKeys):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortKeys(v[k])])):v;
+const canonD=d=>{ const {shape,notation,...r}=d; return JSON.stringify(sortKeys(r)); };
+const hashStr=t=>{ let h=5381; for(let i=0;i<t.length;i++) h=((h<<5)+h+t.charCodeAt(i))|0; return (h>>>0).toString(36); };
+const thumbKey=d=>hashStr(canonD(d)+'|'+d.shape);
+const entryOf=id=>bag&&bag.designs.find(d=>d.id===id);
+const activeEntry=()=>entryOf(bag.active.design);
+function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; return dj; }
+function isLiveModified(){ const e=activeEntry(); return !bag.active.draft&&canonD(liveJSON())!==canonD({...e.design,name:e.name}); }
+const isModified=id=>bag.active.draft||bag.active.design!==id?!!bag.pending[id]:isLiveModified();
+let bagLoading=0;   // while a design is being loaded into the live state, the half-loaded state must not be saved back as edits
+function syncLive(){ if(!bag||bagLoading) return;
+  if(bag.active.draft){ bag.draft=liveJSON(); return; }
+  const e=activeEntry(); if(!e) return;
+  if(isLiveModified()) bag.pending[e.id]=liveJSON();
+  else{ delete bag.pending[e.id]; const dj=designToJSON(); e.design.shape=dj.shape; e.design.notation=dj.notation; e.preview_shape=dj.shape; } }
+function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
+function saveBag(){ if(!bag||bagLoading) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
 /* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
 function initBag(){
   try{ const raw=localStorage.getItem(BAG_STORE); if(raw){ bag=parseBag(JSON.parse(raw)).bag; } }catch{ bag=null; }
-  if(!bag){ const dj=designToJSON(), name=dj.name||'Design 1'; bag=emptyBag(); bag.designs.push({id:slug(name,'design-1'), name, preview_shape:dj.shape, design:dj}); bag.active.design=bag.designs[0].id; }
+  if(!bag){ const dj=designToJSON(), name=dj.name||'Design 1'; bag=emptyBag(); bag.designs.push({id:slug(name,'design-1'), name, preview_shape:dj.shape, design:{...dj,name}}); bag.active.design=bag.designs[0].id; }
   saveBag();
 }
+/* Put a design into the live state and start a fresh undo history (undo does not cross designs). */
+async function loadSlot(json,name){ bagLoading++; try{ await loadDesign(name!=null?{...json,name}:json); }finally{ bagLoading--; } history=[snapshot()]; hIdx=0; syncHistoryUI(); }
+/* An unmodified design is stored in the normal form the app writes (clamped numbers, defaults filled in), so imported files do not read as Modified. */
+function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag.pending[e.id]){ const dj=designToJSON(); e.design={...dj,name:e.name}; e.preview_shape=dj.shape; } }
+let actBusy=false, actNext=null;
+async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
+  if(!bag) return; if(actBusy){ actNext=target; return; } actBusy=true;
+  try{ if(!skipSync) syncLive();
+    if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
+    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; await loadSlot(bag.pending[e.id]||e.design,e.name); normalizeActive(); }
+    save();
+  }finally{ actBusy=false; }
+  if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
+}
+/* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
+function enterDraft(){ if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; }
+function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.name)); let n=bag.designs.length+1; while(used.has(`${base} ${n}`)) n++; return `${base} ${n}`; }
+function addEntry(json,name,afterId){ const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
+  const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
+const bagOps={
+  async save(){ if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=j.name||e.name; e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
+  async saveCopy(){ if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
+    const c=addEntry(j,`${e.name} copy`,e.id); bag.active.design=c.id; $('dname').value=c.name; save(); },
+  async revert(){ if(bag.active.draft) return this.discard(); const e=activeEntry(); delete bag.pending[e.id]; await loadSlot(e.design,e.name); normalizeActive(); save(); },
+  async keep(){ if(!bag.active.draft) return; const j=liveJSON(), name=(j.name||'').trim()||newDesignName(), e=addEntry(j,name);
+    bag.active.design=e.id; bag.active.draft=false; bag.draft=null; $('dname').value=name; save(); },
+  async discard(){ bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(); await loadSlot(bag.pending[e.id]||e.design,e.name); normalizeActive(); } save(); },
+  async duplicate(id){ syncLive(); const e=entryOf(id); if(!e) return; const c=addEntry(structuredClone(bag.pending[id]||e.design),`${e.name} copy`,id); await activate(c.id); return c.id; },
+  rename(id,name){ const e=entryOf(id); name=String(name||'').trim().slice(0,80); if(!e||!name) return; e.name=name; e.design.name=name; if(bag.pending[id]) bag.pending[id].name=name;
+    if(!bag.active.draft&&bag.active.design===id) $('dname').value=name; save(); },
+  async remove(id){ const e=entryOf(id); if(!e||bag.designs.length<2) return false; syncLive(); const k=bag.designs.indexOf(e), wasActive=!bag.active.draft&&bag.active.design===id;
+    bag.designs.splice(k,1); delete bag.pending[id]; bag.jail=bag.jail.filter(j=>j.design!==id);
+    bag.sets.forEach(st=>st.terms.forEach(t=>{ if(t.design===id) delete t.design; }));
+    if(bag.active.design===id) bag.active.design=bag.designs[Math.min(k,bag.designs.length-1)].id;
+    if(wasActive) await activate(bag.active.design,{skipSync:true}); else save(); return true; },
+  move(id,to){ const k=bag.designs.findIndex(d=>d.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.designs.length-1,to)); const [e]=bag.designs.splice(k,1); bag.designs.splice(to,0,e); save(); },
+  async addBlank(){ syncLive(); bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); setSubstrate(state.substrate); state.seed=(rng()*1e9)|0; repaint(); applyLook();
+    await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
+};
 /* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
 async function importBag(obj,{replace=false}={}){
   const {bag:inc,dropped}=parseBag(obj);
-  if(replace){ bag=inc; await loadDesign(bag.designs.find(d=>d.id===bag.active.design).design); save(); return {added:inc.designs.length,dropped}; }
-  syncActive();
+  if(replace){ bag=inc; const e=activeEntry(); await loadSlot(bag.active.draft?bag.draft:(bag.pending[e.id]||e.design),bag.active.draft?'':e.name); normalizeActive(); save(); return {added:inc.designs.length,dropped}; }
+  syncLive();
   const taken=new Set(bag.designs.map(d=>d.id)), map=new Map();
   for(const d of inc.designs){ const id=uniqueId(d.id,taken); taken.add(id); map.set(d.id,id); bag.designs.push({...d,id}); }
-  const setIds=new Set(bag.sets.map(x=>x.id)), setMap=new Map();
-  for(const st of inc.sets){ const id=uniqueId(st.id,setIds); setIds.add(id); setMap.set(st.id,id); bag.sets.push({...st,id,terms:st.terms.map(t=>t.design?{...t,design:map.get(t.design)}:t)}); }
+  for(const [k,v] of Object.entries(inc.pending)) bag.pending[map.get(k)]=v;
+  if(inc.draft&&!bag.draft) bag.draft=inc.draft;
+  const setIds=new Set(bag.sets.map(x=>x.id));
+  for(const st of inc.sets){ const id=uniqueId(st.id,setIds); setIds.add(id); bag.sets.push({...st,id,terms:st.terms.map(t=>t.design?{...t,design:map.get(t.design)}:t)}); }
   const chIds=new Set(bag.characters.map(x=>x.id));
   for(const c of inc.characters){ if(!chIds.has(c.id)){ bag.characters.push(c); chIds.add(c.id); } }
   bag.sets.forEach(st=>{ if(st.character&&!chIds.has(st.character)){ delete st.character; dropped.push(`set ${st.name||st.id}: its character is missing`); } });
@@ -1100,6 +1189,109 @@ $('replacebag').onclick=()=>{ if(confirm('Replace every design in this bag with 
 $('bagfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
   try{ const txt=await readText(f); inp.value=''; const r=await importBag(JSON.parse(txt.replace(/^﻿/,'')),{replace:bagReplace}); if(r.dropped.length) alert(`Loaded ${r.added} design(s). Left out:\n- `+r.dropped.join('\n- ')); }
   catch(err){ inp.value=''; alert('Could not load bag: '+err.message); } };
+/* ---------- dice bag browser (phase 2): shelf, All-designs sheet, menus, thumbnails ---------- */
+const THUMBS_KEY='prettydice.thumbs.v1', thumbsOn=!(navigator.webdriver&&!new URLSearchParams(location.search).get('thumbs'));
+let thumbs={}; try{ thumbs=JSON.parse(localStorage.getItem(THUMBS_KEY)||'{}')||{}; }catch{}
+function pruneThumbs(){ const keep=new Set([...bag.designs.map(e=>thumbKey(bag.pending[e.id]||e.design)),...(bag.draft?[thumbKey(bag.draft)]:[])]);
+  if(!bag.active.draft&&activeEntry()) keep.add(thumbKey(liveJSON())); for(const k of Object.keys(thumbs)) if(!keep.has(k)) delete thumbs[k]; }
+function persistThumbs(){ pruneThumbs(); try{ localStorage.setItem(THUMBS_KEY,JSON.stringify(thumbs)); }catch{} }
+function captureLive(px=144){   // one small picture of whatever the stage shows right now (showcase only)
+  if(rolling) return null; const pr=renderer.getPixelRatio(), cvs=renderer.domElement;
+  renderer.setPixelRatio(1); renderer.setSize(px,px,false); camera.aspect=1; camera.updateProjectionMatrix(); renderer.render(scene,camera);
+  const c=document.createElement('canvas'); c.width=c.height=px; c.getContext('2d').drawImage(cvs,0,0,px,px);
+  renderer.setPixelRatio(pr); resize(); const u=c.toDataURL('image/webp',.8); return u.startsWith('data:image/webp')?u:c.toDataURL('image/jpeg',.8); }
+let thumbTimer=null, thumbBusy=false;
+function scheduleThumb(){ if(!thumbsOn||!bag||thumbTimer) return; thumbTimer=setTimeout(()=>{ thumbTimer=null; updateThumbs(); },900); }   // not debounced: save() can fire all the time, so wait at most 900 ms
+async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet (each is loaded out of sight and the live design restored)
+  if(thumbBusy||actBusy||rolling||!bag) return; thumbBusy=true;
+  try{ const live=liveJSON(), k=thumbKey(live); if(!thumbs[k]){ const u=captureLive(); if(u){ thumbs[k]=u; } }
+    const todo=bag.designs.filter(e=>!thumbs[thumbKey(bag.pending[e.id]||e.design)]&&!(e.id===bag.active.design&&!bag.active.draft));
+    if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({id:'draft',design:bag.draft,name:''});
+    if(todo.length){ const snap=snapshot(), nm=$('dname').value, h=history.slice(), hi=hIdx, cvs=renderer.domElement; cvs.style.visibility='hidden'; bagLoading++;
+      try{ for(const e of todo){ const j=e.id==='draft'?e.design:(bag.pending[e.id]||e.design); await loadDesign({...j,name:e.name}); const u=captureLive(); if(u) thumbs[thumbKey(j)]=u; }
+      }finally{ await restore(snap); bagLoading--; $('dname').value=nm; history=h; hIdx=hi; syncHistoryUI(); cvs.style.visibility=''; } }
+    persistThumbs(); renderBag();
+  }catch(err){ console.warn('thumbnail pass failed',err); }finally{ thumbBusy=false; } }
+const swatch=j=>`linear-gradient(135deg,${(j.colors||['#444','#666','#888']).join(',')})`;
+function thumbStyle(j){ const u=thumbs[thumbKey(j)]; return u?`url(${u})`:swatch(j); }
+
+const el=(tag,cls,txt)=>{ const n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
+function slots(){   // what the shelf and sheet show, in order: designs, then the draft
+  const out=bag.designs.map(e=>{ const live=!bag.active.draft&&bag.active.design===e.id; const j=live?liveJSON():(bag.pending[e.id]||e.design);
+    return {id:e.id,name:live?(j.name||e.name):(bag.pending[e.id]?.name||e.name),json:j,on:live,mod:isModified(e.id)}; });
+  if(bag.draft||bag.active.draft) out.push({id:'draft',name:'Draft',json:bag.active.draft?liveJSON():bag.draft,on:bag.active.draft,draft:true});
+  return out; }
+let lastSig='', lastCenter=null;
+function renderBag(){
+  if(!bag) return; const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
+  $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
+  $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
+  const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
+  $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
+  const sl=slots(), sig=JSON.stringify([sl.map(x=>[x.id,x.name,x.on,!!x.mod,thumbKey(x.json)]),bag.name]); if(sig===lastSig) return; lastSig=sig;
+  const cards=$('cards'), keep=cards.scrollLeft; cards.replaceChildren(...sl.map(x=>cardEl(x)),plusEl('card plus'));
+  const on=cards.querySelector('.card.on'); if(on&&lastCenter!==x_id(on)){ lastCenter=x_id(on); centerCard(on,false); } else cards.scrollLeft=keep;
+  if(!$('bagsheet').hidden) renderSheet();
+}
+const x_id=n=>n.dataset.id;
+function cardEl(x){ const b=el('button','card'+(x.on?' on':'')+(x.draft?' ghost':'')); b.type='button'; b.dataset.id=x.id; b.setAttribute('role','option'); b.setAttribute('aria-selected',x.on);
+  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot')); b.append(th,el('span','nm',x.name)); wireCard(b,x); return b; }
+function plusEl(cls){ const b=el('button',cls); b.type='button'; const th=el('div','th','+'); b.append(th,el('span','nm','Add')); b.onclick=e=>openMenu(b,addItems()); return b; }
+function centerCard(c,smooth=true){ progScroll=Date.now(); const box=$('cards'); box.scrollTo({left:c.offsetLeft-box.clientWidth/2+c.offsetWidth/2,behavior:smooth?'smooth':'instant'}); }
+let progScroll=0, longFired=false;
+function wireCard(b,x){ let t=null,sx=0,sy=0;
+  b.addEventListener('pointerdown',e=>{ longFired=false; sx=e.clientX; sy=e.clientY; clearTimeout(t); t=setTimeout(()=>{ longFired=true; openMenu(b,cardItems(x.id)); },500); });
+  const cancel=()=>clearTimeout(t); b.addEventListener('pointerup',cancel); b.addEventListener('pointerleave',cancel); b.addEventListener('pointercancel',cancel);
+  b.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
+  b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
+  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on){ activate(x.id==='draft'?'draft':x.id); centerCard(b); } }; }
+/* shelf: the card in the middle is the active design, so flicking changes it once the strip settles */
+{ let t=null; const settle=()=>{ if(Date.now()-progScroll<700) return; const box=$('cards'), mid=box.scrollLeft+box.clientWidth/2; let best=null,bd=1e9;
+    for(const c of box.querySelectorAll('.card[data-id]')){ const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid); if(d<bd){ bd=d; best=c; } }
+    if(best&&!best.classList.contains('on')) activate(best.dataset.id==='draft'?'draft':best.dataset.id); };
+  $('cards').addEventListener('scroll',()=>{ clearTimeout(t); t=setTimeout(settle,160); },{passive:true}); }
+
+/* menus */
+function openMenu(anchor,items){ const m=$('cardmenu'); m.replaceChildren(); for(const it of items){ if(it.head){ m.append(el('div','mh',it.head)); continue; }
+    const b=el('button',it.danger?'danger':'',it.label); b.type='button'; if(it.disabled) b.disabled=true; b.onclick=()=>{ closeMenu(); it.run(); }; m.append(b); }
+  m.hidden=false; const r=anchor.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px'; m.style.top=Math.max(8,(r.top-h-6>8?r.top-h-6:r.bottom+6))+'px'; }
+function closeMenu(){ $('cardmenu').hidden=true; }
+addEventListener('pointerdown',e=>{ if(!$('cardmenu').hidden&&!e.target.closest('#cardmenu')) closeMenu(); },true);
+const addItems=()=>[{head:'Add to the bag'},{label:'New blank design',run:()=>bagOps.addBlank()},{label:'Random draft (Randomize)',run:()=>randomize()},{label:'From a file…',run:()=>{ bagReplace=false; $('bagfile').click(); }}];
+function cardItems(id){
+  if(id==='draft') return [{label:'Keep in the bag',run:()=>bagOps.keep()},{label:'Discard draft',danger:true,run:()=>bagOps.discard()}];
+  const k=bag.designs.findIndex(d=>d.id===id), last=bag.designs.length-1;
+  return [{label:'Rename…',run:()=>{ const nm=prompt('Design name',entryOf(id).name); if(nm) bagOps.rename(id,nm); }},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
+    {label:'Move left',disabled:k===0,run:()=>bagOps.move(id,k-1)},{label:'Move right',disabled:k===last,run:()=>bagOps.move(id,k+1)},
+    {label:'Move to start',disabled:k===0,run:()=>bagOps.move(id,0)},{label:'Move to end',disabled:k===last,run:()=>bagOps.move(id,last)},
+    {label:'Delete…',danger:true,disabled:last===0,run:()=>{ if(confirm(`Delete "${entryOf(id).name}" from the bag?`)) bagOps.remove(id); }}]; }
+
+/* All-designs sheet, with drag-to-reorder (long-press on a phone) */
+function renderSheet(){ const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
+  box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot'));
+      const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
+      t.append(th,el('div','nm',x.name),dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
+    (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
+let dragMoved=false;
+function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level listeners while dragging: moving the tile in the DOM drops any pointer capture
+  const over=e=>{ const under=document.elementsFromPoint(e.clientX,e.clientY).find(n=>n!==t&&n.classList&&n.classList.contains('tile')&&n.dataset.id&&n.dataset.id!=='draft');
+    if(under){ const tiles=[...$('tiles').children]; tiles.indexOf(under)<tiles.indexOf(t)?under.before(t):under.after(t); } };
+  const end=()=>{ clearTimeout(timer); document.removeEventListener('pointermove',mv); document.removeEventListener('pointerup',end); document.removeEventListener('pointercancel',end); if(!on) return; on=false; t.classList.remove('drag');
+    const ids=[...$('tiles').querySelectorAll('.tile[data-id]')].map(n=>n.dataset.id).filter(i=>i!=='draft'), to=ids.indexOf(id);
+    if(to>=0&&to!==bag.designs.findIndex(d=>d.id===id)) bagOps.move(id,to); setTimeout(()=>{ dragMoved=false; },0); renderSheet(); };
+  const begin=()=>{ on=true; dragMoved=true; t.classList.add('drag'); };
+  const mv=e=>{ const d=Math.hypot(e.clientX-sx,e.clientY-sy);
+    if(!on){ if(e.pointerType==='mouse'&&e.buttons&&d>6) begin(); else if(e.pointerType!=='mouse'&&d>10) clearTimeout(timer); if(!on) return; } over(e); };
+  t.addEventListener('pointerdown',e=>{ if(e.target.closest('.dots')) return; sx=e.clientX; sy=e.clientY; dragMoved=false; on=false;
+    document.addEventListener('pointermove',mv); document.addEventListener('pointerup',end); document.addEventListener('pointercancel',end); if(e.pointerType!=='mouse') timer=setTimeout(begin,350); }); }
+$('tiles').addEventListener('touchmove',e=>{ if($('tiles').querySelector('.tile.drag')) e.preventDefault(); },{passive:false});
+function openSheet(){ closeMenu(); renderSheet(); $('bagsheet').hidden=false; scheduleThumb(); }
+function closeSheet(){ closeMenu(); $('bagsheet').hidden=true; }
+$('bagopen').onclick=openSheet; $('shelfall').onclick=openSheet; $('sheetclose').onclick=closeSheet;
+addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('bagsheet').hidden){ if(!$('cardmenu').hidden) closeMenu(); else closeSheet(); } });
+$('bsave').onclick=()=>bagOps.save(); $('bcopy').onclick=()=>bagOps.saveCopy(); $('brevert').onclick=()=>bagOps.revert();
+let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=requestAnimationFrame(()=>{ uiRaf=0; renderBag(); }); scheduleThumb(); }
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
@@ -1446,7 +1638,7 @@ if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
-initBag();
+initBag(); renderBag(); scheduleThumb();
 history=[snapshot()]; hIdx=0; syncHistoryUI();
 if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of Object.keys(FONTS)){ await ensureFont(f); const labs=[0,1,6,8,9,10,20,90], at=makeAtlas(labs.length,labs,f,3,false), c=at.mask.image, g=c.getContext('2d'), out=[];
     labs.forEach((l,i)=>{ const cx=(i%at.cols)*at.cell, cy=Math.floor(i/at.cols)*at.cell, d=g.getImageData(cx,cy,at.cell,at.cell).data; let x0=1e9,x1=-1,y0=1e9,y1=-1;
@@ -1459,7 +1651,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,get bag(){return bag;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagOps,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
