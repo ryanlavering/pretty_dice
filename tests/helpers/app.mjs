@@ -1,7 +1,7 @@
 // Shared fixture: a deterministic Pretty Dice page.
 // - ?seed=N makes the app's own RNG (looks, throws) reproducible; Math.random is seeded too, for three.js ids and audio.
 // - Each test gets a fresh browser context (empty localStorage) and loads ?libs=local (no network).
-// - Any pageerror or console.error fails the test.
+// - Any pageerror, console.error or alert/confirm dialog fails the test.
 import { test as base, expect } from '@playwright/test';
 
 export { expect };
@@ -11,6 +11,7 @@ export const test = base.extend({
     const errors = [];
     page.on('pageerror', e => errors.push(`pageerror: ${e.message}`));
     page.on('console', m => { if (m.type() === 'error') errors.push(`console.error: ${m.text()}`); });
+    page.on('dialog', d => { errors.push(`${d.type()}: ${d.message()}`); d.dismiss().catch(() => {}); });   // alerts mean something went wrong
 
     const app = {
       page,

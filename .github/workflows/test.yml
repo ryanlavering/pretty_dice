@@ -1,0 +1,57 @@
+# Test suite (docs/design/testing.md). Runs in the same pinned Playwright image as `npm run test:docker`,
+# so visual baselines made locally in Docker match here.
+name: tests
+on:
+  push:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * *'   # nightly: slow tier
+  workflow_dispatch:
+
+jobs:
+  fast:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    env:
+      PD_DOCKER: '1'
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npx playwright test --project=fast
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  slow:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    env:
+      PD_DOCKER: '1'
+      HOME: /root
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npx playwright test --project=slow --pass-with-no-tests
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-slow
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

@@ -97,7 +97,7 @@ test.describe('desktop', () => {
     for (const [name, text] of Object.entries(files)) {
       await app.run(pd => { pd.state.inclusion = 'none'; });
       await page.setInputFiles('#modelfile', { name, mimeType: 'application/octet-stream', buffer: Buffer.from(text) });
-      await expect.poll(() => app.run(pd => [pd.state.inclusion, pd.dice.filter(d => d.inc).length]), { message: name }).toEqual(['custom', 1]);
+      await expect.poll(() => app.run(pd => [pd.state.inclusion, pd.dice.filter(d => d.inc).length]), { message: name, timeout: 45_000 }).toEqual(['custom', 1]);   // epoxy shader compile + rebuild is slow under software WebGL
     }
   });
 

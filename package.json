@@ -4,10 +4,10 @@
   "description": "Dev-only test tooling. The app itself needs no install (see README).",
   "type": "module",
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --project=fast",
     "test:docker": "sh scripts/test-docker.sh",
     "test:update": "sh scripts/test-docker.sh --update-snapshots",
-    "test:slow": "playwright test --project=slow",
+    "test:slow": "playwright test --project=slow --pass-with-no-tests",
     "probe": "node scripts/probe.mjs"
   },
   "devDependencies": {
