@@ -21,6 +21,13 @@ This replaces `window.__dice` and the in-page `?test=` hooks. It is always prese
 - `setView({az, el, zoom})`: set the camera.
 - `simRoll({maxSteps})`: start a roll and step it to rest synchronously. Returns per-die `{label, up, pos}`, plus `settled`, `simT`, `leans` and `retries`.
 - `memory()`: returns `renderer.info.memory` (geometries and textures).
+- `reseed(n)`, `step(n)`, `leans`, `rollT`, `fx`/`triggerFx`/`updateFx`, `rerollLeans`, `rig`, `TABLE_Y`: used by the physics specs.
+
+## Fixtures (`tests/helpers/app.mjs`)
+
+- `app`: a fresh page per test (empty localStorage). `app.open({seed, query, storage})` boots it. For UI and anything that touches persistence.
+- `shared`: one booted, paused page per worker. `shared.reset(seed)` exits any roll, restores the boot design and reseeds, so tests do not depend on run order (checked by running the physics spec with one worker). Booting is most of a test's cost, so state-only specs should use this; it took the physics spec from 4.0 to about 1 minute.
+- Both fail the test on `pageerror`, `console.error` or a dialog.
 
 The `?test=` hooks in `index.html` are moved into specs and then deleted, so test code no longer ships to users. Ad-hoc checks use `node scripts/probe.mjs '<js>'`, which boots the page and prints the result of evaluating the snippet.
 

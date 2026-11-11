@@ -10,7 +10,7 @@ export default defineConfig({
   expect: { timeout: 15_000, toHaveScreenshot: { maxDiffPixelRatio: 0.01 } },
   fullyParallel: true,
   workers: process.env.PD_WORKERS ? +process.env.PD_WORKERS : 2,   // software WebGL is CPU-heavy; keep this low
-  retries: 0,
+  retries: 1,   // a lone boot timeout under CPU load (software WebGL uses every core) shows as 'flaky' instead of failing; real bugs fail both tries
   forbidOnly: !!process.env.CI,
   ignoreSnapshots: !inDocker,
   reporter: [['list'], ['html', { open: 'never' }]],

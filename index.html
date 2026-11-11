@@ -200,7 +200,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
 /* ---------- utils ---------- */
 const mulberry32 = a => () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
-const SEED=+new URLSearchParams(location.search).get('seed')||0, rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
+const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
 const pick = (arr, r) => arr[Math.floor(r()*arr.length)];
 const range = (a,b) => Array.from({length:b-a+1},(_,i)=>a+i);
 const PHI = (1+Math.sqrt(5))/2;
@@ -1336,36 +1336,22 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
       out.push(`${l}:(${((x0+x1)/2-128).toFixed(1)},${((y0+y1)/2-128).toFixed(1)})`); });
     console.log('ATLAS',f,out.join(' ')); } }
 if(new URLSearchParams(location.search).get('test')==='models'){ rig.clear(); dice.forEach(d=>d.mesh.visible=false); const ks=Object.keys(MODELS); ks.forEach((k,i)=>{ const t=getTemplate(k).clone(true); const g=new THREE.Group(); g.add(t); g.scale.setScalar(1.15); g.position.set((i%4-1.5)*2.8,(1-Math.floor(i/4))*2.8,0); g.rotation.y=.5; rig.add(g); }); baseZ=14; state.zoom=1; }
-if(new URLSearchParams(location.search).get('test')==='fx'){ const want=+new URLSearchParams(location.search).get('face')||20; startRoll();
-  for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
-  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
-  triggerFx(dice.map((_,i)=>({label:new URLSearchParams(location.search).get('mix')?(i%2?1:20):want}))); { const T=+new URLSearchParams(location.search).get('t')||.5; for(let i=0;i<Math.round(T*60);i++) updateFx(1/60); fx.hold=true; } console.log('FX_SET',fx.crit.length,fx.fumble.length,'dim',fx.dim.toFixed(2),'gray',fx.fumble.map(d=>d.mat.userData.fx.uGray.value.toFixed(2)).join(','),'glow',fx.crit.map(d=>d.mat.userData.fx.uGlow.value.toFixed(2)).join(',')); }
-if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()=>{ if(new URLSearchParams(location.search).get('az')){ orbit.az=+new URLSearchParams(location.search).get('az'); orbit.el=+(new URLSearchParams(location.search).get('el')||0); } const nt=new URLSearchParams(location.search).get('n'); if(nt){ state.shape='custom'; state.notation=nt; await buildDice(); await new Promise(r=>setTimeout(r,1500)); } startRoll(); // fast-forward the sim for headless testing
-  const sim=()=>{ for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
-    if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
-    if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
-  dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
-if(new URLSearchParams(location.search).get('test')==='launch') setTimeout(()=>{ startRoll(); for(let i=0;i<400;i++){ world.step(1/60); rollT+=1/60; } const before=bodies.map(b=>b.position.y.toFixed(2)).join(','); startRoll(true); console.log('LAUNCH before y',before,'after y',bodies.map(b=>b.position.y.toFixed(2)).join(','),'vy',bodies.map(b=>b.velocity.y.toFixed(1)).join(',')); startRoll(); console.log('DROP y',bodies.map(b=>b.position.y.toFixed(1)).join(',')); },500);
-if(new URLSearchParams(location.search).get('test')==='rr') setTimeout(async()=>{ startRoll(); state.randshape=false; const m0=dice[0].mat; randomize(); randomize(); await new Promise(r=>setTimeout(r,500));
-  console.log('RR same shape: rolling',rolling,'mat replaced',dice[0].mat!==m0,'body/dice',bodies.length===dice.length); const sh=state.shape; state.randshape=true; for(let i=0;i<6&&state.shape===sh;i++) randomize(); await new Promise(r=>setTimeout(r,500)); console.log('RR shape changed: rolling',rolling,'shape',state.shape!==sh,'dice',dice.length,'bodies',bodies.length); },500);
-if(new URLSearchParams(location.search).get('test')==='rs') setTimeout(async()=>{ startRoll(); for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
-  console.log('RS settled',settled); const m0=dice[0].mat, g0=dice[0].geo; state.randshape=true; randomize(); await new Promise(r=>setTimeout(r,800));
-  console.log('RS after randomize: shape',state.shape,'rolling',rolling,'settled',settled,'mat replaced',dice[0].mat!==m0,'geo replaced',dice[0].geo!==g0,'inRig',dice[0].mesh.parent===rig,'filigree',state.filigree); },500);
 Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
 window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
-window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,
+window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
-  get dice(){return dice;}, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  get dice(){return dice;}, get leans(){return [...leanDice];}, get rollT(){return rollT;}, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
   simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
     for(;rr<rerolls&&leanDice.some(Boolean);rr++){ rerollLeans(); simSteps(maxSteps); }
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
-    return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,
+    return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
+  reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
   memory(){ return {...renderer.info.memory}; }};
 window.__dice=window.__pd;   // old name
 </script>
