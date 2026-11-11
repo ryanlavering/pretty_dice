@@ -3,16 +3,16 @@ id: PD-94
 title: >-
   Stone type keeps colours; paintbrush button applies the stone's natural
   palette
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-11T01:08:00Z'
-updated_date: '2026-11-11T01:09:00Z'
+updated_date: '2026-11-11T01:13:00Z'
 labels:
   - feature
   - ui
 dependencies: []
 priority: medium
-ordinal: 94000
+ordinal: 1000
 ---
 
 ## Description
@@ -26,3 +26,9 @@ Owner 2026-11-10 (follow-up to PD-61): choosing a stone type in the dropdown app
 - [ ] #1 Dropdown changes texture only
 - [ ] #2 Paintbrush button applies the stone's palette
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-10 owner: wants the same for the base colours. Added a shuffle button next to the Base swatches: new colours from the active substrate's palette rules (freshPalette), shared palette updated, nothing else (shape, substrate, seed/pattern) changes. Test: ?test=colorrand. Seen once, not reproducible in 9 runs: an 'Uncaught TypeError ... reading trim' in a headless test run (only .trim() in the code is guarded; likely environmental).
+<!-- SECTION:NOTES:END -->

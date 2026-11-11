@@ -129,7 +129,7 @@
     <div class="grid two" id="subs"></div>
 
     <h2>Colors</h2>
-    <div class="row"><label>Base</label><input type="color" id="c1"><input type="color" id="c2"><input type="color" id="c3"></div>
+    <div class="row"><label>Base</label><input type="color" id="c1"><input type="color" id="c2"><input type="color" id="c3"><button id="colorrand" class="ico" type="button" title="Randomize the base colours only" aria-label="Randomize the base colours only"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button></div>
     <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
     <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
@@ -931,6 +931,7 @@ $('loadmodel').onclick=()=>$('modelfile').click();
 $('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };   // texture only: the colours stay
+$('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((Math.random()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
 $('stonepaint').onclick=()=>{ checkpoint(); state.palettes.shared=[...STONES[state.stone].pal(mulberry32((Math.random()*1e9)|0))]; state.colors=state.palettes.shared; repaint(); applyLook(); };   // the stone's own palette rules
 $('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
 $('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
@@ -1351,6 +1352,7 @@ if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()
 if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
 if(new URLSearchParams(location.search).get('test')==='layoutcycle'){ const log=l=>console.log('LAYOUT',l,'stage',stage.clientWidth+'x'+stage.clientHeight,'aside',document.querySelector('aside').offsetHeight,'app scroll',$('app').scrollTop,$('app').scrollHeight,'buf',renderer.domElement.height,'aspect',camera.aspect.toFixed(2)); log('start'); setFull(true); log('full'); setFull(false); log('split'); setFull(true); setFull(false); log('split2'); }
 if(new URLSearchParams(location.search).get('test')==='stonepaint'){ state.substrate='marble'; setSubstrate('marble'); state.colors[0]='#ff00ff'; const before=JSON.stringify(state.colors); $('stone').value='lapis'; $('stone').dispatchEvent(new Event('change')); const kept=JSON.stringify(state.colors)===before&&state.stone==='lapis'; $('stonepaint').click(); const painted=JSON.stringify(state.colors)!==before&&state.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))&&JSON.stringify(state.palettes.shared)===JSON.stringify(state.colors); console.log('STONEPAINT kept',kept,'painted',painted,state.colors.join(',')); }
+if(new URLSearchParams(location.search).get('test')==='colorrand'){ state.randsub=false; setSubstrate('swirl'); const c0=JSON.stringify(state.colors), sub=state.substrate, shape=state.shape, seed=state.seed, off=JSON.stringify(state.off); $('colorrand').click(); console.log('COLORRAND changed',JSON.stringify(state.colors)!==c0,'rest-same',state.substrate===sub&&state.shape===shape&&state.seed===seed&&JSON.stringify(state.off)===off,'shared',JSON.stringify(state.palettes.shared)===JSON.stringify(state.colors),'inputs',$('c1').value===state.colors[0]); setSubstrate('metal'); $('colorrand').click(); console.log('COLORRAND metal',state.colors.join(',')); }
 if(new URLSearchParams(location.search).get('test')==='palette'){ const out=[]; const ok=(n,v)=>out.push(n+':'+(v?'ok':'FAIL'));
   state.randsub=false; state.substrate='metal'; randomize(true); const m=[...state.colors]; ok('metal-extras-filled',m[1]!=='#000000'&&m[2]!=='#000000'&&m[1]!==m[0]);
   setSubstrate('swirl'); ok('metal->swirl keeps',JSON.stringify(state.colors)===JSON.stringify(m));
