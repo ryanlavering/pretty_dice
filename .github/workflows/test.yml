@@ -21,10 +21,10 @@ jobs:
       PD_DOCKER: '1'
       HOME: /root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: npm ci
       - run: npx playwright test --project='fast-*'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report
@@ -44,10 +44,10 @@ jobs:
       PD_DOCKER: '1'
       HOME: /root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: npm ci
       - run: npx playwright test --project=slow --pass-with-no-tests
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report-slow
