@@ -200,6 +200,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 
 /* ---------- utils ---------- */
 const mulberry32 = a => () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+const SEED=+new URLSearchParams(location.search).get('seed')||0, rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
 const pick = (arr, r) => arr[Math.floor(r()*arr.length)];
 const range = (a,b) => Array.from({length:b-a+1},(_,i)=>a+i);
 const PHI = (1+Math.sqrt(5))/2;
@@ -844,7 +845,7 @@ function applyLook(){
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
-  checkpoint(); state.seed=(Math.random()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
+  checkpoint(); state.seed=(rng()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
   if(state.randshape) state.shape=pick(Object.keys(SHAPES),r);
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   if(state.substrate==='marble') state.stone=pick(STONE_KEYS,r);
@@ -931,8 +932,8 @@ $('loadmodel').onclick=()=>$('modelfile').click();
 $('modelfile').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f) return;
   try{ customTemplate=normalizeModel(await loadModelFile(f)); checkpoint(); state.inclusion='custom'; buildDice(true); }catch(err){ alert('Could not load model: '+err.message); } };
 $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); repaint(); applyLook(); };   // texture only: the colours stay
-$('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((Math.random()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
-$('stonepaint').onclick=()=>{ checkpoint(); state.palettes.shared=[...STONES[state.stone].pal(mulberry32((Math.random()*1e9)|0))]; state.colors=state.palettes.shared; repaint(); applyLook(); };   // the stone's own palette rules
+$('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((rng()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
+$('stonepaint').onclick=()=>{ checkpoint(); state.palettes.shared=[...STONES[state.stone].pal(mulberry32((rng()*1e9)|0))]; state.colors=state.palettes.shared; repaint(); applyLook(); };   // the stone's own palette rules
 $('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
 $('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
 $('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; scheduleRebuild(); applyLook(); };
@@ -945,7 +946,7 @@ $('d6style').onchange=e=>{ state.d6Style=e.target.value; checkpoint(); scheduleR
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };
 ['c1','c2','c3'].forEach((id,i)=>$(id).oninput=e=>{state.colors[i]=e.target.value; repaint(); applyLook();});
 $('paint').oninput=e=>{state.paint=e.target.value; state.paintMode='custom'; applyLook();};
-$('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repaint(mulberry32((Math.random()*1e9)|0)); applyLook();};
+$('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repaint(mulberry32((rng()*1e9)|0)); applyLook();};
 /* shake to roll: needs a phone with motion sensors in a secure (https) page; iOS also asks permission on the tap */
 let shakeOn=false, shakeLast=0;
 function onShake(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return; const g=Math.hypot(a.x,a.y,a.z), now=performance.now();
@@ -1056,6 +1057,7 @@ cv.addEventListener('pointermove',e=>{
   angVel.copy(ax).multiplyScalar(len*.9); });
 cv.addEventListener('wheel',e=>{e.preventDefault(); setZoom(THREE.MathUtils.clamp(getZoom()*(1+e.deltaY*.001),.35,2.4)); save();},{passive:false});
 function spinBy(q){ if(isMulti()) dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
+const randQuat=()=>{ const u=rng(), v=rng()*2*Math.PI, w=rng()*2*Math.PI, a=Math.sqrt(1-u), b=Math.sqrt(u); return new THREE.Quaternion(a*Math.sin(v),a*Math.cos(v),b*Math.sin(w),b*Math.cos(w)); };   // uniform random orientation (Shoemake) from the app RNG, so seeded rolls repeat
 
 function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
@@ -1088,17 +1090,17 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
     const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:1,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
-    const n=dice.length, R=()=>Math.random()-.5, rq=new THREE.Quaternion().random();
-    let px=0,pz=0; for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(halfX-1.1); pz=(Math.random()*2-1)*(halfZ-1.1);
+    const n=dice.length, R=()=>rng()-.5, rq=randQuat();
+    let px=0,pz=0; for(let t=0;t<60;t++){ px=(rng()*2-1)*(halfX-1.1); pz=(rng()*2-1)*(halfZ-1.1);
       if(starts.every(o=>Math.hypot(o[0]-px,o[1]-pz)>2.3)) break; }                      // random drop spot, kept apart from the other dice when there is room
     starts.push([px,pz]);
     if(prev){                                                                              // thrown up off the mat from where it lay
       const pp=prev[i]; b.position.set(pp.p.x,pp.p.y+.25,pp.p.z); b.quaternion.copy(pp.q); d.mesh.quaternion.set(pp.q.x,pp.q.y,pp.q.z,pp.q.w);
-      b.velocity.set(-pp.p.x*.5+R()*6,13+Math.random()*7,-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
+      b.velocity.set(-pp.p.x*.5+R()*6,13+rng()*7,-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
     } else {
-    b.position.set(px,TABLE_Y+dropH+i*1.1+Math.random()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
+    b.position.set(px,TABLE_Y+dropH+i*1.1+rng()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
-    b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4);
+    b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40); }
     b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; onImpact(Math.abs(e.contact.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table'); });   // one sound per pair
     world.addBody(b); return b;});
@@ -1139,7 +1141,7 @@ function finishRoll(){ restT=0;
   if(alone.some(Boolean)&&freeTries>=2&&freeTries<5){ freeTries++; dropIn(alone.map((a,i)=>a?i:-1).filter(i=>i>=0)); leanDice=[]; return; }   // topple attempts did not free it: it drops in again from above
   if(alone.some(Boolean)&&freeTries<2){ freeTries++; bodies.forEach((b,i)=>{ if(!alone[i]) return; b.free=true; b.angularDamping=.05; b.linearDamping=.02; b.wakeUp(); b.slowT=-1.2;
     const t=tiltInfo(i), ax=new THREE.Vector3().crossVectors(t.n,new THREE.Vector3(0,t.four?-1:1,0)), ang=Math.asin(Math.min(1,ax.length()));   // tip it the way gravity would: the die sits balanced on an edge/corner the solver will not release
-    if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((Math.random()-.5)*3,0,(Math.random()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
+    if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans();
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   let main, sub='';
@@ -1247,11 +1249,11 @@ function rerollLeans(){                       // the leaning dice vanish from th
   const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; dropIn(idx);
 }
 function dropIn(idx){
-  const dropH=3.5+5*state.rollZoom, R=()=>Math.random()-.5;
+  const dropH=3.5+5*state.rollZoom, R=()=>rng()-.5;
   idx.forEach((i,k)=>{ const b=bodies[i]; let px=0,pz=0;
-    for(let t=0;t<60;t++){ px=(Math.random()*2-1)*(rollHalf.x-1.1); pz=(Math.random()*2-1)*(rollHalf.z-1.1); if(bodies.every((o,j)=>j===i||Math.hypot(o.position.x-px,o.position.z-pz)>2.3)) break; }
-    const rq=new THREE.Quaternion().random(); b.position.set(px,TABLE_Y+dropH+k*1.1+Math.random()*2,pz); b.quaternion.set(rq.x,rq.y,rq.z,rq.w);
-    b.velocity.set(-px*.4+R()*4,-2-Math.random()*4,-pz*.4+R()*4); b.angularVelocity.set(R()*40,R()*40,R()*40); b.free=false; b.angularDamping=.1; b.linearDamping=.04; b.slowT=0; b.wakeUp();
+    for(let t=0;t<60;t++){ px=(rng()*2-1)*(rollHalf.x-1.1); pz=(rng()*2-1)*(rollHalf.z-1.1); if(bodies.every((o,j)=>j===i||Math.hypot(o.position.x-px,o.position.z-pz)>2.3)) break; }
+    const rq=randQuat(); b.position.set(px,TABLE_Y+dropH+k*1.1+rng()*2,pz); b.quaternion.set(rq.x,rq.y,rq.z,rq.w);
+    b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4); b.angularVelocity.set(R()*40,R()*40,R()*40); b.free=false; b.angularDamping=.1; b.linearDamping=.04; b.slowT=0; b.wakeUp();
     dice[i].mesh.position.copy(b.position); dice[i].mesh.quaternion.copy(rq); });
   bodies.forEach(b=>b.slowT=0);
 }
@@ -1334,59 +1336,21 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
       out.push(`${l}:(${((x0+x1)/2-128).toFixed(1)},${((y0+y1)/2-128).toFixed(1)})`); });
     console.log('ATLAS',f,out.join(' ')); } }
 if(new URLSearchParams(location.search).get('test')==='models'){ rig.clear(); dice.forEach(d=>d.mesh.visible=false); const ks=Object.keys(MODELS); ks.forEach((k,i)=>{ const t=getTemplate(k).clone(true); const g=new THREE.Group(); g.add(t); g.scale.setScalar(1.15); g.position.set((i%4-1.5)*2.8,(1-Math.floor(i/4))*2.8,0); g.rotation.y=.5; rig.add(g); }); baseZ=14; state.zoom=1; }
-if(new URLSearchParams(location.search).get('test')==='incl'){ // loaders: OBJ + STL from inline text
-  const obj='v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\nf 1 3 2\nf 1 2 4\nf 1 4 3\nf 2 3 4\n';
-  const stl='solid t\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendloop\nendfacet\nendsolid t\n';
-  for(const [n,t] of [['t.obj',obj],['t.stl',stl]]){ try{ const o=await loadModelFile(new File([t],n)); customTemplate=normalizeModel(o); state.inclusion='custom'; buildDice(true); console.log('INCL_OK',n,dice.filter(d=>d.inc).length); }catch(e){ console.log('INCL_FAIL',n,e.message); } } }
 if(new URLSearchParams(location.search).get('test')==='fx'){ const want=+new URLSearchParams(location.search).get('face')||20; startRoll();
   for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(rollT>5) bodies.forEach(b=>b.angularDamping=.6); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
   triggerFx(dice.map((_,i)=>({label:new URLSearchParams(location.search).get('mix')?(i%2?1:20):want}))); { const T=+new URLSearchParams(location.search).get('t')||.5; for(let i=0;i<Math.round(T*60);i++) updateFx(1/60); fx.hold=true; } console.log('FX_SET',fx.crit.length,fx.fumble.length,'dim',fx.dim.toFixed(2),'gray',fx.fumble.map(d=>d.mat.userData.fx.uGray.value.toFixed(2)).join(','),'glow',fx.crit.map(d=>d.mat.userData.fx.uGlow.value.toFixed(2)).join(',')); }
-if(new URLSearchParams(location.search).get('test')==='undo'){ const a=snapshot(); randomize(); const b=snapshot(); await undo(); const c=snapshot(); await redo(); const d=snapshot();
-  state.radius=.1; applyLook(); await undo(); const e2=snapshot();
-  console.log('UNDO_TEST',a===c,b===d,a!==b,e2===d,hIdx,history.length); }
 if(new URLSearchParams(location.search).get('test')==='roll') setTimeout(async()=>{ if(new URLSearchParams(location.search).get('az')){ orbit.az=+new URLSearchParams(location.search).get('az'); orbit.el=+(new URLSearchParams(location.search).get('el')||0); } const nt=new URLSearchParams(location.search).get('n'); if(nt){ state.shape='custom'; state.notation=nt; await buildDice(); await new Promise(r=>setTimeout(r,1500)); } startRoll(); // fast-forward the sim for headless testing
   const sim=()=>{ for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     if(new URLSearchParams(location.search).get('dbg')&&i%60===59&&rollT>2) console.log('DBG',rollT.toFixed(1),bodies.map((b,j)=>(Math.sqrt(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()).toFixed(1)+'/'+tiltInfo(j).flat.toFixed(2)+(b.position.y>TABLE_Y+1.35?'S':''))).join(' '),restT.toFixed(2),retries);
     if(rollT>.6&&restCheck(1/60)) finishRoll(); } }; sim(); const first=leanDice.filter(Boolean).length; let rr=0; for(;rr<(new URLSearchParams(location.search).get('norel')?0:6)&&leanDice.some(Boolean);rr++){ rerollLeans(); sim(); }
   dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);}); console.log('LEANPOS hx',rollHalf.x.toFixed(2),'hz',rollHalf.z.toFixed(2),bodies.map((b,i)=>leanDice[i]?[b.position.x.toFixed(2),b.position.z.toFixed(2)].join(','):'').filter(Boolean).join(' | ')); bodies.forEach((b,i)=>{ if(leanDice[i]){ const t=tiltInfo(i); console.log('STUCK flat',t.flat.toFixed(3),'lift',t.lift.toFixed(3),'y',b.position.y.toFixed(3),'v',b.velocity.length().toFixed(3),'w',b.angularVelocity.length().toFixed(3),'sleep',b.sleepState,'n',t.n.x.toFixed(2),t.n.y.toFixed(2),t.n.z.toFixed(2)); } }); console.log('FREE tries',freeTries); console.log('LEANS first',first,'rerolls',rr,'final',leanDice.filter(Boolean).length,'of',bodies.length); console.log('SFX',sfx.count,sfx.ctx?sfx.ctx.state:'noctx'); console.log('SIM_T',rollT.toFixed(2),settled,bodies.map(b=>[b.velocity.length().toFixed(2),b.angularVelocity.length().toFixed(2),b.position.y.toFixed(2),b.sleepState].join('/')).join(' ')); },300);
-if(new URLSearchParams(location.search).get('test')==='jsonfile'){ window.alert=m=>console.log('ALERT',m); const d=designToJSON(); d.shape='d12'; const f=new File(['\uFEFF'+JSON.stringify(d)],'design.json',{type:'application/octet-stream'}), dt=new DataTransfer(); dt.items.add(f); $('jsonfile').files=dt.files; $('jsonfile').dispatchEvent(new Event('change')); for(let i=0;i<40&&state.shape!=='d12';i++) await new Promise(r=>setTimeout(r,250)); console.log('JSONFILE_SHAPE',state.shape); }   // file input path as a phone uses it: octet-stream file, picked via the input
-if(new URLSearchParams(location.search).get('test')==='layoutcycle'){ const log=l=>console.log('LAYOUT',l,'stage',stage.clientWidth+'x'+stage.clientHeight,'aside',document.querySelector('aside').offsetHeight,'app scroll',$('app').scrollTop,$('app').scrollHeight,'buf',renderer.domElement.height,'aspect',camera.aspect.toFixed(2)); log('start'); setFull(true); log('full'); setFull(false); log('split'); setFull(true); setFull(false); log('split2'); }
-if(new URLSearchParams(location.search).get('test')==='stonepaint'){ state.substrate='marble'; setSubstrate('marble'); state.colors[0]='#ff00ff'; const before=JSON.stringify(state.colors); $('stone').value='lapis'; $('stone').dispatchEvent(new Event('change')); const kept=JSON.stringify(state.colors)===before&&state.stone==='lapis'; $('stonepaint').click(); const painted=JSON.stringify(state.colors)!==before&&state.colors.every(c=>/^#[0-9a-f]{6}$/i.test(c))&&JSON.stringify(state.palettes.shared)===JSON.stringify(state.colors); console.log('STONEPAINT kept',kept,'painted',painted,state.colors.join(',')); }
-if(new URLSearchParams(location.search).get('test')==='colorrand'){ state.randsub=false; setSubstrate('swirl'); const c0=JSON.stringify(state.colors), sub=state.substrate, shape=state.shape, seed=state.seed, off=JSON.stringify(state.off); $('colorrand').click(); console.log('COLORRAND changed',JSON.stringify(state.colors)!==c0,'rest-same',state.substrate===sub&&state.shape===shape&&state.seed===seed&&JSON.stringify(state.off)===off,'shared',JSON.stringify(state.palettes.shared)===JSON.stringify(state.colors),'inputs',$('c1').value===state.colors[0]); setSubstrate('metal'); $('colorrand').click(); console.log('COLORRAND metal',state.colors.join(',')); }
-if(new URLSearchParams(location.search).get('test')==='palette'){ const out=[]; const ok=(n,v)=>out.push(n+':'+(v?'ok':'FAIL'));
-  state.randsub=false; state.substrate='metal'; randomize(true); const m=[...state.colors]; ok('metal-extras-filled',m[1]!=='#000000'&&m[2]!=='#000000'&&m[1]!==m[0]);
-  setSubstrate('swirl'); ok('metal->swirl keeps',JSON.stringify(state.colors)===JSON.stringify(m));
-  state.colors[2]='#123456'; setSubstrate('metal'); ok('edit feeds metal',state.colors[2]==='#123456'&&state.palettes.shared[2]==='#123456'); state.colors[0]='#ff0000'; setSubstrate('marble'); ok('out-of-range metal colour reaches stone',state.colors[0]==='#ff0000');
-  setStone('lapis'); ok('stone type keeps colours',state.colors[0]==='#ff0000'); setSubstrate('solid'); randomize(true); const sp=[...state.colors]; ok('solid-extras-filled',sp[1]!=='#000000'&&sp[2]!=='#000000');
-  setSubstrate('epoxy'); ok('solid->epoxy keeps',JSON.stringify(state.colors)===JSON.stringify(sp));
-  state.palettes={old:['#111111','#222222','#333333']}; ensurePalette(); ok('migrates old palettes',state.colors[0]==='#111111'); console.log('PALETTE',out.join(' ')); }
-if(new URLSearchParams(location.search).get('test')==='views'){ startRoll(); await new Promise(r=>setTimeout(r,500)); const z0=[state.zoom,state.rollZoom]; cv.dispatchEvent(new WheelEvent('wheel',{deltaY:-300,cancelable:true})); orbit.az=1.1; orbit.el=.3; const inRoll=[state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.roll.az,views.show.az]; exitRoll(); await new Promise(r=>setTimeout(r,300)); cv.dispatchEvent(new WheelEvent('wheel',{deltaY:200,cancelable:true})); console.log('VIEWS before',z0.join('/'),'rolled',inRoll.join('/'),'showcase',state.zoom.toFixed(2),state.rollZoom.toFixed(2),views.show.az,views.roll.az); }
-if(new URLSearchParams(location.search).get('test')==='export'){window.__noDownload=true; const b=await exportImage('png'); console.log('EXPORT_OK',b.size,b.type);}
-if(new URLSearchParams(location.search).get('test')==='subs'){ // regression: randomize -> other substrate -> back keeps colours
-  randomize(); const sub=state.substrate, before=JSON.stringify(state.colors); const other=Object.keys(SUBSTRATES).find(k=>k!==sub);
-  document.querySelector(`#subs button[data-id=${other}]`).click(); document.querySelector(`#subs button[data-id=${sub}]`).click();
-  console.log('SUBS_STABLE',before===JSON.stringify(state.colors),sub,other); }
-if(new URLSearchParams(location.search).get('test')==='json2'){ state.shape='custom'; state.notation='3d8+2d6+4'; state.substrate='swirl'; $('dname').value='Giant club attack'; buildDice();
-  const j=JSON.stringify(designToJSON()); state.shape='d20'; state.notation='d20'; $('dname').value=''; buildDice(); await loadDesign(JSON.parse(j));
-  console.log('JSON2',state.shape,state.notation,$('dname').value,dice.length,JSON.parse(j).name); }
-if(new URLSearchParams(location.search).get('test')==='rand'){ const seen={}; let on=0; for(let i=0;i<200;i++){ randomize(true); if(state.panel>0) on++; for(const k of ['numRot','d4Style','d6Style','panel','numRaised','numPaint','patina','filigree','inclusion','substrate']) (seen[k]??=new Set()).add(state[k]); } console.log('RAND_PANEL_PCT',on/2,'RAND',JSON.stringify(Object.fromEntries(Object.entries(seen).map(([k,v])=>[k,[...v].length>6?'many('+v.size+')':[...v]])))); }
-if(new URLSearchParams(location.search).get('test')==='shake'){ await setShake(true); const fire=g=>dispatchEvent(new DeviceMotionEvent('devicemotion',{accelerationIncludingGravity:{x:g,y:0,z:0}})); fire(12); console.log('SHAKE soft',rolling); fire(35); console.log('SHAKE hard',rolling); }
-if(new URLSearchParams(location.search).get('test')==='flick'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); cv.setPointerCapture=()=>{};
-  startRoll(); let n=0; startRoll=()=>{n++;}; ev('pointerdown',1,100,300); ev('pointerup',1,100,300); const tap=n; ev('pointerdown',2,100,300); ev('pointermove',2,100,150); ev('pointerup',2,100,150); console.log('FLICK tap rolls:',tap,'swipe rolls:',n-tap); }
 if(new URLSearchParams(location.search).get('test')==='launch') setTimeout(()=>{ startRoll(); for(let i=0;i<400;i++){ world.step(1/60); rollT+=1/60; } const before=bodies.map(b=>b.position.y.toFixed(2)).join(','); startRoll(true); console.log('LAUNCH before y',before,'after y',bodies.map(b=>b.position.y.toFixed(2)).join(','),'vy',bodies.map(b=>b.velocity.y.toFixed(1)).join(',')); startRoll(); console.log('DROP y',bodies.map(b=>b.position.y.toFixed(1)).join(',')); },500);
 if(new URLSearchParams(location.search).get('test')==='rr') setTimeout(async()=>{ startRoll(); state.randshape=false; const m0=dice[0].mat; randomize(); randomize(); await new Promise(r=>setTimeout(r,500));
   console.log('RR same shape: rolling',rolling,'mat replaced',dice[0].mat!==m0,'body/dice',bodies.length===dice.length); const sh=state.shape; state.randshape=true; for(let i=0;i<6&&state.shape===sh;i++) randomize(); await new Promise(r=>setTimeout(r,500)); console.log('RR shape changed: rolling',rolling,'shape',state.shape!==sh,'dice',dice.length,'bodies',bodies.length); },500);
-if(new URLSearchParams(location.search).get('test')==='btn') setTimeout(async()=>{ state.randshape=true; const g0=dice[0].geo; $('rand').click(); await new Promise(r=>setTimeout(r,800)); console.log('BTN geo replaced',dice[0].geo!==g0); },500);
 if(new URLSearchParams(location.search).get('test')==='rs') setTimeout(async()=>{ startRoll(); for(let i=0;i<1500&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>.6&&restCheck(1/60)) finishRoll(); }
   console.log('RS settled',settled); const m0=dice[0].mat, g0=dice[0].geo; state.randshape=true; randomize(); await new Promise(r=>setTimeout(r,800));
   console.log('RS after randomize: shape',state.shape,'rolling',rolling,'settled',settled,'mat replaced',dice[0].mat!==m0,'geo replaced',dice[0].geo!==g0,'inRig',dice[0].mesh.parent===rig,'filigree',state.filigree); },500);
-if(new URLSearchParams(location.search).get('test')==='rf') setTimeout(async()=>{ state.randshape=false; let n=0; do{ randomize(); n++; }while(state.filigree==='none'&&n<40); await new Promise(r=>setTimeout(r,800)); const c=dice[0].atlas.mask.image.getContext('2d').getImageData(0,0,dice[0].atlas.mask.image.width,dice[0].atlas.mask.image.height).data; let green=0; for(let i=0;i<c.length;i+=4) if(c[i+1]>128&&c[i]<64) green++; console.log('RF filigree',state.filigree,'after',n,'randomizes; enamel px',green,'panel',state.panel); },500);
-if(new URLSearchParams(location.search).get('test')==='ui') setTimeout(async()=>{ $('mode').click(); const r1=rolling; document.querySelector('#shapes [data-id=d8]').click(); await new Promise(r=>setTimeout(r,500)); console.log('UI after shape click: rolling',r1,rolling,'shape',state.shape,'dice',dice.length,'bodies',bodies.length); $('mode').click(); console.log('UI toggle back',rolling,$('mode').title); },500);
-if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,button:0,bubbles:true,pointerType:'touch'})); const z0=state.zoom, a0=orbit.az;
-  cv.setPointerCapture=()=>{}; ev('pointerdown',1,100,200); ev('pointerdown',2,200,200); ev('pointermove',2,300,200); ev('pointermove',1,0,200); ev('pointerup',1,0,200); ev('pointerup',2,300,200);
-  console.log('PINCH',z0.toFixed(2),state.zoom.toFixed(2),a0.toFixed(2),orbit.az.toFixed(2),dragging); ev('pointerdown',3,50,50); ev('pointermove',3,90,50); console.log('ONE_FINGER_DRAG',dragging); }
-if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
 Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
 window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */

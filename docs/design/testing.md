@@ -1,12 +1,12 @@
 # Automated testing
 
-Status: agreed design (2026-11-10). Umbrella card: PD-20.
+Status: agreed design (2026-11-10). Umbrella card: PD-20; sub-cards PD-20.1 (physics), PD-20.2 (visual), PD-20.3 (offline), PD-20.4 (CI), PD-20.5 (perf), PD-20.6 (fairness, deferred).
 
 The app stays zero-install for users. Testing adds a dev-only `package.json` with Playwright Test, pinned to **1.64.1** (Chromium revision 1248, which is already in the local Playwright cache).
 
 ## Principles
 
-- **Deterministic or it doesn't count.** Every test seeds `Math.random`, starts with empty localStorage, uses a fixed viewport at DPR 1, loads `?libs=local` (no network) and stubs audio. Physics runs in fixed 1/60 s steps with the render loop paused.
+- **Deterministic or it doesn't count.** Every test loads `?seed=N`, which switches the app's own RNG (`rng()`: looks, throws, drop orientations) to `mulberry32(N)`. Seeding `Math.random` alone is not enough, because three.js draws on it for object UUIDs a timing-dependent number of times; audio and particle jitter stay on `Math.random`. Tests also start with empty localStorage, uses a fixed viewport at DPR 1, loads `?libs=local` (no network) and stubs audio. Physics runs in fixed 1/60 s steps with the render loop paused.
 - **Invariants over goldens.** Physics and logic tests assert properties ("every die settles on the table, result = the face pointing up"), not recorded trajectories, so tuning the physics doesn't churn the tests. Only the visual tier stores baselines.
 - **Every test fails on `pageerror` or `console.error`.** A shared fixture enforces this.
 - **Every bug-fix card adds a regression test.**

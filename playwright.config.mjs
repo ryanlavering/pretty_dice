@@ -13,7 +13,7 @@ export default defineConfig({
   retries: 0,
   forbidOnly: !!process.env.CI,
   ignoreSnapshots: !inDocker,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list'], ['html', { open: 'never' }]],
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     viewport: { width: 1280, height: 800 },

@@ -78,7 +78,8 @@ The layout fits narrow windows. On touch devices, drag to orbit, pinch to zoom, 
 # Development
 
 - Work is tracked in `backlog/` using [backlog.md](https://github.com/MrLesk/Backlog.md) (task prefix `pd`; `backlog board`).
-- Headless test hooks: `?test=roll` (add `&n=10d4+5d20` for a custom set, `&norel=1` to skip re-rolling leans, `&az=`/`&el=` to orbit), `?test=export`, `?test=json`, `?test=jsonfile`, `?test=views`, `?test=layoutcycle`, `?test=palette`, `?test=stonepaint`, `?test=colorrand`, `?test=shake`. `?full=1` starts with the settings pane hidden.
+- Tests: `npm install` once (dev-only; the app itself still needs no install), then `npm test`. `npm run test:docker` runs the same suite in the pinned Playwright image, including the visual baselines. See [docs/design/testing.md](docs/design/testing.md).
+- `?seed=N` makes the look and the rolls reproducible. `?full=1` starts with the settings pane hidden.
 - Clear localStorage when testing defaults.
 - To test offline, block the CDNs, e.g. with Chrome's `--host-resolver-rules="MAP cdn.jsdelivr.net ~NOTFOUND, MAP fonts.googleapis.com ~NOTFOUND, MAP fonts.gstatic.com ~NOTFOUND"`.
 
