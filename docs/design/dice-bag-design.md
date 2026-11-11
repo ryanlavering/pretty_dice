@@ -45,7 +45,7 @@ Key rule: **a design does not own a shape.** The same "Amethyst swirl" can be a 
 - **Save as copy:** a new design next to the original, which goes back to its saved state.
 - **Revert:** drop the pending edits.
 
-Pending edits are kept in localStorage, so a reload or switching to another design loses nothing. The badge stays until you save or revert. The showcase and the roll mat show what you see, pending edits included. The exported bag file holds only saved designs, plus a pending-edits block so nothing is lost on export or import.
+Pending edits are kept in localStorage, so a reload or switching to another design loses nothing. The badge stays until you save or revert. The showcase, the roll mat and every set that uses the design show and roll it with pending edits included (owner decision). The exported bag file holds only saved designs, plus a pending-edits block so nothing is lost on export or import.
 
 **Randomize makes a draft, not a scramble.** Randomize never scrambles a saved design. It makes a **random draft**: an unsaved design that appears as a ghost card at the end of the shelf, marked "Draft". There is one draft slot:
 - Pressing Randomize again replaces the draft, so mashing the button never fills the bag.
@@ -175,7 +175,7 @@ Each phase is its own card or branch and ships to `main` on its own. Tests: a ro
 ## Open questions for the owner
 
 1. **Shape in the design or in the set?** This plan moves it to the set (one look, any die). Is there a case for a design locked to a shape (e.g. a d20-only metal die)?
-2. **Editing a design used by several sets:** settled 2026-11-11. Edits stay pending behind a Modified badge, with Save, Save as copy and Revert (see "Editing, saving and randomizing"). Still open: should rolls use a design's pending edits (proposed: yes, what you see is what rolls), or only its saved version?
+2. **Editing a design used by several sets:** settled 2026-11-11. Edits stay pending behind a Modified badge, with Save, Save as copy and Revert (see "Editing, saving and randomizing"). Rolls use pending edits: what you see is what rolls (owner, 2026-11-11).
 3. **Does the carousel stay visible in Roll view,** or does Roll view always show the set panel (C)?
 4. **Characters:** settled 2026-11-11: bag sets come first, and characters are a separate later level that adds sheet rolls. Still open: which system's sheet comes first (5e skills and saves?) and whether the sheet is imported or typed in.
 5. **Bag size:** expected tens or hundreds of designs? Hundreds needs search and thumbnails cached as images.
