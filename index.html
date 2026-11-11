@@ -1278,7 +1278,10 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
   b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on){ activate(x.id==='draft'?'draft':x.id); centerCard(b); } }; }
 /* shelf: the card in the middle is the active design, so flicking changes it once the strip settles */
-{ let t=null; const settle=()=>{ if(Date.now()-progScroll<700) return; const box=$('cards'), mid=box.scrollLeft+box.clientWidth/2; let best=null,bd=1e9;
+{ let t=null, gesture=0; for(const ev of ['pointerdown','touchstart','wheel','keydown']) $('cards').addEventListener(ev,()=>{ gesture=Date.now(); },{passive:true});
+  /* only a person scrolling the shelf may change the design: rotating the phone or resizing re-centres the strip, which must not pick whichever card lands in the middle */
+  new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
+  const settle=()=>{ if(Date.now()-progScroll<700||Date.now()-gesture>3500) return; const box=$('cards'), mid=box.scrollLeft+box.clientWidth/2; let best=null,bd=1e9;
     for(const c of box.querySelectorAll('.card[data-id]')){ const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid); if(d<bd){ bd=d; best=c; } }
     if(best&&!best.classList.contains('on')) activate(best.dataset.id==='draft'?'draft':best.dataset.id); };
   $('cards').addEventListener('scroll',()=>{ clearTimeout(t); t=setTimeout(settle,160); },{passive:true}); }

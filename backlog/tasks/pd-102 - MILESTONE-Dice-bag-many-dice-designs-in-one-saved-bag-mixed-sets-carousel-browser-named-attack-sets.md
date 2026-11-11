@@ -3,10 +3,10 @@ id: PD-102
 title: >-
   MILESTONE: Dice bag - many dice designs in one saved bag, mixed sets, carousel
   browser, named attack sets
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-11T07:51:00Z'
-updated_date: '2026-11-11T20:05:00Z'
+updated_date: '2026-11-11T22:18:00Z'
 labels:
   - epic
   - milestone

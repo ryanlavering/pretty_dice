@@ -154,3 +154,21 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await expect(page.locator('#bagname')).toHaveText('Brand new name');
   await expect(page.locator('#bagbtn')).toBeVisible();
 });
+
+test('rotating the phone does not change the chosen design', async ({ app, page }) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#cards .card[data-id="gold"]').click();
+  await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
+  for (const vp of [{ width: 780, height: 390 }, { width: 390, height: 780 }, { width: 780, height: 390 }]) {
+    await page.setViewportSize(vp); await page.waitForTimeout(900);   // longer than the shelf's settle delay
+    expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
+  }
+  // what a rotation does to the strip: it moves under the active card without anyone touching it
+  await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; }); await page.waitForTimeout(900);
+  expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
+  // a real flick still picks the card that lands in the middle
+  await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; });
+  await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('amethyst');
+});
