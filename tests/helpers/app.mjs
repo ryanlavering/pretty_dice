@@ -75,14 +75,14 @@ export const test = base.extend({
   },
 
   /** One booted, paused page per worker, for tests that only drive __pd state (physics). Booting dominates test time.
-   *  shared.reset(seed) reseeds the app RNG, exits any roll and restores the design the page booted with,
+   *  shared.reset(seed) exits any roll, restores every setting the page booted with and reseeds the app RNG,
    *  so each test starts from the same state whatever ran before it. Errors are still checked per test. */
   _sharedPage: [async ({ browser }, use, workerInfo) => {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
+    const ctx = await browser.newContext({ viewport: { width: 960, height: 600 }, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
     const page = await ctx.newPage(), errors = watch(page);
     await page.addInitScript(seedMath, 1);
     await page.goto('/index.html?libs=local&seed=1'); await ready(page);
-    await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = window.__pd.designToJSON(); });
+    await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); });
     await use({ page, errors });
     await ctx.close();
   }, { scope: 'worker' }],
@@ -94,8 +94,10 @@ export const test = base.extend({
       errors,
       async reset(seed = 1) {
         await page.evaluate(async seed => {
-          const pd = window.__pd; pd.pause(); if (pd.rolling) pd.exitRoll(true);
-          await pd.loadDesign(structuredClone(window.__pdBoot)); pd.state.randshape = false; pd.reseed(seed);
+          const pd = window.__pd, boot = structuredClone(window.__pdBoot); pd.pause(); if (pd.rolling) pd.exitRoll(true);
+          for (const k of Object.keys(pd.state)) if (!(k in boot)) delete pd.state[k];
+          Object.assign(pd.state, boot); document.getElementById('dname').value = '';   // every setting back to how the page booted
+          pd.reseed(seed); await pd.buildDice(); pd.applyLook();
         }, seed);
       },
     };

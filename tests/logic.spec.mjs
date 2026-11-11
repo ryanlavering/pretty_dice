@@ -1,9 +1,10 @@
 // Logic tier: pure app logic driven through window.__pd. No pixel checks.
 import { test, expect } from './helpers/app.mjs';
 
-test.beforeEach(async ({ app }) => { await app.open(); });
+// State-only tests: one shared, paused page per worker, reset before each test (see `shared` in helpers/app.mjs).
+test.beforeEach(async ({ shared }) => { await shared.reset(1); });
 
-test('dice notation parsing', async ({ app }) => {
+test('dice notation parsing', async ({ shared: app }) => {
   const P = await app.run(pd => Object.fromEntries(['4d6+2d10+3', 'd20', '3d8 - 2', '2d6+d20-1', 'd%', '1d100', '24d4', '2d7', '25d6', 'garbage', '']
     .map(s => [s, pd.parseNotation(s)])));
   expect(P['4d6+2d10+3']).toEqual({ terms: [{ count: 4, sides: 6 }, { count: 2, sides: 10 }], mod: 3 });
@@ -18,7 +19,7 @@ test('dice notation parsing', async ({ app }) => {
 const SIDES = { d6: 6, d8: 8, d10: 10, d100: 10, d12: 12, d20: 20, d14: 14, d16: 16, rd12: 12 };
 const OPPOSITE_SUM = { d6: 7, d8: 9, d10: 9, d100: 90, d12: 13, d20: 21, d14: 15, d16: 17, rd12: 13 };   // d10 is 0-9, d% is 00-90
 
-test('every shape: face count, unique labels, opposite faces sum to N+1', async ({ app }) => {
+test('every shape: face count, unique labels, opposite faces sum to N+1', async ({ shared: app }) => {
   const geo = await app.run(async (pd, shapes) => {
     const out = {};
     for (const s of shapes) {
@@ -39,7 +40,7 @@ test('every shape: face count, unique labels, opposite faces sum to N+1', async 
   }
 });
 
-test('design JSON round-trips', async ({ app }) => {
+test('design JSON round-trips', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const a = JSON.stringify(pd.designToJSON()); await pd.loadDesign(JSON.parse(a));
     return { same: JSON.stringify({ ...JSON.parse(a), paint_mode: 0 }) === JSON.stringify({ ...pd.designToJSON(), paint_mode: 0 }), format: JSON.parse(a).format };
@@ -47,7 +48,7 @@ test('design JSON round-trips', async ({ app }) => {
   expect(r).toEqual({ same: true, format: 'pretty-dice' });
 });
 
-test('design JSON keeps a custom set and its name', async ({ app }) => {
+test('design JSON keeps a custom set and its name', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const $ = id => document.getElementById(id);
     pd.state.shape = 'custom'; pd.state.notation = '3d8+2d6+4'; pd.state.substrate = 'swirl'; $('dname').value = 'Giant club attack'; await pd.buildDice();
@@ -58,7 +59,7 @@ test('design JSON keeps a custom set and its name', async ({ app }) => {
   expect(r).toEqual({ shape: 'custom', notation: '3d8+2d6+4', name: 'Giant club attack', dice: 5, saved: 'Giant club attack' });
 });
 
-test('loading a bad design clamps ranges and rejects unknown shapes/colours', async ({ app }) => {
+test('loading a bad design clamps ranges and rejects unknown shapes/colours', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const before = pd.state.shape, d = pd.designToJSON();
     d.edge_radius = 99; d.pattern.scale = -5; d.colors = ['red', '#zzzzzz', 3]; d.shape = 'd7'; d.substrate = 'cheese';
@@ -73,7 +74,8 @@ test('loading a bad design clamps ranges and rejects unknown shapes/colours', as
   expect(r.radius).toBeLessThanOrEqual(1);
 });
 
-test('undo/redo steps through randomize and edits', async ({ app }) => {
+test('undo/redo steps through randomize and edits', async ({ app }) => {   // fresh page: undo history is not part of shared.reset
+  await app.open();
   const r = await app.run(async pd => {
     const a = pd.snapshot(); pd.randomize(); const b = pd.snapshot(); await pd.undo(); const c = pd.snapshot(); await pd.redo(); const d = pd.snapshot();
     pd.state.radius = .1; pd.applyLook(); await pd.undo(); const e = pd.snapshot();
@@ -82,7 +84,7 @@ test('undo/redo steps through randomize and edits', async ({ app }) => {
   expect(r).toEqual({ undoRestores: true, redoRestores: true, randomizeChanged: true, undoEdit: true });
 });
 
-test('shared palette survives substrate and stone changes; old palettes migrate', async ({ app }) => {
+test('shared palette survives substrate and stone changes; old palettes migrate', async ({ shared: app }) => {
   const r = await app.run(pd => {
     const s = pd.state, out = {}, J = JSON.stringify;
     s.randsub = false; s.substrate = 'metal'; pd.randomize(true); const m = [...s.colors];
@@ -99,7 +101,7 @@ test('shared palette survives substrate and stone changes; old palettes migrate'
   for (const [k, v] of Object.entries(r)) expect(v, k).toBe(true);
 });
 
-test('randomize -> other substrate -> back keeps colours', async ({ app }) => {
+test('randomize -> other substrate -> back keeps colours', async ({ shared: app }) => {
   const r = await app.run(pd => {
     pd.randomize(); const sub = pd.state.substrate, before = JSON.stringify(pd.state.colors), other = Object.keys(pd.SUBSTRATES).find(k => k !== sub);
     document.querySelector(`#subs button[data-id=${other}]`).click(); document.querySelector(`#subs button[data-id=${sub}]`).click();
@@ -108,7 +110,7 @@ test('randomize -> other substrate -> back keeps colours', async ({ app }) => {
   expect(r).toBe(true);
 });
 
-test('colour shuffle changes only the base palette', async ({ app }) => {
+test('colour shuffle changes only the base palette', async ({ shared: app }) => {
   const r = await app.run(pd => {
     const s = pd.state, $ = id => document.getElementById(id); s.randsub = false; pd.setSubstrate('swirl');
     const c0 = JSON.stringify(s.colors), keep = JSON.stringify([s.substrate, s.shape, s.seed, s.off]);
@@ -119,7 +121,7 @@ test('colour shuffle changes only the base palette', async ({ app }) => {
   expect(r).toEqual({ changed: true, restSame: true, shared: true, inputs: true });
 });
 
-test('stone dropdown keeps colours; paintbrush applies the stone palette', async ({ app }) => {
+test('stone dropdown keeps colours; paintbrush applies the stone palette', async ({ shared: app }) => {
   const r = await app.run(pd => {
     const s = pd.state, $ = id => document.getElementById(id);
     s.substrate = 'marble'; pd.setSubstrate('marble'); s.colors[0] = '#ff00ff'; const before = JSON.stringify(s.colors);
@@ -132,7 +134,7 @@ test('stone dropdown keeps colours; paintbrush applies the stone palette', async
   expect(r).toEqual({ kept: true, painted: true });
 });
 
-test('200 randomizes reach every option without errors', async ({ app }) => {
+test('200 randomizes reach every option without errors', async ({ shared: app }) => {
   const r = await app.run(pd => {
     const seen = {}; let panel = 0;
     for (let i = 0; i < 200; i++) {
@@ -152,7 +154,7 @@ test('200 randomizes reach every option without errors', async ({ app }) => {
   expect(r.panel).toBeLessThan(190);
 });
 
-test('randomized filigree paints enamel into the atlas', async ({ app }) => {
+test('randomized filigree paints enamel into the atlas', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     pd.state.randshape = false; let n = 0;
     do { pd.randomize(); n++; } while (pd.state.filigree === 'none' && n < 40);
@@ -166,9 +168,10 @@ test('randomized filigree paints enamel into the atlas', async ({ app }) => {
 });
 
 test('seeded boot and roll are deterministic (Math.random left unseeded)', async ({ app, browser }) => {
+  await app.open();
   const look = pd => JSON.stringify([pd.designToJSON(), pd.simRoll().dice]);
   const a = await app.run(look);
-  const ctx = await browser.newContext(); const page = await ctx.newPage();
+  const ctx = await browser.newContext({ viewport: { width: 960, height: 600 } }); const page = await ctx.newPage();
   await page.goto('/index.html?libs=local&seed=1'); await page.waitForFunction(() => window.__ready && window.__pd);
   const b = await page.evaluate(src => (0, eval)(`(${src})`)(window.__pd), look.toString());
   await ctx.close();
