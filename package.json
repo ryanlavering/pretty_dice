@@ -1,0 +1,16 @@
+{
+  "name": "pretty-dice-tests",
+  "private": true,
+  "description": "Dev-only test tooling. The app itself needs no install (see README).",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:docker": "sh scripts/test-docker.sh",
+    "test:update": "sh scripts/test-docker.sh --update-snapshots",
+    "test:slow": "playwright test --project=slow",
+    "probe": "node scripts/probe.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

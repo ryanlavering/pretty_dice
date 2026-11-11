@@ -1293,8 +1293,8 @@ function updateFx(dt){
     key.intensity=BASE_KEY*(1-.7*fx.dim); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*fx.dim); }
 }
 const clock=new THREE.Clock();
-renderer.setAnimationLoop(()=>{
-  const dt=Math.min(clock.getDelta(),.05);
+const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)
+  const dt=dtOver??Math.min(clock.getDelta(),.05);
   if(!dragging&&!rolling){
     const idle = new THREE.Vector3(.12,.55,.05).multiplyScalar(state.spin*1.5);
     angVel.copy(idle).add(angVel.clone().sub(idle).multiplyScalar(Math.exp(-dt*1.6)));
@@ -1317,7 +1317,8 @@ renderer.setAnimationLoop(()=>{
     camera.position.set(tgt.x+r*Math.cos(ph)*Math.sin(th),tgt.y+r*Math.sin(ph),tgt.z+r*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt); }
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
-});
+};
+renderer.setAnimationLoop(loop);
 
 /* ---------- go ---------- */
 await ensureFont(state.font);
@@ -1388,7 +1389,21 @@ if(new URLSearchParams(location.search).get('test')==='pinch'){ const ev=(t,id,x
 if(new URLSearchParams(location.search).get('test')==='json'){ const a=JSON.stringify(designToJSON()); await loadDesign(JSON.parse(a)); console.log('JSON_ROUNDTRIP',JSON.stringify({...JSON.parse(a),paint_mode:0})===JSON.stringify({...designToJSON(),paint_mode:0}),a.length); }
 Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
 window.__ready=true; window.__bootDone&&window.__bootDone();
-window.__dice={designToJSON,loadDesign,state,randomize,buildDice,startRoll,applyLook,SHAPES};
+/* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
+const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
+window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,
+  designToJSON,loadDesign,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
+  get dice(){return dice;}, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
+  renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
+  setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
+  simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
+    for(;rr<rerolls&&leanDice.some(Boolean);rr++){ rerollLeans(); simSteps(maxSteps); }
+    dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
+    return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,
+      dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
+  memory(){ return {...renderer.info.memory}; }};
+window.__dice=window.__pd;   // old name
 </script>
 </body>
 </html>
