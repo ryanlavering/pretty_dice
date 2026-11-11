@@ -67,20 +67,25 @@ test('duplicate, rename, move, delete', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}, ids = () => pd.bag.designs.map(d => d.id);
     await pd.bagOps.duplicate('amethyst'); out.dup = { ids: ids(), active: pd.bag.active.design };
-    pd.bagOps.rename('amethyst', 'Purple'); out.renamed = pd.bag.designs[0].name;
+    pd.bagOps.rename('amethyst', 'Purple'); out.renamed = { saved: pd.bag.designs[0].name, pending: pd.bag.pending.amethyst.name, mod: pd.isModified('amethyst') };
+    await pd.bagOps.save('amethyst'); out.renamedSaved = { saved: pd.bag.designs[0].name, mod: pd.isModified('amethyst') };
+    pd.bagOps.rename('amethyst', 'Purple'); pd.bagOps.rename('amethyst', 'Amethyst'); out.renameBack = pd.isModified('amethyst');
+    pd.bagOps.rename('amethyst', 'Purple');
     pd.bagOps.move('gold', 0); out.moved = ids(); pd.bagOps.move('gold', 99); out.movedEnd = ids();
     out.deleteActive = await pd.bagOps.remove(pd.bag.active.design); out.afterDelete = { ids: ids(), active: pd.bag.active.design, notModified: !pd.isModified(pd.bag.active.design) };
     await pd.bagOps.remove('gold'); await pd.bagOps.remove('bone'); out.lastRefused = await pd.bagOps.remove(pd.bag.designs[0].id); out.left = ids();
     return out;
   });
   expect(r.dup).toEqual({ ids: ['amethyst', 'amethyst-copy', 'bone', 'gold'], active: 'amethyst-copy' });
-  expect(r.renamed).toBe('Purple');
+  expect(r.renamed).toEqual({ saved: 'Amethyst', pending: 'Purple', mod: true });
+  expect(r.renamedSaved).toEqual({ saved: 'Purple', mod: false }); expect(r.renameBack).toBe(true);
   expect(r.moved).toEqual(['gold', 'amethyst', 'amethyst-copy', 'bone']); expect(r.movedEnd).toEqual(['amethyst', 'amethyst-copy', 'bone', 'gold']);
   expect(r.deleteActive).toBe(true); expect(r.afterDelete.ids).toEqual(['amethyst', 'bone', 'gold']); expect(r.afterDelete.notModified).toBe(true);
   expect(r.lastRefused).toBe(false); expect(r.left).toHaveLength(1);
 });
 
 test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page }) => {
+  test.setTimeout(180_000); expect.configure({ timeout: 60_000 });   // the background picture pass is slow on software GL, especially with two workers
   await app.open({ query: 'thumbs=1' });
   await app.run(SETUP);
   await expect(page.locator('#cards .card[data-id]')).toHaveCount(3);
@@ -96,4 +101,56 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await page.mouse.up();
   await expect.poll(() => app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['gold', 'amethyst', 'bone']);
   await page.keyboard.press('Escape'); await expect(page.locator('#bagsheet')).toBeHidden();
+});
+
+test('menu actions work on a modified design that is not active', async ({ shared: app }) => {
+  const r = await app.run(async pd => {
+    const out = {}; pd.state.radius = 0.1; pd.save(); await pd.bagActivate('gold');   // bone now has pending edits
+    await pd.bagOps.revert('bone'); out.revert = { mod: pd.isModified('bone'), active: pd.bag.active.design };
+    await pd.bagActivate('bone'); pd.state.radius = 0.1; pd.save(); await pd.bagActivate('gold');
+    await pd.bagOps.save('bone'); out.save = { mod: pd.isModified('bone'), saved: pd.bag.designs.find(d => d.id === 'bone').design.edge_radius };
+    await pd.bagActivate('bone'); pd.state.radius = 0.12; pd.save(); await pd.bagActivate('gold');
+    await pd.bagOps.saveCopy('bone'); out.copy = { ids: pd.bag.designs.map(d => d.id), boneMod: pd.isModified('bone'), boneSaved: pd.bag.designs.find(d => d.id === 'bone').design.edge_radius, copySaved: pd.bag.designs.find(d => d.id === 'bone-copy').design.edge_radius, active: pd.bag.active.design };
+    return out;
+  });
+  expect(r.revert).toEqual({ mod: false, active: 'gold' });
+  expect(r.save).toEqual({ mod: false, saved: 0.1 });
+  expect(r.copy).toEqual({ ids: ['amethyst', 'bone', 'bone-copy', 'gold'], boneMod: false, boneSaved: 0.1, copySaved: 0.12, active: 'gold' });
+});
+
+test('design pictures are a d20 whatever the preview shape, appear without reopening, and the live design is left alone', async ({ app, page }) => {
+  test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(SETUP);   // bone (d6, active), amethyst (d20), gold (d8)
+  await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage.startsWith('url("data:image'))), { timeout: 60000 }).toEqual([true, true, true]);
+  await expect(page.locator('#bagth')).toHaveCSS('background-image', /data:image/);
+  const r = await app.run(pd => ({ shape: pd.state.shape, active: pd.bag.active.design, mod: pd.isModified('bone'), n: Object.keys(pd.thumbs).length }));
+  expect(r).toEqual({ shape: 'd6', active: 'bone', mod: false, n: 3 });
+});
+
+test('clicking a name on the shelf edits it in place and leaves it Modified until saved', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#cards .card[data-id="gold"] .nm').click();
+  await page.locator('#cards .nmedit').fill('Lucky coin'); await page.keyboard.press('Enter');
+  await expect(page.locator('#cards .card[data-id="gold"] .nm')).toHaveText('Lucky coin');
+  await expect(page.locator('#cards .card[data-id="gold"] .dot')).toHaveCount(1);
+  const r = await app.run(pd => ({ saved: pd.bag.designs[2].name, mod: pd.isModified('gold'), active: pd.bag.active.design }));
+  expect(r).toEqual({ saved: 'Gold', mod: true, active: 'bone' });   // renaming does not switch designs
+  await page.locator('#cards .card[data-id="gold"]').click();   // pick it: the settings row shows Modified, Save keeps the name
+  await expect(page.locator('#modbadge')).toBeVisible(); await page.locator('#bsave').click();
+  await expect.poll(() => app.run(pd => pd.bag.designs[2].name)).toBe('Lucky coin');
+  await expect(page.locator('#modbadge')).toBeHidden();
+});
+
+test('a typed name is kept when you switch away and back, and shows Modified', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#dname').fill('Brand new name'); await page.keyboard.press('Enter');
+  await expect(page.locator('#modbadge')).toBeVisible();
+  await page.locator('#cards .card[data-id="gold"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
+  await page.locator('#cards .card[data-id="bone"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('bone');
+  await expect(page.locator('#dname')).toHaveValue('Brand new name');
+  await expect(page.locator('#bagname')).toHaveText('Brand new name');
+  await expect(page.locator('#bagbtn')).toBeVisible();
 });
