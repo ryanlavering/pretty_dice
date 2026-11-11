@@ -43,7 +43,6 @@
   button.ico{flex:none;width:34px;height:34px;padding:0;display:grid;place-items:center} button.ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
-  #hint{padding:0 68px}
   #result{position:absolute;top:46px;left:0;right:0;text-align:center;font:800 54px Cinzel,serif;color:var(--accent);opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 2px 18px #000}
   #result.on{opacity:1}
   #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
@@ -52,28 +51,29 @@
   #result .relean:hover{background:rgba(60,34,24,.9)}
   #result .brk.lean{color:#ffb48a}
   #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
-  #tools{position:absolute;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:5;pointer-events:none}   /* one row of round buttons along the bottom of the mat */
-  #tools .grp{display:flex;gap:8px}
+  #tools{position:absolute;inset:0;z-index:5;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
+  #tools .col{position:absolute;bottom:8px;display:flex;flex-direction:column-reverse;gap:8px} #tl{left:max(10px,env(safe-area-inset-left,0px))} #tr{right:max(10px,env(safe-area-inset-right,0px))}
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
   #tools button:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)}
   #tools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round} #mode svg{width:24px;height:24px} #spinbtn svg{fill:currentColor;stroke:none}
   body.inroll #spinbtn{display:none}
   #hint{display:none} #hint.show{display:block}
-  #hint{position:absolute;bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 56px);left:0;right:0;text-align:center;color:var(--dim);font-size:12px;pointer-events:none}
+  #hint{position:absolute;left:50%;transform:translateX(-50%);bottom:108px;width:min(360px,calc(100% - 140px));background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:13px;line-height:1.45;text-align:left;pointer-events:auto;cursor:pointer;z-index:6;box-shadow:0 8px 30px #000a;backdrop-filter:blur(8px)}   /* floating info panel: click it, or the i button, to dismiss */
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   /* dice bag: settings-pane row, shelf (carousel) and All-designs sheet */
-  #bagrow{display:flex;align-items:center;gap:8px;margin:12px 0 4px} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;flex-direction:column;gap:1px}
+  #bagrow{display:flex;align-items:center;gap:8px;margin:12px 0 4px} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;align-items:center;gap:10px} #bagopen .bt{min-width:0;display:flex;flex-direction:column;gap:1px} #bagth{flex:none;width:44px;height:44px;border-radius:9px;border:2px solid var(--line);background:#1d212c center/cover no-repeat}
   #bagname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #bagpos{color:var(--dim);font-size:11px}
   #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
   #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:6px} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
   #bagact #bsave{background:var(--accent);color:#1a1405;border:0;font-weight:600}
-  #shelf{position:absolute;left:0;right:0;bottom:calc(max(8px,env(safe-area-inset-bottom,0px)) + 56px);z-index:4;pointer-events:none}
-  #shelfall{position:absolute;right:10px;top:-30px;pointer-events:auto;padding:4px 10px;border-radius:999px;font-size:12px;background:rgba(20,23,31,.72);backdrop-filter:blur(6px)}
+  #shelf{position:absolute;left:64px;right:64px;bottom:8px;z-index:4;pointer-events:none}
   #cards{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px calc(50% - 36px);pointer-events:auto;scrollbar-width:none;overscroll-behavior-x:contain} #cards::-webkit-scrollbar{display:none}
   body.inroll #shelf{display:none}
   .card{flex:none;width:72px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;background:none;border:0;color:var(--dim);font-size:11px;cursor:pointer;position:relative;-webkit-touch-callout:none;user-select:none}
   .card .th,.tile .th{width:64px;height:64px;border-radius:12px;border:2px solid var(--line);background:#1d212c center/cover no-repeat;position:relative;transition:transform .15s,border-color .15s}
   .card.on .th,.tile.on .th{border-color:var(--accent)} .card.on{color:var(--accent)} .card.on .th{transform:scale(1.12)}
+  .nmedit{width:100%;box-sizing:border-box;font:inherit;font-size:12px!important;background:#1d212c;color:var(--ink);border:1px solid var(--accent);border-radius:4px;padding:1px 3px;text-align:center}
+  .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px} .nm{cursor:text}
   .card .nm{max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 6px #000}
   .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
   .ghost .th{border-style:dashed;opacity:.9} .plus .th{display:grid;place-items:center;font-size:28px;color:var(--dim);border-style:dashed;background:rgba(20,23,31,.6)}
@@ -87,8 +87,17 @@
   #cardmenu{position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
   @media (max-width:760px){
+    #tools .col,#shelf{bottom:6px} #shelf{left:60px;right:60px} #hint{bottom:104px}
+    body.full #tools .col,body.full #shelf{bottom:calc(16px + env(safe-area-inset-bottom,0px))} body.full #hint{bottom:calc(114px + env(safe-area-inset-bottom,0px))}   /* full view only: the stage then reaches the screen edge, where round phone corners cut off the bottom and edge touches are hard */
+    #cards{gap:8px;padding:4px calc(50% - 34px)} .card{width:68px} .card .th{width:60px;height:60px} .card .nm{max-width:68px}   /* about 3.5 cards across: a partial card shows there is more to scroll to */
     #app{flex-direction:column-reverse}
     aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
+  }
+  /* phone held sideways: the round corners are at the sides, so push the controls in from the sides instead of lifting them from the bottom */
+  @media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
+    #tools .col,#shelf,body.full #tools .col,body.full #shelf{bottom:8px} #hint,body.full #hint{bottom:104px}
+    #tr{right:calc(16px + env(safe-area-inset-right,0px))} body.full #tl{left:calc(16px + env(safe-area-inset-left,0px))}
+    #shelf{left:64px;right:calc(80px + env(safe-area-inset-right,0px))} body.full #shelf{left:calc(80px + env(safe-area-inset-left,0px))}
   }
 </style>
 <!--BOOTSTRAP-->
@@ -128,7 +137,7 @@
   <aside>
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
-    <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagname"></span><small id="bagpos"></small></button><span id="modbadge" hidden>Modified</span></div>
+    <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagth" class="th"></span><span class="bt"><span id="bagname"></span><small id="bagpos"></small></span></button><span id="modbadge" hidden>Modified</span></div>
     <div id="bagact" hidden><button id="bsave" type="button"></button><button id="bcopy" type="button">Save as copy</button><button id="brevert" type="button">Revert</button></div>
 
     <div id="actions"><div id="randrow"><button class="big" id="rand">Randomize</button><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
@@ -228,7 +237,7 @@
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
   </aside>
-  <div id="stage"><div id="shelf"><button id="shelfall" type="button">All designs</button><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="grp"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button></div><button id="spinbtn" type="button"></button><div class="grp"><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="mode" aria-label="Switch between showcase and roll view"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><button id="sheetclose" type="button">Close</button></div><div id="tiles"></div></div>
 <div id="cardmenu" hidden></div>
@@ -1018,7 +1027,7 @@ $('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
 $('expsize').onchange=e=>{state.expsize=e.target.value; save();};
 function exportImage(type){
   const size=+$('expsize').value, pr=renderer.getPixelRatio();
-  if(size){renderer.setPixelRatio(1); renderer.setSize(size,size,false); camera.aspect=1; camera.updateProjectionMatrix();}
+  if(size){renderer.setPixelRatio(1); renderer.setSize(size,size,false); camera.aspect=1; camera.clearViewOffset(); camera.updateProjectionMatrix();}
   renderer.render(scene,camera);
   const mime=type==='jpg'?'image/jpeg':'image/png';
   return new Promise(res=>cv.toBlob(b=>{ if(size){renderer.setPixelRatio(pr); resize();}
@@ -1104,7 +1113,7 @@ function parseBag(obj){
 const sortKeys=v=>Array.isArray(v)?v.map(sortKeys):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,sortKeys(v[k])])):v;
 const canonD=d=>{ const {shape,notation,...r}=d; return JSON.stringify(sortKeys(r)); };
 const hashStr=t=>{ let h=5381; for(let i=0;i<t.length;i++) h=((h<<5)+h+t.charCodeAt(i))|0; return (h>>>0).toString(36); };
-const thumbKey=d=>hashStr(canonD(d)+'|'+d.shape);
+const thumbKey=d=>hashStr(canonD(d));   // design pictures are always a d20, so the key ignores the preview shape
 const entryOf=id=>bag&&bag.designs.find(d=>d.id===id);
 const activeEntry=()=>entryOf(bag.active.design);
 function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; return dj; }
@@ -1130,30 +1139,38 @@ async function loadSlot(json,name){ bagLoading++; try{ await loadDesign(name!=nu
 function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag.pending[e.id]){ const dj=designToJSON(); e.design={...dj,name:e.name}; e.preview_shape=dj.shape; } }
 let actBusy=false, actNext=null;
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
-  if(!bag) return; if(actBusy){ actNext=target; return; } actBusy=true;
+  if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
   try{ if(!skipSync) syncLive();
     if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
-    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; await loadSlot(bag.pending[e.id]||e.design,e.name); normalizeActive(); }
+    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
     save();
   }finally{ actBusy=false; }
   if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
 }
 /* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
-function enterDraft(){ if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; }
+function enterDraft(){ if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; $('dname').value=''; }
 function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.name)); let n=bag.designs.length+1; while(used.has(`${base} ${n}`)) n++; return `${base} ${n}`; }
 function addEntry(json,name,afterId){ const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
 const bagOps={
-  async save(){ if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=j.name||e.name; e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
-  async saveCopy(){ if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
+  async save(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
+    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=j.name||e.name; e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
+  isOther(id){ return bag.active.draft||bag.active.design!==id; },
+  async saveCopy(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; delete bag.pending[id]; addEntry(p,`${e.name} copy`,id); save(); return; }
+    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
     const c=addEntry(j,`${e.name} copy`,e.id); bag.active.design=c.id; $('dname').value=c.name; save(); },
-  async revert(){ if(bag.active.draft) return this.discard(); const e=activeEntry(); delete bag.pending[e.id]; await loadSlot(e.design,e.name); normalizeActive(); save(); },
+  async revert(id){ if(id&&this.isOther(id)){ delete bag.pending[id]; save(); return; }
+    if(bag.active.draft) return this.discard(); const e=activeEntry(); delete bag.pending[e.id]; await loadSlot(e.design,e.name); normalizeActive(); save(); },
   async keep(){ if(!bag.active.draft) return; const j=liveJSON(), name=(j.name||'').trim()||newDesignName(), e=addEntry(j,name);
     bag.active.design=e.id; bag.active.draft=false; bag.draft=null; $('dname').value=name; save(); },
-  async discard(){ bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(); await loadSlot(bag.pending[e.id]||e.design,e.name); normalizeActive(); } save(); },
+  async discard(){ bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); normalizeActive(); } save(); },
   async duplicate(id){ syncLive(); const e=entryOf(id); if(!e) return; const c=addEntry(structuredClone(bag.pending[id]||e.design),`${e.name} copy`,id); await activate(c.id); return c.id; },
-  rename(id,name){ const e=entryOf(id); name=String(name||'').trim().slice(0,80); if(!e||!name) return; e.name=name; e.design.name=name; if(bag.pending[id]) bag.pending[id].name=name;
-    if(!bag.active.draft&&bag.active.design===id) $('dname').value=name; save(); },
+  rename(id,name){ name=String(name||'').trim().slice(0,80); if(!name) return;   // a rename is an outstanding edit like any other: it shows Modified until saved
+    if(id==='draft'){ if(bag.active.draft) $('dname').value=name; else if(bag.draft) bag.draft.name=name; save(); return; }
+    const e=entryOf(id); if(!e) return;
+    if(!bag.active.draft&&bag.active.design===id){ $('dname').value=name; save(); return; }
+    const p=bag.pending[id]?bag.pending[id]:structuredClone(e.design); p.name=name;
+    if(canonD(p)===canonD({...e.design,name:e.name})) delete bag.pending[id]; else bag.pending[id]=p; save(); },
   async remove(id){ const e=entryOf(id); if(!e||bag.designs.length<2) return false; syncLive(); const k=bag.designs.indexOf(e), wasActive=!bag.active.draft&&bag.active.design===id;
     bag.designs.splice(k,1); delete bag.pending[id]; bag.jail=bag.jail.filter(j=>j.design!==id);
     bag.sets.forEach(st=>st.terms.forEach(t=>{ if(t.design===id) delete t.design; }));
@@ -1163,10 +1180,14 @@ const bagOps={
   async addBlank(){ syncLive(); bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); setSubstrate(state.substrate); state.seed=(rng()*1e9)|0; repaint(); applyLook();
     await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
 };
+/* The background picture pass borrows the live state for a moment, so anything that changes the live design waits for it to finish. */
+let thumbBusy=false;
+const idleThumbs=async()=>{ while(thumbBusy) await new Promise(r=>setTimeout(r,25)); };
+for(const k of ['save','saveCopy','revert','keep','discard','duplicate','remove','addBlank']){ const f=bagOps[k]; bagOps[k]=async function(...a){ await idleThumbs(); return f.apply(bagOps,a); }; }
 /* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
 async function importBag(obj,{replace=false}={}){
-  const {bag:inc,dropped}=parseBag(obj);
-  if(replace){ bag=inc; const e=activeEntry(); await loadSlot(bag.active.draft?bag.draft:(bag.pending[e.id]||e.design),bag.active.draft?'':e.name); normalizeActive(); save(); return {added:inc.designs.length,dropped}; }
+  const {bag:inc,dropped}=parseBag(obj); await idleThumbs();
+  if(replace){ bag=inc; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(bag.active.draft?bag.draft:(pe||e.design),bag.active.draft?'':(pe?null:e.name)); normalizeActive(); save(); return {added:inc.designs.length,dropped}; }
   syncLive();
   const taken=new Set(bag.designs.map(d=>d.id)), map=new Map();
   for(const d of inc.designs){ const id=uniqueId(d.id,taken); taken.add(id); map.set(d.id,id); bag.designs.push({...d,id}); }
@@ -1197,18 +1218,22 @@ function pruneThumbs(){ const keep=new Set([...bag.designs.map(e=>thumbKey(bag.p
 function persistThumbs(){ pruneThumbs(); try{ localStorage.setItem(THUMBS_KEY,JSON.stringify(thumbs)); }catch{} }
 function captureLive(px=144){   // one small picture of whatever the stage shows right now (showcase only)
   if(rolling) return null; const pr=renderer.getPixelRatio(), cvs=renderer.domElement;
-  renderer.setPixelRatio(1); renderer.setSize(px,px,false); camera.aspect=1; camera.updateProjectionMatrix(); renderer.render(scene,camera);
+  renderer.setPixelRatio(1); renderer.setSize(px,px,false); camera.aspect=1; camera.clearViewOffset(); camera.updateProjectionMatrix(); renderer.render(scene,camera);
   const c=document.createElement('canvas'); c.width=c.height=px; c.getContext('2d').drawImage(cvs,0,0,px,px);
   renderer.setPixelRatio(pr); resize(); const u=c.toDataURL('image/webp',.8); return u.startsWith('data:image/webp')?u:c.toDataURL('image/jpeg',.8); }
-let thumbTimer=null, thumbBusy=false;
+let thumbTimer=null, touchedAt=0;
+for(const t of ['pointerdown','keydown','input']) addEventListener(t,()=>{ touchedAt=performance.now(); },true);   // a person editing beats the background pass
 function scheduleThumb(){ if(!thumbsOn||!bag||thumbTimer) return; thumbTimer=setTimeout(()=>{ thumbTimer=null; updateThumbs(); },900); }   // not debounced: save() can fire all the time, so wait at most 900 ms
-async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet (each is loaded out of sight and the live design restored)
-  if(thumbBusy||actBusy||rolling||!bag) return; thumbBusy=true;
-  try{ const live=liveJSON(), k=thumbKey(live); if(!thumbs[k]){ const u=captureLive(); if(u){ thumbs[k]=u; } }
-    const todo=bag.designs.filter(e=>!thumbs[thumbKey(bag.pending[e.id]||e.design)]&&!(e.id===bag.active.design&&!bag.active.draft));
-    if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({id:'draft',design:bag.draft,name:''});
+async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet. Always a single d20 (a design's look, not a set). Done out of sight; the live design is restored after.
+  if(thumbBusy||actBusy||rolling||!bag) return; thumbBusy=true; const started=performance.now();
+  try{ const live=liveJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({live:true,json:live});
+    for(const e of bag.designs){ if(e.id===bag.active.design&&!bag.active.draft) continue; const j=bag.pending[e.id]||e.design; if(!thumbs[thumbKey(j)]) todo.push({json:j,name:e.name}); }
+    if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({json:bag.draft,name:''});
     if(todo.length){ const snap=snapshot(), nm=$('dname').value, h=history.slice(), hi=hIdx, cvs=renderer.domElement; cvs.style.visibility='hidden'; bagLoading++;
-      try{ for(const e of todo){ const j=e.id==='draft'?e.design:(bag.pending[e.id]||e.design); await loadDesign({...j,name:e.name}); const u=captureLive(); if(u) thumbs[thumbKey(j)]=u; }
+      try{ for(const t of todo){
+          if(touchedAt>started){ scheduleThumb(); break; }
+          if(t.live){ if(state.shape!=='d20'){ state.shape='d20'; buildDice(); } } else await loadDesign({...t.json,shape:'d20',name:t.name});
+          const u=captureLive(); if(u) thumbs[thumbKey(t.json)]=u; }
       }finally{ await restore(snap); bagLoading--; $('dname').value=nm; history=h; hIdx=hi; syncHistoryUI(); cvs.style.visibility=''; } }
     persistThumbs(); renderBag();
   }catch(err){ console.warn('thumbnail pass failed',err); }finally{ thumbBusy=false; } }
@@ -1219,23 +1244,30 @@ const el=(tag,cls,txt)=>{ const n=document.createElement(tag); if(cls) n.classNa
 function slots(){   // what the shelf and sheet show, in order: designs, then the draft
   const out=bag.designs.map(e=>{ const live=!bag.active.draft&&bag.active.design===e.id; const j=live?liveJSON():(bag.pending[e.id]||e.design);
     return {id:e.id,name:live?(j.name||e.name):(bag.pending[e.id]?.name||e.name),json:j,on:live,mod:isModified(e.id)}; });
-  if(bag.draft||bag.active.draft) out.push({id:'draft',name:'Draft',json:bag.active.draft?liveJSON():bag.draft,on:bag.active.draft,draft:true});
+  if(bag.draft||bag.active.draft) out.push({id:'draft',name:(bag.active.draft?liveJSON():bag.draft).name||'Draft',json:bag.active.draft?liveJSON():bag.draft,on:bag.active.draft,draft:true});
   return out; }
 let lastSig='', lastCenter=null;
 function renderBag(){
   if(!bag) return; const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
   $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
-  $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
+  $('bagth').style.backgroundImage=thumbStyle(liveJSON()); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
   $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
-  const sl=slots(), sig=JSON.stringify([sl.map(x=>[x.id,x.name,x.on,!!x.mod,thumbKey(x.json)]),bag.name]); if(sig===lastSig) return; lastSig=sig;
+  if(document.activeElement&&document.activeElement.classList.contains('nmedit')) return;   // never rebuild under a name being typed
+  const sl=slots(), sig=JSON.stringify([sl.map(x=>[x.id,x.name,x.on,!!x.mod,thumbKey(x.json),!!thumbs[thumbKey(x.json)]]),bag.name]); if(sig===lastSig) return; lastSig=sig;
   const cards=$('cards'), keep=cards.scrollLeft; cards.replaceChildren(...sl.map(x=>cardEl(x)),plusEl('card plus'));
   const on=cards.querySelector('.card.on'); if(on&&lastCenter!==x_id(on)){ lastCenter=x_id(on); centerCard(on,false); } else cards.scrollLeft=keep;
   if(!$('bagsheet').hidden) renderSheet();
 }
 const x_id=n=>n.dataset.id;
-function cardEl(x){ const b=el('button','card'+(x.on?' on':'')+(x.draft?' ghost':'')); b.type='button'; b.dataset.id=x.id; b.setAttribute('role','option'); b.setAttribute('aria-selected',x.on);
-  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot')); b.append(th,el('span','nm',x.name)); wireCard(b,x); return b; }
+function nameEl(x){ const n=el('span','nm',x.name); n.title='Click to rename'; n.onclick=e=>{ e.stopPropagation(); editName(n,x.id); }; n.onpointerdown=e=>{ e.stopPropagation(); }; return n; }
+function editName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Design name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
+  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; inp.blur(); if(ok&&inp.value.trim()&&inp.value.trim()!==cur) bagOps.rename(id,inp.value); lastSig=''; renderBag(); if(!$('bagsheet').hidden) renderSheet(); };
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true);
+  for(const t of ['click','pointerdown','pointerup']) inp.addEventListener(t,e=>e.stopPropagation()); }
+function cardEl(x){ const b=el('div','card'+(x.on?' on':'')+(x.draft?' ghost':'')); b.dataset.id=x.id; b.tabIndex=0; b.setAttribute('role','option'); b.setAttribute('aria-selected',x.on);
+  b.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===b){ e.preventDefault(); b.click(); } };
+  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot')); b.append(th,nameEl(x)); wireCard(b,x); return b; }
 function plusEl(cls){ const b=el('button',cls); b.type='button'; const th=el('div','th','+'); b.append(th,el('span','nm','Add')); b.onclick=e=>openMenu(b,addItems()); return b; }
 function centerCard(c,smooth=true){ progScroll=Date.now(); const box=$('cards'); box.scrollTo({left:c.offsetLeft-box.clientWidth/2+c.offsetWidth/2,behavior:smooth?'smooth':'instant'}); }
 let progScroll=0, longFired=false;
@@ -1262,7 +1294,9 @@ const addItems=()=>[{head:'Add to the bag'},{label:'New blank design',run:()=>ba
 function cardItems(id){
   if(id==='draft') return [{label:'Keep in the bag',run:()=>bagOps.keep()},{label:'Discard draft',danger:true,run:()=>bagOps.discard()}];
   const k=bag.designs.findIndex(d=>d.id===id), last=bag.designs.length-1;
-  return [{label:'Rename…',run:()=>{ const nm=prompt('Design name',entryOf(id).name); if(nm) bagOps.rename(id,nm); }},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
+  const uses=bag.sets.filter(st=>st.terms.some(t=>t.design===id)).length;
+  const edits=isModified(id)?[{head:'Modified'},{label:uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save',run:()=>bagOps.save(id)},{label:'Save as copy',run:()=>bagOps.saveCopy(id)},{label:'Revert',run:()=>bagOps.revert(id)},{head:'Design'}]:[];
+  return [...edits,{label:'Rename…',run:()=>{ const nm=prompt('Design name',entryOf(id).name); if(nm) bagOps.rename(id,nm); }},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
     {label:'Move left',disabled:k===0,run:()=>bagOps.move(id,k-1)},{label:'Move right',disabled:k===last,run:()=>bagOps.move(id,k+1)},
     {label:'Move to start',disabled:k===0,run:()=>bagOps.move(id,0)},{label:'Move to end',disabled:k===last,run:()=>bagOps.move(id,last)},
     {label:'Delete…',danger:true,disabled:last===0,run:()=>{ if(confirm(`Delete "${entryOf(id).name}" from the bag?`)) bagOps.remove(id); }}]; }
@@ -1271,7 +1305,7 @@ function cardItems(id){
 function renderSheet(){ const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
-      t.append(th,el('div','nm',x.name),dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
+      const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
 let dragMoved=false;
 function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level listeners while dragging: moving the tile in the DOM drops any pointer capture
@@ -1288,22 +1322,24 @@ function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level 
 $('tiles').addEventListener('touchmove',e=>{ if($('tiles').querySelector('.tile.drag')) e.preventDefault(); },{passive:false});
 function openSheet(){ closeMenu(); renderSheet(); $('bagsheet').hidden=false; scheduleThumb(); }
 function closeSheet(){ closeMenu(); $('bagsheet').hidden=true; }
-$('bagopen').onclick=openSheet; $('shelfall').onclick=openSheet; $('sheetclose').onclick=closeSheet;
+$('bagopen').onclick=openSheet; $('bagbtn').onclick=openSheet; $('sheetclose').onclick=closeSheet;
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('bagsheet').hidden){ if(!$('cardmenu').hidden) closeMenu(); else closeSheet(); } });
 $('bsave').onclick=()=>bagOps.save(); $('bcopy').onclick=()=>bagOps.saveCopy(); $('brevert').onclick=()=>bagOps.revert();
-let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=requestAnimationFrame(()=>{ uiRaf=0; renderBag(); }); scheduleThumb(); }
+let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=setTimeout(()=>{ uiRaf=0; renderBag(); },30); scheduleThumb(); }   // a timer, not rAF: rAF stops in a background tab
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
 function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ refit(); requestAnimationFrame(refit); setTimeout(refit,300); } $('layout').innerHTML=on?ICON_GEAR:ICON_EXPAND; $('layout').title=on?'Show settings':'Hide settings (full view)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
 $('layout').onclick=()=>setFull(!document.body.classList.contains('full'));
 { let on=false; try{ on=localStorage.getItem('prettydice.full')==='1'; }catch{} if(new URLSearchParams(location.search).get('full')) on=new URLSearchParams(location.search).get('full')==='1'; setFull(on,true); }
+$('hint').onclick=()=>{ $('hint').classList.remove('show'); $('info').classList.remove('on'); $('info').setAttribute('aria-expanded',false); };
 $('info').innerHTML=ICON_I; $('info').onclick=()=>{ const on=$('hint').classList.toggle('show'); $('info').classList.toggle('on',on); $('info').setAttribute('aria-expanded',on); };
 $('loadjson').onclick=()=>$('jsonfile').click();
 const readText=f=>f.text?f.text():new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=()=>rej(new Error('Could not read file')); fr.readAsText(f); });
 $('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
   try{ const txt=await readText(f); inp.value=''; await loadDesign(JSON.parse(txt.replace(/^\uFEFF/,''))); }catch(err){ inp.value=''; alert('Could not load design: '+err.message); } };   // read first, then reset the input: clearing it early can empty the file on some phones
-$('dname').onkeydown=e=>e.stopPropagation();
+$('dname').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') e.target.blur(); };   // Enter accepts the name
+$('dname').oninput=()=>save();   // a typed name is an edit: show Modified and keep it
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>startRoll();
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
@@ -1349,7 +1385,9 @@ cv.addEventListener('wheel',e=>{e.preventDefault(); setZoom(THREE.MathUtils.clam
 function spinBy(q){ if(isMulti()) dice.forEach(d=>d.mesh.quaternion.premultiply(q)); else rig.quaternion.premultiply(q); }
 const randQuat=()=>{ const u=rng(), v=rng()*2*Math.PI, w=rng()*2*Math.PI, a=Math.sqrt(1-u), b=Math.sqrt(u); return new THREE.Quaternion(a*Math.sin(v),a*Math.cos(v),b*Math.sin(w),b*Math.cos(w)); };   // uniform random orientation (Shoemake) from the app RNG, so seeded rolls repeat
 
-function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h;
+  const sh=$('shelf'), band=(!document.body.classList.contains('inroll')&&sh.offsetParent)?Math.max(0,h-sh.offsetTop):0;   // the showcase is centred above the shelf: shift the view up by half the shelf's height (less on a phone, where the name text above is close)
+  camera.setViewOffset(w,h,0,Math.round(band*(innerWidth<=760?.3:.5)),w,h); camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(stage); resize();
 addEventListener('resize',()=>{ resize(); }); addEventListener('orientationchange',()=>setTimeout(()=>{ resize(); window.scrollTo(0,0); },250)); if(window.visualViewport) visualViewport.addEventListener('resize',resize);
 
@@ -1452,7 +1490,7 @@ function finishRoll(){ restT=0;
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
-function syncMode(){ document.body.classList.toggle('inroll',rolling); $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
+function syncMode(){ document.body.classList.toggle('inroll',rolling); resize(); $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
 $('mode').onclick=()=>{ if(rolling) exitRoll(); else startRoll(); };
 syncMode();
 
