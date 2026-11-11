@@ -262,3 +262,11 @@ test('roll feel section holds the physics sliders and comes first in the roll vi
   await app.run(pd => pd.startRoll());
   t = await top(); expect(t.roll, 'roll view: first in the pane').toBeLessThan(t.shape);
 });
+
+// PD-97: the Test sound button plays a blip inside the tap and reports the audio state (so a silent phone can be diagnosed).
+test('Test sound plays a blip and reports the audio state', async ({ app }) => {
+  await app.open();
+  await app.page.click('#soundtest');
+  await expect.poll(() => app.page.textContent('#soundstat'), { timeout: 10_000 }).toMatch(/^audio (running|suspended|interrupted)/);
+  expect(await app.run(pd => pd.sfx.ctx !== null), 'audio context was created by the tap').toBe(true);
+});
