@@ -38,7 +38,7 @@ test('a bag with several designs saves, reloads and survives a page reload', asy
   expect(after.bag.sets).toEqual(before.file.sets);
   expect(after.bag.characters).toEqual(before.file.characters);
   expect(after.bag.log).toEqual(before.file.log);
-  expect(after.bag.active).toEqual({ design: 'bone', set: 'mixed' });
+  expect(after.bag.active).toEqual({ design: 'bone', set: 'mixed', draft: false });
   expect(after.shape).toBe('d6');
 });
 
@@ -73,7 +73,7 @@ test('invalid designs and dangling references are dropped and reported', async (
   });
   expect(r.bag.designs.map(d => d.id)).toEqual(['good']);
   expect(r.bag.sets[0].terms[0].design).toBeUndefined();
-  expect(r.bag.active).toEqual({ design: 'good', set: null });
+  expect(r.bag.active).toEqual({ design: 'good', set: null, draft: false });
   expect(r.dropped.length).toBe(2);
   for (const bad of [null, { format: 'x' }, { format: 'pretty-dice-bag', version: 2 }, { format: 'pretty-dice-bag', version: 1, designs: [] }])
     await expect(app.run((pd, b) => { try { pd.parseBag(b); return 'ok'; } catch (e) { return e.message; } }, bad)).resolves.not.toBe('ok');
