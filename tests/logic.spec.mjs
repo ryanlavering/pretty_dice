@@ -177,3 +177,16 @@ test('seeded boot and roll are deterministic (Math.random left unseeded)', async
   await ctx.close();
   expect(b).toBe(a);
 });
+
+// PD-96: number size runs from .45 (a little bigger than before) to 5 (jumbo, cropped by the face edges), on a log-scale slider.
+test('number size slider spans .45 to 5 and loaded designs are clamped to that range', async ({ app }) => {
+  await app.open();
+  const at = pos => app.run((pd, p) => { const el = document.getElementById('numsize'); el.value = p; el.dispatchEvent(new Event('input')); return pd.state.numSize; }, pos);
+  expect(await at(0)).toBe(0.45);
+  expect(await at(1)).toBe(5);
+  const mid = await at(0.5);
+  expect(mid, 'log scale: the middle is the geometric mean').toBeGreaterThan(1.4);
+  expect(mid).toBeLessThan(1.6);
+  const clamped = await app.run(async pd => { const d = pd.designToJSON(); d.numbers.size = 0.1; await pd.loadDesign(d); const lo = pd.state.numSize; d.numbers.size = 99; await pd.loadDesign(d); return [lo, pd.state.numSize]; });
+  expect(clamped).toEqual([0.45, 5]);
+});

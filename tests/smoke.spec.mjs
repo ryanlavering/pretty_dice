@@ -200,3 +200,43 @@ test.describe('touch devices', () => {
     expect(small, 'fields under 16px (these make iOS zoom)').toEqual([]);
   });
 });
+
+// PD-97: sound button on the mat, and audio that survives iOS quirks.
+test('the sound button on the mat toggles sound and mirrors the settings checkbox', async ({ app }) => {
+  await app.open();
+  const read = () => app.run(pd => ({ on: pd.state.sound, checked: document.getElementById('sound').checked, off: document.getElementById('snd').classList.contains('off') }));
+  expect(await read()).toEqual({ on: true, checked: true, off: false });
+  await app.page.click('#snd');
+  expect(await read()).toEqual({ on: false, checked: false, off: true });
+  await app.page.click('#snd');
+  expect(await read()).toEqual({ on: true, checked: true, off: false });
+});
+
+test('a tap wakes an interrupted audio context and takes the playback audio session (iOS)', async ({ app }) => {
+  await app.page.addInitScript(() => { Object.defineProperty(navigator, 'audioSession', { value: { type: 'auto' }, configurable: true }); });
+  await app.open();
+  await app.page.mouse.click(600, 300);   // first gesture creates the context
+  const r = await app.run(async pd => {
+    const ctx = pd.sfx.ctx; let resumes = 0, st = 'interrupted';
+    Object.defineProperty(ctx, 'state', { get: () => st, configurable: true });
+    ctx.resume = () => { resumes++; st = 'running'; return Promise.resolve(); };
+    document.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); window.dispatchEvent(new Event('click'));
+    return { resumes, session: navigator.audioSession.type };
+  });
+  expect(r.resumes, 'resume() called after a tap').toBeGreaterThan(0);
+  expect(r.session, 'audio session type').toBe('playback');
+});
+
+// Spin controls live on the showcase mat (not in the settings pane) and hide in the roll view.
+test('spin pause button and speed slider sit on the showcase mat and hide while rolling', async ({ app }) => {
+  await app.open();
+  const spin = () => app.run(pd => pd.state.spin);
+  await expect(app.page.locator('#spinbar')).toBeVisible();
+  expect(await app.page.locator('aside #spin').count(), 'no longer in the settings pane').toBe(0);
+  const s0 = await spin(); expect(s0).toBeGreaterThan(0);
+  await app.page.click('#spinbtn'); expect(await spin(), 'paused').toBe(0);
+  await app.page.click('#spinbtn'); expect(await spin(), 'resumes at the old speed').toBeCloseTo(s0, 2);
+  await app.page.locator('#spin').fill('0.8'); expect(await spin()).toBeCloseTo(0.8, 2);
+  await app.run(pd => pd.startRoll());
+  await expect(app.page.locator('#spinbar')).toBeHidden();
+});

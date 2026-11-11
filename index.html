@@ -38,9 +38,14 @@
   .chk{display:flex;gap:8px;align-items:center;color:var(--dim);margin:6px 0;font-size:13px}
   #stage{flex:1;position:relative;min-width:0;min-height:0;overflow:hidden}   /* min-height:0 + absolute canvas: the canvas's old pixel size must never hold the stage open when the settings pane comes back */
   button.ico{flex:none;width:34px;height:34px;padding:0;display:grid;place-items:center} button.ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-  #info,#layout{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
+  #info,#layout,#snd{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
   #info{left:auto;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}   /* info sits above the roll/showcase toggle; the layout toggle is bottom-left */
-  #info:hover,#layout:hover,#info.on{border-color:var(--accent);color:var(--accent)} #info svg,#layout svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  #spinbar{position:absolute;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom,0px));width:min(380px,calc(100% - 150px));height:44px;display:flex;align-items:center;gap:8px;padding:0 16px 0 5px;border-radius:999px;background:rgba(20,23,31,.72);border:1px solid var(--line);backdrop-filter:blur(6px);z-index:5}
+  #spinbar button{flex:none;width:34px;height:34px;border-radius:50%;padding:0;display:grid;place-items:center;border:0;background:transparent;color:var(--ink)} #spinbar button:hover{color:var(--accent)}
+  #spinbar svg{width:18px;height:18px;fill:currentColor;stroke:none} #spinbar input{flex:1;min-width:0}
+  body.inroll #spinbar{display:none} body:not(.inroll) #hint{bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 58px)}   /* spin controls live along the bottom of the showcase; the hint text sits above them */
+  #snd{bottom:calc(max(14px,env(safe-area-inset-bottom,0px)) + 54px)}
+  #info:hover,#layout:hover,#snd:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)} #info svg,#layout svg,#snd svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
   #stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;cursor:grab;touch-action:none}
   #stage canvas:active{cursor:grabbing}
   #mode{position:absolute;right:max(14px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;z-index:5;backdrop-filter:blur(6px)}
@@ -120,7 +125,6 @@
     <div class="chk" id="shakerow" hidden><input type="checkbox" id="shake"><span>Shake phone to roll</span></div>
     <div class="chk"><input type="checkbox" id="sound"><span>Sound effects</span></div>
     <div class="row"><label>Volume</label><input type="range" id="volume" min="0" max="1" step="0.01"></div>
-    <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
     <div class="grid two" style="margin-bottom:6px"><button id="undo" title="Ctrl+Z">↶ Undo</button><button id="redo" title="Ctrl+Shift+Z / Ctrl+Y">Redo ↷</button></div>
     <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02"></div>
     <div class="row"><label>Dice friction</label><input type="range" id="fricdice" min="0" max="1" step="0.02"></div>
@@ -160,7 +164,7 @@
     <div class="row"><label>Font</label><select id="font"></select></div>
     <div class="row"><label>d4 numbers</label><select id="d4style"><option value="tips">Corner tips (standard)</option><option value="center">Face centre</option></select></div>
     <div class="row"><label>d6 faces</label><select id="d6style"><option value="numbers">Numbers</option><option value="pips">Pips</option></select></div>
-    <div class="row"><label>Size</label><input type="range" id="numsize" min="0.3" max="1" step="0.01"></div>
+    <div class="row"><label>Size</label><input type="range" id="numsize" min="0" max="1" step="0.002"></div>
     <div class="row"><label>Rotation</label><input type="range" id="numrot" min="-180" max="180" step="1"><output id="numrotv" style="width:38px;text-align:right;color:var(--dim)"></output></div>
     <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
     <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
@@ -188,7 +192,7 @@
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
   </aside>
-  <div id="stage"><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="layout"></button><button id="mode" aria-label="Switch between showcase and roll view"></button><div id="name"></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="spinbar"><button id="spinbtn" type="button"></button><input type="range" id="spin" min="0" max="1" step="0.01" aria-label="Spin speed"></div><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="layout"></button><button id="mode" aria-label="Switch between showcase and roll view"></button><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
 
 <script type="text/plain" id="main-src">
@@ -640,6 +644,9 @@ const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', pa
   shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:true, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1';
+const ICON_PAUSE='<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>', ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>';
+let spinLast=.3;
+const ICON_SND_ON='<svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>', ICON_SND_OFF='<svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>';
 if(new URLSearchParams(location.search).get('reset')){ try{ localStorage.removeItem(STORE); }catch{} history_replace_clean(); }
 function history_replace_clean(){ try{ window.history.replaceState(null,'',location.pathname); }catch{} }
 try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
@@ -916,17 +923,20 @@ function syncUI(){
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
-  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('sound').checked=state.sound; $('expsize').value=state.expsize;
-  for(const [id,k] of SLIDERS) $(id).value=state[k];
+  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('sound').checked=state.sound; $('snd').innerHTML=state.sound?ICON_SND_ON:ICON_SND_OFF; $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); $('spinbtn').innerHTML=state.spin>0?ICON_PAUSE:ICON_PLAY; $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
+  for(const [id,k] of SLIDERS) $(id).value=k==='numSize'?numToPos(state[k]):state[k];
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   $('numstyle').value=state.numRaised?'raised':'inset'; $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
   $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
+const NUM_MIN=.45, NUM_MAX=5;   // number size, as a fraction of the face inradius: tiny print is no use, jumbo print is cropped by the face edges on purpose
+const numToPos=v=>Math.log(Math.max(NUM_MIN,Math.min(NUM_MAX,v))/NUM_MIN)/Math.log(NUM_MAX/NUM_MIN), numFromPos=p=>+(NUM_MIN*Math.pow(NUM_MAX/NUM_MIN,p)).toFixed(2);   // log scale: the useful .5-1.5 range keeps most of the slider
+state.numSize=Math.max(NUM_MIN,Math.min(NUM_MAX,state.numSize));   // older saves allowed print down to .3
 const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce'],['fricdice','fricDice'],['fricmat','fricMat']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft','panel','panelDepth']);
-for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(world&&(k==='bounce'||k==='fricDice'||k==='fricMat')) applyContacts(); };
+for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=k==='numSize'?numFromPos(+e.target.value):+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(world&&(k==='bounce'||k==='fricDice'||k==='fricMat')) applyContacts(); };
 $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
   checkpoint(); state.inclusion=v; buildDice(true); };
 $('loadmodel').onclick=()=>$('modelfile').click();
@@ -957,7 +967,10 @@ async function setShake(on){
   if(on&&!shakeOn){ addEventListener('devicemotion',onShake); audioInit(); } else if(!on&&shakeOn) removeEventListener('devicemotion',onShake);
   shakeOn=on; state.shake=on; $('shake').checked=on; save(); }
 if('DeviceMotionEvent' in window&&matchMedia('(pointer:coarse)').matches){ $('shakerow').hidden=false; $('shake').onchange=e=>setShake(e.target.checked); if(state.shake&&typeof DeviceMotionEvent.requestPermission!=='function') setShake(true); else state.shake=false; }
-$('sound').onchange=e=>{ state.sound=e.target.checked; audioInit(); setVolume(); save(); };
+$('sound').onchange=e=>{ state.sound=e.target.checked; audioInit(); setVolume(); save(); syncUI(); };
+$('spinbtn').onclick=()=>{ if(state.spin>0){ spinLast=state.spin; state.spin=0; } else state.spin=spinLast||.3; save(); syncUI(); };   // pause remembers the speed it will resume at
+$('snd').onclick=()=>{ state.sound=!state.sound; audioInit(); setVolume(); save(); syncUI(); };
+for(const ev of ['pointerdown','touchend','click','keydown']) addEventListener(ev,()=>{ if(state.sound) audioInit(); },{capture:true,passive:true});   // iOS only lets audio start/resume inside a gesture, and 'interrupted' (app switch, call) needs one more: every tap re-wakes it
 $('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
 $('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
 $('expsize').onchange=e=>{state.expsize=e.target.value; save();};
@@ -995,7 +1008,7 @@ function loadDesign(d){
   state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
   state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5);
   { const ic=d.inclusion||{}; state.inclusion=MODELS[ic.type]?ic.type:'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
-  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,.3,1,.65); state.numRot=num(n.rotation_deg,-180,180,0); state.d4Style=n.d4_style==='center'?'center':'tips'; state.d6Style=n.d6_style==='pips'?'pips':'numbers';
+  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,NUM_MIN,NUM_MAX,.65); state.numRot=num(n.rotation_deg,-180,180,0); state.d4Style=n.d4_style==='center'?'center':'tips'; state.d6Style=n.d6_style==='pips'?'pips':'numbers';
   state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
   { const rl=d.relief||{}, fg=d.filigree||{}; state.panel=num(rl.panel,0,.3,0); state.panelDepth=num(rl.panel_depth,0,1,.5); state.numRaised=rl.numbers==='raised'; state.numPaint=rl.paint_numbers!==false; state.patina=num(rl.patina,0,1,0);
     state.filigree=['scroll','beads','deco'].includes(fg.style)?fg.style:'none'; state.filiFill=fg.filled!==false; state.enamelSame=!hex(fg.enamel); state.enamel=hex(fg.enamel)?fg.enamel:'#c9a24a'; }
@@ -1163,20 +1176,28 @@ function finishRoll(){ restT=0;
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
-function syncMode(){ $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
+function syncMode(){ document.body.classList.toggle('inroll',rolling); $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
 $('mode').onclick=()=>{ if(rolling) exitRoll(); else startRoll(); };
 syncMode();
 
 /* ---------- sound: everything is synthesised with Web Audio, no audio files ---------- */
 const sfx={ctx:null,master:null,noise:null,rGain:null,rFilter:null,voices:0,count:0,last:0};
+function keepAudible(){     // iPhone: with the ring/silent switch on, Web Audio is muted unless the page holds a 'playback' audio session
+  try{ if(navigator.audioSession){ if(navigator.audioSession.type!=='playback') navigator.audioSession.type='playback'; return; }
+    if(sfx.hold||!(/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))) return;   // older iOS: loop a silent clip
+    const n=800, v=new DataView(new ArrayBuffer(44+n)); const w=(o,t)=>[...t].forEach((c,i)=>v.setUint8(o+i,c.charCodeAt(0)));
+    w(0,'RIFF'); v.setUint32(4,36+n,true); w(8,'WAVEfmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true); v.setUint32(24,8000,true); v.setUint32(28,8000,true); v.setUint16(32,1,true); v.setUint16(34,8,true); w(36,'data'); v.setUint32(40,n,true);
+    for(let i=0;i<n;i++) v.setUint8(44+i,128);
+    const a=new Audio(URL.createObjectURL(new Blob([v],{type:'audio/wav'}))); a.loop=true; a.play().catch(()=>{}); sfx.hold=a; }catch{} }
 function audioInit(){
-  if(sfx.ctx){ if(sfx.ctx.state==='suspended') sfx.ctx.resume().catch(()=>{}); return sfx.ctx; }
+  keepAudible();
+  if(sfx.ctx){ if(sfx.ctx.state!=='running') sfx.ctx.resume().catch(()=>{}); return sfx.ctx; }   // 'suspended' or iOS 'interrupted'
   try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; const ctx=new AC(); sfx.ctx=ctx;
     sfx.master=ctx.createGain(); sfx.master.connect(ctx.destination);
     const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; sfx.noise=buf;
     const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; sfx.rFilter=ctx.createBiquadFilter(); sfx.rFilter.type='lowpass'; sfx.rFilter.frequency.value=260;
     sfx.rGain=ctx.createGain(); sfx.rGain.gain.value=0; src.connect(sfx.rFilter); sfx.rFilter.connect(sfx.rGain); sfx.rGain.connect(sfx.master); src.start();   // rolling rumble loop
-    setVolume(); if(ctx.state==='suspended') ctx.resume().catch(()=>{});
+    setVolume(); if(ctx.state!=='running') ctx.resume().catch(()=>{});
   }catch{ sfx.ctx=null; } return sfx.ctx;
 }
 function setVolume(){ if(sfx.master) sfx.master.gain.value=state.sound?Math.pow(state.volume,1.6):0; }
@@ -1357,7 +1378,7 @@ window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,t
     return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
-  memory(){ return {...renderer.info.memory}; }};
+  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit};
 window.__dice=window.__pd;   // old name
 </script>
 </body>
