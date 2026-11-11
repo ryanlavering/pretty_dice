@@ -193,6 +193,9 @@
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
     <div class="row" style="margin-top:6px"><label>Name</label><input id="dname" type="text" maxlength="80" placeholder="e.g. Giant club attack" style="flex:2;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"></div>
     <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
+    <div class="grid two" style="margin-top:6px"><button id="savebag">Save bag</button><button id="loadbag" title="Add the designs in a bag file (or a single design file) to this bag">Load bag</button></div>
+    <button id="replacebag" style="width:100%;margin-top:6px" title="Replace this whole bag with a bag file">Replace bag…</button>
+    <input type="file" id="bagfile" hidden>
     <input type="file" id="jsonfile" hidden>   <!-- no accept filter: phones label saved .json files text/plain or octet-stream and grey them out -->
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
@@ -649,7 +652,8 @@ const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
   shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
-const STORE='prettydice.v1';
+const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1', LOG_MAX=200;
+let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
 const ICON_PAUSE='<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>', ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>';
 let spinLast=.3;
 const ICON_SND_ON='<svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>', ICON_SND_OFF='<svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>';
@@ -660,7 +664,7 @@ try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
   if(!Array.isArray(state.off)||state.off.length!==3) state.off=[...DEFAULTS.off];
   if(Array.isArray(state.palettes)) state.palettes={};
 }catch{}
-function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} }
+function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); }
 /* One palette (3 colours) is shared by every substrate and stone type, so switching substrate keeps the colours (PD-61).
    Only Randomize makes new colours, using the logic of the substrate that is active at that moment (metal picks a metal, a stone picks its own palette).
    Substrates that use fewer than 3 colours (solid plastic, metal) still get 3, so every other substrate has a full set to show.
@@ -1025,6 +1029,77 @@ function loadDesign(d){
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+/* ---------- dice bag: many designs in one file (see docs/design/dice-bag-design.md, phase 1) ---------- */
+const slug=(t,fallback)=>String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||fallback;
+function uniqueId(base,taken){ let id=base, n=2; while(taken.has(id)) id=`${base}-${n++}`; return id; }
+function emptyBag(name='My bag'){ return {format:'pretty-dice-bag', version:1, name, designs:[], sets:[], characters:[], jail:[], active:{design:null,set:null}, log:[]}; }
+const designOK=d=>d&&d.format==='pretty-dice'&&d.version===1&&SHAPES[d.shape]&&SUBSTRATES[d.substrate];
+/* Parse any bag or single-design file into a bag. Pure: touches no app state. Returns {bag, dropped:[reasons]}. */
+function parseBag(obj){
+  if(!obj||typeof obj!=='object') throw new Error('Not a pretty-dice file');
+  const dropped=[], out=emptyBag();
+  if(obj.format==='pretty-dice'){
+    if(!designOK(obj)) throw new Error('Not a valid pretty-dice design file');
+    const name=(typeof obj.name==='string'&&obj.name.trim())?obj.name.trim().slice(0,80):'Design 1';
+    out.name=name; out.designs.push({id:slug(name,'design-1'), name, preview_shape:obj.shape, design:structuredClone(obj)});
+    out.active.design=out.designs[0].id; return {bag:out, dropped};
+  }
+  if(obj.format!=='pretty-dice-bag') throw new Error('Not a pretty-dice design or bag file');
+  if(obj.version!==1) throw new Error('Unsupported bag version '+obj.version);
+  if(typeof obj.name==='string'&&obj.name.trim()) out.name=obj.name.trim().slice(0,80);
+  const ids=new Set();
+  for(const [i,e] of (Array.isArray(obj.designs)?obj.designs:[]).entries()){
+    if(!e||!designOK(e.design)){ dropped.push(`design ${i+1} (${e&&e.name||'unnamed'}): not a valid design`); continue; }
+    const name=(typeof e.name==='string'&&e.name.trim())?e.name.trim().slice(0,80):`Design ${i+1}`, id=uniqueId(slug(e.id||name,`design-${i+1}`),ids); ids.add(id);
+    out.designs.push({id, name, preview_shape:SHAPES[e.preview_shape]?e.preview_shape:e.design.shape, design:structuredClone(e.design), ...(e.id&&e.id!==id?{was:e.id}:{})});
+  }
+  if(!out.designs.length) throw new Error('The bag has no valid designs');
+  const remap=new Map(out.designs.filter(d=>d.was).map(d=>[d.was,d.id])); out.designs.forEach(d=>delete d.was);
+  const ref=id=>ids.has(id)?id:remap.get(id);
+  const sets=new Set();
+  for(const st of (Array.isArray(obj.sets)?obj.sets:[])){ if(!st||typeof st.id!=='string'||!Array.isArray(st.terms)){ dropped.push('a set without an id or terms'); continue; }
+    const copy=structuredClone(st); copy.terms=copy.terms.map(t=>{ if(t&&t.design&&!ref(t.design)){ dropped.push(`set ${st.name||st.id}: design "${t.design}" is missing, using the active design`); const {design,...r}=t; return r; } return t&&t.design?{...t,design:ref(t.design)}:t; });
+    sets.add(copy.id); out.sets.push(copy); }
+  out.characters=(Array.isArray(obj.characters)?obj.characters:[]).filter(c=>c&&typeof c.id==='string').map(c=>structuredClone(c));
+  out.jail=(Array.isArray(obj.jail)?obj.jail:[]).filter(j=>j&&ref(j.design)).map(j=>({...structuredClone(j),design:ref(j.design)}));
+  const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null};
+  out.log=(Array.isArray(obj.log)?obj.log:[]).slice(-LOG_MAX);
+  return {bag:out, dropped};
+}
+/* The active design is the live state (phase 1 has no Modified badge yet), so refresh its entry before the bag is saved or exported. */
+function syncActive(){ if(!bag) return; const e=bag.designs.find(d=>d.id===bag.active.design); if(e){ const dj=designToJSON(); e.design=dj; e.preview_shape=dj.shape; if(dj.name) e.name=dj.name; } }
+function bagToJSON(){ syncActive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
+function saveBag(){ if(!bag) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
+/* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
+function initBag(){
+  try{ const raw=localStorage.getItem(BAG_STORE); if(raw){ bag=parseBag(JSON.parse(raw)).bag; } }catch{ bag=null; }
+  if(!bag){ const dj=designToJSON(), name=dj.name||'Design 1'; bag=emptyBag(); bag.designs.push({id:slug(name,'design-1'), name, preview_shape:dj.shape, design:dj}); bag.active.design=bag.designs[0].id; }
+  saveBag();
+}
+/* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
+async function importBag(obj,{replace=false}={}){
+  const {bag:inc,dropped}=parseBag(obj);
+  if(replace){ bag=inc; await loadDesign(bag.designs.find(d=>d.id===bag.active.design).design); save(); return {added:inc.designs.length,dropped}; }
+  syncActive();
+  const taken=new Set(bag.designs.map(d=>d.id)), map=new Map();
+  for(const d of inc.designs){ const id=uniqueId(d.id,taken); taken.add(id); map.set(d.id,id); bag.designs.push({...d,id}); }
+  const setIds=new Set(bag.sets.map(x=>x.id)), setMap=new Map();
+  for(const st of inc.sets){ const id=uniqueId(st.id,setIds); setIds.add(id); setMap.set(st.id,id); bag.sets.push({...st,id,terms:st.terms.map(t=>t.design?{...t,design:map.get(t.design)}:t)}); }
+  const chIds=new Set(bag.characters.map(x=>x.id));
+  for(const c of inc.characters){ if(!chIds.has(c.id)){ bag.characters.push(c); chIds.add(c.id); } }
+  bag.sets.forEach(st=>{ if(st.character&&!chIds.has(st.character)){ delete st.character; dropped.push(`set ${st.name||st.id}: its character is missing`); } });
+  for(const j of inc.jail) bag.jail.push({...j,design:map.get(j.design)});
+  bag.log=[...bag.log,...inc.log].slice(-LOG_MAX);
+  save(); return {added:inc.designs.length,dropped};
+}
+const bagFileName=()=>`${slug(bag.name,'pretty-dice-bag')}.bag.json`;
+$('savebag').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagToJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+let bagReplace=false;
+$('loadbag').onclick=()=>{ bagReplace=false; $('bagfile').click(); };
+$('replacebag').onclick=()=>{ if(confirm('Replace every design in this bag with the file you choose?')){ bagReplace=true; $('bagfile').click(); } };
+$('bagfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
+  try{ const txt=await readText(f); inp.value=''; const r=await importBag(JSON.parse(txt.replace(/^﻿/,'')),{replace:bagReplace}); if(r.dropped.length) alert(`Loaded ${r.added} design(s). Left out:\n- `+r.dropped.join('\n- ')); }
+  catch(err){ inp.value=''; alert('Could not load bag: '+err.message); } };
 const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.8v.01"/></svg>', ICON_EXPAND='<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
@@ -1371,6 +1446,7 @@ if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
 buildDice();
+initBag();
 history=[snapshot()]; hIdx=0; syncHistoryUI();
 if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of Object.keys(FONTS)){ await ensureFont(f); const labs=[0,1,6,8,9,10,20,90], at=makeAtlas(labs.length,labs,f,3,false), c=at.mask.image, g=c.getContext('2d'), out=[];
     labs.forEach((l,i)=>{ const cx=(i%at.cols)*at.cell, cy=Math.floor(i/at.cols)*at.cell, d=g.getImageData(cx,cy,at.cell,at.cell).data; let x0=1e9,x1=-1,y0=1e9,y1=-1;
@@ -1383,7 +1459,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,get bag(){return bag;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
