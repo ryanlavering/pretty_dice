@@ -1,10 +1,10 @@
 ---
 id: PD-111
 title: 'Settings pane top: group the bag, design-edit and bag-save controls'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T00:40:00Z'
-updated_date: '2026-11-12T00:54:00Z'
+updated_date: '2026-11-12T01:20:00Z'
 labels:
   - ui
 dependencies: []
@@ -21,4 +21,6 @@ Owner 2026-11-12 (screenshot): the top of the settings pane is jumbled: design c
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12: one bag box (design card with its Modified badge, Save / Save as copy / Revert when edited, quiet 'Bag not saved to a file' footer with Save bag); Randomize + undo/redo + options and the Showcase/Roll switch sit below with more space. Element ids unchanged.
+
+2026-11-12 owner: the Showcase/Roll switch moved to the very top of the settings pane (above the bag box).
 <!-- SECTION:NOTES:END -->

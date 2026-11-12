@@ -67,7 +67,7 @@
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
   /* dice bag: settings-pane row, shelf (carousel) and All-designs sheet */
   #bagbox #bagopen{border-color:transparent;background:transparent;padding:4px 6px} #bagbox #bagopen:hover{background:#1d212c}
-  #bagbox{margin:14px 0 4px;padding:6px;display:flex;flex-direction:column;gap:6px;background:#12151c;border:1px solid var(--line);border-radius:12px} #bagrow{display:flex;align-items:center;gap:8px;margin:0} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;align-items:center;gap:10px} #bagopen .bt{min-width:0;display:flex;flex-direction:column;gap:1px} #bagth{flex:none;width:44px;height:44px;border-radius:9px;border:2px solid var(--line);background:#1d212c center/cover no-repeat}
+  #bagbox{margin:12px 0 4px;padding:6px;display:flex;flex-direction:column;gap:6px;background:#12151c;border:1px solid var(--line);border-radius:12px} #bagrow{display:flex;align-items:center;gap:8px;margin:0} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;align-items:center;gap:10px} #bagopen .bt{min-width:0;display:flex;flex-direction:column;gap:1px} #bagth{flex:none;width:44px;height:44px;border-radius:9px;border:2px solid var(--line);background:#1d212c center/cover no-repeat}
   #bagname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #bagpos{color:var(--dim);font-size:11px}
   #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
   .bagpill{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:12px}
@@ -79,7 +79,7 @@
   #shelf{position:absolute;left:64px;right:64px;bottom:8px;z-index:4;pointer-events:none}
   #cards{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px calc(50% - 36px);pointer-events:auto;scrollbar-width:none;overscroll-behavior-x:contain} #cards::-webkit-scrollbar{display:none}
   body.inroll #shelf{display:none}
-  .card{flex:none;width:72px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;background:none;border:0;color:var(--dim);font-size:11px;cursor:pointer;position:relative;-webkit-touch-callout:none;user-select:none}
+  .card{flex:none;width:72px;scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;background:none;border:0;color:var(--dim);font-size:11px;cursor:pointer;position:relative;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
   .card .th,.tile .th{width:64px;height:64px;border-radius:12px;border:2px solid var(--line);background:#1d212c center/cover no-repeat;position:relative;transition:transform .15s,border-color .15s}
   .card.on .th,.tile.on .th{border-color:var(--accent)} .card.on{color:var(--accent)} .card.on .th{transform:scale(1.12)}
   .nmedit{width:100%;box-sizing:border-box;font:inherit;font-size:12px!important;background:#1d212c;color:var(--ink);border:1px solid var(--accent);border-radius:4px;padding:1px 3px;text-align:center}
@@ -90,11 +90,11 @@
   #bagsheet{position:fixed;inset:0;z-index:20;background:rgba(14,16,21,.97);display:flex;flex-direction:column} #bagsheet[hidden]{display:none}
   #sheethead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);padding-top:max(14px,env(safe-area-inset-top,0px))} #sheettitle{font:700 16px Cinzel,serif;letter-spacing:.06em;color:var(--accent)}
   #tiles{flex:1;overflow:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px;align-content:start}
-  .tile{display:flex;flex-direction:column;gap:5px;align-items:stretch;position:relative;cursor:pointer;user-select:none;-webkit-touch-callout:none;border-radius:12px}
+  .tile{display:flex;flex-direction:column;gap:5px;align-items:stretch;position:relative;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;border-radius:12px}
   .tile .th{width:100%;height:auto;aspect-ratio:1} .tile.drag{opacity:.55;outline:2px dashed var(--accent)} .tile .nm{font-size:13px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tile .dots{position:absolute;top:4px;right:4px;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(20,23,31,.8);line-height:1}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
-  #cardmenu{position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
+  #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
   @media (max-width:760px){
     #tools .col,#shelf{bottom:6px} #shelf{left:60px;right:60px} #hint{bottom:104px}
@@ -147,6 +147,7 @@
   <aside>
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
+    <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view (tap again to re-roll)">Roll</button></div>
     <div id="bagbox">
     <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagth" class="th"></span><span class="bt"><span id="bagname"></span><small id="bagpos"></small></span></button><span id="modbadge" hidden>Modified</span></div>
     <div id="bagact" hidden><button id="bsave" type="button"></button><button id="bcopy" type="button">Save as copy</button><button id="brevert" type="button">Revert</button></div>
@@ -154,8 +155,7 @@
     </div>
 
     <div id="actions"><div id="randrow"><button class="big" id="rand">Randomize</button><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
-      <div id="randopts"><span>Also randomize</span><label class="chk"><input type="checkbox" id="randsub" checked><span>substrate</span></label><label class="chk"><input type="checkbox" id="randshape"><span>shape</span></label></div>
-      <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view (tap again to re-roll)">Roll</button></div></div>
+      <div id="randopts"><span>Also randomize</span><label class="chk"><input type="checkbox" id="randsub" checked><span>substrate</span></label><label class="chk"><input type="checkbox" id="randshape"><span>shape</span></label></div></div>
 
     <div id="panes">
     <h2>Shape</h2>
@@ -1313,7 +1313,7 @@ function renderBag(){
   if(!$('bagsheet').hidden) renderSheet();
 }
 const x_id=n=>n.dataset.id;
-function nameEl(x){ const n=el('span','nm',x.name); n.title='Click to rename'; n.onclick=e=>{ e.stopPropagation(); editName(n,x.id); }; n.onpointerdown=e=>{ e.stopPropagation(); }; return n; }
+function nameEl(x){ const n=el('span','nm',x.name); n.title='Click to rename'; n.onclick=e=>{ e.stopPropagation(); if(longFired){ longFired=false; return; } editName(n,x.id); }; return n; }
 function editName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Design name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
   const fin=ok=>{ if(done) return; done=true; inp.onblur=null; inp.blur(); if(ok&&inp.value.trim()&&inp.value.trim()!==cur) bagOps.rename(id,inp.value); lastSig=''; renderBag(); if(!$('bagsheet').hidden) renderSheet(); };
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true);
@@ -1340,7 +1340,8 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   $('cards').addEventListener('scroll',()=>{ clearTimeout(t); t=setTimeout(settle,160); },{passive:true}); }
 
 /* menus */
-function openMenu(anchor,items){ const m=$('cardmenu'); m.replaceChildren(); for(const it of items){ if(it.head){ m.append(el('div','mh',it.head)); continue; }
+let menuAnchor=null;
+function openMenu(anchor,items){ { const r0=anchor.getBoundingClientRect(); menuAnchor={getBoundingClientRect:()=>r0}; } const m=$('cardmenu'); m.replaceChildren(); for(const it of items){ if(it.head){ m.append(el('div','mh',it.head)); continue; }
     const b=el('button',it.danger?'danger':'',it.label); b.type='button'; if(it.disabled) b.disabled=true; b.onclick=()=>{ closeMenu(); it.run(); }; m.append(b); }
   m.hidden=false; const r=anchor.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px'; m.style.top=Math.max(8,(r.top-h-6>8?r.top-h-6:r.bottom+6))+'px'; }
@@ -1352,10 +1353,10 @@ function cardItems(id){
   const k=bag.designs.findIndex(d=>d.id===id), last=bag.designs.length-1;
   const uses=bag.sets.filter(st=>st.terms.some(t=>t.design===id)).length;
   const edits=isModified(id)?[{head:'Modified'},{label:uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save',run:()=>bagOps.save(id)},{label:'Save as copy',run:()=>bagOps.saveCopy(id)},{label:'Revert',run:()=>bagOps.revert(id)},{head:'Design'}]:[];
-  return [...edits,{label:'Rename…',run:()=>{ const nm=prompt('Design name',entryOf(id).name); if(nm) bagOps.rename(id,nm); }},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
+  return [...edits,{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#bagsheet:not([hidden]) .tile[data-id="${id}"] .nm`)||document.querySelector(`#cards .card[data-id="${id}"] .nm`); if(n) editName(n,id); },0)},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
     {label:'Move left',disabled:k===0,run:()=>bagOps.move(id,k-1)},{label:'Move right',disabled:k===last,run:()=>bagOps.move(id,k+1)},
     {label:'Move to start',disabled:k===0,run:()=>bagOps.move(id,0)},{label:'Move to end',disabled:k===last,run:()=>bagOps.move(id,last)},
-    {label:'Delete…',danger:true,disabled:last===0,run:()=>{ if(confirm(`Delete "${entryOf(id).name}" from the bag?`)) bagOps.remove(id); }}]; }
+    {label:'Delete…',danger:true,disabled:last===0,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${entryOf(id).name}"?`},{label:'Delete',danger:true,run:()=>bagOps.remove(id)},{label:'Cancel',run:()=>{}}]),0)}]; }
 
 /* All-designs sheet, with drag-to-reorder (long-press on a phone) */
 function renderSheet(){ const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
