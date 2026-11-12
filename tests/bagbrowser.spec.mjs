@@ -207,3 +207,27 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   await expect.poll(() => app.run(pd => pd.bag.name)).toBe('Second');
   expect(await app.run(pd => pd.bag.designs.length)).toBe(1);
 });
+
+test('Save bag writes the current state of edited designs; the session keeps them pending, and a loaded file is clean (PD-112)', async ({ app, page }) => {
+  test.setTimeout(120_000);
+  await app.open();
+  await app.run(SETUP);
+  await app.run(async pd => { pd.state.radius = 0.11; pd.save(); await pd.bagActivate('gold'); pd.state.radius = 0.09; pd.save(); });   // bone and gold both carry edits
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#savebag')]);
+  const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
+  expect(file.pending).toEqual({});
+  expect(file.designs.find(d => d.id === 'gold').design.edge_radius).toBe(0.09);
+  expect(file.designs.find(d => d.id === 'bone').design.edge_radius).toBe(0.11);
+  // the session: bag counts as saved, but the designs are still Modified and revert to their old state
+  await expect(page.locator('#bagdirty')).toBeHidden();
+  const s = await app.run(async pd => { const was = { gold: pd.isModified('gold'), bone: pd.isModified('bone') }; await pd.bagOps.revert('gold'); return { was, radiusAfter: pd.state.radius, goldMod: pd.isModified('gold') }; });
+  expect(s.was).toEqual({ gold: true, bone: true });
+  expect(s.goldMod).toBe(false); expect(s.radiusAfter).not.toBe(0.09);
+  // loading that file: the designs come in clean with the newer state
+  await page.click('#loadbag');   // the revert above changed the bag, so it asks first
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
+  await fc.setFiles({ name: 'x.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(JSON.stringify(file)) });
+  await expect.poll(() => app.run(pd => pd.bag.designs.find(d => d.id === 'bone').design.edge_radius)).toBe(0.11);
+  const l = await app.run(pd => ({ pending: Object.keys(pd.bag.pending), goldMod: pd.isModified('gold'), boneMod: pd.isModified('bone'), goldR: pd.bag.designs.find(d => d.id === 'gold').design.edge_radius }));
+  expect(l).toEqual({ pending: [], goldMod: false, boneMod: false, goldR: 0.09 });
+});
