@@ -271,3 +271,47 @@ test('no design picture is taken while the camera eases back from the roll view 
     const d = g.getImageData(0, 0, c.width, c.height).data, bg = [d[0], d[1], d[2]]; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 60) n++; return n / (c.width * c.height); }, first);
   expect(fill).toBeGreaterThan(0.1); expect(fill).toBeLessThan(0.6);   // one die in a dark frame, not a screen full of table
 });
+
+// Phase 3 (PD-102.3): a die per term can use another design in the bag.
+test('a set mixes designs: @design notation, one look per design, rolls and reads correctly', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);   // bone is active; amethyst (swirl) and gold (metal) are other designs
+  await page.locator('#shapes button[data-id="custom"]').click();
+  await page.locator('#notation').fill('d6@nope'); await page.locator('#notapply').click();
+  await expect(page.locator('#noterr')).toContainText('No design');
+  await page.locator('#notation').fill('2d6@bone+1d8@gold+d20@amethyst+1'); await page.locator('#notapply').click();
+  await expect(page.locator('#noterr')).toHaveText('');
+  const r = await app.run(pd => ({ notation: pd.state.notation, dice: pd.dice.map(d => ({ name: d.name, other: !!d.look, metal: d.mat.metalness, sub: d.look && d.look.substrate })), roll: pd.simRoll() }));
+  expect(r.notation).toBe('2d6@bone+1d8@gold+1d20@amethyst+1');
+  expect(r.dice.map(d => d.name)).toEqual(['d6', 'd6', 'd8', 'd20']);
+  expect(r.dice.map(d => d.other)).toEqual([false, false, true, true]);          // the live design needs no copy
+  expect(r.dice[2].sub).toBe('metal'); expect(r.dice[3].sub).toBe('swirl');
+  expect(r.dice[2].metal).toBeGreaterThan(0.5); expect(r.dice[0].metal).toBeLessThan(0.5);   // gold is metal, bone is plastic
+  expect(r.roll.dice.length).toBe(4);
+  await expect(page.locator('#result')).toContainText('1d8 (Gold)');
+  await expect(page.locator('#termchips button')).toHaveCount(3);
+  await page.locator('#termchips button', { hasText: 'Gold' }).click();   // a chip removes its term
+  expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
+});
+
+test('a note that names a deleted design falls back to the live design instead of failing', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(async pd => { pd.state.notation = '2d6@gold+1'; pd.state.shape = 'custom'; await pd.bagOps.remove('gold'); pd.state.notation = '2d6@gold+1'; return pd.dice.length; });
+  expect(r).toBeGreaterThan(0);
+});
+
+test('dice that look the same share one atlas and geometry; different designs or shapes do not (profiling, PD-102.3)', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(pd => {
+    const uniq = k => new Set(pd.dice.map(d => d[k])).size, build = n => { pd.state.shape = 'custom'; pd.state.notation = n; pd.buildDice(); };
+    build('12d20'); const same = { atlases: uniq('atlas'), geos: uniq('geo'), mats: uniq('mat'), dice: pd.dice.length };
+    build('6d20+6d20@gold'); const two = { atlases: uniq('atlas'), dice: pd.dice.length };      // the same shape in two designs: two atlases (gold has its own look but the same number style, so it may share)
+    build('6d20+6d8'); const shapes = uniq('atlas');
+    return { same, two, shapes };
+  });
+  expect(r.same).toEqual({ atlases: 1, geos: 1, mats: 12, dice: 12 });   // a material per die: each die glows and dims by itself
+  expect(r.two.dice).toBe(12); expect(r.two.atlases).toBeLessThanOrEqual(2);
+  expect(r.shapes).toBe(2);
+});

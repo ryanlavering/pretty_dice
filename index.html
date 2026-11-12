@@ -73,6 +73,7 @@
   .bagpill{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:12px}
   #bagdirty{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:0 6px 2px;color:var(--dim);font-size:12px} .bagnote::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px} #bagdirty[hidden],#sheetbag[hidden]{display:none} #sheetbag{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:12px}
   #savebag.dirty::after{content:' \25CF';color:var(--accent)} #bagbtn{position:relative} #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
+  #termchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px} #termchips:empty{display:none} #termchips button{padding:3px 9px;font-size:12px;border-radius:999px} #termchips .x{color:var(--dim);margin-left:4px}
   #bagask{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px} #bagask[hidden]{display:none} #bagask .box{max-width:360px;background:#14171f;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px} #bagask .row{display:flex;gap:8px;flex-wrap:wrap}
   #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
   #bagact #bsave{background:var(--accent);color:#1a1405;border:0;font-weight:600}
@@ -165,6 +166,8 @@
       <h2>Custom set</h2>
       <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notclear" class="ico" type="button" title="Clear the set (a single d20)" aria-label="Clear the set (a single d20)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
       <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
+      <div class="row" id="dicedesignrow"><label for="stepdesign">Dice use</label><select id="stepdesign" title="Which design the + and − buttons add dice of"></select></div>
+      <div id="termchips" aria-label="Dice in this set"></div>
       <div class="grid" id="steppers" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
       <div class="row"><label>Modifier</label><button id="modm" style="padding:4px 10px">−</button><b id="modv" style="min-width:26px;text-align:center">0</b><button id="modp" style="padding:4px 10px">+</button></div>
     </div>
@@ -495,8 +498,9 @@ function buildGeometry(faces, atlas, radius, numSize, numRot, opts={}){
 }
 
 /* ---------- material: synthetic 3D texture injected into MeshPhysicalMaterial ---------- */
-const U = { uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
-  uMode:{value:1}, uStone:{value:0}, uAccent:{value:.5}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0}, uEnamel:{value:new THREE.Color()}, uFill:{value:1}, uPatina:{value:0}, uNumPaint:{value:1} };
+const makeUniforms=()=>({ uC1:{value:new THREE.Color()}, uC2:{value:new THREE.Color()}, uC3:{value:new THREE.Color()}, uPaint:{value:new THREE.Color()},
+  uMode:{value:1}, uStone:{value:0}, uAccent:{value:.5}, uGlitter:{value:.5}, uBubbles:{value:.3}, uTint:{value:.6}, uScale:{value:1.6}, uOff:{value:new THREE.Vector3()}, uFlake:{value:0}, uBrush:{value:0}, uEnamel:{value:new THREE.Color()}, uFill:{value:1}, uPatina:{value:0}, uNumPaint:{value:1} });
+const U=makeUniforms();   // the live (active) design's look; every other design in a mixed set gets its own set (see lookFor)
 
 const GLSL_NOISE = `
 float h13(vec3 p){p=fract(p*.1031);p+=dot(p,p.zyx+31.32);return fract((p.x+p.y)*p.z);}
@@ -594,11 +598,11 @@ vec3 volume(vec3 p, vec3 v, vec3 n, out vec3 glow){
   }
   return acc/ws;
 }`;
-function makeMaterial(atlas){
+function makeMaterial(atlas,uni=U){
   const m=new THREE.MeshPhysicalMaterial({color:0xffffff, bumpMap:atlas.bump, bumpScale:2.2});
   m.userData.fx={uGlow:{value:0},uGray:{value:0},uGlowCol:{value:new THREE.Color(0xffcf4a)}};   // nat 20 glow / nat 1 desaturation
   m.onBeforeCompile = sh => {
-    Object.assign(sh.uniforms, U, m.userData.fx, {uMask:{value:atlas.mask}});
+    Object.assign(sh.uniforms, uni, m.userData.fx, {uMask:{value:atlas.mask}});
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>',`#include <common>
         attribute vec4 cellB; attribute float rec; varying float vRec; varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;`)
@@ -766,15 +770,20 @@ let dice=[], baseZ=5.4, customZoom=13, needHalfW=0, customHalfW=0;   // needHalf
 const TENS=range(0,9).map(n=>n*10);
 const SET7=[['d4',-2.27,1.25],['d6',0,1.25],['d8',2.27,1.25],['d10',-3.4,-1.25],['dpct',-1.13,-1.25],['d12',1.13,-1.25],['d20',3.4,-1.25]];   // 3 on top; bottom row d10, d%, d12, d20
 const SIDES={4:'d4',6:'d6',8:'d8',10:'d10',12:'d12',14:'d14',16:'d16',20:'d20'}, MAXDICE=24;
-function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}], mod}
+/* A design in notation is written @id with its dashes as underscores (d20@amethyst_2), because a dash in the text means minus. */
+const designRef=id=>id.replace(/-/g,'_');
+const designByRef=r=>bag&&bag.designs.find(d=>designRef(d.id)===r);
+/* "4d6 + 6d10@bone + 3" -> {terms:[{count,sides,design?}], mod}. strict: an @design that is not in the bag is an error (typed text); stored text just drops it. */
+function parseNotation(str,strict=false){
   const terms=[]; let mod=0, n=0;
   const toks=String(str).toLowerCase().replace(/\s+/g,'').replace(/-/g,'+-').split('+').filter(Boolean);
   if(!toks.length) return {error:'Enter some dice, e.g. 4d6+2d10+3'};
   for(const t of toks){
     let m;
-    if((m=t.match(/^(\d*)d(\d+|%)$/))){ const count=m[1]===''?1:+m[1], sides=m[2]==='%'?100:+m[2];
+    if((m=t.match(/^(\d*)d(\d+|%)(?:@([a-z0-9_]+))?$/))){ const count=m[1]===''?1:+m[1], sides=m[2]==='%'?100:+m[2]; let design=null;
+      if(m[3]){ const e=designByRef(m[3]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[3]}" in the bag`}; }
       if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
-      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides}); }
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push(design?{count,sides,design}:{count,sides}); }
     else if(/^-?\d+$/.test(t)) mod+=+t;
     else return {error:`Can't read "${t}"`};
   }
@@ -782,7 +791,7 @@ function parseNotation(str){      // "4d6 + 6d10 + 3" -> {terms:[{count,sides}],
   if(n>MAXDICE) return {error:`Too many dice (${n}); max ${MAXDICE}`};
   return {terms,mod};
 }
-const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -791,10 +800,10 @@ function specsFor(shape){
     const p=parseNotation(state.notation), list=[];
     if(p.error) return specsFor('d20');
     p.terms.forEach((t,ti)=>{ for(let c=0;c<t.count;c++){
-      if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,part:'tens'}, {id:'d10',labels:null,name:'d10',term:ti,part:'ones'}); }
-      else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti}); } });
+      if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,part:'ones',design:t.design}); }
+      else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,design:t.design}); } });
     const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
-    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,part:d.part}));
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,part:d.part,design:d.design}));
   }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
@@ -888,32 +897,52 @@ function loadModelFile(file){
     ext==='obj'?fr.readAsText(file):fr.readAsArrayBuffer(file);
   });
 }
-function makeInclusion(){ const tpl=MODELS[state.inclusion]?getTemplate(state.inclusion):state.inclusion==='custom'?customTemplate:null; if(!tpl) return null;
+function makeInclusion(L=state){ const tpl=MODELS[L.inclusion]?getTemplate(L.inclusion):L.inclusion==='custom'?customTemplate:null; if(!tpl) return null;
   const inc=new THREE.Group(); const c=tpl.clone(true); c.traverse(o=>{ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } }); inc.add(c); return inc; }
-function updateInclusions(){ for(const d of dice){ if(!d.inc) continue;
-  d.inc.scale.setScalar(d.inradius*state.inclSize); d.inc.position.set(0,state.inclY*d.inradius,0); d.inc.rotation.set(0,THREE.MathUtils.degToRad(state.inclTurn),0); } }
+function updateInclusions(){ for(const d of dice){ if(!d.inc) continue; const L=d.look||state;
+  d.inc.scale.setScalar(d.inradius*L.inclSize); d.inc.position.set(0,L.inclY*d.inradius,0); d.inc.rotation.set(0,THREE.MathUtils.degToRad(L.inclTurn),0); } }
 let buildTok=0, rollKey='';          // buildTok: only the newest async rebuild runs; rollKey: what the running roll was built for
+/* Mixed sets: every design in the set other than the live one gets its own look and uniform set. Rolls use pending edits, like the live design. */
+const foreign=new Map(), fontAsked=new Set();
+/* Dice that look the same (same shape, same number style) share one number atlas and one geometry: 20 identical d20 hold 2 textures, not 40. A material stays per die, because each die glows and dims by itself. */
+let partCache=new Map();
+const liveId=()=>bag&&!bag.active.draft?bag.active.design:null;
+function lookFor(id){ if(!id||!bag||id===liveId()) return null; let f=foreign.get(id); if(f) return f.look;
+  const e=bag.designs.find(d=>d.id===id); if(!e) return null; const j=bag.pending[id]||e.design; if(!designOK(j)) return null;
+  const look=lookFromDesign(j); foreign.set(id,{look,uni:makeUniforms()});
+  const F=FONTS[look.font]; if(F&&F.load&&!document.fonts.check(F.load)&&!fontAsked.has(look.font)){ fontAsked.add(look.font); ensureFont(look.font).then(()=>{ fontAsked.delete(look.font); for(const [k,pt] of partCache) if(k.includes('|'+look.font+'|')){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); partCache.delete(k); } scheduleRebuild(); }); }   // numbers drawn in the fallback font are not reused
+  return look; }
 function buildDice(keepRoll){
   buildTok++;
   if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)
   if(!keepRoll) exitRoll(true);
-  rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[];
+  rig.clear(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
   const specs=specsFor(state.shape);
   specs.forEach(s=>{
+    const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
-    const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
-    if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
-    let opts={};
-    if(s.labels.length===4&&faces.length===4&&state.d4Style==='tips'){          // vertex value = label of the face opposite it
-      const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
-      opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
-    } else if(faces.length===6&&s.labels.length===6&&state.d6Style==='pips') opts={layout:'pips'};
-    const atlas=makeAtlas(faces.length,labs,state.font,state.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,state.radius,state.numSize,state.numRot,{panel:state.panel,panelDepth:state.panelDepth,filigree:state.filigree,soft:state.numSoft}), mat=makeMaterial(atlas);
+    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree].join('|');
+    let part=nextParts.get(key)||partCache.get(key);
+    if(!part){
+      const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
+      if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
+      let opts={};
+      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'){          // vertex value = label of the face opposite it
+        const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
+        opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
+      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
+      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
+      part={faces,labs,atlas,geo};
+    }
+    nextParts.set(key,part);
+    const {faces,labs,atlas,geo}=part, mat=makeMaterial(atlas,own?foreign.get(s.design).uni:U);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
-    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,inradius:Math.min(...faces.map(f=>f.d))};
-    if(state.substrate==='epoxy'){ const inc=makeInclusion(); if(inc){ mesh.add(inc); entry.inc=inc; } }
+    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,look:own,inradius:Math.min(...faces.map(f=>f.d))};
+    if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
+  for(const [k,pt] of partCache) if(!nextParts.has(k)){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); }   // parts no die uses any more
+  partCache=nextParts;
   needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 1.5;   // a single die must fit a narrow (portrait) screen too
   baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
   applyLook();
@@ -922,20 +951,26 @@ let rebuildQueued=false;
 const scheduleRebuild=()=>{ if(rebuildQueued) return; rebuildQueued=true; requestAnimationFrame(()=>{rebuildQueued=false; buildDice(true);}); };
 async function ensureFont(k){ const f=FONTS[k]; if(f&&f.load){ try{ await Promise.race([document.fonts.load(f.load),new Promise(r=>setTimeout(r,2000))]); }catch{} } }
 
+/* Paint one look (a state-shaped object) onto a uniform set and the materials that use it. */
+function paintLook(L,U,mats){
+  const S=SUBSTRATES[L.substrate];
+  U.uC1.value.set(L.colors[0]); U.uC2.value.set(L.colors[1]); U.uC3.value.set(L.colors[2]); U.uPaint.value.set(L.paint);
+  U.uOff.value.set(...L.off); U.uEnamel.value.set(L.enamelSame?L.paint:L.enamel); U.uFill.value=L.filiFill?1:0; U.uPatina.value=L.patina; U.uNumPaint.value=L.numPaint?1:0;
+  U.uTint.value=THREE.MathUtils.lerp(.9,.35,L.clarity); U.uGlitter.value=L.glitter; U.uBubbles.value=L.bubbles; U.uStone.value=STONES[L.stone].id; U.uAccent.value=L.stoneAccent; U.uMode.value=S.mode; U.uScale.value=(L.substrate==='marble'&&STONES[L.stone].scaleMap||(v=>v))(L.scale); U.uFlake.value=S.flake; U.uBrush.value=(L.substrate==='marble'&&STONES[L.stone].brush)||S.brush;
+  for(const mat of mats){
+    const ST=L.substrate==='marble'?STONES[L.stone]:null;
+    // metals stop short of a mirror (roughness floor .25): a mirror only shows the dim room and reads black
+    const P=L.polish, baseR=ST?ST.rough:S.rough, baseC=ST?ST.coat:S.coat;   // polish .5 = the substrate's designed finish
+    Object.assign(mat,{metalness:ST&&ST.metal!=null?ST.metal:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,(ST&&ST.metal!=null?ST.metal:S.metal)>.5?.25:.03,1), clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:(L.numRaised?-1:1)*L.numDepth,
+      transmission:S.trans?.35+.65*L.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,L.clarity):Infinity,
+      side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
+    mat.attenuationColor.set(L.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
+  }
+}
 function applyLook(){
   const S=SUBSTRATES[state.substrate];
-  U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
-  U.uOff.value.set(...state.off); U.uEnamel.value.set(state.enamelSame?state.paint:state.enamel); U.uFill.value=state.filiFill?1:0; U.uPatina.value=state.patina; U.uNumPaint.value=state.numPaint?1:0;
-  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=(state.substrate==='marble'&&STONES[state.stone].scaleMap||(v=>v))(state.scale); U.uFlake.value=S.flake; U.uBrush.value=(state.substrate==='marble'&&STONES[state.stone].brush)||S.brush;
-  for(const {mat} of dice){
-    const ST=state.substrate==='marble'?STONES[state.stone]:null;
-    // metals stop short of a mirror (roughness floor .25): a mirror only shows the dim room and reads black
-    const P=state.polish, baseR=ST?ST.rough:S.rough, baseC=ST?ST.coat:S.coat;   // polish .5 = the substrate's designed finish
-    Object.assign(mat,{metalness:ST&&ST.metal!=null?ST.metal:S.metal, roughness:THREE.MathUtils.clamp(baseR+(.5-P)*1.1,(ST&&ST.metal!=null?ST.metal:S.metal)>.5?.25:.03,1), clearcoat:P<.5?baseC*P*2:THREE.MathUtils.lerp(baseC,1,(P-.5)*2), clearcoatRoughness:THREE.MathUtils.clamp(.08+(.5-P)*.5,.03,.5), specularIntensity:THREE.MathUtils.clamp(.2+1.6*P,.2,1), bumpScale:(state.numRaised?-1:1)*state.numDepth,
-      transmission:S.trans?.35+.65*state.clarity:0, ior:1.5, thickness:S.trans?2:0, attenuationDistance:S.trans?THREE.MathUtils.lerp(1.5,8,state.clarity):Infinity,
-      side:S.trans?THREE.DoubleSide:THREE.FrontSide});   // double-sided so the far faces (and their numbers) are seen through the die
-    mat.attenuationColor.set(state.colors[0]); mat.emissive.set('#000000'); mat.needsUpdate=true;
-  }
+  paintLook(state,U,dice.filter(d=>!d.look).map(d=>d.mat));
+  for(const f of foreign.values()) paintLook(f.look,f.uni,dice.filter(d=>d.look===f.look).map(d=>d.mat));
   $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
   setVolume(); updateInclusions(); syncUI(); save(); scheduleCheckpoint();
 }
@@ -991,16 +1026,20 @@ const rebuildKeepMode=()=>{ const was=rolling; buildDice(); if(was) startRoll();
 
 /* custom set: stepper UI <-> notation text */
 const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
-function counts(){ const p=parseNotation(state.notation), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
-function setCounts(c,mod){ checkpoint(); const terms=STEP_TYPES.filter(t=>c[t]>0).map(t=>({count:c[t],sides:t})); if(!terms.length) return;
+let stepDesign=null;   // the design the + / − buttons add dice of (null = the live design)
+const sameDesign=(a,b)=>(a||null)===(b||null);
+function counts(){ const p=parseNotation(state.notation), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.filter(t=>sameDesign(t.design,stepDesign)).forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
+function setCounts(c,mod){ checkpoint(); const p=parseNotation(state.notation), others=p.error?[]:p.terms.filter(t=>!sameDesign(t.design,stepDesign));
+  const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign}:{count:c[t],sides:t}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
   const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   state.notation=n; state.shape='custom'; rebuildKeepMode(); }
 STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step'; d.style.cssText='display:flex;align-items:center;gap:2px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:3px 4px;justify-content:space-between';
   d.innerHTML=`<button data-d="-1" style="padding:2px 6px">−</button><span><b data-n="${t}">0</b><small style="color:var(--dim)"> d${t===100?'%':t}</small></span><button data-d="1" style="padding:2px 6px">+</button>`;
   d.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const {c,mod}=counts(); c[t]=Math.max(0,c[t]+ +b.dataset.d); setCounts(c,mod); };
   $('steppers').append(d); });
+$('stepdesign').onchange=e=>{ stepDesign=e.target.value||null; syncUI(); };
 $('modm').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod-1); }; $('modp').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod+1); };
-const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').value); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; rebuildKeepMode(); };
+const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').value,true); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; rebuildKeepMode(); };
 $('notapply').onclick=applyNotation; $('notclear').onclick=()=>{ $('notation').value='d20'; $('noterr').textContent=''; applyNotation(); };   // quick reset: one d20, no modifier
  $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
@@ -1008,7 +1047,16 @@ for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement(
 { const o=(v,t)=>{ const e=document.createElement('option'); e.value=v; e.textContent=t; $('incl').append(e); }; o('none','None'); for(const [k,m] of Object.entries(MODELS)) o(k,m.label); o('custom','Custom model file…'); }
 for(const [k,f] of Object.entries(STONES)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('stone').append(o); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
+function syncSetDesigns(){   // design choice for new dice, and one chip per term of the set
+  const sel=$('stepdesign'), ids=bag?bag.designs.map(d=>d.id):[]; if(stepDesign&&!ids.includes(stepDesign)) stepDesign=null;
+  const sig=ids.join('|')+'#'+(bag?bag.designs.map(d=>d.name).join('|'):''); if(sel.dataset.sig!==sig){ sel.dataset.sig=sig; sel.replaceChildren(new Option('Active design',''),...(bag?bag.designs.map(d=>new Option(d.name,d.id)):[])); }
+  sel.value=stepDesign||''; $('dicedesignrow').hidden=!bag||bag.designs.length<2;
+  const p=parseNotation(state.notation), box=$('termchips'); box.replaceChildren();
+  if(!p.error&&bag&&bag.designs.length>1) p.terms.forEach((t,i)=>{ const b=document.createElement('button'); b.type='button'; b.title='Remove these dice from the set';
+    const e=t.design&&bag.designs.find(d=>d.id===t.design); { const x=document.createElement('span'); x.className='x'; x.textContent='×'; b.append(`${t.count}d${t.sides===100?'%':t.sides}${e?' · '+e.name:''}`,x); }
+    b.onclick=()=>{ const q=parseNotation(state.notation); if(q.terms.length<2) return; checkpoint(); q.terms.splice(i,1); state.notation=fmtNotation(q.terms,q.mod); state.shape='custom'; rebuildKeepMode(); }; box.append(b); }); }
 function syncUI(){
+  syncSetDesigns();
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
@@ -1082,28 +1130,34 @@ function designToJSON(){ return {format:'pretty-dice', version:1, name:($('dname
   paint:state.paint, paint_mode:state.paintMode, pattern:{scale:state.scale, offset:[...state.off], seed:state.seed},
   finish:{polish:state.polish}, inclusion:{type:state.inclusion==='custom'?'none':state.inclusion,size:state.inclSize,turn_deg:state.inclTurn,height:state.inclY}, notation:state.notation, stone:{type:state.stone,accent:state.stoneAccent}, edge_radius:state.radius, resin:{glitter:state.glitter,bubbles:state.bubbles,clarity:state.clarity}, numbers:{font:state.font, size:state.numSize, rotation_deg:state.numRot, d4_style:state.d4Style, d6_style:state.d6Style, depth:state.numDepth, softness:state.numSoft},
   relief:{panel:state.panel, panel_depth:state.panelDepth, numbers:state.numRaised?'raised':'inset', paint_numbers:state.numPaint, patina:state.patina}, filigree:{style:state.filigree, filled:state.filiFill, enamel:state.enamelSame?null:state.enamel}}; }
+/* A validated design file as a look: an object with the same keys as `state` (colours in .colors). Pure, so the dice of a mixed set can each use their own. */
+function lookFromDesign(d){
+  const L={};
+  const hex=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c), num=(v,lo,hi,def)=>Number.isFinite(+v)?Math.min(hi,Math.max(lo,+v)):def;
+  const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
+  const n=d.numbers||{}, p=d.pattern||{};
+  const st=d.stone||{}; L.stone=STONES[st.type]?st.type:'marble'; L.stoneAccent=num(st.accent,0,1,.5);
+  L.shape=d.shape; L.substrate=d.substrate; L.colors=cols.map(c=>hex(c)?c:'#808080');
+  L.paint=hex(d.paint)?d.paint:'#ffffff'; L.paintMode='custom';
+  L.scale=num(p.scale,.5,3.5,1.6); L.seed=num(p.seed,0,1e9,1);
+  L.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
+  L.radius=num(d.edge_radius,0,.15,.04); L.polish=num((d.finish||{}).polish,0,1,.5);
+  { const ic=d.inclusion||{}; L.inclusion=MODELS[ic.type]?ic.type:'none'; L.inclSize=num(ic.size,.15,.9,.55); L.inclTurn=num(ic.turn_deg,-180,180,0); L.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; L.glitter=num(rs.glitter,0,1,.5); L.bubbles=num(rs.bubbles,0,1,.3); L.clarity=num(rs.clarity,.2,1,.6);
+  L.font=FONTS[n.font]?n.font:'cinzel'; L.numSize=num(n.size,NUM_MIN,NUM_MAX,.65); L.numRot=num(n.rotation_deg,-180,180,0); L.d4Style=n.d4_style==='center'?'center':'tips'; L.d6Style=n.d6_style==='pips'?'pips':'numbers';
+  L.numDepth=num(n.depth,0,6,2.2); L.numSoft=num(n.softness,.5,10,3);
+  { const rl=d.relief||{}, fg=d.filigree||{}; L.panel=num(rl.panel,0,.3,0); L.panelDepth=num(rl.panel_depth,0,1,.5); L.numRaised=rl.numbers==='raised'; L.numPaint=rl.paint_numbers!==false; L.patina=num(rl.patina,0,1,0);
+    L.filigree=['scroll','beads','deco'].includes(fg.style)?fg.style:'none'; L.filiFill=fg.filled!==false; L.enamelSame=!hex(fg.enamel); L.enamel=hex(fg.enamel)?fg.enamel:'#c9a24a'; }
+  return L;
+}
 function loadDesign(d){
   checkpoint();
   if(!d||d.format!=='pretty-dice') throw new Error('Not a pretty-dice design file');
   if(d.version!==1) throw new Error('Unsupported design version '+d.version);
   if(!SHAPES[d.shape]) throw new Error('Unknown shape: '+d.shape);
   if(!SUBSTRATES[d.substrate]) throw new Error('Unknown substrate: '+d.substrate);
-  const hex=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c), num=(v,lo,hi,def)=>Number.isFinite(+v)?Math.min(hi,Math.max(lo,+v)):def;
-  const cols=Array.isArray(d.colors)?d.colors.slice(0,3):[]; while(cols.length<3) cols.push('#000000');
-  const n=d.numbers||{}, p=d.pattern||{};
   if(typeof d.notation==='string'&&!parseNotation(d.notation).error) state.notation=d.notation;
   $('dname').value=typeof d.name==='string'?d.name.slice(0,80):'';
-  const st=d.stone||{}; state.stone=STONES[st.type]?st.type:'marble'; state.stoneAccent=num(st.accent,0,1,.5);
-  state.shape=d.shape; state.substrate=d.substrate; state.palettes[palKey()]=cols.map(c=>hex(c)?c:'#808080'); state.colors=state.palettes[palKey()];
-  state.paint=hex(d.paint)?d.paint:'#ffffff'; state.paintMode='custom';
-  state.scale=num(p.scale,.5,3.5,1.6); state.seed=num(p.seed,0,1e9,1);
-  state.off=Array.isArray(p.offset)&&p.offset.length===3?p.offset.map(v=>num(v,-1e4,1e4,0)):[11,23,37];
-  state.radius=num(d.edge_radius,0,.15,.04); state.polish=num((d.finish||{}).polish,0,1,.5);
-  { const ic=d.inclusion||{}; state.inclusion=MODELS[ic.type]?ic.type:'none'; state.inclSize=num(ic.size,.15,.9,.55); state.inclTurn=num(ic.turn_deg,-180,180,0); state.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; state.glitter=num(rs.glitter,0,1,.5); state.bubbles=num(rs.bubbles,0,1,.3); state.clarity=num(rs.clarity,.2,1,.6);
-  state.font=FONTS[n.font]?n.font:'cinzel'; state.numSize=num(n.size,NUM_MIN,NUM_MAX,.65); state.numRot=num(n.rotation_deg,-180,180,0); state.d4Style=n.d4_style==='center'?'center':'tips'; state.d6Style=n.d6_style==='pips'?'pips':'numbers';
-  state.numDepth=num(n.depth,0,6,2.2); state.numSoft=num(n.softness,.5,10,3);
-  { const rl=d.relief||{}, fg=d.filigree||{}; state.panel=num(rl.panel,0,.3,0); state.panelDepth=num(rl.panel_depth,0,1,.5); state.numRaised=rl.numbers==='raised'; state.numPaint=rl.paint_numbers!==false; state.patina=num(rl.patina,0,1,0);
-    state.filigree=['scroll','beads','deco'].includes(fg.style)?fg.style:'none'; state.filiFill=fg.filled!==false; state.enamelSame=!hex(fg.enamel); state.enamel=hex(fg.enamel)?fg.enamel:'#c9a24a'; }
+  const L=lookFromDesign(d), {colors,...rest}=L; Object.assign(state,rest); state.palettes[palKey()]=colors; state.colors=state.palettes[palKey()];
   return ensureFont(state.font).then(()=>buildDice());
 }
 $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(designToJSON(),null,2)],{type:'application/json'}));
@@ -1553,7 +1607,7 @@ function finishRoll(){ restT=0;
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
     const sums=groups.map(g=>g.reduce((a,b)=>a+b,0)), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     main=String(total);
-    if(P.terms.length>1||P.terms[0].count>1||P.mod) sub=P.terms.map((t,i)=>`${t.count}d${t.sides===100?'%':t.sides}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`).join('  ·  ')+(P.mod?`  ·  ${P.mod>0?'+':''}${P.mod}`:'');
+    if(P.terms.length>1||P.terms[0].count>1||P.mod) sub=P.terms.map((t,i)=>`${t.count}d${t.sides===100?'%':t.sides}${t.design&&bag&&bag.designs.find(d=>d.id===t.design)?' ('+bag.designs.find(d=>d.id===t.design).name+')':''}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`).join('  ·  ')+(P.mod?`  ·  ${P.mod>0?'+':''}${P.mod}`:'');
   }
   else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value
   else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; main=String(t===0?100:t); }
@@ -1789,7 +1843,7 @@ window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get 
     return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
-  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit};
+  memory(){ return {...renderer.info.memory, programs:(renderer.info.programs||[]).length, calls:renderer.info.render.calls, triangles:renderer.info.render.triangles}; }, buildDice, makeAtlas, get sfx(){ return sfx; }, audioInit};
 window.__dice=window.__pd;   // old name
 </script>
 </body>
