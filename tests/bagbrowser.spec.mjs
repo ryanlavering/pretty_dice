@@ -207,3 +207,15 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   await expect.poll(() => app.run(pd => pd.bag.name)).toBe('Second');
   expect(await app.run(pd => pd.bag.designs.length)).toBe(1);
 });
+
+test('a design with several dice is pictured like a single die (PD-110)', async ({ app, page }) => {
+  test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
+  await app.open({ query: 'thumbs=1' });
+  const shot = async n => app.run(async (pd, n) => {
+    pd.state.shape = 'custom'; pd.state.notation = n; pd.buildDice(); await new Promise(r => setTimeout(r, 400));
+    await pd.updateThumbs(); const j = pd.designToJSON(); return pd.thumbs[pd.thumbKey(j)];
+  }, n);
+  const many = await shot('6d20'), one = await shot('1d20');
+  expect(many).toMatch(/^data:image/);
+  expect(many).toBe(one);   // same look, same framing: the picture does not depend on how many dice the design rolls
+});
