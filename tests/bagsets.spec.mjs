@@ -146,9 +146,28 @@ test('the dice-use design recolours the stepper chips, and the stepper cells do 
 
 test('the roll log button is only there in roll view @slow', async ({ app, page }) => {
   await app.open();
+  await app.run(SETUP);
   await expect(page.locator('#logbtn')).toBeHidden();
   await app.run(pd => pd.startRoll());
   await expect(page.locator('#logbtn')).toBeVisible();
+  await app.run(pd => { pd.setOps.quick('dmg'); });
+  await page.locator('#logbtn').click();
+  await expect(page.locator('#logpanel .le .ttl', { hasText: 'Damage' }).first()).toHaveText('Damage ⚡');   // the set's name only; the terms are shown below it
+  await page.locator('#logpanel button[aria-label="Close the roll log"]').click();
+  await expect(page.locator('#logpanel')).toBeHidden();
   await app.run(pd => pd.exitRoll());
   await expect(page.locator('#logbtn')).toBeHidden();
+});
+
+test('Save under the Custom controls adds a new set (a copy) from the current dice', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#shapes button[data-id="custom"]').click();
+  await page.locator('#notation').fill('3d6+2'); await page.locator('#notapply').click();
+  await expect(page.locator('#setname')).toHaveAttribute('placeholder', '3d6+2');
+  await page.locator('#setsavebtn').click();   // blank name: the formula
+  await page.locator('#setname').fill('Sneak attack'); await page.keyboard.press('Enter');
+  const r = await app.run(pd => pd.bag.sets.slice(2).map(s => ({ name: s.name, mod: s.mod, terms: s.terms })));
+  expect(r).toEqual([{ name: '3d6+2', mod: 2, terms: [{ count: 3, sides: 6 }] }, { name: 'Sneak attack', mod: 2, terms: [{ count: 3, sides: 6 }] }]);
+  await expect(page.locator('#setsavebtn')).toHaveText('Saved');
 });

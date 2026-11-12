@@ -56,7 +56,7 @@
   #result .relean:hover{background:rgba(60,34,24,.9)}
   #result .brk.lean{color:#ffb48a}
   #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
-  #tools{position:absolute;inset:0;z-index:5;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
+  #tools{position:absolute;inset:0;z-index:8;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
   #tools .col{position:absolute;bottom:8px;display:flex;flex-direction:column-reverse;gap:8px} #tl{left:max(10px,env(safe-area-inset-left,0px))} #tr{right:max(10px,env(safe-area-inset-right,0px))}
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
   #tools button:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)}
@@ -100,12 +100,14 @@
   .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
   .setrow .chips{display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center} .setrow .term{display:inline-flex;align-items:center;gap:3px;white-space:nowrap} .setrow .term small,.setrow .mod{color:var(--ink);font-size:12px} .chip{display:inline-block;position:relative;flex:none;width:30px;height:30px;background-size:contain;background-repeat:no-repeat;vertical-align:middle} .chip.flat{width:16px;height:16px} #shapes .chip,.step .chip{width:22px;height:22px;margin-right:4px} .step .chip.flat,#shapes .chip.flat,#termchips .chip{width:14px;height:14px;margin:0 4px 0 0} #shapes button{display:flex;align-items:center;justify-content:center} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
   .step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:5px 4px} .step .sl{display:flex;align-items:center;gap:2px;color:var(--dim);font-size:12px} .step .sc{display:flex;align-items:center;justify-content:space-between;width:100%} .step .sc button{padding:2px 8px} .step .sc b{font-size:15px}
-  #quickres{position:fixed;top:30%;left:0;right:0;z-index:40;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;text-shadow:0 2px 18px #000,0 0 6px #000;padding:26px 0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(8,10,15,.92),rgba(8,10,15,.7) 55%,transparent 80%)} #quickres.on{opacity:1;transition:opacity .12s}
-  #quickres .tot{font:800 min(54px,16vw) Cinzel,serif;color:var(--accent)} #quickres .brk{font-size:13px;color:var(--ink);opacity:.9;padding:0 16px;margin-top:2px}
+  #quickres{position:fixed;top:26%;left:50%;transform:translateX(-50%);z-index:40;width:min(360px,88vw);box-sizing:border-box;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;padding:12px 16px 14px;background:rgba(14,16,21,.93);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px #000a} #quickres.on{opacity:1;transition:opacity .12s}
+  #quickres .qn{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)} #quickres .tot{font:800 min(54px,16vw) Cinzel,serif;color:var(--accent);line-height:1.15;text-shadow:0 2px 14px #000} #quickres .rt{display:flex;justify-content:center;margin:3px 0;font-size:13px;color:var(--ink)} #quickres .rt .chip{width:20px;height:20px}
   .rt{display:inline-flex;align-items:center;gap:3px;margin:0 7px;white-space:nowrap} .rt .chip{width:22px;height:22px} #logpanel .rt .chip{width:16px;height:16px} #logpanel .rt{margin:0 6px 0 0}
+  .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
-  #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto 1fr;gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);grid-row:span 2;align-self:center;min-width:28px;text-align:right} #logpanel .le small{color:var(--dim)}
+  #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
+  #logpanel .lt{display:flex;align-items:baseline;gap:8px;min-width:0} #logpanel .tm{color:var(--dim);flex:none} #logpanel .ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0} #logpanel .lr{color:var(--dim);margin-top:2px} #logpanel .lr .rt{display:flex;margin:2px 0}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
@@ -182,6 +184,7 @@
       <div id="termchips" aria-label="Dice in this set"></div>
       <div class="grid" id="steppers" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
       <div class="row"><label>Modifier</label><button id="modm" style="padding:4px 10px">−</button><b id="modv" style="min-width:26px;text-align:center">0</b><button id="modp" style="padding:4px 10px">+</button></div>
+      <div class="row" id="savesetrow"><input id="setname" type="text" maxlength="80" placeholder="Name this set" aria-label="Set name" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"><button id="setsavebtn" type="button" title="Save these dice as a new set in the bag">Save</button></div>
     </div>
 
     <h2>Substrate</h2>
@@ -1098,7 +1101,8 @@ for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement(
 { const o=(v,t)=>{ const e=document.createElement('option'); e.value=v; e.textContent=t; $('incl').append(e); }; o('none','None'); for(const [k,m] of Object.entries(MODELS)) o(k,m.label); o('custom','Custom model file…'); }
 for(const [k,f] of Object.entries(STONES)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('stone').append(o); }
 for(const [k,f] of Object.entries(FONTS)){ const o=document.createElement('option'); o.value=k; o.textContent=f.label; $('font').append(o); }
-function syncSetDesigns(){   // design choice for new dice, and one chip per term of the set
+function syncSetDesigns(){
+  { const inp=$('setname'); if(inp) inp.placeholder=currentDice().name; }   // the name a blank box would get   // design choice for new dice, and one chip per term of the set
   const sel=$('stepdesign'), ids=bag?bag.designs.map(d=>d.id):[]; if(stepDesign&&!ids.includes(stepDesign)) stepDesign=null;
   const sig=ids.join('|')+'#'+(bag?bag.designs.map(d=>d.name).join('|'):''); if(sel.dataset.sig!==sig){ sel.dataset.sig=sig; sel.replaceChildren(new Option('Active design',''),...(bag?bag.designs.map(d=>new Option(d.name,d.id)):[])); }
   sel.value=stepDesign||''; $('dicedesignrow').hidden=!bag||bag.designs.length<2;
@@ -1371,6 +1375,8 @@ async function copyBagJSON(){ const txt=JSON.stringify(bagFileJSON(),null,2), b=
   try{ await navigator.clipboard.writeText(txt); ok=true; }catch{ try{ const t=document.createElement('textarea'); t.value=txt; t.style.cssText='position:fixed;opacity:0;top:0'; document.body.append(t); t.select(); ok=document.execCommand('copy'); t.remove(); }catch{} }
   b.textContent=ok?'Copied':'Copy failed'; setTimeout(()=>{ b.textContent='Copy bag JSON'; },1800); return ok; }
 $('copybag').onclick=copyBagJSON;
+{ const inp=$('setname'), btn=$('setsavebtn'); inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') btn.click(); };
+  btn.onclick=()=>{ if(!bag) return; setOps.saveCurrent(inp.value); inp.value=''; btn.textContent='Saved'; setTimeout(()=>{ btn.textContent='Save'; },1500); if(!$('bagsheet').hidden) renderSheet(); }; }   // always a new set (a copy); editing a set happens in the Sets list
 $('savebag').onclick=saveBagFile; $('bagsave').onclick=saveBagFile; $('sheetsave').onclick=saveBagFile;
 let bagReplace=false;
 const pickBag=replace=>{ bagReplace=replace; $('bagfile').click(); };
@@ -1525,18 +1531,21 @@ const setOps={
 /* roll lines: a mini die chip in front of each term's text, like the set list */
 const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.design):liveChipJ(); };
 function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
-  for(const it of items){ const sp=el('span','rt'); if(it.sides) sp.append(chipEl(it.sides,designChipJ(it.design),{label:null})); sp.append(it.text); f.append(sp); }
+  for(const it of items){ const sp=el('span','rt'); if(it.sides){ const c=chipEl(it.sides,designChipJ(it.design),{label:null}), e=it.design&&entryOf(it.design); if(e) c.title=e.name; sp.append(c); } sp.append(it.text); f.append(sp); }
   if(modText) f.append(el('span','rt',modText)); return f; }
 let quickT=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
-function showQuick(name,total,items,modText){ const q=$('quickres'); q.replaceChildren(); const t=el('div','tot',String(total)); q.append(t); const b=el('div','brk',name?name+' ':''); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
+function showQuick(name,total,items,modText){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
 function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
   if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
   addLog({set:st?st.name:null,notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{})}); }
 function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replaceChildren();
-  const h=el('div','lh'); h.append(el('span','',`Roll log · ${bag.log.length}`)); const c=el('button','linkbtn','Clear'); c.type='button'; c.disabled=!bag.log.length; c.onclick=()=>{ bag.log=[]; save(); renderLog(); }; h.append(c); p.append(h);
+  const h=el('div','lh'); h.append(el('span','',`Roll log · ${bag.log.length}`)); const c=el('button','linkbtn','Clear'); c.type='button'; c.disabled=!bag.log.length; c.onclick=()=>{ bag.log=[]; save(); renderLog(); }; const x=el('button','linkbtn','✕'); x.type='button'; x.setAttribute('aria-label','Close the roll log'); x.onclick=()=>{ p.hidden=true; }; const rt=el('span','lhr'); rt.append(c,x); h.append(rt); p.append(h);
   if(!bag.log.length) p.append(el('div','setempty','No rolls yet.'));
-  for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts); d.append(el('b','',e.total),el('span','',`${e.set?e.set+' · ':''}${e.notation}${e.quick?' ⚡':''}`),(()=>{ const sm=el('small','',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} `); if(e.items) sm.append(rollItemsEl(e.items,e.modText)); else if(e.detail) sm.append(e.detail); return sm; })()); p.append(d); } }
+  for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts), body=el('div','lb'), head=el('div','lt');
+    head.append(el('small','tm',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`),el('span','ttl',`${e.set||(e.items?'Custom':e.notation)}${e.quick?' ⚡':''}`));
+    const rows=el('div','lr'); if(e.items) rows.append(rollItemsEl(e.items,e.modText)); else if(e.detail) rows.append(e.detail);
+    body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }
 $('logbtn').onclick=()=>{ $('logpanel').hidden=!$('logpanel').hidden; renderLog(); };
 function editSetName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Set name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
   const fin=ok=>{ if(done) return; done=true; inp.onblur=null; if(ok&&inp.value.trim()&&inp.value.trim()!==cur) setOps.rename(id,inp.value); renderSheet(); };
@@ -1743,7 +1752,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
     const sums=groups.map(g=>g.reduce((a,b)=>a+b,0)), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     main=String(total);
-    if(P.terms.length>1||P.terms[0].count>1||P.mod){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:`${t.count}d${t.sides===100?'%':t.sides}${t.design&&bag&&bag.designs.find(d=>d.id===t.design)?' ('+bag.designs.find(d=>d.id===t.design).name+')':''}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`})); subMod=P.mod?`${P.mod>0?'+':''}${P.mod}`:'';
+    if(P.terms.length>1||P.terms[0].count>1||P.mod){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:`${t.count}d${t.sides===100?'%':t.sides}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`})); subMod=P.mod?`${P.mod>0?'+':''}${P.mod}`:'';
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
   }
   else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value

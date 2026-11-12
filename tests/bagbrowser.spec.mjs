@@ -289,7 +289,8 @@ test('a set mixes designs: @design notation, one look per design, rolls and read
   expect(r.dice[2].sub).toBe('metal'); expect(r.dice[3].sub).toBe('swirl');
   expect(r.dice[2].metal).toBeGreaterThan(0.5); expect(r.dice[0].metal).toBeLessThan(0.5);   // gold is metal, bone is plastic
   expect(r.roll.dice.length).toBe(4);
-  await expect(page.locator('#result')).toContainText('1d8 (Gold)');
+  await expect(page.locator('#result')).toContainText('1d8:');   // the design shows as a chip (named in its title), not as text
+  await expect(page.locator('#result .brk .rt .chip[title="Gold"]')).toHaveCount(1);
   await expect(page.locator('#termchips button')).toHaveCount(3);
   await page.locator('#termchips button', { hasText: 'Gold' }).click();   // a chip removes its term
   expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
