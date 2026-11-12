@@ -3,10 +3,10 @@ id: PD-120
 title: >-
   Roll log button sits in the play/pause spot (roll view); rename Custom set to
   Custom
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T17:15:00Z'
+updated_date: '2026-11-12T23:05:00Z'
 labels:
   - ux
 dependencies: []
@@ -29,4 +29,6 @@ The roll log toggle takes the bottom-right slot the showcase play/pause button u
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12 fix: the log button was still visible in showcase (the #tools button display rule outranked the hide rule); now hidden outside roll view, with a test.
+
+2026-11-12: owner approved.
 <!-- SECTION:NOTES:END -->
