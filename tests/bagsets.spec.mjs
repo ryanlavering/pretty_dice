@@ -171,3 +171,24 @@ test('Save under the Custom controls adds a new set (a copy) from the current di
   expect(r).toEqual([{ name: '3d6+2', mod: 2, terms: [{ count: 3, sides: 6 }] }, { name: 'Sneak attack', mod: 2, terms: [{ count: 3, sides: 6 }] }]);
   await expect(page.locator('#setsavebtn')).toHaveText('Saved');
 });
+
+test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
+  await page.click('#bagbtn');
+  for (const id of ['sheetsave', 'sheetload', 'sheetcopy', 'sheetclose']) await expect(page.locator('#' + id)).toBeVisible();
+  const order = await page.locator('#sheethead > *').evaluateAll(n => n.map(e => e.id));
+  expect(order.slice(-2)).toEqual(['sheetact', 'sheetclose']);   // the buttons sit right next to Close
+  await page.click('#sheetcopy');
+  await expect(page.locator('#sheetcopy')).toHaveClass(/ok/);
+  expect(JSON.parse(await page.evaluate(() => window.__copied)).format).toBe('pretty-dice-bag');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
+  expect(dl.suggestedFilename()).toMatch(/\.json$/);
+  await app.run(pd => { pd.markBagSaved && pd.markBagSaved(); });
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sheetload')]).catch(() => [null]);
+  if (!fc) await expect(page.locator('#bagask')).toBeVisible();   // a bag with unsaved changes asks first
+  await page.setViewportSize({ width: 390, height: 780 });
+  const over = await page.locator('#sheethead').evaluate(e => e.scrollWidth > e.clientWidth + 1);
+  expect(over).toBe(false);
+});
