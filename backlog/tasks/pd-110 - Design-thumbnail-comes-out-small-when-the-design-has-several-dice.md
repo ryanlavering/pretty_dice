@@ -1,5 +1,5 @@
 ---
-id: PD-109
+id: PD-110
 title: Design thumbnail comes out small when the design has several dice
 status: To Do
 assignee: []
@@ -11,7 +11,7 @@ labels:
 dependencies: []
 parent_task_id: PD-102
 priority: medium
-ordinal: 109000
+ordinal: 110000
 ---
 
 ## Description
