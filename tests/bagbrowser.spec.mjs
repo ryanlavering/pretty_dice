@@ -315,3 +315,18 @@ test('dice that look the same share one atlas and geometry; different designs or
   expect(r.two.dice).toBe(12); expect(r.two.atlases).toBeLessThanOrEqual(2);
   expect(r.shapes).toBe(2);
 });
+
+test('a mouse drag scrolls the shelf and picks the card that lands in the middle; cards sit as close as on a phone', async ({ app, page }) => {
+  test.setTimeout(120_000); expect.configure({ timeout: 60_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(SETUP);   // bone (active), amethyst, gold
+  await expect(page.locator('#cards .card[data-id]')).toHaveCount(3);
+  const gap = await page.evaluate(() => { const c = [...document.querySelectorAll('#cards .card[data-id]')]; return { w: c[0].offsetWidth, step: c[1].offsetLeft - c[0].offsetLeft }; });
+  expect(gap).toEqual({ w: 68, step: 76 });   // the phone spacing: 68 px cards, 8 px apart
+  const box = await page.locator('#cards').boundingBox(), y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width / 2 + 120, y); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 20, y, { steps: 8 }); await page.mouse.move(box.x + box.width / 2 - 150, y, { steps: 8 });   // drag left: later cards come to the middle
+  await page.mouse.up();
+  await expect.poll(() => app.run(pd => pd.bag.active.design)).not.toBe('bone');
+  expect(await app.run(pd => pd.bag.designs.length)).toBe(3);   // a drag does not open a menu or add anything
+});
