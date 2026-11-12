@@ -1688,8 +1688,10 @@ function sampleBackend(id,label){
       }catch(e){ b.state='failed'; b.note='no samples ('+(e.message||e)+'): using procedural synth'; } sbStatus(); },
     pick(list){ const L=(list||[]).filter(f=>b.bufs[f]); if(!L.length) return null; let i=Math.floor(Math.random()*L.length); const k=L.join(); if(L.length>1&&i===b.last[k]) i=(i+1)%L.length; b.last[k]=i; return b.bufs[L[i]]; },
     play(buf,gain,rate){ voice(buf.duration/rate+.05,(ctx,out,t)=>{ const s=ctx.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate; const g=ctx.createGain(); g.gain.value=gain; s.connect(g); g.connect(out); s.start(t); }); },
-    impact(speed,kind){ const im=b.man&&b.man.impact||{}, buf=b.pick(kind==='dice'?im.dice:(im[matClass(state.substrate)]||im.table));
-      if(!buf) return procBackend.impact(speed,kind); b.play(buf,Math.min(1,Math.pow(speed/14,.8))*.9,rndr(.94,1.06)); },
+    impact(speed,kind){ const im=b.man&&b.man.impact||{}, list=((kind==='dice'?im.dice:(im[matClass(state.substrate)]||im.table))||[]).filter(f=>b.bufs[f]); if(!list.length) return procBackend.impact(speed,kind);
+      const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), meta=b.man.meta||{}, dbOf=f=>meta[f]?meta[f].db:0;   // T: wanted level in dB below the loudest hit; pick a clip recorded about that hard
+      const near=[...list].sort((a,c)=>Math.abs(dbOf(a)-T)-Math.abs(dbOf(c)-T)).slice(0,Math.min(3,list.length)); let f=near[Math.floor(Math.random()*near.length)]; if(near.length>1&&f===b.last.imp) f=near[(near.indexOf(f)+1)%near.length]; b.last.imp=f;
+      b.play(b.bufs[f],Math.max(.25,Math.min(1.3,Math.pow(10,(T-dbOf(f))/20)))*.9,rndr(.96,1.04)); },
     chime(j){ const buf=b.pick(b.man&&b.man.chime); if(!buf) return procBackend.chime(j); b.play(buf,.8,Math.pow(2,j*2/12)); },
     fumble(){ const buf=b.pick(b.man&&b.man.fumble); if(!buf) return procBackend.fumble(); b.play(buf,.8,1); },
     rumble(lvl){ const f=b.man&&b.man.roll, buf=f&&b.bufs[f]; if(!buf) return procBackend.rumble(lvl); if(!sfx.ctx) return;

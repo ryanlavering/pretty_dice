@@ -1,0 +1,99 @@
+{
+ "trim": 1,
+ "impact": {
+  "dice": [
+   "kc-chiplay1-1.wav",
+   "kc-chiplay2-2.wav",
+   "kc-chipscollide1-1.wav",
+   "kc-chipscollide2-1.wav",
+   "kc-chipscollide3-1.wav",
+   "kc-chipscollide4-1.wav"
+  ],
+  "table": [
+   "k-diethrow1-3.wav",
+   "k-diethrow2-2.wav",
+   "k-dicethrow2-3.wav",
+   "k-diethrow4-2.wav",
+   "k-diethrow4-3.wav",
+   "k-diethrow2-5.wav",
+   "k-dicethrow1-3.wav",
+   "k-diethrow3-2.wav",
+   "k-dicethrow1-2.wav",
+   "k-dicethrow2-1.wav",
+   "k-dicethrow3-2.wav",
+   "k-dicethrow3-3.wav",
+   "k-diethrow2-1.wav",
+   "k-diethrow1-1.wav",
+   "k-diethrow3-1.wav",
+   "kc-chiplay3-1.wav"
+  ]
+ },
+ "meta": {
+  "kc-chiplay1-1.wav": {
+   "db": 0
+  },
+  "kc-chiplay2-2.wav": {
+   "db": 0
+  },
+  "kc-chipscollide1-1.wav": {
+   "db": 0
+  },
+  "kc-chipscollide2-1.wav": {
+   "db": 0
+  },
+  "kc-chipscollide3-1.wav": {
+   "db": 0
+  },
+  "kc-chipscollide4-1.wav": {
+   "db": 0
+  },
+  "k-diethrow1-3.wav": {
+   "db": -33.8
+  },
+  "k-diethrow2-2.wav": {
+   "db": -31.8
+  },
+  "k-dicethrow2-3.wav": {
+   "db": -29.8
+  },
+  "k-diethrow4-2.wav": {
+   "db": -28.4
+  },
+  "k-diethrow4-3.wav": {
+   "db": -27.1
+  },
+  "k-diethrow2-5.wav": {
+   "db": -26
+  },
+  "k-dicethrow1-3.wav": {
+   "db": -22
+  },
+  "k-diethrow3-2.wav": {
+   "db": -19.6
+  },
+  "k-dicethrow1-2.wav": {
+   "db": -18.8
+  },
+  "k-dicethrow2-1.wav": {
+   "db": -15.7
+  },
+  "k-dicethrow3-2.wav": {
+   "db": -8.1
+  },
+  "k-dicethrow3-3.wav": {
+   "db": -4.9
+  },
+  "k-diethrow2-1.wav": {
+   "db": -0.2
+  },
+  "k-diethrow1-1.wav": {
+   "db": 0
+  },
+  "k-diethrow3-1.wav": {
+   "db": 0
+  },
+  "kc-chiplay3-1.wav": {
+   "db": 0
+  }
+ }
+}
