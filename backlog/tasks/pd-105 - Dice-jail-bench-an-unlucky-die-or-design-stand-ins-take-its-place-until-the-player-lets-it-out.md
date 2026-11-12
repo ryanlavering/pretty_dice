@@ -6,11 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-11-11T19:50:00Z'
-updated_date: '2026-11-11T19:58:00Z'
+updated_date: '2026-11-12T23:42:00Z'
 labels:
   - dice-bag
   - feature
-milestone: m-0
+milestone: m-1
 dependencies:
   - PD-102
 priority: medium
@@ -32,3 +32,9 @@ Owner 2026-11-11 (part of the dice bag, PD-102). The player can send a die to ja
 - [ ] #5 Jail survives reloads and bag export/import
 - [ ] #6 Roll log stores each stand-in (who it replaced; full design JSON for random ones) and a past stand-in can be adopted from the log
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: owner moved the dice jail to v4.0.
+<!-- SECTION:NOTES:END -->

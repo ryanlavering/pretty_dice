@@ -1352,7 +1352,7 @@ const bagOps={
 };
 /* The background picture pass borrows the live state for a moment, so anything that changes the live design waits for it to finish. */
 let thumbBusy=false;
-const idleThumbs=async()=>{ while(thumbBusy) await new Promise(r=>setTimeout(r,25)); };
+const idleThumbs=async()=>{};   // design pictures are drawn offscreen now (PD-123): nothing borrows the live design any more
 for(const k of ['save','saveCopy','revert','keep','discard','duplicate','remove','addBlank','addLoaded']){ const f=bagOps[k]; bagOps[k]=async function(...a){ await idleThumbs(); return f.apply(bagOps,a); }; }
 /* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
 async function importBag(obj,{replace=false}={}){
@@ -1406,28 +1406,46 @@ let thumbs={}; try{ thumbs=JSON.parse(localStorage.getItem(THUMBS_KEY)||'{}')||{
 function pruneThumbs(){ const keep=new Set([...bag.designs.map(e=>thumbKey(bag.pending[e.id]||e.design)),...(bag.draft?[thumbKey(bag.draft)]:[])]);
   if(!bag.active.draft&&activeEntry()) keep.add(thumbKey(liveJSON())); for(const k of Object.keys(thumbs)) if(!keep.has(k)) delete thumbs[k]; }
 function persistThumbs(){ pruneThumbs(); try{ localStorage.setItem(THUMBS_KEY,JSON.stringify(thumbs)); }catch{} }
-function captureLive(px=144){   // one small picture of whatever the stage shows right now (showcase only)
-  if(rolling) return null; const pr=renderer.getPixelRatio(), cvs=renderer.domElement;
-  renderer.setPixelRatio(1); renderer.setSize(px,px,false); camera.aspect=1; camera.clearViewOffset(); camera.updateProjectionMatrix(); renderer.render(scene,camera);
-  const c=document.createElement('canvas'); c.width=c.height=px; c.getContext('2d').drawImage(cvs,0,0,px,px);
-  renderer.setPixelRatio(pr); resize(); const u=c.toDataURL('image/webp',.8); return u.startsWith('data:image/webp')?u:c.toDataURL('image/jpeg',.8); }
 let thumbTimer=null, touchedAt=0;
 for(const t of ['pointerdown','keydown','input']) addEventListener(t,()=>{ touchedAt=performance.now(); },true);   // a person editing beats the background pass
 function scheduleThumb(ms=900){ if(!thumbsOn||!bag||thumbTimer) return; thumbTimer=setTimeout(()=>{ thumbTimer=null; updateThumbs(); },ms); }   // not debounced: save() can fire all the time, so wait at most 900 ms
-async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet. Always a single d20 (a design's look, not a set). Done out of sight; the live design is restored after.
-  if(camBlend>.01||topBlend>.01){ scheduleThumb(); return; }   // the camera is still easing back from the roll view (or a top-down hold): a picture now shows the table and a tiny die (PD-110)
-  if(thumbBusy||actBusy||rolling||!bag) return; if(performance.now()-touchedAt<1200){ scheduleThumb(500); return; }   // low priority: wait until the person has stopped touching things
-  thumbBusy=true; const started=performance.now();
-  try{ const live=liveJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({live:true,json:live});
-    for(const e of bag.designs){ if(e.id===bag.active.design&&!bag.active.draft) continue; const j=bag.pending[e.id]||e.design; if(!thumbs[thumbKey(j)]) todo.push({json:j,name:e.name}); }
-    if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({json:bag.draft,name:''});
-    const more=todo.length>1; todo.length=Math.min(todo.length,1);   // one picture per slice, then yield: a bag of ten designs must not freeze the page
-    if(todo.length){ const snap=snapshot(), nm=$('dname').value, h=history.slice(), hi=hIdx, cvs=renderer.domElement; cvs.style.visibility='hidden'; bagLoading++;
-      try{ for(const t of todo){
-          if(touchedAt>started){ scheduleThumb(); break; }
-          if(t.live){ if(state.shape!=='d20'){ state.shape='d20'; buildDice(); } } else await loadDesign({...t.json,shape:'d20',name:t.name});
-          const u=captureLive(); if(u) thumbs[thumbKey(t.json)]=u; }
-      }finally{ await restore(snap); bagLoading--; $('dname').value=nm; history=h; hIdx=hi; syncHistoryUI(); cvs.style.visibility=''; } }
+/* ---------- design pictures, drawn offscreen (PD-123) ----------
+   One d20 in the design's look, in its own scene with its own camera and light, drawn into a render target: nothing on the stage is touched, so it can run whenever the page is idle,
+   whatever the stage camera, a roll or the showcase spin are doing. three.js tone-maps and sRGB-encodes only what goes to the screen (or an XR target), so the target is marked as one
+   (isXRRenderTarget, the flag three.js uses itself; three.js is pinned to 0.160). The die is drawn on a transparent clear at twice the size, then shrunk onto the stage's backdrop picture. */
+const PIC_PX=144, PIC_RS=288; let picKit=null;
+const PIC_Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,.5,.12));
+function picGear(){ if(picKit) return picKit; const sc=new THREE.Scene(); sc.environment=scene.environment;
+  const l=new THREE.DirectionalLight(0xffffff,1.6); l.position.set(3,6,4); sc.add(l);
+  const cam=new THREE.PerspectiveCamera(32,1,.3,60); cam.position.set(0,-.1,4.9);   // die about 74% of the width, centred a little high: the framing of the earlier stage captures
+  const rt=new THREE.WebGLRenderTarget(PIC_RS,PIC_RS,{samples:0}); rt.isXRRenderTarget=true; rt.texture.colorSpace=THREE.SRGBColorSpace;
+  const big=document.createElement('canvas'); big.width=big.height=PIC_RS;
+  return picKit={sc,cam,rt,buf:new Uint8Array(PIC_RS*PIC_RS*4),big}; }
+async function renderDesignPicture(j){
+  const L=lookFromDesign(j); await ensureFont(L.font);
+  const g=picGear(), spec=SHAPES.d20, verts=spec.verts(), R=Math.max(...verts.map(v=>v.length())); verts.forEach(v=>v.multiplyScalar(1/R));
+  const faces=hull(verts), labs=assignLabels(faces,spec.labels), atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,false,{}),
+    geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft}), uni=makeUniforms(), mat=makeMaterial(atlas,uni);
+  paintLook(L,uni,[mat]);
+  const mesh=new THREE.Mesh(geo,mat); mesh.quaternion.copy(PIC_Q); g.sc.add(mesh);
+  if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); const inr=Math.min(...faces.map(f=>f.d)); inc.scale.setScalar(inr*L.inclSize); inc.position.set(0,L.inclY*inr,0); inc.rotation.set(0,THREE.MathUtils.degToRad(L.inclTurn),0); } }
+  const clr=new THREE.Color(), ca=renderer.getClearAlpha(); renderer.getClearColor(clr);
+  try{ renderer.setClearColor(0x000000,0); renderer.setRenderTarget(g.rt); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf); }
+  finally{ renderer.setRenderTarget(null); renderer.setClearColor(clr,ca); g.sc.remove(mesh); geo.dispose(); atlas.bump.dispose(); atlas.mask.dispose(); mat.dispose(); }
+  const bx=g.big.getContext('2d'), img=bx.createImageData(PIC_RS,PIC_RS);
+  for(let y=0;y<PIC_RS;y++) img.data.set(g.buf.subarray(y*PIC_RS*4,(y+1)*PIC_RS*4),(PIC_RS-1-y)*PIC_RS*4);   // readback is bottom-up
+  bx.putImageData(img,0,0);
+  const c=document.createElement('canvas'); c.width=c.height=PIC_PX; const ctx=c.getContext('2d'); ctx.imageSmoothingQuality='high';
+  ctx.drawImage(scene.background.image,0,0,PIC_PX,PIC_PX); ctx.drawImage(g.big,0,0,PIC_PX,PIC_PX);   // the stage's backdrop, then the die
+  const u=c.toDataURL('image/webp',.8); return u.startsWith('data:image/webp')?u:c.toDataURL('image/jpeg',.8); }
+async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet, one per slice. Always a single d20 (a design's look, not a set).
+  if(thumbBusy||actBusy||!bag) return; if(rolling||performance.now()-touchedAt<1200){ scheduleThumb(500); return; }   // low priority: a roll or a person at work goes first
+  thumbBusy=true;
+  try{ const live=liveJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({json:live});
+    for(const e of bag.designs){ if(e.id===bag.active.design&&!bag.active.draft) continue; const j=bag.pending[e.id]||e.design; if(!thumbs[thumbKey(j)]) todo.push({json:j}); }
+    if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({json:bag.draft});
+    const more=todo.length>1;   // one picture per slice, then yield: a bag of ten designs must not freeze the page
+    if(todo.length){ const u=await renderDesignPicture(todo[0].json); if(u) thumbs[thumbKey(todo[0].json)]=u; }
     persistThumbs(); renderBag(); if(more) setTimeout(()=>scheduleThumb(300),0);
   }catch(err){ console.warn('thumbnail pass failed',err); }finally{ thumbBusy=false; } }
 const swatch=chipThumb;
@@ -2123,7 +2141,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },

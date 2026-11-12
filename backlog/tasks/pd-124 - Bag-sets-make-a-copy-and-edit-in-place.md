@@ -1,10 +1,10 @@
 ---
 id: PD-124
 title: 'Bag sets: make a copy and edit in place'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-12T17:11:00Z'
-updated_date: '2026-11-12T23:15:00Z'
+updated_date: '2026-11-12T23:42:00Z'
 labels:
   - feature
   - bag
