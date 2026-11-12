@@ -176,3 +176,34 @@ test('rotating the phone does not change the chosen design', async ({ app, page 
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; });
   await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('amethyst');
 });
+
+test('Load bag replaces the bag and asks first when it has unsaved changes; Save bag clears the badge (PD-108)', async ({ app, page }) => {
+  await app.open();
+  const mkFile = name => JSON.stringify({ format: 'pretty-dice-bag', version: 1, name, designs: [{ id: 'one', name: 'One', preview_shape: 'd8', design: { ...JSON.parse(JSON.stringify({})), format: 'pretty-dice', version: 1, shape: 'd8', substrate: 'metal' } }], sets: [], characters: [], jail: [], pending: {}, draft: null, active: { design: 'one', set: null, draft: false }, log: [] });
+  await expect(page.locator('#bagdirty')).toBeHidden();
+  await app.run(pd => pd.bagOps.addBlank());
+  await expect(page.locator('#bagdirty')).toBeVisible();
+  await expect(page.locator('#savebag')).toHaveClass(/dirty/);
+  await expect(page.locator('#replacebag')).toHaveCount(0);
+  // unsaved: Load bag asks; Cancel leaves everything alone
+  await page.click('#loadbag'); await expect(page.locator('#bagask')).toBeVisible();
+  await page.click('#baskCancel'); await expect(page.locator('#bagask')).toBeHidden();
+  expect(await app.run(pd => pd.bag.designs.length)).toBe(2);
+  // Save bag (from the link) clears the badge; a clean bag loads with no question and is replaced, not appended to
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bagsave')]);
+  expect(dl.suggestedFilename()).toMatch(/\.bag\.json$/);
+  await expect(page.locator('#bagdirty')).toBeHidden();
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#loadbag')]);
+  await expect(page.locator('#bagask')).toBeHidden();
+  await fc.setFiles({ name: 'b.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Loaded bag')) });
+  await expect.poll(() => app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['one']);
+  expect(await app.run(pd => pd.bag.name)).toBe('Loaded bag');
+  await expect(page.locator('#bagdirty')).toBeHidden();   // what was just loaded is what the file holds
+  // dirty again: Discard goes straight to the file picker
+  await app.run(pd => pd.bagOps.addBlank()); await expect(page.locator('#bagdirty')).toBeVisible();
+  await page.click('#loadbag');
+  const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
+  await fc2.setFiles({ name: 'c.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Second')) });
+  await expect.poll(() => app.run(pd => pd.bag.name)).toBe('Second');
+  expect(await app.run(pd => pd.bag.designs.length)).toBe(1);
+});

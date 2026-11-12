@@ -69,6 +69,10 @@
   #bagrow{display:flex;align-items:center;gap:8px;margin:12px 0 4px} #bagopen{flex:1;min-width:0;text-align:left;padding:8px 10px;display:flex;align-items:center;gap:10px} #bagopen .bt{min-width:0;display:flex;flex-direction:column;gap:1px} #bagth{flex:none;width:44px;height:44px;border-radius:9px;border:2px solid var(--line);background:#1d212c center/cover no-repeat}
   #bagname{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #bagpos{color:var(--dim);font-size:11px}
   #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
+  .bagpill{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:12px}
+  #bagdirty{display:flex;align-items:center;gap:8px;margin:0 0 6px} #bagdirty[hidden],#sheetbag[hidden]{display:none} #sheetbag{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:12px}
+  #savebag.dirty::after{content:' \25CF';color:var(--accent)} #bagbtn{position:relative} #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
+  #bagask{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px} #bagask[hidden]{display:none} #bagask .box{max-width:360px;background:#14171f;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px} #bagask .row{display:flex;gap:8px;flex-wrap:wrap}
   #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:6px} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
   #bagact #bsave{background:var(--accent);color:#1a1405;border:0;font-weight:600}
   #shelf{position:absolute;left:64px;right:64px;bottom:8px;z-index:4;pointer-events:none}
@@ -143,6 +147,7 @@
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
     <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagth" class="th"></span><span class="bt"><span id="bagname"></span><small id="bagpos"></small></span></button><span id="modbadge" hidden>Modified</span></div>
+    <div id="bagdirty" hidden><span class="bagpill">Bag modified</span><button id="bagsave" type="button" class="linkbtn" title="Save the bag to a file">Save bag</button></div>
     <div id="bagact" hidden><button id="bsave" type="button"></button><button id="bcopy" type="button">Save as copy</button><button id="brevert" type="button">Revert</button></div>
 
     <div id="actions"><div id="randrow"><button class="big" id="rand">Randomize</button><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
@@ -234,8 +239,7 @@
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
     <div class="row" style="margin-top:6px"><label>Name</label><input id="dname" type="text" maxlength="80" placeholder="e.g. Giant club attack" style="flex:2;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"></div>
     <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
-    <div class="grid two" style="margin-top:6px"><button id="savebag">Save bag</button><button id="loadbag" title="Add the designs in a bag file (or a single design file) to this bag">Load bag</button></div>
-    <button id="replacebag" style="width:100%;margin-top:6px" title="Replace this whole bag with a bag file">Replace bag…</button>
+    <div class="grid two" style="margin-top:6px"><button id="savebag">Save bag</button><button id="loadbag" title="Replace this bag with a bag file (to add designs instead: shelf + > From a file)">Load bag</button></div>
     <input type="file" id="bagfile" hidden>
     <input type="file" id="jsonfile" hidden>   <!-- no accept filter: phones label saved .json files text/plain or octet-stream and grey them out -->
     <h2>Settings</h2>
@@ -244,7 +248,8 @@
   </aside>
   <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
 </div>
-<div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><button id="sheetclose" type="button">Close</button></div><div id="tiles"></div></div>
+<div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
+<div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span><button id="sheetsave" type="button" class="linkbtn">Save bag</button></span><button id="sheetclose" type="button">Close</button></div><div id="tiles"></div></div>
 <div id="cardmenu" hidden></div>
 
 <script type="text/plain" id="main-src">
@@ -1237,12 +1242,21 @@ async function importBag(obj,{replace=false}={}){
   save(); return {added:inc.designs.length,dropped};
 }
 const bagFileName=()=>`${slug(bag.name,'pretty-dice-bag')}.bag.json`;
-$('savebag').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagToJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
+/* Is the bag changed since it was last saved to a file (or loaded from one)? Compared by content, so it survives reloads and undoing a change clears it. */
+const BAG_SAVED='prettydice.bagsaved.v1';
+function bagSig(){ const {designs,sets,characters,jail,pending,draft,name}=bagToJSON(); return JSON.stringify({designs,sets,characters,jail,pending,draft,name}); }
+function markBagSaved(){ try{ localStorage.setItem(BAG_SAVED,bagSig()); }catch{} }
+function bagDirty(){ if(!bag) return false; try{ const v=localStorage.getItem(BAG_SAVED); if(v===null){ markBagSaved(); return false; } return v!==bagSig(); }catch{ return false; } }
+function saveBagFile(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagToJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
+$('savebag').onclick=saveBagFile; $('bagsave').onclick=saveBagFile; $('sheetsave').onclick=saveBagFile;
 let bagReplace=false;
-$('loadbag').onclick=()=>{ bagReplace=false; $('bagfile').click(); };
-$('replacebag').onclick=()=>{ if(confirm('Replace every design in this bag with the file you choose?')){ bagReplace=true; $('bagfile').click(); } };
+const pickBag=replace=>{ bagReplace=replace; $('bagfile').click(); };
+$('loadbag').onclick=()=>{ if(!bagDirty()) return pickBag(true); $('bagask').hidden=false; $('baskSave').focus(); };   // Load bag replaces this bag, so unsaved changes are offered a save first
+$('baskSave').onclick=()=>{ $('bagask').hidden=true; saveBagFile(); pickBag(true); };
+$('baskDiscard').onclick=()=>{ $('bagask').hidden=true; pickBag(true); };
+$('baskCancel').onclick=()=>{ $('bagask').hidden=true; };
 $('bagfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
-  try{ const txt=await readText(f); inp.value=''; const r=await importBag(JSON.parse(txt.replace(/^﻿/,'')),{replace:bagReplace}); if(r.dropped.length) alert(`Loaded ${r.added} design(s). Left out:\n- `+r.dropped.join('\n- ')); }
+  try{ const txt=await readText(f); inp.value=''; const r=await importBag(JSON.parse(txt.replace(/^﻿/,'')),{replace:bagReplace}); if(bagReplace){ markBagSaved(); lastSig=''; renderBag(); } if(r.dropped.length) alert(`Loaded ${r.added} design(s). Left out:\n- `+r.dropped.join('\n- ')); }
   catch(err){ inp.value=''; alert('Could not load bag: '+err.message); } };
 /* ---------- dice bag browser (phase 2): shelf, All-designs sheet, menus, thumbnails ---------- */
 const THUMBS_KEY='prettydice.thumbs.v1', thumbsOn=!(navigator.webdriver&&!new URLSearchParams(location.search).get('thumbs'));
@@ -1285,6 +1299,7 @@ function renderBag(){
   if(!bag) return; const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
   $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
   $('bagth').style.backgroundImage=thumbStyle(liveJSON()); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
+  { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('savebag').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
   $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
   if(document.activeElement&&document.activeElement.classList.contains('nmedit')) return;   // never rebuild under a name being typed
