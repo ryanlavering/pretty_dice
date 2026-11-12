@@ -239,7 +239,7 @@
     <div class="row"><label>Sound set</label><select id="sndbk"></select><button id="sndaud" type="button" style="padding:7px 12px;flex:none">Audition</button></div>
     <div class="row" id="sndmixrow"><label>Best ↔ Kenney</label><input type="range" id="sndmix" min="0" max="1" step="0.01"><select id="sndmixmode"><option value="random">Per hit</option><option value="layer">Layered</option><option value="auto">Auto (by hardness)</option></select></div>
     <div class="row"><label>Surface (for sound)</label><select id="sndsurf"></select></div>
-    <div class="row"><label>Metal / glass ring</label><input type="range" id="sndring" min="0" max="2" step="0.05"></div>
+    <div class="row"><label>Metal / glass ring</label><input type="range" id="sndring" min="0" max="1" step="0.01"></div>
     <div class="row"><span id="sndbkstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
     <div class="row"><button id="soundtest" type="button" style="padding:7px 12px;flex:none">Test sound</button><span id="soundstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
   </section>
@@ -734,7 +734,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringAmt:1, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringAmt:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1', LOG_MAX=200;
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -1697,7 +1697,8 @@ async function soundBytes(path){ const E=window.__SOUNDS; if(E){ if(!E[path]) th
 // metal and glass ring: struck metal and glass sing, which brightness alone cannot give. A few decaying sine partials ride on top of the sample hit.
 // RING[material]=[base Hz, loudness, partial ratios, partial gains, partial decay seconds]. Metal uses free-bar ratios, glass uses wine-glass-like ratios. The pitch is fixed per material (+-3% per hit); upper partials only wake on hard hits.
 const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1]], glass:[3100,.26,[1,2.32,4.25,6.63],[1,.5,.28,.14],[.38,.22,.14,.09]] };
-function ringFor(kind,speed,when=0){ const E=state.ringAmt; if(!sfx.ctx||!(E>0)||speed<2.5) return 0;   // callers have already checked audioReady()
+// slider 0..1 maps to the first 10% of the old 0..2 range (0..0.2 of the original strength): the old slider did all its work in that corner
+function ringFor(kind,speed,when=0){ const E=Math.min(1,state.ringAmt)*.2; if(!sfx.ctx||!(E>0)||speed<2.5) return 0;   // callers have already checked audioReady()
   const rings=new Set(); if(RING[matClass(state.substrate)]) rings.add(matClass(state.substrate)); if(kind==='table'&&RING[state.surfaceMat]) rings.add(state.surfaceMat);   // the die rings, and so does the surface it lands on
   const ctx=sfx.ctx, g=Math.min(1,Math.pow(speed/14,.8)); let n=0;
   for(const m of rings){ if(sfx.rings>=8) break; const [f0,amp,ratio,gain,dec]=RING[m]; sfx.rings++; const out=ctx.createGain(); out.gain.value=amp*E*g*rndr(.7,1.1); out.connect(sfx.trim);
