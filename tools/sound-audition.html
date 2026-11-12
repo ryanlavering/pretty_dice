@@ -91,6 +91,9 @@ th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;col
       <span class="mono dim" id="hardval"></span>
     </div>
     <div class="row">
+      <label for="ring" class="dim">Metal / glass ring</label><input type="range" id="ring" min="0" max="2" step="0.05" value="1"><span class="dim" style="font-size:13px">Struck metal and glass sing. Try a metal die, or a glass or metal surface.</span>
+    </div>
+    <div class="row">
       <label for="bounce" class="dim">Bounciness</label><input type="range" id="bounce" min="0.25" max="0.7" step="0.01" value="0.5">
       <label for="power" class="dim">Throw strength</label><input type="range" id="power" min="6" max="14" step="0.5" value="12">
     </div>
@@ -166,6 +169,14 @@ const MAT_HARD={ felt:.05, carpet:.08, leather:.15, cardboard:.25, plastic:.45, 
 const pairHard=(a,b)=>2*a*b/(a+b+1e-6), rr=(a,b)=>a+Math.random()*(b-a);
 function hardnessFor(kind,speed){ const die=MAT_HARD[$('diemat').value], other=kind==='dice'?die:MAT_HARD[$('surf').value], g=Math.min(1,Math.pow(speed/14,.8));
   return Math.max(0,Math.min(1,pairHard(die,other)+(g-.5)*.3+(kind==='dice'?.08:0)+rr(-.1,.1))); }
+// metal and glass ring (same model as the app): decaying sine partials on top of the hit when the die or the surface is metal or glass
+const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1]], glass:[3100,.26,[1,2.32,4.25,6.63],[1,.5,.28,.14],[.38,.22,.14,.09]] };
+function ringFor(kind,speed,t){ const E=+$('ring').value; if(!(E>0)||speed<2.5) return 0; const rings=new Set(), die=$('diemat').value, surf=$('surf').value; if(RING[die]) rings.add(die); if(kind==='table'&&RING[surf]) rings.add(surf);
+  const c=audio(), g=Math.min(1,Math.pow(speed/14,.8)); let n=0;
+  for(const m of rings){ const [f0,amp,ratio,gain,dec]=RING[m], out=c.createGain(); out.gain.value=amp*E*g*rr(.7,1.1); out.connect(bus()); const base=f0*rr(.97,1.03), life=.6+.6*g;
+    ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,g*1.4):1), f=base*r*rr(.99,1.01); if(a<.02||f>16000) return; const o=c.createOscillator(), e=c.createGain(); o.frequency.value=f;
+      e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+.0015); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); n++; }); }
+  return n; }
 // candidates: every kept clip of the chosen sets, scored by distance from the wanted clack plus distance from the wanted level
 function cands(sets,speed,kind){ const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), h=hardnessFor(kind,speed);
   return CLIPS.filter(c=>sets.includes(c.set)&&marks[c.file]!=='drop').map(c=>({c,T,h,cost:Math.abs(c.clack-h)+.6*Math.abs(c.db-T)/30})); }
@@ -177,7 +188,7 @@ function fire(speed,kind,t){ const {p,mode}=mixInfo(); let plan;
   if(mode==='auto') plan=[[['best','kenney'],1]];
   else if(mode==='layer'){ plan=[]; if(Math.cos(p*Math.PI/2)>.02) plan.push([['best'],Math.cos(p*Math.PI/2)]); if(Math.sin(p*Math.PI/2)>.02) plan.push([['kenney'],Math.sin(p*Math.PI/2)]); }
   else plan=[[[Math.random()<p?'kenney':'best'],1]];
-  let n=0; for(const [sets,k] of plan){ const h=choose(cands(sets,speed,kind)); if(h){ startAt(cache[h.c.file],h.gain*k,t,rr(.96,1.04),h.d); n++; } } return n; }
+  ringFor(kind,speed,t); let n=0; for(const [sets,k] of plan){ const h=choose(cands(sets,speed,kind)); if(h){ startAt(cache[h.c.file],h.gain*k,t,rr(.96,1.04),h.d); n++; } } return n; }
 async function hit(speed,kind){ await warm(); fire(speed,kind,audio().currentTime+.02); watchPeak(800); }
 // our own bounce simulation. Clips start the instant they are scheduled, so all timing comes from here: each die falls, hits at speed v, rebounds at e*v and flies for 2*e*v/G
 // seconds before the next hit; a small random restitution and a few ms of timing jitter keep it from sounding mechanical. Dice also knock into each other, then settle with a quick rattle.
