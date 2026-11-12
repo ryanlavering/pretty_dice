@@ -98,6 +98,7 @@
   #setlist{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;align-content:start} #setlist[hidden]{display:none}
   .setrow{display:flex;align-items:stretch;gap:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} .setrow .main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;background:#1d212c;border:1px solid var(--line)}
   .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
+  .setrow .chips{display:flex;gap:4px;flex-wrap:wrap} .setrow .chip{position:relative;width:30px;height:30px;background-size:contain;background-repeat:no-repeat} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:56px;right:10px;z-index:6;width:min(280px,72vw);max-height:55%;overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto 1fr;gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);grid-row:span 2;align-self:center;min-width:28px;text-align:right} #logpanel .le small{color:var(--dim)}
@@ -1340,23 +1341,33 @@ function captureLive(px=144){   // one small picture of whatever the stage shows
   renderer.setPixelRatio(pr); resize(); const u=c.toDataURL('image/webp',.8); return u.startsWith('data:image/webp')?u:c.toDataURL('image/jpeg',.8); }
 let thumbTimer=null, touchedAt=0;
 for(const t of ['pointerdown','keydown','input']) addEventListener(t,()=>{ touchedAt=performance.now(); },true);   // a person editing beats the background pass
-function scheduleThumb(){ if(!thumbsOn||!bag||thumbTimer) return; thumbTimer=setTimeout(()=>{ thumbTimer=null; updateThumbs(); },900); }   // not debounced: save() can fire all the time, so wait at most 900 ms
+function scheduleThumb(ms=900){ if(!thumbsOn||!bag||thumbTimer) return; thumbTimer=setTimeout(()=>{ thumbTimer=null; updateThumbs(); },ms); }   // not debounced: save() can fire all the time, so wait at most 900 ms
 async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet. Always a single d20 (a design's look, not a set). Done out of sight; the live design is restored after.
   if(camBlend>.01||topBlend>.01){ scheduleThumb(); return; }   // the camera is still easing back from the roll view (or a top-down hold): a picture now shows the table and a tiny die (PD-110)
-  if(thumbBusy||actBusy||rolling||!bag) return; thumbBusy=true; const started=performance.now();
+  if(thumbBusy||actBusy||rolling||!bag) return; if(performance.now()-touchedAt<1200){ scheduleThumb(500); return; }   // low priority: wait until the person has stopped touching things
+  thumbBusy=true; const started=performance.now();
   try{ const live=liveJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({live:true,json:live});
     for(const e of bag.designs){ if(e.id===bag.active.design&&!bag.active.draft) continue; const j=bag.pending[e.id]||e.design; if(!thumbs[thumbKey(j)]) todo.push({json:j,name:e.name}); }
     if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({json:bag.draft,name:''});
+    const more=todo.length>1; todo.length=Math.min(todo.length,1);   // one picture per slice, then yield: a bag of ten designs must not freeze the page
     if(todo.length){ const snap=snapshot(), nm=$('dname').value, h=history.slice(), hi=hIdx, cvs=renderer.domElement; cvs.style.visibility='hidden'; bagLoading++;
       try{ for(const t of todo){
           if(touchedAt>started){ scheduleThumb(); break; }
           if(t.live){ if(state.shape!=='d20'){ state.shape='d20'; buildDice(); } } else await loadDesign({...t.json,shape:'d20',name:t.name});
           const u=captureLive(); if(u) thumbs[thumbKey(t.json)]=u; }
       }finally{ await restore(snap); bagLoading--; $('dname').value=nm; history=h; hIdx=hi; syncHistoryUI(); cvs.style.visibility=''; } }
-    persistThumbs(); renderBag();
+    persistThumbs(); renderBag(); if(more) setTimeout(()=>scheduleThumb(300),0);
   }catch(err){ console.warn('thumbnail pass failed',err); }finally{ thumbBusy=false; } }
-const swatch=j=>`linear-gradient(135deg,${(j.colors||['#444','#666','#888']).join(',')})`;
-function thumbStyle(j){ const u=thumbs[thumbKey(j)]; return u?`url(${u})`:swatch(j); }
+/* Until a design has its real picture it shows a generic d20 drawn in the design's colour chip (its colours and substrate, read from the design itself). */
+const chipCache=new Map();
+function chipThumb(j,label='20'){ const cols=(j.colors&&j.colors.length?j.colors:['#444','#666','#888']).map(c=>/^#[0-9a-f]{3,8}$/i.test(c)?c:'#666'), sub=j.substrate||'', key=cols.join()+sub+'|'+label; let u=chipCache.get(key);
+  if(!u){ const c=i=>cols[i%cols.length], F=[[[50,6],[12,28],[50,28]],[[50,6],[88,28],[50,28]],[[12,28],[26,70],[50,28]],[[88,28],[74,70],[50,28]],[[12,28],[12,72],[26,70]],[[88,28],[88,72],[74,70]],[[12,72],[50,94],[26,70]],[[88,72],[50,94],[74,70]],[[26,70],[74,70],[50,94]],[[50,28],[74,70],[26,70]]], sh=[.16,0,.1,-.12,.18,-.2,.06,-.26,-.34,0];
+    const shine=/metal|gold|silver|chrome/.test(sub)?'<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>':'<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>';
+    const polys=F.map((f,i)=>{ const pts=f.map(q=>q.join(',')).join(' '); return `<polygon points="${pts}" fill="${c(i%3)}"/><polygon points="${pts}" fill="${sh[i]>=0?'#fff':'#000'}" fill-opacity="${Math.abs(sh[i])}" stroke="#0008" stroke-width="1" stroke-linejoin="round"/>`; }).join('');
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>${shine}</defs>${polys}<polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="url(#g)"/><text x="50" y="58" text-anchor="middle" font-family="serif" font-weight="700" font-size="17" fill="#fff" fill-opacity=".85" stroke="#0006" stroke-width=".6">${label}</text></svg>`;
+    u=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`; chipCache.set(key,u); } return u; }
+const swatch=chipThumb;
+function thumbStyle(j){ const u=thumbs[thumbKey(j)]; return u?`url(${u})`:chipThumb(j); }
 
 const el=(tag,cls,txt)=>{ const n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
 function slots(){   // what the shelf and sheet show, in order: designs, then the draft
@@ -1450,11 +1461,18 @@ const setNotation=st=>fmtNotation(st.terms,st.mod||0);
 const newSetName=()=>{ const used=new Set(bag.sets.map(x=>x.name)); let n=bag.sets.length+1; while(used.has(`Set ${n}`)) n++; return `Set ${n}`; };
 let rollSetId=null;   // the bag set whose dice are on the mat now (its last result is kept on the set)
 const dieName=t=>`d${t===100?'%':t}`;
+/* What is on the stage as a set: the custom formula when Custom is selected, otherwise the selected shape (Standard 7 keeps its name). */
+function currentDice(){
+  if(state.shape==='custom'){ const p=parseNotation(state.notation); if(!p.error) return {terms:structuredClone(p.terms),mod:p.mod,name:fmtNotation(p.terms,p.mod)}; }
+  if(state.shape==='set7') return {terms:SET7.map(([id])=>({count:1,sides:id==='dpct'?100:+id.slice(1)})),mod:0,name:'Standard 7'};
+  const sh=SHAPES[state.shape]; if(sh&&sh.pair) return {terms:[{count:1,sides:100}],mod:0,name:'d%'};
+  const m=/^d(\d+)$/.exec(state.shape); if(m&&(+m[1] in SIDES)) return {terms:[{count:1,sides:+m[1]}],mod:0,name:state.shape};
+  return {terms:[{count:1,sides:20}],mod:0,name:'d20'}; }
 const setOps={
   find(id){ return bag.sets.find(x=>x.id===id); },
-  saveCurrent(name){ const p=parseNotation(state.notation), terms=p.error?[{count:1,sides:20}]:p.terms; name=String(name||'').trim().slice(0,80)||newSetName();
-    const st={id:uniqueId(slug(name,'set'),new Set(bag.sets.map(x=>x.id))),name,terms:structuredClone(terms),mod:p.error?0:p.mod}; bag.sets.push(st); save(); return st.id; },
-  update(id){ const st=this.find(id), p=parseNotation(state.notation); if(!st||p.error) return; st.terms=structuredClone(p.terms); st.mod=p.mod; delete st.last; save(); },
+  saveCurrent(name){ const cur=currentDice(), terms=cur.terms; name=String(name||'').trim().slice(0,80)||cur.name;
+    const st={id:uniqueId(slug(name,'set'),new Set(bag.sets.map(x=>x.id))),name,terms:structuredClone(terms),mod:cur.mod}; bag.sets.push(st); save(); return st.id; },
+  update(id){ const st=this.find(id); if(!st) return; const cur=currentDice(); st.terms=cur.terms; st.mod=cur.mod; delete st.last; save(); },
   rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=name; save(); },
   remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
   move(id,to){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.sets.length-1,to)); const [x]=bag.sets.splice(k,1); bag.sets.splice(to,0,x); save(); },
@@ -1483,9 +1501,10 @@ function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.l
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
 function renderSets(){ const box=$('setlist'); $('sheettitle').textContent=`${bag.name} · ${bag.sets.length} set${bag.sets.length===1?'':'s'}`;
-  const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=state.notation; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
+  const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
   box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
-      const main=el('button','main'); main.type='button'; main.append(el('span','nm',st.name),el('small','',setNotation(st)+(st.last?`  ·  last ${st.last.total}`:''))); main.onclick=()=>setOps.open(st.id);
+      const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), c=el('span','chip'); c.style.backgroundImage=chipThumb(j,t.sides===100?'%':String(t.sides)); c.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; if(t.count>1) c.append(el('i','',t.count)); chips.append(c); }
+      main.append(chips,el('span','nm',st.name),el('small','',setNotation(st)+(st.last?`  ·  last ${st.last.total}`:''))); main.onclick=()=>setOps.open(st.id);
       const q=el('button','quick','⚡'); q.type='button'; q.title='Quick roll'; q.setAttribute('aria-label','Quick roll '+st.name); q.onclick=()=>{ setOps.quick(st.id); renderSheet(); };
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+st.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,setItems(st.id)); };
       row.append(main,q,dots); return row; }):[el('div','setempty','No sets yet. Build dice in the editor, then save them here.')])); }
