@@ -4,7 +4,7 @@ title: 'Bag sets: make a copy and edit in place'
 status: In Progress
 assignee: []
 created_date: '2026-11-12T17:11:00Z'
-updated_date: '2026-11-12T23:42:00Z'
+updated_date: '2026-11-12T23:58:00Z'
 labels:
   - feature
   - bag
@@ -30,4 +30,6 @@ Future (owner request 2026-11-12): sets need Copy and Edit. The editor re-uses t
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12: owner scoped this into the v3.0 release.
+
+2026-11-12: implemented. Row menu has Edit… and Make a copy (Use the current dice is gone). Edit expands the row into an inline editor: name, single-shape presets (d4..d20, Standard 7), formula field (typed @design checked), Dice use picker, term chips, steppers, modifier, Save / Cancel. It works on a draft of that one set, so the live Custom selection is never touched; Save also clears the set's last result. Copy puts 'X copy' right after the original. Checked at 1100 px and 390 px.
 <!-- SECTION:NOTES:END -->

@@ -111,6 +111,10 @@
   .rt{display:inline-flex;align-items:center;gap:3px;margin:0 7px;white-space:nowrap} .rt .chip{width:22px;height:22px} #logpanel .rt .chip{width:16px;height:16px} #logpanel .rt{margin:0 6px 0 0}
   #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheettitle .bnedit{width:min(220px,46vw);font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
   .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
+  .seted{background:#1d212c;border:1px solid var(--accent);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px} .seted input[type=text]{font:inherit;color:var(--ink);background:#14171f;border:1px solid var(--line);border-radius:6px;padding:7px;text-align:left;width:100%;box-sizing:border-box} .seted .sename{font-weight:600}
+  .seted .selab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)} .seted .presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px} .seted .presets button{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 4px}
+  .seted .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px} .seted .tch{display:flex;flex-wrap:wrap;gap:6px} .seted .tch button{padding:3px 9px;font-size:12px;border-radius:999px;display:inline-flex;align-items:center;gap:3px} .seted .tch .x{color:var(--dim)}
+  .seted .row2{display:flex;align-items:center;gap:8px} .seted .row2 label{color:var(--dim);font-size:12px;margin-right:auto} .seted .row2 select{flex:1;max-width:60%} .seted .mv{min-width:26px;text-align:center} .seted .seerr{color:#e07a7a;font-size:12px;min-height:0} .seted .seerr:empty{display:none} .seted .acts{justify-content:flex-end} .seted .acts .primary{background:var(--accent);color:#1a1405;font-weight:700}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
@@ -1552,6 +1556,9 @@ const setOps={
   find(id){ return bag.sets.find(x=>x.id===id); },
   saveCurrent(name){ const cur=currentDice(), terms=cur.terms; name=String(name||'').trim().slice(0,80)||cur.name;
     const st={id:uniqueId(slug(name,'set'),new Set(bag.sets.map(x=>x.id))),name,terms:structuredClone(terms),mod:cur.mod}; bag.sets.push(st); save(); return st.id; },
+  copy(id){ const k=bag.sets.findIndex(x=>x.id===id), st=bag.sets[k]; if(!st) return null; const c=structuredClone(st); delete c.last; c.name=`${st.name} copy`.slice(0,80);
+    c.id=uniqueId(slug(c.name,'set'),new Set(bag.sets.map(x=>x.id))); bag.sets.splice(k+1,0,c); save(); return c.id; },
+  edit(id,{name,terms,mod}){ const st=this.find(id); if(!st||!terms||!terms.length) return false; name=String(name||'').trim().slice(0,80)||st.name; st.name=name; st.terms=structuredClone(terms); st.mod=mod||0; delete st.last; save(); return true; },
   update(id){ const st=this.find(id); if(!st) return; const cur=currentDice(); st.terms=cur.terms; st.mod=cur.mod; delete st.last; save(); },
   rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=name; save(); },
   remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
@@ -1587,12 +1594,34 @@ function editSetName(span,id){ const cur=span.textContent, inp=el('input','nmedi
   const fin=ok=>{ if(done) return; done=true; inp.onblur=null; if(ok&&inp.value.trim()&&inp.value.trim()!==cur) setOps.rename(id,inp.value); renderSheet(); };
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); inp.onclick=e=>e.stopPropagation(); }
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
-  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},{label:'Use the current dice',run:()=>{ setOps.update(id); renderSheet(); }},
+  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
+/* Inline set editor (PD-124): the Custom controls (notation, dice use, term chips, steppers, modifier) plus single-shape presets, working on a draft of one set. The live Custom selection is never touched. */
+let editSet=null;   // {id,name,terms,mod,use,err}
+function openSetEditor(id){ const st=setOps.find(id); if(!st) return; editSet={id,name:st.name,terms:structuredClone(st.terms),mod:st.mod||0,use:null,err:''}; renderSheet(); setTimeout(()=>{ const n=document.querySelector('#setlist .seted .sename'); if(n){ n.focus(); n.select(); n.scrollIntoView({block:'nearest'}); } },0); }
+function draftApply(terms,mod){ const note=fmtNotation(terms,mod), p=parseNotation(note); if(p.error){ editSet.err=p.error; renderSheet(); return false; } editSet.terms=p.terms; editSet.mod=p.mod; editSet.err=''; renderSheet(); return true; }
+function setEditor(){ const E=editSet, host=el('div','seted'); host.dataset.id=E.id;
+  const nm=el('input','sename'); nm.type='text'; nm.value=E.name; nm.maxLength=80; nm.placeholder='Set name'; nm.setAttribute('aria-label','Set name'); nm.oninput=()=>{ E.name=nm.value; }; nm.onkeydown=ev=>{ ev.stopPropagation(); };
+  const useJ=()=>designChipJ(E.use);
+  const pre=el('div','presets'); for(const t of STEP_TYPES){ const b=el('button','',dieName(t)); b.type='button'; b.title=`A single ${dieName(t)}`; b.prepend(chipEl(t,useJ(),{flat:true})); b.onclick=()=>draftApply([E.use?{count:1,sides:t,design:E.use}:{count:1,sides:t}],E.mod); pre.append(b); }
+  { const b=el('button','','Standard 7'); b.type='button'; b.style.gridColumn='span 2'; b.onclick=()=>draftApply(SET7.map(([id])=>({count:1,sides:id==='dpct'?100:+id.slice(1)})),0); pre.append(b); }
+  const nt=el('input','senote'); nt.type='text'; nt.spellcheck=false; nt.value=fmtNotation(E.terms,E.mod); nt.setAttribute('aria-label','Dice formula');
+  const applyNote=()=>{ const p=parseNotation(nt.value,true); if(p.error){ E.err=p.error; renderSheet(); return; } draftApply(p.terms,p.mod); };
+  nt.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') applyNote(); }; nt.onchange=applyNote;
+  const use=el('div','row2'); { const lab=el('label','','Dice use'), sel=el('select'); sel.append(new Option('Active design',''),...bag.designs.map(d=>new Option(d.name,d.id))); sel.value=E.use||''; sel.onchange=()=>{ E.use=sel.value||null; renderSheet(); }; use.append(lab,sel); use.hidden=bag.designs.length<2; }
+  const tch=el('div','tch'); if(E.terms.length>1) E.terms.forEach((t,i)=>{ const b=el('button','',''); b.type='button'; b.title='Remove these dice from the set'; const e=t.design&&entryOf(t.design); b.append(chipEl(t.sides,designChipJ(t.design),{flat:true}),`${t.count}${dieName(t.sides)}${e?' · '+e.name:''}`,el('span','x',' ×')); b.onclick=()=>draftApply(E.terms.filter((_,k)=>k!==i),E.mod); tch.append(b); });
+  const c=(()=>{ const o={}; STEP_TYPES.forEach(t=>o[t]=0); E.terms.filter(t=>sameDesign(t.design,E.use)).forEach(t=>o[t.sides]+=t.count); return o; })();
+  const steps=el('div','steps'); for(const t of STEP_TYPES){ const d=el('div','step'), sl=el('span','sl'), sc=el('span','sc'); sl.append(chipEl(t,useJ(),{flat:true}),el('small','',dieName(t)));
+    const mk=(txt,dl)=>{ const b=el('button','',txt); b.type='button'; b.setAttribute('aria-label',`${dl>0?'Add':'Remove'} a ${dieName(t)}`); b.onclick=()=>{ const n={...c,[t]:Math.max(0,c[t]+dl)}, others=E.terms.filter(x=>!sameDesign(x.design,E.use)), mine=STEP_TYPES.filter(k=>n[k]>0).map(k=>E.use?{count:n[k],sides:k,design:E.use}:{count:n[k],sides:k}), terms=E.use?[...others,...mine]:[...mine,...others]; if(terms.length) draftApply(terms,E.mod); }; return b; };
+    sc.append(mk('−',-1),el('b','',String(c[t])),mk('+',1)); d.append(sl,sc); steps.append(d); }
+  const mod=el('div','row2'); { const m=(txt,dl)=>{ const b=el('button','',txt); b.type='button'; b.setAttribute('aria-label',dl>0?'Modifier up':'Modifier down'); b.onclick=()=>draftApply(E.terms,E.mod+dl); return b; }; mod.append(el('label','','Modifier'),m('−',-1),el('b','mv',String(E.mod)),m('+',1)); }
+  const act=el('div','row2 acts'); const save=el('button','primary','Save'); save.type='button'; save.onclick=()=>{ if(setOps.edit(E.id,{name:E.name,terms:E.terms,mod:E.mod})){ editSet=null; renderSheet(); } };
+  const cancel=el('button','','Cancel'); cancel.type='button'; cancel.onclick=()=>{ editSet=null; renderSheet(); }; act.append(save,cancel);
+  host.append(nm,el('div','selab','Presets'),pre,el('div','selab','Formula'),nt,el('div','seerr',E.err||''),use,tch,steps,mod,act); return host; }
 function renderSets(){ const box=$('setlist'); setSheetTitle(`${bag.sets.length} set${bag.sets.length===1?'':'s'}`);
   const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
-  box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
+  box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ if(editSet&&editSet.id===st.id) return setEditor(); const row=el('div','setrow'); row.dataset.id=st.id;
       const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${t.count}${dieName(t.sides)}`)); chips.append(tm); }
       if(st.mod) chips.append(el('small','mod',(st.mod>0?'+':'')+st.mod));
       main.append(el('span','nm',st.name),chips,...(st.last?[el('small','',`last ${st.last.total}`)]:[])); main.onclick=()=>setOps.open(st.id);
