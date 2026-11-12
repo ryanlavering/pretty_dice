@@ -105,6 +105,7 @@
   #quickres{position:fixed;top:26%;left:50%;transform:translateX(-50%);z-index:40;width:min(360px,88vw);box-sizing:border-box;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;padding:12px 16px 14px;background:rgba(14,16,21,.93);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px #000a} #quickres.on{opacity:1;transition:opacity .12s}
   #quickres .qn{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)} #quickres .tot{font:800 min(54px,16vw) Cinzel,serif;color:var(--accent);line-height:1.15;text-shadow:0 2px 14px #000} #quickres .rt{display:flex;justify-content:center;margin:3px 0;font-size:13px;color:var(--ink)} #quickres .rt .chip{width:20px;height:20px}
   .rt{display:inline-flex;align-items:center;gap:3px;margin:0 7px;white-space:nowrap} .rt .chip{width:22px;height:22px} #logpanel .rt .chip{width:16px;height:16px} #logpanel .rt{margin:0 6px 0 0}
+  #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheettitle .bnedit{width:min(220px,46vw);font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
   .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
@@ -1495,8 +1496,13 @@ function cardItems(id){
     {label:'Delete…',danger:true,disabled:last===0,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${entryOf(id).name}"?`},{label:'Delete',danger:true,run:()=>bagOps.remove(id)},{label:'Cancel',run:()=>{}}]),0)}]; }
 
 /* All-designs sheet, with drag-to-reorder (long-press on a phone) */
+/* The bag's name sits in the sheet title and can be edited there; it is also the base of the saved file's name. */
+function setSheetTitle(count){ const t=$('sheettitle'), n=el('span','bn',bag.name); n.title='Click to rename the bag (also the saved file name)'; n.onclick=()=>editBagName(n); t.replaceChildren(n,el('span','',` · ${count}`)); }
+function editBagName(span){ const cur=bag.name, inp=el('input','nmedit bnedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Bag name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
+  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; const v=inp.value.trim().slice(0,80); if(ok&&v&&v!==cur){ bag.name=v; save(); } lastSig=''; renderBag(); renderSheet(); };
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); }
 function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
-  const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
+  const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}`);
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
@@ -1557,7 +1563,7 @@ function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.l
   return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},{label:'Use the current dice',run:()=>{ setOps.update(id); renderSheet(); }},
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
-function renderSets(){ const box=$('setlist'); $('sheettitle').textContent=`${bag.name} · ${bag.sets.length} set${bag.sets.length===1?'':'s'}`;
+function renderSets(){ const box=$('setlist'); setSheetTitle(`${bag.sets.length} set${bag.sets.length===1?'':'s'}`);
   const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
   box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
       const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${t.count}${dieName(t.sides)}`)); chips.append(tm); }

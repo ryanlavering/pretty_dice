@@ -192,3 +192,20 @@ test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({
   const over = await page.locator('#sheethead').evaluate(e => e.scrollWidth > e.clientWidth + 1);
   expect(over).toBe(false);
 });
+
+test('the bag name is editable in the sheet title and names the saved file', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.click('#bagbtn');
+  await page.locator('#sheettitle .bn').click();
+  await page.locator('#sheettitle input').fill('Dungeon night!'); await page.keyboard.press('Enter');
+  await expect(page.locator('#sheettitle .bn')).toHaveText('Dungeon night!');
+  expect(await app.run(pd => pd.bag.name)).toBe('Dungeon night!');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
+  expect(dl.suggestedFilename()).toBe('dungeon-night.bag.json');
+  await page.locator('#sheetclose').click();
+  await expect(page.locator('#bagpos')).toContainText('in Dungeon night!');
+  await page.click('#bagbtn'); await page.locator('#sheettitle .bn').click();
+  await page.locator('#sheettitle input').fill('Nope'); await page.keyboard.press('Escape');
+  expect(await app.run(pd => pd.bag.name)).toBe('Dungeon night!');   // Escape keeps the old name
+});

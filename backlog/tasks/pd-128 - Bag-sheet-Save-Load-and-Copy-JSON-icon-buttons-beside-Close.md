@@ -4,6 +4,7 @@ title: 'Bag sheet: Save, Load and Copy JSON icon buttons beside Close'
 status: Needs Review
 assignee: []
 created_date: '2026-11-12T22:46:00Z'
+updated_date: '2026-11-12T22:55:00Z'
 labels:
   - feature
   - bag
@@ -22,3 +23,9 @@ Owner request while reviewing PD-117: the dice bag sheet had no save/load/copy c
 - [ ] #1 Save, Load and Copy icon buttons are in the bag sheet header beside Close
 - [ ] #2 They fit at 390 px wide
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12 owner add-on: the bag name is editable in the sheet title (click it; Enter saves, Escape cancels) and is the base of the saved file name (slug, e.g. 'Dungeon night!' -> dungeon-night.bag.json). Renaming marks the bag modified.
+<!-- SECTION:NOTES:END -->
