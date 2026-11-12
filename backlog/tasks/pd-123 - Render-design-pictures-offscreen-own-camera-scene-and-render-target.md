@@ -4,10 +4,12 @@ title: Render design pictures offscreen (own camera, scene and render target)
 status: To Do
 assignee: []
 created_date: '2026-11-12T16:20:00Z'
+updated_date: '2026-11-12T23:15:00Z'
 labels:
   - feature
   - bag
   - performance
+milestone: m-0
 dependencies: []
 priority: medium
 ordinal: 134000
@@ -26,3 +28,9 @@ Replace captureLive (borrows the visible stage: loads the design into live state
 - [ ] #3 Clear epoxy and all substrates render correctly in the offscreen target
 - [ ] #4 Tests pass; profile shows no regression
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: owner scoped this into the v3.0 release.
+<!-- SECTION:NOTES:END -->

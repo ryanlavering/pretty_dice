@@ -4,9 +4,11 @@ title: 'Bag sets: make a copy and edit in place'
 status: To Do
 assignee: []
 created_date: '2026-11-12T17:11:00Z'
+updated_date: '2026-11-12T23:15:00Z'
 labels:
   - feature
   - bag
+milestone: m-0
 dependencies: []
 ordinal: 135000
 ---
@@ -23,3 +25,9 @@ Future (owner request 2026-11-12): sets need Copy and Edit. The editor re-uses t
 - [ ] #2 Edit opens the Custom controls and shape presets inline under the set row and saves back to that set
 - [ ] #3 Edits never touch the live Custom selection unless the owner opens the set
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: owner scoped this into the v3.0 release.
+<!-- SECTION:NOTES:END -->

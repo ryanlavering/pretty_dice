@@ -4,8 +4,10 @@ title: 'Performance: clear epoxy (transmission) costs 4-5x per frame; profile an
 status: To Do
 assignee: []
 created_date: '2026-11-12T04:48:00Z'
+updated_date: '2026-11-12T23:15:00Z'
 labels:
   - v3.0
+milestone: m-1
 dependencies: []
 priority: medium
 ordinal: 128000
@@ -21,3 +23,9 @@ Profiling (scripts/profile.mjs, software GL so read the ratios): clear epoxy cos
 <!-- AC:BEGIN -->
 - [ ] #1 Epoxy frame cost within 2x of solid on the profile (scripts/profile.mjs), or a documented reason it cannot be
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: owner moved this to v4.0 (after the v3.0 dice bag release).
+<!-- SECTION:NOTES:END -->

@@ -168,7 +168,7 @@ Build **A then C**, with the B grid as A's "see all" view.
 | 2. Bag browser | Carousel (A) + "All designs" grid (B): pick, add, duplicate, rename, delete, reorder. | AC #2. |
 | 3. Mixed-design sets | `design` per term, `@name` notation, chips in the custom-set editor, per-design material cache. | AC #3: a set with 2 designs rolls and reads correctly. |
 | 4. Bag sets | Named sets owned by the bag (B+), opened onto the roll mat; quick roll; roll log (PD-68). | AC #4. |
-| 5. Characters | Character stats, own sets, generated sheet rolls (skills, saves, initiative), default d20 design per character (PD-73). Attacks from imported character sheets come later. | New card. |
+| 5. Characters (v4.0) | Character stats, own sets, generated sheet rolls (skills, saves, initiative), default d20 design per character (PD-73). Attacks from imported character sheets come later. | New card. |
 
 Each phase is its own card or branch and ships to `main` on its own. Tests: a round-trip spec for phase 1; one spec per phase for the carousel actions, mixed-material counts (`__pd`) and log entries.
 
