@@ -6,7 +6,7 @@ title: >-
 status: Needs Review
 assignee: []
 created_date: '2026-11-12T04:09:00Z'
-updated_date: '2026-11-12T08:03:00Z'
+updated_date: '2026-11-12T22:42:00Z'
 labels:
   - audio
 dependencies: []
@@ -50,4 +50,6 @@ Design notes: define one backend interface (impact(speed, material/substrate, sh
 Remaining: AC6 loudness matching across backends (trim), AC8 owner picks winner / prune (classic and proc kept as fallbacks for now); real stone/metal/glass hits, rolling loop, stinger samples (see PD-52).
 
 2026-11-12: metal/glass ring layer added (RING table, 'Metal / glass ring' slider). Full npm test: 95 passed, 3 flaky (undo/redo, filigree atlas, 25 s watchdog; all passed on retry, none touch sound). Branch feat/pd-114-sound, not pushed. Review: listen via /tools/sound-audition.html and in the app (default set is the layered blend).
+
+2026-11-12 owner decision: keep ALL sound systems (classic, proc, best, kenney, mix) selectable at runtime for more perceptual testing; no pruning yet (AC8 stays open). Glass ring is FM only (samples tried and dropped, 3d05f94). Ring layer (metal additive, glass FM) applies to the sample backends (best, kenney, mix); classic and proc keep their own built-in sounds.
 <!-- SECTION:NOTES:END -->
