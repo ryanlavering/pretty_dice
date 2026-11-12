@@ -3,10 +3,10 @@ id: PD-108
 title: >-
   Load bag should replace (with unsaved-changes prompt); bag Modified badges and
   Save bag links; drop Replace bag
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-11T23:40:00Z'
-updated_date: '2026-11-12T01:03:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels:
   - feature
   - dice-bag

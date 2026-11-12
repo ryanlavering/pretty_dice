@@ -3,10 +3,10 @@ id: PD-107
 title: >-
   Load design should add a new design at the end of the bag, not overwrite the
   current one
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-11T23:00:00Z'
-updated_date: '2026-11-12T00:20:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels:
   - bug
   - dice-bag

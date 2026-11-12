@@ -1,10 +1,10 @@
 ---
 id: PD-89
 title: Amethyst, tiger's eye, opal
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-10T17:32:00Z'
-updated_date: '2026-11-12T00:37:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels: []
 dependencies: []
 priority: low

@@ -1,17 +1,19 @@
 ---
 id: PD-112
-title: Save bag writes the current state of edited designs; a loaded file comes in clean
-status: Needs Review
+title: >-
+  Save bag writes the current state of edited designs; a loaded file comes in
+  clean
+status: Done
 assignee: []
 created_date: '2026-11-12T00:20:00Z'
-updated_date: '2026-11-12T00:20:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels:
   - bug
   - dice-bag
 dependencies: []
 parent_task_id: PD-102
 priority: medium
-ordinal: 112000
+ordinal: 127000
 ---
 
 ## Description

@@ -1,10 +1,10 @@
 ---
 id: PD-111
 title: 'Settings pane top: group the bag, design-edit and bag-save controls'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T00:40:00Z'
-updated_date: '2026-11-12T01:20:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels:
   - ui
 dependencies: []
