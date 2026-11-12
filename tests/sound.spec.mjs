@@ -121,14 +121,14 @@ test('the tuning tool uses the same material hardness table as the app', async (
 
 test('metal and glass ring: only metal or glass pairings add a ring layer, and the slider scales it', async ({ app }) => {
   await app.open();
-  const r = await app.run(pd => { pd.audioInit(); const count = (sub, surf, kind, amt = 1, speed = 9) => { pd.state.substrate = sub; pd.state.surfaceMat = surf; pd.state.ringAmt = amt; return pd.ringFor(kind, speed); };
+  const r = await app.run(pd => { pd.audioInit(); const count = (sub, surf, kind, amt = 1, speed = 14) => { pd.state.substrate = sub; pd.state.surfaceMat = surf; pd.state.ringLevel = amt; return pd.ringFor(kind, speed); };
     return { plasticFelt: count('swirl', 'felt', 'table'), plasticGlass: count('swirl', 'glass', 'table'), metalFelt: count('metal', 'felt', 'table'), metalDie: count('metal', 'felt', 'dice'),
-      plasticGlassDice: count('swirl', 'glass', 'dice'), off: count('metal', 'glass', 'table', 0), soft: count('metal', 'glass', 'table', 1, 1.5), hard: count('metal', 'glass', 'table', 1, 14) }; });
+      plasticGlassDice: count('swirl', 'glass', 'dice'), off: count('metal', 'glass', 'table', 0), soft: count('metal', 'glass', 'table', 1, 2.5), hard: count('metal', 'glass', 'table', 1, 14) }; });
   expect(r.plasticFelt, 'plastic on felt: no ring').toBe(0);
   expect(r.plasticGlass, 'plastic on glass: glass rings').toBeGreaterThan(0);
   expect(r.metalFelt, 'metal die on felt: metal rings').toBeGreaterThan(0);
   expect(r.metalDie, 'metal die on die rings').toBeGreaterThan(0);
   expect(r.plasticGlassDice, 'the glass surface is not involved in die on die').toBe(0);
-  expect(r.off, 'slider at 0 turns it off').toBe(0); expect(r.soft, 'too gentle a tap does not ring').toBe(0);
+  expect(r.off, 'slider at 0 turns it off').toBe(0); expect(r.soft, 'a gentle tap does not ring (sparing use)').toBe(0);
   expect(r.hard, 'metal and glass together ring as two layers').toBeGreaterThan(r.metalFelt);
 });

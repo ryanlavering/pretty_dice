@@ -170,12 +170,13 @@ const pairHard=(a,b)=>2*a*b/(a+b+1e-6), rr=(a,b)=>a+Math.random()*(b-a);
 function hardnessFor(kind,speed){ const die=MAT_HARD[$('diemat').value], other=kind==='dice'?die:MAT_HARD[$('surf').value], g=Math.min(1,Math.pow(speed/14,.8));
   return Math.max(0,Math.min(1,pairHard(die,other)+(g-.5)*.3+(kind==='dice'?.08:0)+rr(-.1,.1))); }
 // metal and glass ring (same model as the app): decaying sine partials on top of the hit when the die or the surface is metal or glass
-const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1]], glass:[3100,.26,[1,2.32,4.25,6.63],[1,.5,.28,.14],[.38,.22,.14,.09]] };
-function ringFor(kind,speed,t){ const E=Math.min(1,+$('ring').value)*.2; if(!(E>0)||speed<2.5) return 0;   // slider 0..1 = the first 10% of the old 0..2 range, as in the app const rings=new Set(), die=$('diemat').value, surf=$('surf').value; if(RING[die]) rings.add(die); if(kind==='table'&&RING[surf]) rings.add(surf);
+const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
+function ringFor(kind,speed,t){ const E=Math.min(1,+$('ring').value)*.04; if(!(E>0)||speed<3||Math.random()>Math.min(1,(speed-3)/8)) return 0;   // same scaling and sparseness as the app
+  const rings=new Set(), die=$('diemat').value, surf=$('surf').value; if(RING[die]) rings.add(die); if(kind==='table'&&RING[surf]) rings.add(surf);
   const c=audio(), g=Math.min(1,Math.pow(speed/14,.8)); let n=0;
-  for(const m of rings){ const [f0,amp,ratio,gain,dec]=RING[m], out=c.createGain(); out.gain.value=amp*E*g*rr(.7,1.1); out.connect(bus()); const base=f0*rr(.97,1.03), life=.6+.6*g;
+  for(const m of rings){ const [f0,amp,ratio,gain,dec,lpHz,atk]=RING[m], out=c.createGain(), lp=c.createBiquadFilter(); out.gain.value=amp*E*g*rr(.7,1.1); lp.type='lowpass'; lp.frequency.value=lpHz; lp.Q.value=.5; out.connect(lp); lp.connect(bus()); const base=f0*rr(.97,1.03), life=.6+.6*g;
     ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,g*1.4):1), f=base*r*rr(.99,1.01); if(a<.02||f>16000) return; const o=c.createOscillator(), e=c.createGain(); o.frequency.value=f;
-      e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+.0015); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); n++; }); }
+      e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+atk); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); n++; }); }
   return n; }
 // candidates: every kept clip of the chosen sets, scored by distance from the wanted clack plus distance from the wanted level
 function cands(sets,speed,kind){ const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), h=hardnessFor(kind,speed);
