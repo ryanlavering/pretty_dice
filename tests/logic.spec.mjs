@@ -154,7 +154,7 @@ test('200 randomizes reach every option without errors', async ({ shared: app })
   expect(r.panel).toBeLessThan(190);
 });
 
-test('randomized filigree paints enamel into the atlas', async ({ shared: app }) => {
+test('randomized filigree paints enamel into the atlas @slow', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     pd.state.randshape = false; let n = 0;
     do { pd.randomize(); n++; } while (pd.state.filigree === 'none' && n < 40);
@@ -167,7 +167,7 @@ test('randomized filigree paints enamel into the atlas', async ({ shared: app })
   expect(r.green).toBeGreaterThan(100);
 });
 
-test('seeded boot and roll are deterministic (Math.random left unseeded)', async ({ app, browser }) => {
+test('seeded boot and roll are deterministic (Math.random left unseeded) @slow', async ({ app, browser }) => {
   await app.open();
   const look = pd => JSON.stringify([pd.designToJSON(), pd.simRoll().dice]);
   const a = await app.run(look);

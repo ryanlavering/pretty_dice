@@ -1,10 +1,10 @@
 ---
 id: PD-110
 title: Design thumbnail comes out small when the design has several dice
-status: Done
+status: Review Complete
 assignee: []
 created_date: '2026-11-11T23:55:00Z'
-updated_date: '2026-11-11T23:55:00Z'
+updated_date: '2026-11-12T16:20:00Z'
 labels:
   - bug
   - dice-bag
@@ -33,5 +33,7 @@ Fix idea: while taking a thumbnail, temporarily use a one-die notation (and rest
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-2026-11-12: Cause was not the dice count. The picture pass ran right after a roll ended: rolling is false at once but the camera (camBlend, and topBlend for the top-down hold) eases home over a second or more (tens of seconds on software GL), so the capture showed the roll view (table, tiny die). A six-dice design just rolls more often. Fix: updateThumbs defers (scheduleThumb) while camBlend or topBlend > .01. Test 'no design picture is taken while the camera eases back from the roll view (PD-110)' fails without the guard, passes with it. Test hooks: __pd.thumbBusy, thumbKey, camBlend (get/set). Owner confirmed 2026-11-11 after clearing localStorage prettydice.thumbs.v1: pictures cached before the fix stay (cache is keyed by look), so an existing browser needs that key cleared once. A key bump to v2 would do it automatically (not done).
+2026-11-12: Cause was not the dice count. The picture pass ran right after a roll ended: rolling is false at once but the camera (camBlend, and topBlend for the top-down hold) eases home over a second or more (tens of seconds on software GL), so the capture showed the roll view (table, tiny die). A six-dice design just rolls more often. Fix: updateThumbs defers (scheduleThumb) while camBlend or topBlend > .01. Test 'no design picture is taken while the camera eases back from the roll view (PD-110)' fails without the guard, passes with it. Test hooks: __pd.thumbBusy, thumbKey, camBlend (get/set). Needs owner check on the Rose epoxy case.
+
+2026-11-12: owner confirmed it works well enough in testing. Follow-up (offscreen rendering, no waiting on the camera) filed as a new card.
 <!-- SECTION:NOTES:END -->

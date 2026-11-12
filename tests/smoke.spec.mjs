@@ -248,7 +248,7 @@ test('spin pause button is on the showcase mat, speed slider is in settings, and
 // Custom set: one tap back to a single d20.
 test('Clear resets the custom set to a single d20 with no modifier', async ({ app }) => {
   await app.open();
-  await app.page.getByRole('button', { name: 'Custom set' }).click();   // the notation field only shows for a custom set
+  await app.page.getByRole('button', { name: 'Custom', exact: true }).click();   // the notation field only shows for a custom set
   await app.page.fill('#notation', '3d6+2d10+4'); await app.page.click('#notapply');
   await expect.poll(() => app.run(pd => pd.dice.length), { timeout: 20_000 }).toBe(5);
   await app.page.click('#notclear');

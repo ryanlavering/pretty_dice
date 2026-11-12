@@ -12,7 +12,7 @@ const SETUP = async pd => {
 
 test.beforeEach(async ({ shared }) => { await shared.reset(1); await shared.run(SETUP); });
 
-test('editing marks the active design Modified; Save, Revert and Save as copy', async ({ shared: app }) => {
+test('editing marks the active design Modified; Save, Revert and Save as copy @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}; out.clean = pd.isModified('bone');
     pd.state.radius = 0.1; out.edited = pd.isModified('bone');
@@ -45,7 +45,7 @@ test('pending edits are exported and survive a reload', async ({ app, page }) =>
   expect(r).toEqual({ active: 'gold', goldMod: true, boneMod: true, radius: 0.09, exported: ['bone', 'gold'] });
 });
 
-test('Randomize makes one draft; it never touches saved designs; Keep and Discard', async ({ shared: app }) => {
+test('Randomize makes one draft; it never touches saved designs; Keep and Discard @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}, before = JSON.stringify(pd.bag.designs);
     pd.randomize(true); const d1 = JSON.stringify(pd.bagToJSON().draft);
@@ -63,7 +63,7 @@ test('Randomize makes one draft; it never touches saved designs; Keep and Discar
   expect(r.discarded).toEqual({ draft: null, active: false, on: r.kept && r.discarded.on, n: 4 });
 });
 
-test('duplicate, rename, move, delete', async ({ shared: app }) => {
+test('duplicate, rename, move, delete @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}, ids = () => pd.bag.designs.map(d => d.id);
     await pd.bagOps.duplicate('amethyst'); out.dup = { ids: ids(), active: pd.bag.active.design };
@@ -103,7 +103,7 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await page.keyboard.press('Escape'); await expect(page.locator('#bagsheet')).toBeHidden();
 });
 
-test('menu actions work on a modified design that is not active', async ({ shared: app }) => {
+test('menu actions work on a modified design that is not active @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}; pd.state.radius = 0.1; pd.save(); await pd.bagActivate('gold');   // bone now has pending edits
     await pd.bagOps.revert('bone'); out.revert = { mod: pd.isModified('bone'), active: pd.bag.active.design };
@@ -122,7 +122,7 @@ test('design pictures are a d20 whatever the preview shape, appear without reope
   test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
   await app.open({ query: 'thumbs=1' });
   await app.run(SETUP);   // bone (d6, active), amethyst (d20), gold (d8)
-  await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage.startsWith('url("data:image'))), { timeout: 60000 }).toEqual([true, true, true]);
+  await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => /^url\("data:image\/(webp|jpeg)/.test(e.style.backgroundImage))), { timeout: 60000 }).toEqual([true, true, true]);
   await expect(page.locator('#bagth')).toHaveCSS('background-image', /data:image/);
   const r = await app.run(pd => ({ shape: pd.state.shape, active: pd.bag.active.design, mod: pd.isModified('bone'), n: Object.keys(pd.thumbs).length }));
   expect(r).toEqual({ shape: 'd6', active: 'bone', mod: false, n: 3 });
@@ -155,7 +155,7 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await expect(page.locator('#bagbtn')).toBeVisible();
 });
 
-test('rotating the phone does not change the chosen design', async ({ app, page }) => {
+test('rotating the phone or flicking the shelf does not change the chosen design', async ({ app, page }) => {
   await page.setViewportSize({ width: 390, height: 780 });
   await app.open();
   await app.run(SETUP);
@@ -168,13 +168,14 @@ test('rotating the phone does not change the chosen design', async ({ app, page 
   // what a rotation does to the strip: it moves under the active card without anyone touching it
   await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; }); await page.waitForTimeout(900);
   expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
-  // a real flick still picks the card that lands in the middle
+  // a flick browses the strip but never changes the chosen design (owner decision 2026-11-11)
   // the loop above ends in landscape, where all the cards fit and the strip cannot scroll; flick in portrait, away from 0 first (a scroll to the same spot fires no event)
   await page.setViewportSize({ width: 390, height: 780 }); await page.waitForTimeout(900);
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 1e5; });
   await page.waitForTimeout(900);
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; });
-  await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('amethyst');
+  await page.waitForTimeout(900);
+  expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
 });
 
 test('Load bag replaces the bag and asks first when it has unsaved changes; Save bag clears the badge (PD-108)', async ({ app, page }) => {
@@ -243,7 +244,7 @@ test('Delete from the card menu confirms in the page (no browser dialog) and rem
   expect(await app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['amethyst', 'bone']);
 });
 
-test('a new blank design is plain off-white solid plastic, not the swirl default', async ({ app }) => {
+test('a new blank design is plain off-white solid plastic, not the swirl default @quick', async ({ app }) => {
   await app.open();
   await app.run(SETUP);
   const r = await app.run(async pd => { const id = await pd.bagOps.addBlank(); const d = pd.bag.designs.find(x => x.id === id).design; return { sub: d.substrate, colors: d.colors }; });
@@ -288,13 +289,14 @@ test('a set mixes designs: @design notation, one look per design, rolls and read
   expect(r.dice[2].sub).toBe('metal'); expect(r.dice[3].sub).toBe('swirl');
   expect(r.dice[2].metal).toBeGreaterThan(0.5); expect(r.dice[0].metal).toBeLessThan(0.5);   // gold is metal, bone is plastic
   expect(r.roll.dice.length).toBe(4);
-  await expect(page.locator('#result')).toContainText('1d8 (Gold)');
+  await expect(page.locator('#result')).toContainText('1d8:');   // the design shows as a chip (named in its title), not as text
+  await expect(page.locator('#result .brk .rt .chip[title="Gold"]')).toHaveCount(1);
   await expect(page.locator('#termchips button')).toHaveCount(3);
   await page.locator('#termchips button', { hasText: 'Gold' }).click();   // a chip removes its term
   expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
 });
 
-test('a note that names a deleted design falls back to the live design instead of failing', async ({ app }) => {
+test('a note that names a deleted design falls back to the live design instead of failing @quick', async ({ app }) => {
   await app.open();
   await app.run(SETUP);
   const r = await app.run(async pd => { pd.state.notation = '2d6@gold+1'; pd.state.shape = 'custom'; await pd.bagOps.remove('gold'); pd.state.notation = '2d6@gold+1'; return pd.dice.length; });
@@ -314,4 +316,60 @@ test('dice that look the same share one atlas and geometry; different designs or
   expect(r.same).toEqual({ atlases: 1, geos: 1, mats: 12, dice: 12 });   // a material per die: each die glows and dims by itself
   expect(r.two.dice).toBe(12); expect(r.two.atlases).toBeLessThanOrEqual(2);
   expect(r.shapes).toBe(2);
+});
+
+test('a mouse drag scrolls the shelf without changing the chosen design; cards sit as close as on a phone', async ({ app, page }) => {
+  test.setTimeout(120_000); expect.configure({ timeout: 60_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(SETUP);   // bone (active), amethyst, gold
+  await expect(page.locator('#cards .card[data-id]')).toHaveCount(3);
+  const gap = await page.evaluate(() => { const c = [...document.querySelectorAll('#cards .card[data-id]')]; return { w: c[0].offsetWidth, step: c[1].offsetLeft - c[0].offsetLeft }; });
+  expect(gap).toEqual({ w: 68, step: 76 });   // the phone spacing: 68 px cards, 8 px apart
+  const s0 = await page.evaluate(() => document.getElementById('cards').scrollLeft), box = await page.locator('#cards').boundingBox(), y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width / 2 + 120, y); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 20, y, { steps: 8 }); await page.mouse.move(box.x + box.width / 2 - 150, y, { steps: 8 });   // drag left: later cards come to the middle
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+  expect(await app.run(pd => pd.bag.active.design)).toBe('bone');   // browsing is not choosing
+  expect(await page.evaluate(() => document.getElementById('cards').scrollLeft)).toBeGreaterThan(s0);
+  expect(await app.run(pd => pd.bag.designs.length)).toBe(3);   // a drag does not open a menu or add anything
+});
+
+// PD-117: a big bag must not freeze the page while pictures are made.
+test('a bag of ten designs shows tinted placeholders at once and makes one picture per slice', async ({ app, page }) => {
+  test.setTimeout(240_000); expect.configure({ timeout: 90_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(async pd => {
+    const designs = Array.from({ length: 10 }, (_, i) => ({ id: `d${i}`, name: `Design ${i}`, design: { ...pd.designToJSON(), name: `Design ${i}`, substrate: i % 2 ? 'metal' : 'solid', colors: [`#${(i * 25 + 40).toString(16).padStart(2, '0')}3050`, '#ffffff', '#102030'] } }));
+    await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'Big', designs }, { replace: true });
+    pd.thumbs && Object.keys(pd.thumbs).forEach(k => delete pd.thumbs[k]);
+  });
+  await page.locator('#bagopen').click();
+  const bgs = await page.locator('#tiles .tile[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage));
+  expect(bgs.length).toBe(10);
+  expect(bgs.filter(b => b.startsWith('url("data:image/svg+xml')).length).toBeGreaterThanOrEqual(8);   // dummy d20 chips, until a real picture exists
+  expect(new Set(bgs.filter(b => b.startsWith('url("data:image/svg+xml'))).size).toBeGreaterThan(5);   // each tinted by its own colours
+  const before = await app.run(pd => Object.keys(pd.thumbs).length);
+  await app.run(async pd => { await pd.updateThumbs(); });
+  const after = await app.run(pd => Object.keys(pd.thumbs).length);
+  expect(after - before).toBeLessThanOrEqual(1);
+  await expect.poll(() => app.run(pd => Object.keys(pd.thumbs).length), { timeout: 150_000 }).toBeGreaterThanOrEqual(10);
+});
+
+// PD-117 follow-up: editing a design keeps its old picture until the new one lands; the stand-in matches the real picture's framing.
+test('an edited design keeps its old picture until the new one lands; the stand-in is framed like a render', async ({ app, page }) => {
+  test.setTimeout(240_000); expect.configure({ timeout: 90_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(SETUP);
+  const real = /^url\("data:image\/(webp|jpeg)/;
+  await expect.poll(() => page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage), { timeout: 120_000 }).toMatch(real);
+  const before = await page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage);
+  await app.run(async pd => { await pd.bagActivate('gold'); pd.state.radius = 0.07; pd.save(); });
+  await page.waitForTimeout(400);   // the card has re-rendered for the edit, but the new picture is not ready yet
+  const during = await page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage);
+  expect(during).toMatch(real);
+  expect(await page.locator('#bagth').evaluate(e => e.style.backgroundImage)).toMatch(real);
+  void before;
+  const svg = decodeURIComponent(await app.run(pd => pd.dieChip({ colors: ['#7a3fb0', '#c89be0', '#3b1d66'], substrate: 'swirl' }, 'd20', '20', false, true)));
+  expect(svg).toContain('<rect width="100" height="100"'); expect(svg).toContain('translate(50 46)');
 });

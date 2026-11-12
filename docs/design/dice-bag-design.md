@@ -128,7 +128,7 @@ The roll and showcase scenes already build one mesh per die. Each die now gets i
 All three keep the current app shell: stage, bottom toolbar, Showcase/Roll switch, settings pane. They differ in where the bag lives and what comes first.
 
 ### A. Carousel shelf (design-first)
-A row of large die cards over the bottom toolbar. Swipe to flick through designs; the centre card is the active design and the stage shows it. Long-press a card for Rename, Duplicate, Delete, Move. A "+" card at the end adds a design (blank, randomized, or loaded from file). Sets live in the existing settings pane under "Sets".
+A row of large die cards over the bottom toolbar. Swipe or drag to browse; scrolling never changes the selection. Tap a card to choose it: the chosen card is centred and the stage shows it. Long-press a card for Rename, Duplicate, Delete, Move. A "+" card at the end adds a design (blank, randomized, or loaded from file). Sets live in the existing settings pane under "Sets".
 - **Getting there:** there are two ways in from the main UI: a new bag button in the toolbar, and a row at the top of the settings pane showing the active design ("Amethyst Swirl · 1 of 6 in Ryan's bag"). On a phone the shelf slides up over the settings pane, and the stage keeps showing the die. "Edit look" closes the shelf, and the usual settings then edit that design and save it into the bag. The row then reads "Editing Dragon's Gold", and tapping it opens the shelf again.
 - **Good:** the most direct answer to "carousel browser"; it is fun and shows off the dice; adds little chrome.
 - **Weak:** sets and characters stay buried in the pane; big bags (30+) need search or filters.
@@ -168,7 +168,7 @@ Build **A then C**, with the B grid as A's "see all" view.
 | 2. Bag browser | Carousel (A) + "All designs" grid (B): pick, add, duplicate, rename, delete, reorder. | AC #2. |
 | 3. Mixed-design sets | `design` per term, `@name` notation, chips in the custom-set editor, per-design material cache. | AC #3: a set with 2 designs rolls and reads correctly. |
 | 4. Bag sets | Named sets owned by the bag (B+), opened onto the roll mat; quick roll; roll log (PD-68). | AC #4. |
-| 5. Characters | Character stats, own sets, generated sheet rolls (skills, saves, initiative), default d20 design per character (PD-73). Attacks from imported character sheets come later. | New card. |
+| 5. Characters (v4.0) | Character stats, own sets, generated sheet rolls (skills, saves, initiative), default d20 design per character (PD-73). Attacks from imported character sheets come later. | New card. |
 
 Each phase is its own card or branch and ships to `main` on its own. Tests: a round-trip spec for phase 1; one spec per phase for the carousel actions, mixed-material counts (`__pd`) and log entries.
 
