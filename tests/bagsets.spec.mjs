@@ -76,7 +76,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await expect(page.locator('#setlist .setrow .nm', { hasText: 'Mine' })).toBeVisible();
   await expect(page.locator('#setlist .setrow[data-id="adv"] .term')).toHaveText('d20 ×2');   // a tinted dummy d20 per term
   await page.locator('#setlist .setrow[data-id="adv"] .quick').click();
-  await expect(page.locator('#setlist .setrow[data-id="adv"] small')).toContainText('last ');
+  await expect(page.locator('#setlist .setrow[data-id="adv"] .main > small')).toContainText('last ');
   expect(await app.run(pd => pd.bag.log.length)).toBe(1);
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Delete…' }).click();

@@ -1,10 +1,10 @@
 ---
 id: PD-119
 title: 'Bag sets polish: default names and chip display'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T07:10:00Z'
+updated_date: '2026-11-12T08:48:00Z'
 labels:
   - feature
   - bag

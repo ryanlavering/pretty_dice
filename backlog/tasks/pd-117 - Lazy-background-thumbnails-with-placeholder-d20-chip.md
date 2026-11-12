@@ -1,10 +1,10 @@
 ---
 id: PD-117
 title: Lazy background thumbnails with placeholder d20 chip
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-12T06:15:00Z'
-updated_date: '2026-11-12T07:15:00Z'
+updated_date: '2026-11-12T08:48:00Z'
 labels:
   - bug
   - bag

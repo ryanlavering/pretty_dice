@@ -1,10 +1,10 @@
 ---
 id: PD-121
 title: Copy bag JSON debug button
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T07:10:00Z'
+updated_date: '2026-11-12T08:48:00Z'
 labels:
   - feature
   - bag
