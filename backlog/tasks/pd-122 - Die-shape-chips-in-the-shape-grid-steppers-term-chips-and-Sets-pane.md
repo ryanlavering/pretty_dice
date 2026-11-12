@@ -1,10 +1,10 @@
 ---
 id: PD-122
 title: Die-shape chips in the shape grid, steppers, term chips and Sets pane
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T17:15:00Z'
+updated_date: '2026-11-12T23:01:00Z'
 labels:
   - feature
   - bag
@@ -28,4 +28,6 @@ Small dummy chips that show each die's real shape (d4 triangle, d6, d8, d10 kite
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12: the dice-use dropdown now recolours the stepper chips; steppers re-laid out (icon + dN above, - count + below) so they no longer overflow; checked at 1100 px and 390 px.
+
+2026-11-12: owner approved.
 <!-- SECTION:NOTES:END -->
