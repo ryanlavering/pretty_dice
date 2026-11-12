@@ -1,17 +1,19 @@
 ---
 id: PD-107
-title: Load design should add a new design at the end of the bag, not overwrite the current one
-status: Needs Review
+title: >-
+  Load design should add a new design at the end of the bag, not overwrite the
+  current one
+status: Review Complete
 assignee: []
 created_date: '2026-11-11T23:00:00Z'
-updated_date: '2026-11-11T23:00:00Z'
+updated_date: '2026-11-12T00:20:00Z'
 labels:
   - bug
   - dice-bag
 dependencies: []
 parent_task_id: PD-102
 priority: medium
-ordinal: 107000
+ordinal: 120000
 ---
 
 ## Description

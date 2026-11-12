@@ -1,17 +1,17 @@
 ---
 id: PD-65
 title: 'Distraction-free mode: UI collapsed to a single ''show controls'' button'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-11T23:13:00Z'
+updated_date: '2026-11-12T00:16:00Z'
 labels:
   - feature
   - mobile
   - ui
 dependencies: []
 priority: medium
-ordinal: 65000
+ordinal: 1000
 ---
 
 ## Description

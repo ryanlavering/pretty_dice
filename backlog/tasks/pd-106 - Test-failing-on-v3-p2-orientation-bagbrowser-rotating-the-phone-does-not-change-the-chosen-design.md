@@ -3,14 +3,14 @@ id: PD-106
 title: >-
   Test fix: bagbrowser 'rotating the phone' flicked a strip that could not
   scroll
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-11T23:13:00Z'
-updated_date: '2026-11-11T23:16:00Z'
+updated_date: '2026-11-12T00:20:00Z'
 labels:
   - bug
 dependencies: []
-ordinal: 116000
+ordinal: 122000
 ---
 
 ## Description
