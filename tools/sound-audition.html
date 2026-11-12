@@ -1,0 +1,243 @@
+<title>Dice Sound Audition</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one working column. Header, a roll tester, the clip list by set and role, then sources and gaps. Felt-green accent, neutrals tinted toward it. */
+:root{
+  --bg:#f3f5f2; --panel:#ffffff; --line:#d6dcd5; --fg:#1b2420; --dim:#5d6a63; --accent:#1f6b52; --accent-fg:#ffffff; --keep:#1f6b52; --drop:#a33a2c; --wave:#7a9a8c; --wave-on:#1f6b52;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#121915; --panel:#1a231e; --line:#2c3a33; --fg:#e4ebe6; --dim:#93a39a; --accent:#5fc19c; --accent-fg:#08130e; --keep:#5fc19c; --drop:#e08a7a; --wave:#4f6b5d; --wave-on:#5fc19c; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121915; --panel:#1a231e; --line:#2c3a33; --fg:#e4ebe6; --dim:#93a39a; --accent:#5fc19c; --accent-fg:#08130e; --keep:#5fc19c; --drop:#e08a7a; --wave:#4f6b5d; --wave-on:#5fc19c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--body);padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:21px;font-weight:700}
+p{margin:0;max-width:65ch}
+.dim{color:var(--dim)}
+.mono{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.eyebrow{font:500 11.5px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+header{display:flex;flex-direction:column;gap:10px}
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+button{font:500 14px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,[role=tab]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tester{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row label{min-width:0}
+input[type=range]{accent-color:var(--accent);width:min(260px,100%)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);padding-bottom:10px}
+[role=tab]{background:none;border:1px solid transparent;border-radius:6px;padding:7px 12px;font:500 14px var(--body);color:var(--dim);cursor:pointer}
+[role=tab][aria-selected=true]{color:var(--fg);border-color:var(--line);background:var(--panel)}
+.count{font-family:var(--mono);font-size:12px;color:var(--dim);margin-left:6px}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.src{padding:9px 14px;background:var(--bg);border-bottom:1px solid var(--line);font:500 11.5px var(--mono);letter-spacing:.04em;color:var(--dim)}
+.clip{display:grid;grid-template-columns:40px 120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line)}
+.clip:last-child{border-bottom:0}
+.clip.drop{opacity:.45}
+.play{width:34px;height:34px;padding:0;border-radius:50%;display:grid;place-items:center}
+.play svg{width:14px;height:14px;fill:currentColor}
+.wave{width:120px;height:30px;display:block}
+.wave rect{fill:var(--wave)}
+.clip.on .wave rect{fill:var(--wave-on)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;min-width:0}
+.name{font:500 12.5px var(--mono);overflow-wrap:anywhere}
+.mark{display:flex;gap:6px}
+.mark button{padding:5px 10px;font-size:13px}
+.mark button[aria-pressed=true].k{background:var(--keep);color:var(--accent-fg);border-color:var(--keep)}
+.mark button[aria-pressed=true].d{background:var(--drop);color:#fff;border-color:var(--drop)}
+.picks{display:flex;flex-direction:column;gap:10px}
+textarea{width:100%;min-height:90px;font:12px/1.4 var(--mono);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.scroll table{min-width:620px}
+.scroll tr:last-child td{border-bottom:0}
+.cbar{display:inline-block;width:46px;height:6px;border-radius:3px;background:var(--line);vertical-align:middle;margin-left:4px;overflow:hidden}.cbar i{display:block;height:100%;background:var(--accent)}
+.pill{display:inline-block;font:500 11.5px var(--mono);padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--dim)}
+.pill.ok{color:var(--keep);border-color:var(--keep)}
+.pill.gap{color:var(--drop);border-color:var(--drop)}
+@media (max-width:560px){.clip{grid-template-columns:40px minmax(0,1fr);}.clip .wave{display:none}.clip .mark{grid-column:2}}
+@media (prefers-reduced-motion:no-preference){button{transition:border-color .12s,background .12s}}
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">PD-114 · dice sound system</div>
+  <h1>Dice Sound Audition</h1>
+  <p class="dim">Single impacts cut from real CC0 recordings. Listen to each one, keep the clean clacks and drop the rest, then send me the picks. The auto-sorting into "dice on dice" and "dice on mat" is a guess from brightness, so correct it by ear.</p>
+</header>
+
+<section aria-labelledby="t-h">
+  <h2 id="t-h">Throw it</h2>
+  <div class="tester">
+    <p class="dim">Plays a throw the way the app would. Every clip starts the instant it is scheduled, so the gaps between hits come from a small bounce simulation: each die rebounds at a fraction of its impact speed and waits as long as that flight takes, then tumbles to a stop. Dice also knock into each other. The app picks a clip recorded about as hard as the impact it is playing. The slider blends the two sets: Per hit picks one set for each hit in that proportion, Layered plays every hit from both at once. Everything goes through a limiter, and the peak readout shows what it let through.</p>
+    <div class="row">
+      <button class="primary" id="roll" type="button">Roll</button>
+      <label for="ndice" class="dim">Dice</label><select id="ndice"><option>1</option><option>2</option><option selected>4</option><option>7</option><option>12</option></select>
+    </div>
+    <div class="row">
+      <label for="mix" class="dim">Best (bright)</label><input type="range" id="mix" min="0" max="1" step="0.01" value="0.5"><label for="mix" class="dim">Kenney (warm)</label>
+      <select id="mixmode" aria-label="Blend mode"><option value="random">Per hit</option><option value="layer">Layered</option><option value="auto">Auto (by hardness)</option></select>
+      <span class="mono dim" id="mixval"></span>
+    </div>
+    <div class="row">
+      <label for="diemat" class="dim">Die</label><select id="diemat"><option value="plastic">Plastic</option><option value="resin">Resin / epoxy</option><option value="stone">Stone</option><option value="metal">Metal</option></select>
+      <label for="surf" class="dim">Lands on</label><select id="surf"><option>felt</option><option>carpet</option><option>leather</option><option>cardboard</option><option selected>wood</option><option>plastic</option><option>stone</option><option>metal</option><option>glass</option></select>
+      <span class="mono dim" id="hardval"></span>
+    </div>
+    <div class="row">
+      <label for="ring" class="dim">Metal / glass ring</label><input type="range" id="ring" min="0" max="1" step="0.01" value="0.5"><span class="dim" style="font-size:13px">Struck metal and glass sing. Try a metal die, or a glass or metal surface.</span>
+    </div>
+    <div class="row">
+      <label for="bounce" class="dim">Bounciness</label><input type="range" id="bounce" min="0.25" max="0.7" step="0.01" value="0.5">
+      <label for="power" class="dim">Throw strength</label><input type="range" id="power" min="6" max="14" step="0.5" value="12">
+    </div>
+    <div class="row">
+      <button id="hard" type="button">One hard hit</button>
+      <button id="soft" type="button">One soft hit</button>
+      <span class="dim mono" id="rollnote" aria-live="polite"></span>
+    </div>
+    <div class="row"><span class="mono dim" id="peak" aria-live="polite">Output peak: play a roll to measure.</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="c-h">
+  <h2 id="c-h">Clips</h2>
+  <div class="row"><label for="sortby" class="dim">Sort clips by</label><select id="sortby"><option value="level">Loudness (loudest first)</option><option value="clack">Clackiness (clackiest first)</option></select>
+    <span class="dim" style="font-size:13px">Clack is measured from each clip: high-frequency share, brightness, short decay, little low body. 0 is a dull thud, 1 is a sharp click.</span></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="lists"></div>
+</section>
+
+<section aria-labelledby="p-h" class="picks">
+  <h2 id="p-h">Your picks</h2>
+  <p class="dim"><span id="pickcount" class="mono"></span> Your marks stay in this browser. To use them, copy the list and paste it into the Claude session.</p>
+  <div class="row"><button class="primary" id="copy" type="button">Copy picks</button><button id="clear" type="button">Clear marks</button><span class="dim mono" id="copied" aria-live="polite"></span></div>
+  <textarea id="out" readonly aria-label="Picks as JSON"></textarea>
+</section>
+
+<section aria-labelledby="s-h">
+  <h2 id="s-h">Sources and gaps</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Source</th><th>Licence</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td>Kenney, Casino Audio 1.1 (kenney.nl)</td><td><span class="pill ok">CC0</span></td><td>Die and dice throws cut into single hits; chip sounds as hard clacks. Both sets.</td></tr>
+      <tr><td>OpenGameArt, "2 dice roll (29 throws)"</td><td><span class="pill ok">CC0</span></td><td>Best set: 29 throws cut into single hits.</td></tr>
+      <tr><td>OpenGameArt, "Wooden dice on wooden table roll"</td><td><span class="pill ok">CC0</span></td><td>Best set: wood-table hits.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Still missing</th><th>For now</th></tr></thead>
+    <tbody>
+      <tr><td>Stone, metal and glass table hits</td><td><span class="pill gap">gap</span> The procedural synth plays them.</td></tr>
+      <tr><td>Rolling loop</td><td><span class="pill gap">gap</span> The procedural grain texture plays it.</td></tr>
+      <tr><td>Nat 20 chime and nat 1 fumble</td><td><span class="pill gap">gap</span> The procedural synth plays them.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+</main>
+
+<script>
+/*DATA*/   /* the artifact build (scripts/build-sound-audition.mjs) replaces this marker with window.EMBED={clips,b64}; served from the repo it is absent and clips load from sounds/ */
+let CLIPS=[], B64=null; const BASE='../sounds/';
+const SETS=[['best','Best set'],['kenney','Kenney set']], ROLES=[['table','Dice on mat'],['dice','Dice on dice']];
+let ctx=null; const cache={}, now={src:null};
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+let marks=store.get('pd114.marks',{}), view=store.get('pd114.view',['best','table']);
+function audio(){ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; ctx=new AC(); } if(ctx.state!=='running') ctx.resume(); return ctx; }
+async function buf(f){ if(cache[f]) return cache[f]; const c=audio(); let ab; if(B64){ const bin=atob(B64[f]), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); ab=u.buffer; } else ab=await (await fetch(BASE+f)).arrayBuffer(); return cache[f]=await c.decodeAudioData(ab); }
+async function play(f,gain=.9){ try{ const b=await buf(f); startAt(b,gain,audio().currentTime); }catch(e){ $('rollnote').textContent='Could not play: '+(e.message||e); } }
+let busIn=null, comp=null, ana=null;
+function bus(){ if(busIn) return busIn; const c=audio(); comp=c.createDynamicsCompressor(); comp.threshold.value=-9; comp.knee.value=0; comp.ratio.value=20; comp.attack.value=.001; comp.release.value=.12;
+  const sh=c.createWaveShaper(), n=2048, cv=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1, a=Math.abs(x); cv[i]=Math.sign(x)*(a<.7?a:.7+.3*Math.tanh((a-.7)/.3)); } sh.curve=cv; sh.oversample='2x';   // same limiter as the app
+  ana=c.createAnalyser(); ana.fftSize=2048; comp.connect(sh); sh.connect(ana); ana.connect(c.destination); return busIn=comp; }
+function startAt(b,gain,t,rate=1,d=0){ const c=audio(), s=c.createBufferSource(), g=c.createGain(); s.buffer=b; s.playbackRate.value=rate*(1+d*.1); g.gain.value=gain; s.connect(g); let tail=g;
+  if(Math.abs(d)>.04){ const f=c.createBiquadFilter(); if(d<0){ f.type='lowpass'; f.frequency.value=12000*Math.pow(2,d*4.5); f.Q.value=.7; } else { f.type='highshelf'; f.frequency.value=3500; f.gain.value=Math.min(8,d*14); } g.connect(f); tail=f; }
+  tail.connect(bus()); s.start(t); }
+function watchPeak(ms){ const buf=new Float32Array(2048); let pk=0, red=0; const end=performance.now()+ms; (function tick(){ ana.getFloatTimeDomainData(buf); for(let i=0;i<buf.length;i++){ const v=Math.abs(buf[i]); if(v>pk) pk=v; } if(comp.reduction<red) red=comp.reduction;
+  $('peak').textContent='Output peak '+(pk>0?(20*Math.log10(pk)).toFixed(1):'-inf')+' dBFS, limiter pulled down by up to '+(-red).toFixed(1)+' dB'; if(performance.now()<end) requestAnimationFrame(tick); })(); }
+let warmed=null; function warm(){ return warmed||(warmed=Promise.all(CLIPS.map(c=>buf(c.file))).catch(e=>{ warmed=null; throw e; })); }
+const clipsOf=(set,role)=>CLIPS.filter(c=>c.set===set&&c.role===role).sort((a,b)=>b.db-a.db);
+// hardness model: same as the app. Each material 0 (felt) to 1 (glass); a pair is 2ab/(a+b) so the softer partner dominates; harder hits and die-on-die lean sharper; random wobble on top.
+const MAT_HARD={ felt:.05, carpet:.08, leather:.15, cardboard:.25, plastic:.45, wood:.5, resin:.5, stone:.8, metal:.9, glass:.95 };
+const pairHard=(a,b)=>2*a*b/(a+b+1e-6), rr=(a,b)=>a+Math.random()*(b-a);
+function hardnessFor(kind,speed){ const die=MAT_HARD[$('diemat').value], other=kind==='dice'?die:MAT_HARD[$('surf').value], g=Math.min(1,Math.pow(speed/14,.8));
+  return Math.max(0,Math.min(1,pairHard(die,other)+(g-.5)*.3+(kind==='dice'?.08:0)+rr(-.1,.1))); }
+// metal and glass ring (same model as the app): decaying sine partials on top of the hit when the die or the surface is metal or glass
+const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
+const GLASS_FM=[[2200,1.41,2.5,.08,.5,1],[3500,2.76,1.5,.05,.25,.5]];   // FM glass voices, as in the app
+function ringFM(strength,v,t){ const c=audio(), life=.6+.6*v, out=c.createGain(), lp=c.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=7000; lp.Q.value=.5; out.connect(lp); lp.connect(bus());
+  for(const [fc0,ratio,idx,idxDec,ampDec,gn] of GLASS_FM){ const fc=fc0*rr(.97,1.03), car=c.createOscillator(), mod=c.createOscillator(), mg=c.createGain(), e=c.createGain(), depth=idx*fc*ratio*Math.min(1,v*1.4+.2);
+    car.frequency.value=fc; mod.frequency.value=fc*ratio; mg.gain.setValueAtTime(depth,t); mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*.02),t+idxDec); mod.connect(mg); mg.connect(car.frequency);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(gn,t+.003); e.gain.exponentialRampToValueAtTime(.0005,t+ampDec*life); car.connect(e); e.connect(out); car.start(t); mod.start(t); car.stop(t+ampDec*life+.05); mod.stop(t+ampDec*life+.05); }
+  return 1; }
+function ringAdditive(m,strength,v,t){ const c=audio(), [f0,amp,ratio,gain,dec,lpHz,atk]=RING[m], out=c.createGain(), lp=c.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=lpHz; lp.Q.value=.5; out.connect(lp); lp.connect(bus()); const base=f0*rr(.97,1.03), life=.6+.6*v;
+  ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,v*1.4):1), f=base*r*rr(.99,1.01); if(a<.02||f>16000) return; const o=c.createOscillator(), e=c.createGain(); o.frequency.value=f;
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+atk); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); }); return 1; }
+function ringFor(kind,speed,t){ const E=Math.min(1,+$('ring').value)*.08; if(!(E>0)) return 0;   // same as the app: always on, strength proportional to impact speed, peak = level*0.08
+  const rings=new Set(), die=$('diemat').value, surf=$('surf').value; if(RING[die]) rings.add(die); if(kind==='table'&&RING[surf]) rings.add(surf);
+  const v=Math.min(1,speed/14); let total=0;
+  for(const m of rings){ const strength=RING[m][1]*E*v*rr(.7,1.1); total+=strength;
+    if(m==='glass') ringFM(strength,v,t); else ringAdditive(m,strength,v,t); }
+  return total; }
+// candidates: every kept clip of the chosen sets, scored by distance from the wanted clack plus distance from the wanted level
+function cands(sets,speed,kind){ const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), h=hardnessFor(kind,speed);
+  return CLIPS.filter(c=>sets.includes(c.set)&&marks[c.file]!=='drop').map(c=>({c,T,h,cost:Math.abs(c.clack-h)+.6*Math.abs(c.db-T)/30})); }
+function choose(list){ const n=list.sort((a,b)=>a.cost-b.cost).slice(0,Math.min(3,list.length)); if(!n.length) return null; const p=n[Math.floor(Math.random()*n.length)];
+  return {c:p.c,gain:Math.max(.25,Math.min(1.3,Math.pow(10,(p.T-p.c.db)/20)))*.9,d:p.h-p.c.clack}; }
+const mixInfo=()=>({ p:+$('mix').value, mode:$('mixmode').value });
+// which clips play for one impact. Per hit: one set, chosen with probability p (p = share of Kenney). Layered: both sets at equal-power gains. Auto: both sets as one pool, by hardness alone.
+function fire(speed,kind,t){ const {p,mode}=mixInfo(); let plan; 
+  if(mode==='auto') plan=[[['best','kenney'],1]];
+  else if(mode==='layer'){ plan=[]; if(Math.cos(p*Math.PI/2)>.02) plan.push([['best'],Math.cos(p*Math.PI/2)]); if(Math.sin(p*Math.PI/2)>.02) plan.push([['kenney'],Math.sin(p*Math.PI/2)]); }
+  else plan=[[[Math.random()<p?'kenney':'best'],1]];
+  ringFor(kind,speed,t); let n=0; for(const [sets,k] of plan){ const h=choose(cands(sets,speed,kind)); if(h){ startAt(cache[h.c.file],h.gain*k,t,rr(.96,1.04),h.d); n++; } } return n; }
+async function hit(speed,kind){ await warm(); fire(speed,kind,audio().currentTime+.02); watchPeak(800); }
+// our own bounce simulation. Clips start the instant they are scheduled, so all timing comes from here: each die falls, hits at speed v, rebounds at e*v and flies for 2*e*v/G
+// seconds before the next hit; a small random restitution and a few ms of timing jitter keep it from sounding mechanical. Dice also knock into each other, then settle with a quick rattle.
+const G=34;
+function plan(n,e,vmax){ const ev=[], rnd=(a,b)=>a+Math.random()*(b-a);
+  for(let d=0;d<n;d++){ let t=rnd(0,.14), v=vmax*rnd(.75,1); ev.push([t,v,'table']);
+    for(let k=0;k<12;k++){ const ee=e*rnd(.7,1.2); const vn=v*ee; if(vn<1.1) break; t+=2*vn/G+rnd(-.008,.008); v=vn; ev.push([t,v,'table']); }
+    let tt=t, end=t+rnd(.35,.8)*(vmax/12); while(tt<end){ tt+=rnd(.035,.13); ev.push([tt,rnd(1,3.2)*(1-(tt-t)/(end-t+.01)*.6),'table']); } }   // then it tumbles and rattles to a stop
+  const span=ev.reduce((m,x)=>Math.max(m,x[0]),0)*.7, knocks=Math.round(n*rnd(1,1.8));
+  for(let i=0;i<knocks;i++) ev.push([rnd(.04,Math.max(.1,span)),rnd(3,vmax*.7),'dice']);
+  return ev.sort((a,b)=>a[0]-b[0]); }
+async function roll(n=4,e=.5,vmax=12){ $('rollnote').textContent='Loading clips…'; try{ await warm(); }catch(err){ $('rollnote').textContent='Could not decode clips: '+(err.message||err); return; }
+  const t0=audio().currentTime+.06, ev=plan(n,e,vmax); let played=0; for(const [w,sp,k] of ev) played+=fire(sp,k,t0+w); watchPeak(2600);
+  const {p,mode}=mixInfo(); $('rollnote').textContent=n+' dice, '+ev.length+' impacts, '+(p<=.01?'Best only':p>=.99?'Kenney only':Math.round((1-p)*100)+'% Best / '+Math.round(p*100)+'% Kenney, '+(mode==='layer'?'layered':'per hit')); }
+$('roll').onclick=()=>roll(+$('ndice').value,+$('bounce').value,+$('power').value);
+$('hard').onclick=()=>hit(14,'table'); $('soft').onclick=()=>hit(2.2,'table');
+const showHard=()=>{ const d=MAT_HARD[$('diemat').value], sv=MAT_HARD[$('surf').value]; $('hardval').textContent='hardness on the surface '+pairHard(d,sv).toFixed(2)+', die on die '+pairHard(d,d).toFixed(2); };
+$('diemat').onchange=$('surf').onchange=showHard; showHard();
+const showMix=()=>{ const p=+$('mix').value; $('mixval').textContent=Math.round((1-p)*100)+'% / '+Math.round(p*100)+'%'; store.set('pd114.mix',[p,$('mixmode').value]); };
+{ const m=store.get('pd114.mix',[.5,'random']); $('mix').value=m[0]; $('mixmode').value=m[1]; } $('mix').oninput=showMix; $('mixmode').onchange=showMix; showMix();
+function wave(c){ const w=120,h=30,n=c.peaks.length,bw=w/n; return '<svg class="wave" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'+c.peaks.map((p,i)=>{const hh=Math.max(1.5,p*h);return '<rect x="'+(i*bw+.4).toFixed(1)+'" y="'+((h-hh)/2).toFixed(1)+'" width="'+(bw-.8).toFixed(1)+'" height="'+hh.toFixed(1)+'" rx=".6"/>'}).join('')+'</svg>'; }
+function bright(z){ return z>4500?'very bright':z>3000?'bright':z>1800?'mid':'dull'; }
+function renderTabs(){ $('tabs').innerHTML=SETS.flatMap(([s,sl])=>ROLES.map(([r,rl])=>{ const cs=clipsOf(s,r), kept=cs.filter(c=>marks[c.file]==='keep').length; const sel=view[0]===s&&view[1]===r;
+  return '<button role="tab" aria-selected="'+sel+'" data-s="'+s+'" data-r="'+r+'">'+sl+' · '+rl+'<span class="count">'+cs.length+(kept?' · '+kept+' kept':'')+'</span></button>'; })).join('');
+  $('tabs').querySelectorAll('[role=tab]').forEach(b=>b.onclick=()=>{ view=[b.dataset.s,b.dataset.r]; store.set('pd114.view',view); render(); }); }
+let sortBy=store.get('pd114.sort','level');
+function renderList(){ const cs=clipsOf(view[0],view[1]); if(sortBy==='clack') cs.sort((a,b)=>b.clack-a.clack); const groups={}; cs.forEach(c=>{ const k=sortBy==='clack'?'All sources':c.source; (groups[k]=groups[k]||[]).push(c); });
+  $('lists').innerHTML='<div class="list">'+Object.entries(groups).map(([src,arr])=>'<div class="src">'+src+' · '+arr.length+' clips, '+(sortBy==='clack'?'clackiest first':'loudest first')+'</div>'+arr.map(c=>{ const m=marks[c.file];
+    return '<div class="clip'+(m==='drop'?' drop':'')+'" data-f="'+c.file+'"><button class="play" type="button" aria-label="Play '+c.file+'"><svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z"/></svg></button>'+wave(c)+
+      '<div class="meta"><span class="name">'+c.file.split('/')[1]+'</span><span class="mono dim">'+c.db.toFixed(1)+' dB</span><span class="mono dim">clack '+c.clack.toFixed(2)+' <span class="cbar"><i style="width:'+Math.round(c.clack*100)+'%"></i></span></span><span class="mono dim">'+bright(c.bright)+'</span><span class="mono dim">'+c.ms+' ms, starts in '+c.lead.toFixed(1)+' ms</span><span class="mono dim">from '+c.from+'</span></div>'+
+      '<div class="mark"><button class="k" type="button" aria-pressed="'+(m==='keep')+'">Keep</button><button class="d" type="button" aria-pressed="'+(m==='drop')+'">Drop</button></div></div>'; }).join('')).join('')+'</div>';
+  $('lists').querySelectorAll('.clip').forEach(el=>{ const f=el.dataset.f; el.querySelector('.play').onclick=()=>play(f);
+    el.querySelector('.k').onclick=()=>mark(f,'keep'); el.querySelector('.d').onclick=()=>mark(f,'drop'); }); }
+function mark(f,v){ if(marks[f]===v) delete marks[f]; else marks[f]=v; store.set('pd114.marks',marks); render(); }
+function renderPicks(){ const keep=Object.keys(marks).filter(f=>marks[f]==='keep'), drop=Object.keys(marks).filter(f=>marks[f]==='drop');
+  $('pickcount').textContent=keep.length+' kept, '+drop.length+' dropped.'; $('out').value=JSON.stringify({keep,drop},null,1); }
+function render(){ renderTabs(); renderList(); renderPicks(); }
+$('copy').onclick=async()=>{ try{ await navigator.clipboard.writeText($('out').value); $('copied').textContent='Copied'; }catch{ $('out').select(); $('copied').textContent='Press Ctrl+C to copy'; } setTimeout(()=>$('copied').textContent='',2500); };
+$('clear').onclick=()=>{ marks={}; store.set('pd114.marks',marks); render(); };
+$('sortby').value=sortBy; $('sortby').onchange=()=>{ sortBy=$('sortby').value; store.set('pd114.sort',sortBy); render(); };
+(async()=>{ if(window.EMBED){ CLIPS=EMBED.clips; B64=EMBED.b64; } else { try{ CLIPS=await (await fetch(BASE+'candidates.json')).json(); }
+  catch(e){ $('lists').innerHTML='<p class="dim">Could not load sounds/candidates.json. Serve the repo root (python3 -m http.server 8123) and open /tools/sound-audition.html.</p>'; return; } } render(); })();
+</script>

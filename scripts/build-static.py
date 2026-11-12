@@ -11,6 +11,12 @@ b64 = lambda data, mime: f"data:{mime};base64," + base64.b64encode(data).decode(
 js = lambda p: b64(p.read_bytes(), 'text/javascript')
 
 ARTIFACT = '--artifact' in sys.argv
+def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.wav", "best/manifest.json"); index.html reads window.__SOUNDS before fetching
+    d = root / 'sounds'; files = {}
+    for sub in ('best', 'kenney'):
+        for f in sorted((d / sub).glob('*')):
+            if f.suffix in ('.wav', '.json'): files[f'{sub}/{f.name}'] = base64.b64encode(f.read_bytes()).decode()
+    return '<script>window.__SOUNDS=' + json.dumps(files) + ';</script>\n'
 html = (root / 'index.html').read_text()
 m = re.search(r'<!--BOOTSTRAP-->.*?<!--/BOOTSTRAP-->', html, re.S)
 if not m: sys.exit('bootstrap markers not found in index.html')
@@ -19,7 +25,7 @@ if ARTIFACT:
     V = 'https://cdn.jsdelivr.net/npm/three@0.160.0/'
     cdn = {'three': V + 'build/three.module.js', 'cannon-es': 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js', 'three/addons/': V + 'examples/jsm/'}
     fl = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;800&family=Uncial+Antiqua&family=Metamorphous&display=swap'
-    out = html.replace(m.group(0), '<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">')
+    out = html.replace(m.group(0), '<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
     out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')
     (root / 'dist').mkdir(exist_ok=True)
     p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
@@ -39,7 +45,7 @@ imports['three/addons/loaders/GLTFLoader.js'] = b64(gltf.replace("'../utils/Buff
 fonts = (v / 'fonts/fonts.css').read_text()
 fonts = re.sub(r'url\(([^)]+\.woff2)\)', lambda f: 'url(' + b64((v / 'fonts' / f.group(1)).read_bytes(), 'font/woff2') + ')', fonts)
 
-static = ('<script type="importmap">' + json.dumps({'imports': imports}) + '</script>\n<style>' + fonts + '</style>')
+static = ('<script type="importmap">' + json.dumps({'imports': imports}) + '</script>\n<style>' + fonts + '</style>\n' + sounds_tag())
 out = html.replace(m.group(0), static)
 assert out.count('<script type="text/plain" id="main-src">') == 1
 out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')

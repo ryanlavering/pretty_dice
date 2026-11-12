@@ -38,6 +38,7 @@
   .row label{flex:1;color:var(--dim)}
   input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
   @media (pointer:coarse),(hover:none){ input[type=text],input:not([type]),input[type=number],input[type=search],select,textarea{font-size:16px!important} }   /* iOS Safari zooms the whole page when a field under 16px gets focus (and stays zoomed); !important beats the inline font:inherit */
+  .row select,.row input[type=range]{min-width:0}   /* a select is as wide as its longest option unless told it may shrink: it pushed the sound rows off a phone screen */
   select{flex:1;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px}
   input[type=color]:disabled{opacity:.25}
   input[type=range]{flex:1;accent-color:var(--accent)}
@@ -259,6 +260,11 @@
     <div class="chk"><input type="checkbox" id="sound"><span>Sound effects</span></div>
     <div class="chk"><input type="checkbox" id="rumble"><span>Rolling rumble (a continuous low rumble while dice move)</span></div>
     <div class="row"><label>Volume</label><input type="range" id="volume" min="0" max="1" step="0.01"></div>
+    <div class="row"><label>Sound set</label><select id="sndbk"></select><button id="sndaud" type="button" style="padding:7px 12px;flex:none">Audition</button></div>
+    <div class="row" id="sndmixrow"><label>Best ↔ Kenney</label><input type="range" id="sndmix" min="0" max="1" step="0.01"><select id="sndmixmode"><option value="random">Per hit</option><option value="layer">Layered</option><option value="auto">Auto (by hardness)</option></select></div>
+    <div class="row"><label>Surface (for sound)</label><select id="sndsurf"></select></div>
+    <div class="row"><label>Metal / glass ring</label><input type="range" id="sndring" min="0" max="1" step="0.01"></div>
+    <div class="row"><span id="sndbkstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
     <div class="row"><button id="soundtest" type="button" style="padding:7px 12px;flex:none">Test sound</button><span id="soundstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
   </section>
   <h2>Save &amp; export</h2>
@@ -754,7 +760,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1', LOG_MAX=200;
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -1785,7 +1791,7 @@ $('mode').onclick=()=>{ if(rolling) exitRoll(); else startRoll(); };
 syncMode();
 
 /* ---------- sound: everything is synthesised with Web Audio, no audio files ---------- */
-const sfx={ctx:null,master:null,noise:null,rGain:null,rFilter:null,voices:0,count:0,last:0};
+const sfx={ctx:null,master:null,trim:null,rings:0,bk:'classic',noise:null,rGain:null,rFilter:null,voices:0,count:0,last:0};
 function keepAudible(){     // iPhone: with the ring/silent switch on, Web Audio is muted unless the page holds a 'playback' audio session
   try{ if(navigator.audioSession&&navigator.audioSession.type!=='playback') navigator.audioSession.type='playback';   // iOS 16.4+
     if(sfx.hold||!IS_IOS) return;     // belt and braces on iOS: a looping silent clip also moves the page onto the media channel (older iOS, or when the session API is not allowed, e.g. in a sandboxed frame)
@@ -1795,15 +1801,18 @@ function keepAudible(){     // iPhone: with the ring/silent switch on, Web Audio
     const a=new Audio('data:audio/wav;base64,'+btoa(String.fromCharCode(...v))); a.loop=true; a.setAttribute('playsinline',''); a.play().catch(()=>{}); sfx.hold=a;   // data: URI, because blob: media is blocked in artifact frames
   }catch{} }
 const IS_IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+/* limiter: a fast compressor catches the sum of overlapping hits, then a soft clipper (linear below 0.7, rounded above) catches whatever overshoots before the compressor reacts. Output never exceeds 1.0. */
+function makeLimiter(ctx){ const comp=ctx.createDynamicsCompressor(); comp.threshold.value=-9; comp.knee.value=0; comp.ratio.value=20; comp.attack.value=.001; comp.release.value=.12;
+  const sh=ctx.createWaveShaper(), n=2048, c=new Float32Array(n); for(let i=0;i<n;i++){ const x=i/(n-1)*2-1, a=Math.abs(x); c[i]=Math.sign(x)*(a<.7?a:.7+.3*Math.tanh((a-.7)/.3)); } sh.curve=c; sh.oversample='2x'; comp.connect(sh); return {input:comp,output:sh,comp}; }
 function audioInit(){
   keepAudible();
   if(sfx.ctx){ if(sfx.ctx.state!=='running') sfx.ctx.resume().catch(()=>{}); return sfx.ctx; }   // 'suspended' or iOS 'interrupted'
   try{ const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return null; const ctx=new AC(); sfx.ctx=ctx;
-    sfx.master=ctx.createGain(); sfx.master.connect(ctx.destination);
+    sfx.master=ctx.createGain(); sfx.master.connect(ctx.destination); sfx.trim=ctx.createGain(); const lim=makeLimiter(ctx); sfx.limiter=lim.comp; sfx.trim.connect(lim.input); lim.output.connect(sfx.master);   // trim: per-backend loudness match, then the limiter so many overlapping hits cannot clip
     const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; sfx.noise=buf;
     const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; sfx.rFilter=ctx.createBiquadFilter(); sfx.rFilter.type='lowpass'; sfx.rFilter.frequency.value=260;
-    sfx.rGain=ctx.createGain(); sfx.rGain.gain.value=0; src.connect(sfx.rFilter); sfx.rFilter.connect(sfx.rGain); sfx.rGain.connect(sfx.master); src.start();   // rolling rumble loop
-    setVolume(); if(ctx.state!=='running') ctx.resume().catch(()=>{});
+    sfx.rGain=ctx.createGain(); sfx.rGain.gain.value=0; src.connect(sfx.rFilter); sfx.rFilter.connect(sfx.rGain); sfx.rGain.connect(sfx.trim); src.start();   // rolling rumble loop
+    setVolume(); applyTrim(); SB[sfx.bk].activate(); if(ctx.state!=='running') ctx.resume().catch(()=>{});
   }catch{ sfx.ctx=null; } return sfx.ctx;
 }
 function audioStatus(){ const c=sfx.ctx; return 'audio '+(c?c.state:'not started')+(navigator.audioSession?', session '+navigator.audioSession.type:'')+(sfx.hold&&!sfx.hold.paused?', silent-mode bypass on':'')+(state.sound?'':', sound is off')+(IS_IOS?'. No sound? Check the ring/silent switch.':''); }
@@ -1813,13 +1822,17 @@ function playBlip(){        // a short audible tick played inside the tap itself
   if(ctx.state==='running') go(); else ctx.resume().then(go).catch(()=>{}); }
 function setVolume(){ if(sfx.master) sfx.master.gain.value=state.sound?Math.pow(state.volume,1.6):0; }
 const audioReady=()=>state.sound&&sfx.ctx&&sfx.ctx.state==='running'&&state.volume>0;
-function voice(dur,build){ const ctx=sfx.ctx; if(sfx.voices>22) return; sfx.voices++; const out=ctx.createGain(); out.connect(sfx.master); build(ctx,out,ctx.currentTime); setTimeout(()=>{ sfx.voices--; try{out.disconnect();}catch{} },dur*1000+80); }
+function voice(dur,build){ const ctx=sfx.ctx; if(sfx.voices>22) return; sfx.voices++; const out=ctx.createGain(); out.connect(sfx.trim); build(ctx,out,ctx.currentTime); setTimeout(()=>{ sfx.voices--; try{out.disconnect();}catch{} },dur*1000+80); }
 function noiseHit(ctx,out,t,freq,q,gain,dur,type='bandpass'){ const src=ctx.createBufferSource(); src.buffer=sfx.noise; const f=ctx.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q;
   const g=ctx.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0008,t+dur); src.connect(f); f.connect(g); g.connect(out); src.start(t,Math.random()*.5,dur+.02); }
 function tone(ctx,out,t,type,f0,f1,gain,dur,delay=0){ const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(f0,t+delay); if(f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,t+delay+dur);
   g.gain.setValueAtTime(.0001,t+delay); g.gain.linearRampToValueAtTime(gain,t+delay+.006); g.gain.exponentialRampToValueAtTime(.0004,t+delay+dur); o.connect(g); g.connect(out); o.start(t+delay); o.stop(t+delay+dur+.05); }
 function onImpact(speed,kind){ if(placing) return;
   sfx.count++; if(!audioReady()||speed<.8) return; const now=performance.now(); if(now-sfx.last<10) return; sfx.last=now;
+  playImpactNow(speed,kind);
+}
+function playImpactNow(speed,kind){ SB[sfx.bk].impact(speed,kind); ringFor(kind,speed); }   // the metal/glass ring layer sits on top of every sound set, so they compare fairly
+function classicImpact(speed,kind){
   const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', stone=sub==='marble', heavy=sub==='epoxy', dice=kind==='dice', r=()=>.85+Math.random()*.3;
   voice(.3,(ctx,out,t)=>{
     if(stone){                                                   // stone: very crisp, hard and short
@@ -1838,15 +1851,136 @@ function onImpact(speed,kind){ if(placing) return;
       const f=2300*r(); tone(ctx,out,t,'sine',f,f*.98,g*.05,.09); tone(ctx,out,t,'sine',f*2.41,f*2.38,g*.025,.06); }       // a tiny, quickly-damped ring in the clack
   });
 }
-function playChime(j){ if(!audioReady()) return; const m=Math.pow(2,j*2/12);
+function playChime(j){ if(audioReady()) SB[sfx.bk].chime(j); }
+function classicChime(j){ const m=Math.pow(2,j*2/12);
   voice(1.4,(ctx,out,t)=>{ [659.25,830.6,987.8,1318.5].forEach((f,i)=>{ tone(ctx,out,t,'triangle',f*m,f*m,.14,.9,i*.07); tone(ctx,out,t,'sine',f*m*2,f*m*2,.05,.7,i*.07); }); }); }
-function playFumble(){ if(!audioReady()) return;
+function playFumble(){ if(audioReady()) SB[sfx.bk].fumble(); }
+function classicFumble(){
   voice(1,(ctx,out,t)=>{ tone(ctx,out,t,'sine',150,42,.55,.7,.05); tone(ctx,out,t,'triangle',220,110,.12,.5,.0); noiseHit(ctx,out,t,300,.8,.3,.25); }); }
 function updateRumble(dt){
-  if(!sfx.rGain) return; let lvl=0;
+  if(!sfx.ctx) return; let lvl=0;
   if(rolling&&!settled&&bodies.length){ for(const b of bodies){ if(b.position.y<TABLE_Y+1.3) lvl+=Math.hypot(b.velocity.x,b.velocity.z)+.25*b.angularVelocity.length(); } }
-  const target=Math.min(.55,lvl*.022), t=sfx.ctx.currentTime; sfx.rGain.gain.setTargetAtTime(audioReady()&&state.rumble?target*.8:0,t,.06); sfx.rFilter.frequency.setTargetAtTime(160+Math.min(700,lvl*28),t,.08);
+  SB[sfx.bk].rumble(audioReady()&&state.rumble?lvl:0);
 }
+function classicRumble(lvl){ if(!sfx.rGain) return; const target=Math.min(.55,lvl*.022), t=sfx.ctx.currentTime; sfx.rGain.gain.setTargetAtTime(lvl>0?target*.8:0,t,.06); sfx.rFilter.frequency.setTargetAtTime(160+Math.min(700,lvl*28),t,.08); }
+
+/* ---------- sound backends (PD-114): the physics and UI call onImpact / playChime / playFumble / updateRumble, which hand off to the active backend in SB.
+   A backend is {label, trim, activate(), impact(speed,kind), chime(j), fumble(), rumble(level)}. Switch live with setSoundBackend(id), the settings dropdown or ?sound=id.
+     classic : the original synth (kept as the baseline and the last-resort fallback)
+     proc    : new procedural synth (modal strikes per material, grainy rolling)
+     kenney  : samples, everything from the Kenney CC0 packs        (sounds/kenney/manifest.json)
+     best    : samples, best clip per role from any library         (sounds/best/manifest.json)
+   Sample backends fall back to proc for any role they have no clip for, so a missing or broken manifest never means silence. ---------- */
+// hardness: each material 0 (felt) .. 1 (glass). A pair is combined as 2ab/(a+b), so the softer partner dominates (plastic on felt is soft, stone on glass is hard).
+// The impact then asks for a clip of about that "clack" score (see scripts/build-sounds.mjs), a bit harder when the hit is harder, with random wobble. Rough on purpose.
+const MAT_HARD={ felt:.05, carpet:.08, leather:.15, cardboard:.25, plastic:.45, wood:.5, resin:.5, stone:.8, metal:.9, glass:.95 };
+const SURFACES=['felt','carpet','leather','cardboard','wood','plastic','stone','metal','glass'];
+const pairHard=(a,b)=>2*a*b/(a+b+1e-6);
+function hardnessFor(kind,speed){ const die=MAT_HARD[matClass(state.substrate)]||.45, other=kind==='dice'?die:(MAT_HARD[state.surfaceMat]||.05), g=Math.min(1,Math.pow(speed/14,.8));
+  return Math.max(0,Math.min(1,pairHard(die,other)+(g-.5)*.3+(kind==='dice'?.08:0)+rndr(-.1,.1))); }
+const matClass=sub=>sub==='metal'?'metal':sub==='marble'?'stone':sub==='epoxy'?'resin':'plastic';
+const rndr=(a,b)=>a+Math.random()*(b-a);
+// procedural recipes. hit = noise-excited resonators [Hz, Q, gain, decay s]; ring = tiny undamped-ish sine partials [Hz, gain, decay s]; thud = low body {f, g, d}
+const PROC={
+  die:{ plastic:{hit:[[3300,10,.9,.025],[5200,12,.6,.02],[2400,6,.4,.03]]},  resin:{hit:[[2500,9,.9,.03],[3900,10,.5,.024],[1800,5,.4,.035]]},
+        metal:{hit:[[3800,14,.7,.03],[6200,16,.4,.025]], ring:[[2300,.05,.1],[5550,.03,.07],[3300,.04,.09]]}, stone:{hit:[[5200,14,.95,.014],[3400,10,.5,.02],[7600,18,.3,.012]]} },
+  table:{ plastic:{hit:[[2100,3,.7,.03],[1300,2,.5,.045]], thud:{f:110,g:.3,d:.07}},  resin:{hit:[[1700,3,.7,.035],[1000,2,.5,.05]], thud:{f:90,g:.36,d:.08}},
+        metal:{hit:[[2500,6,.5,.03],[1500,3,.4,.04]], thud:{f:70,g:.4,d:.12}, ring:[[2300,.05,.1],[5550,.03,.07],[3300,.04,.09]]}, stone:{hit:[[4300,4,.85,.016],[2900,3,.5,.02]], thud:{f:105,g:.15,d:.05}} } };
+function strike(ctx,out,t,rec,gain,bright){
+  for(const [f,q,g,d] of rec.hit){ const s=ctx.createBufferSource(); s.buffer=sfx.noise; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=f*bright*rndr(.93,1.07); bp.Q.value=q*rndr(.85,1.2);
+    const e=ctx.createGain(); e.gain.setValueAtTime(g*gain*1.8,t); e.gain.exponentialRampToValueAtTime(.0008,t+d); s.connect(bp); bp.connect(e); e.connect(out); s.start(t,Math.random()*.6,d+.02); }
+  if(rec.thud) tone(ctx,out,t,'sine',rec.thud.f*rndr(.9,1.1),rec.thud.f*.5,rec.thud.g*gain,rec.thud.d);
+  if(rec.ring) for(const [f,g,d] of rec.ring){ const ff=f*rndr(.97,1.03); tone(ctx,out,t,'sine',ff,ff*.99,g*gain,d); } }
+function procRumbleInit(){ const ctx=sfx.ctx; if(sfx.pr) return sfx.pr;       // rolling = sparse random "pitter" grains riding on a quiet band-passed hiss
+  const len=ctx.sampleRate, env=ctx.createBuffer(1,len,ctx.sampleRate), d=env.getChannelData(0); let v=0; for(let i=0;i<len;i++){ if(Math.random()<.0016) v=Math.random(); v*=.9965; d[i]=v; }
+  const a=ctx.createBufferSource(); a.buffer=sfx.noise; a.loop=true; const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=700; bp.Q.value=.9;
+  const base=ctx.createGain(); base.gain.value=0; const grain=ctx.createGain(); grain.gain.value=0; const m=ctx.createBufferSource(); m.buffer=env; m.loop=true; const mg=ctx.createGain(); mg.gain.value=1; m.connect(mg); mg.connect(grain.gain);
+  a.connect(bp); bp.connect(grain); grain.connect(base); base.connect(sfx.trim); a.start(); m.start(); return sfx.pr={bp,base}; }
+const procBackend={ label:'Procedural synth', trim:1, activate(){},
+  impact(speed,kind){ const g=Math.min(1,Math.pow(speed/14,.8))*.9, rec=PROC[kind==='dice'?'die':'table'][matClass(state.substrate)], bright=(.8+.4*g)*(.6+.8*hardnessFor(kind,speed));   // harder pairing: brighter strike
+    voice(.35,(ctx,out,t)=>{ strike(ctx,out,t,rec,g,bright); if(g>.5&&Math.random()<.35) strike(ctx,out,t+rndr(.004,.011),rec,g*.45,bright*1.05); }); },
+  chime(j){ const m=Math.pow(2,j*2/12); voice(1.6,(ctx,out,t)=>{ [[659.25,1],[830.6,1],[987.8,1],[1318.5,1]].forEach(([f,],i)=>{ const dl=i*.07;
+      tone(ctx,out,t,'sine',f*m,f*m,.13,1.1,dl); tone(ctx,out,t,'sine',f*m*2.76,f*m*2.76,.04,.5,dl); tone(ctx,out,t,'sine',f*m*5.4,f*m*5.4,.018,.25,dl); }); }); },
+  fumble(){ voice(1,(ctx,out,t)=>{ tone(ctx,out,t,'sine',150,42,.55,.7,.05); noiseHit(ctx,out,t,300,.8,.3,.25); noiseHit(ctx,out,t+.12,180,.6,.18,.3,'lowpass'); }); },
+  rumble(lvl){ if(!sfx.ctx) return; const r=procRumbleInit(), t=sfx.ctx.currentTime; r.base.gain.setTargetAtTime(Math.min(.6,lvl*.03),t,.05); r.bp.frequency.setTargetAtTime(500+Math.min(1500,lvl*45),t,.08); } };
+
+// sound files: embedded as base64 in window.__SOUNDS by scripts/build-static.py (offline and artifact builds), otherwise fetched from sounds/
+async function soundBytes(path){ const E=window.__SOUNDS; if(E){ if(!E[path]) throw new Error('not embedded: '+path); const bin=atob(E[path]), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u.buffer; }
+  const r=await fetch('sounds/'+path); if(!r.ok) throw new Error('no '+path+' ('+r.status+')'); return r.arrayBuffer(); }
+// metal and glass ring: struck metal and glass sing, which brightness alone cannot give. A few decaying sine partials ride on top of the sample hit.
+// RING[material]=[base Hz, loudness, partial ratios, partial gains, partial decay seconds]. Metal uses free-bar ratios, glass uses wine-glass-like ratios. The pitch is fixed per material (+-3% per hit); upper partials only wake on hard hits.
+const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
+// "ringLevel" 0..1 -> peak strength ringLevel*0.08 at full impact speed. The ring is always applied and its strength is proportional to impact speed (v = speed/14, capped at 1), so over a roll the average is about half the peak:
+// the range is doubled to compensate (50% = the sweet spot the owner found earlier, which used a sparser gate). Returns the total ring strength started (0 = none).
+// Glass is an FM voice (GLASS_FM); metal uses additive partials (RING).
+const GLASS_FM=[[2200,1.41,2.5,.08,.5,1],[3500,2.76,1.5,.05,.25,.5]];   // FM glass voices: [carrier Hz, modulator:carrier ratio, peak modulation index, index decay s, amplitude decay s, gain]. A bright inharmonic "tink" (index falls fast) that settles into a pure ring.
+function ringFM(strength,v,t){ if(sfx.rings>=8) return 0; const ctx=sfx.ctx, life=.6+.6*v; sfx.rings++; const out=ctx.createGain(), lp=ctx.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=7000; lp.Q.value=.5; out.connect(lp); lp.connect(sfx.trim); let end=0;
+  for(const [fc0,ratio,idx,idxDec,ampDec,gn] of GLASS_FM){ const fc=fc0*rndr(.97,1.03), car=ctx.createOscillator(), mod=ctx.createOscillator(), mg=ctx.createGain(), e=ctx.createGain(), depth=idx*fc*ratio*Math.min(1,v*1.4+.2);   // harder hits brighten the attack
+    car.frequency.value=fc; mod.frequency.value=fc*ratio; mg.gain.setValueAtTime(depth,t); mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*.02),t+idxDec); mod.connect(mg); mg.connect(car.frequency);
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(gn,t+.003); e.gain.exponentialRampToValueAtTime(.0005,t+ampDec*life); car.connect(e); e.connect(out); car.start(t); mod.start(t); car.stop(t+ampDec*life+.05); mod.stop(t+ampDec*life+.05); end=Math.max(end,ampDec*life); }
+  setTimeout(()=>{ sfx.rings--; try{out.disconnect();lp.disconnect();}catch{} },(end+.2)*1000); return 1; }
+function ringAdditive(m,strength,v,t){ if(sfx.rings>=8) return 0; const ctx=sfx.ctx, [f0,amp,ratio,gain,dec,lpHz,atk]=RING[m]; sfx.rings++; const out=ctx.createGain(), lp=ctx.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=lpHz; lp.Q.value=.5; out.connect(lp); lp.connect(sfx.trim);   // lowpass takes the edge off
+  const base=f0*rndr(.97,1.03), life=.6+.6*v;
+  ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,v*1.4):1), f=base*r*rndr(.99,1.01); if(a<.02||f>16000) return; const o=ctx.createOscillator(), e=ctx.createGain(); o.frequency.value=f;   // harder hits also wake the upper partials
+    e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+atk); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); });
+  setTimeout(()=>{ sfx.rings--; try{out.disconnect();lp.disconnect();}catch{} },(dec[0]*life+.2)*1000); return 1; }
+function ringFor(kind,speed,when=0){ const E=Math.min(1,state.ringLevel)*.08; if(!sfx.ctx||!(E>0)) return 0;   // callers have already checked audioReady()
+  const rings=new Set(); if(RING[matClass(state.substrate)]) rings.add(matClass(state.substrate)); if(kind==='table'&&RING[state.surfaceMat]) rings.add(state.surfaceMat);   // the die rings, and so does the surface it lands on
+  const t=sfx.ctx.currentTime+when, v=Math.min(1,speed/14); let total=0;
+  for(const m of rings){ const strength=RING[m][1]*E*v*rndr(.7,1.1); total+=strength;
+    if(m==='glass') ringFM(strength,v,t); else ringAdditive(m,strength,v,t); }
+  return total; }
+// sample backends: manifest {trim, impact:{dice:[..],table:[..],plastic|resin|metal|stone:[..]}, chime:[..], fumble:[..], roll:"loop.ogg"}; files are relative to sounds/<id>/
+function sampleBackend(id,label){
+  const b={ label, id, trim:1, samples:true, man:null, bufs:{}, state:'idle', note:'', last:{}, loop:null,
+    activate(){ if(b.state==='idle'&&sfx.ctx) b.load(); },
+    async load(){ if(b.state!=='idle') return; b.state='loading'; b.note='loading…'; sbStatus();
+      try{ b.man=JSON.parse(new TextDecoder().decode(await soundBytes(id+'/manifest.json'))); b.trim=b.man.trim||1;
+        const files=new Set(); const add=v=>[].concat(v||[]).forEach(f=>files.add(f)); Object.values(b.man.impact||{}).forEach(add); add(b.man.chime); add(b.man.fumble); add(b.man.roll);
+        let bad=0; await Promise.all([...files].map(async f=>{ try{ b.bufs[f]=await sfx.ctx.decodeAudioData(await soundBytes(id+'/'+f)); }catch{ bad++; } }));
+        b.state='ready'; b.note=(files.size-bad)+' clips loaded'+(bad?', '+bad+' failed (synth fills in)':''); if(sfx.bk===id) applyTrim();
+      }catch(e){ b.state='failed'; b.note='no samples ('+(e.message||e)+'): using procedural synth'; } sbStatus(); },
+    pick(list){ const L=(list||[]).filter(f=>b.bufs[f]); if(!L.length) return null; let i=Math.floor(Math.random()*L.length); const k=L.join(); if(L.length>1&&i===b.last[k]) i=(i+1)%L.length; b.last[k]=i; return b.bufs[L[i]]; },
+    play(buf,gain,rate,d=0){ voice(buf.duration/rate+.05,(ctx,out,t)=>{ const s=ctx.createBufferSource(); s.buffer=buf; s.playbackRate.value=rate*(1+d*.1); const g=ctx.createGain(); g.gain.value=gain; let tail=g; s.connect(g);
+      if(Math.abs(d)>.04){ const f=ctx.createBiquadFilter();                                          // the clip is not as hard as wanted: darken it (lowpass) or brighten it (high shelf)
+        if(d<0){ f.type='lowpass'; f.frequency.value=12000*Math.pow(2,d*4.5); f.Q.value=.7; } else { f.type='highshelf'; f.frequency.value=3500; f.gain.value=Math.min(8,d*14); } g.connect(f); tail=f; }
+      tail.connect(out); s.start(t); }); },
+    cands(speed,kind){ const man=b.man; if(!man||b.state!=='ready') return []; const im=man.impact||{}, files=[...new Set([...(im.dice||[]),...(im.table||[])])].filter(f=>b.bufs[f]); if(!files.length) return [];
+      const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), h=hardnessFor(kind,speed), meta=man.meta||{};
+      return files.map(f=>{ const m=meta[f]||{}, cl=m.clack==null?.5:m.clack, db=m.db||0; return {b,f,cl,db,T,h,cost:Math.abs(cl-h)+.6*Math.abs(db-T)/30}; }); },
+    playPick(c,k){ const near=c.slice().sort((x,y)=>x.cost-y.cost).slice(0,Math.min(3,c.length)); let p=near[Math.floor(Math.random()*near.length)]; if(near.length>1&&p.f===p.b.last.imp) p=near[(near.indexOf(p)+1)%near.length];
+      p.b.last.imp=p.f; p.b.lastPick=p.f; p.b.play(p.b.bufs[p.f],Math.max(.25,Math.min(1.3,Math.pow(10,(p.T-p.db)/20)))*.9*k,rndr(.96,1.04),p.h-p.cl); },
+    impact(speed,kind,k=1){ const c=b.cands(speed,kind); if(!c.length) return procBackend.impact(speed,kind); b.playPick(c,k); },
+    chime(j){ const buf=b.pick(b.man&&b.man.chime); if(!buf) return procBackend.chime(j); b.play(buf,.8,Math.pow(2,j*2/12)); },
+    fumble(){ const buf=b.pick(b.man&&b.man.fumble); if(!buf) return procBackend.fumble(); b.play(buf,.8,1); },
+    rumble(lvl){ const f=b.man&&b.man.roll, buf=f&&b.bufs[f]; if(!buf) return procBackend.rumble(lvl); if(!sfx.ctx) return;
+      if(!b.loop){ const s=sfx.ctx.createBufferSource(); s.buffer=buf; s.loop=true; const g=sfx.ctx.createGain(); g.gain.value=0; s.connect(g); g.connect(sfx.trim); s.start(); b.loop={s,g}; }
+      const t=sfx.ctx.currentTime; b.loop.g.gain.setTargetAtTime(Math.min(.9,lvl*.04),t,.06); b.loop.s.playbackRate.setTargetAtTime(.85+Math.min(.5,lvl*.02),t,.1); } };
+  return b; }
+// blend: mixes the two sample sets. state.soundMix 0 = Best only (bright, clacky), 1 = Kenney only (dark, rich).
+// 'random' plays each hit from one set, chosen with probability = mix; 'layer' plays every hit from both at equal-power gains.
+const mixBackend={ label:'Blend: Best + Kenney', trim:1, samples:true, activate(){ SB.best.activate(); SB.kenney.activate(); },
+  impact(speed,kind){ const p=Math.max(0,Math.min(1,state.soundMix));
+    if(state.soundMixMode==='layer'){ const kg=Math.sin(p*Math.PI/2), bg=Math.cos(p*Math.PI/2); if(bg>.02) SB.best.impact(speed,kind,bg); if(kg>.02) SB.kenney.impact(speed,kind,kg); }
+    else if(state.soundMixMode==='auto'){ const c=[...SB.best.cands(speed,kind),...SB.kenney.cands(speed,kind)]; if(c.length) c[0].b.playPick(c,1); else procBackend.impact(speed,kind); }   // both sets as one pool, chosen by hardness alone
+    else (Math.random()<p?SB.kenney:SB.best).impact(speed,kind); },
+  chime:classicChime, fumble:classicFumble, rumble:classicRumble };   // the stingers and rolling rumble stay on the classic synth until they get samples of their own
+const SB={ classic:{label:'Classic synth', trim:1, activate(){}, impact:classicImpact, chime:classicChime, fumble:classicFumble, rumble:classicRumble},
+  proc:procBackend, mix:mixBackend, kenney:sampleBackend('kenney','Kenney samples'), best:sampleBackend('best','Best-of samples') };
+function applyTrim(){ if(sfx.trim) sfx.trim.gain.value=SB[sfx.bk].trim||1; }
+function mixUI(){ const r=$('sndmixrow'); if(r) r.hidden=sfx.bk!=='mix'; }
+function sbStatus(){ mixUI(); const el=$('sndbkstat'); if(!el) return; const b=SB[sfx.bk]; el.textContent=b.note||''; }
+function setSoundBackend(id,persist){ if(!SB[id]) id='classic'; const old=SB[sfx.bk]; try{ old&&old.rumble&&old.rumble(0); }catch{}
+  sfx.bk=id; state.soundBk=id; if(persist) save(); applyTrim(); if(sfx.ctx) SB[id].activate(); if($('sndbk')) $('sndbk').value=id; sbStatus(); return id; }
+function auditionSound(){ const ctx=audioInit(); if(!ctx) return; setVolume(); const go=()=>{ SB[sfx.bk].activate(); const hits=[[3,'table',0],[6,'table',.22],[11,'dice',.4],[8,'table',.55],[14,'table',.7],[5,'dice',.78],[9,'dice',.86],[4,'table',1.05],[2.5,'table',1.3]];
+    hits.forEach(([sp,k,d])=>setTimeout(()=>playImpactNow(sp,k),d*1000)); setTimeout(()=>SB[sfx.bk].chime(2),1700); setTimeout(()=>SB[sfx.bk].fumble(),3100); };
+  if(ctx.state==='running') go(); else ctx.resume().then(go).catch(()=>{}); }
+{ const q=new URLSearchParams(location.search).get('sound'); if(q&&SB[q]) state.soundBk=q; if(!SB[state.soundBk]) state.soundBk='classic'; sfx.bk=state.soundBk;
+  const sel=$('sndbk'); if(sel){ sel.innerHTML=Object.entries(SB).map(([k,v])=>'<option value="'+k+'">'+v.label+'</option>').join(''); sel.value=sfx.bk; sel.onchange=e=>{ setSoundBackend(e.target.value,true); }; }
+  const aud=$('sndaud'); if(aud) aud.onclick=auditionSound;
+  const sf=$('sndsurf'); if(sf){ sf.innerHTML=SURFACES.map(k=>'<option value="'+k+'">'+k+'</option>').join(''); if(!MAT_HARD[state.surfaceMat]) state.surfaceMat='felt'; sf.value=state.surfaceMat; sf.onchange=()=>{ state.surfaceMat=sf.value; save(); }; }
+  const rg=$('sndring'); if(rg){ rg.value=state.ringLevel; rg.oninput=()=>{ state.ringLevel=+rg.value; save(); }; }
+  const mx=$('sndmix'), md=$('sndmixmode'); if(mx){ mx.value=state.soundMix; mx.oninput=()=>{ state.soundMix=+mx.value; save(); }; } if(md){ md.value=state.soundMixMode; md.onchange=()=>{ state.soundMixMode=md.value; save(); }; } mixUI(); }
 
 /* ---------- nat 20 / nat 1 effects ---------- */
 const sprTex=(()=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'), gr=g.createRadialGradient(32,32,0,32,32,32);
@@ -2001,7 +2135,7 @@ window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get 
     return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
-  memory(){ return {...renderer.info.memory, programs:(renderer.info.programs||[]).length, calls:renderer.info.render.calls, triangles:renderer.info.render.triangles}; }, buildDice, makeAtlas, get sfx(){ return sfx; }, audioInit};
+  memory(){ return {...renderer.info.memory, programs:(renderer.info.programs||[]).length, calls:renderer.info.render.calls, triangles:renderer.info.render.triangles}; }, buildDice, makeAtlas, get sfx(){ return sfx; }, audioInit, SB, playImpactNow, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, setSoundBackend, get soundBackend(){ return sfx.bk; }};
 window.__dice=window.__pd;   // old name
 </script>
 </body>
