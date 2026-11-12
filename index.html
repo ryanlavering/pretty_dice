@@ -676,7 +676,8 @@ const STONES = {
   obsidian: {label:'Obsidian',          id:6, rough:.06, coat:.9,  pal:r=>[hsl(rnd(r,.6,.8),.15,.05),hsl(rnd(r,.7,.95),.3,.1),pick(['#c9a24a','#2fb8a8','#b04ad0','#d8dde6','#d0603a'],r)]},
   turquoise:{label:'Turquoise',         id:7, rough:.3,  coat:.4,  pal:r=>[hsl(rnd(r,.46,.52),.55,.58),hsl(rnd(r,.5,.57),.6,.45),pick(['#3a2a1c','#1c1c20','#8a6a2a','#5a3a2a'],r)]},
   amethyst: {label:'Amethyst',         id:8, rough:.06, coat:.9,  pal:r=>{ const h=rnd(r,.74,.8); return [hsl(h,rnd(r,.55,.75),rnd(r,.1,.17)),hsl(h+rnd(r,-.02,.03),rnd(r,.5,.7),rnd(r,.32,.46)),pick(['#efe6fa','#f7f3ff','#cdb8f0'],r)]; }},
-  tigerseye:{label:"Tiger's eye",       id:9, rough:.3,  coat:.15, metal:.55, brush:.18,   // brushed-metal sheen: the chatoyance
+  tigerseye:{label:"Tiger's eye",       id:9, rough:.3,  coat:.15, metal:.55, brush:.18, scaleMap:v=>v<=1.4?v:1.4+(v-1.4)*.2,   // stripes get busy fast: the top of the swirl-scale slider is squeezed into a narrow range
+     // brushed-metal sheen: the chatoyance
      pal:r=>{ const h=rnd(r,.07,.11); return [hsl(h,rnd(r,.6,.8),rnd(r,.05,.1)),hsl(h+.01,rnd(r,.6,.85),rnd(r,.26,.36)),pick(['#e0b040','#f0c860','#c88a28'],r)]; }},
   opal:     {label:'Opal',              id:10,rough:.1,  coat:.85, pal:r=>{ const dark=r()<.35;   // black opal or milky white/crystal opal
     return [dark?hsl(rnd(r,.55,.75),rnd(r,.2,.5),rnd(r,.05,.12)):hsl(rnd(r,.08,.15),rnd(r,.05,.2),rnd(r,.68,.8)), dark?hsl(rnd(r,.5,.7),rnd(r,.3,.5),rnd(r,.12,.22)):hsl(rnd(r,.5,.7),rnd(r,.15,.35),rnd(r,.5,.66)), pick(['#7fe0d0','#e07fc8','#8fb0ff','#f0c060'],r)]; }},
@@ -922,7 +923,7 @@ function applyLook(){
   const S=SUBSTRATES[state.substrate];
   U.uC1.value.set(state.colors[0]); U.uC2.value.set(state.colors[1]); U.uC3.value.set(state.colors[2]); U.uPaint.value.set(state.paint);
   U.uOff.value.set(...state.off); U.uEnamel.value.set(state.enamelSame?state.paint:state.enamel); U.uFill.value=state.filiFill?1:0; U.uPatina.value=state.patina; U.uNumPaint.value=state.numPaint?1:0;
-  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=state.scale; U.uFlake.value=S.flake; U.uBrush.value=(state.substrate==='marble'&&STONES[state.stone].brush)||S.brush;
+  U.uTint.value=THREE.MathUtils.lerp(.9,.35,state.clarity); U.uGlitter.value=state.glitter; U.uBubbles.value=state.bubbles; U.uStone.value=STONES[state.stone].id; U.uAccent.value=state.stoneAccent; U.uMode.value=S.mode; U.uScale.value=(state.substrate==='marble'&&STONES[state.stone].scaleMap||(v=>v))(state.scale); U.uFlake.value=S.flake; U.uBrush.value=(state.substrate==='marble'&&STONES[state.stone].brush)||S.brush;
   for(const {mat} of dice){
     const ST=state.substrate==='marble'?STONES[state.stone]:null;
     // metals stop short of a mirror (roughness floor .25): a mirror only shows the dim room and reads black
@@ -1766,7 +1767,7 @@ Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomiz
 window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
-window.__pd={state,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagOps,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},

@@ -190,3 +190,14 @@ test('number size slider spans .45 to 5 and loaded designs are clamped to that r
   const clamped = await app.run(async pd => { const d = pd.designToJSON(); d.numbers.size = 0.1; await pd.loadDesign(d); const lo = pd.state.numSize; d.numbers.size = 99; await pd.loadDesign(d); return [lo, pd.state.numSize]; });
   expect(clamped).toEqual([0.45, 5]);
 });
+
+test("tiger's eye: the upper half of the swirl-scale slider is compressed so the stripes never get busy", async ({ shared: app }) => {
+  const r = await app.run(pd => {
+    const s = pd.state; s.substrate = 'marble'; pd.setSubstrate('marble'); pd.setStone('tigerseye');
+    const eff = v => { s.scale = v; pd.applyLook(); return pd.uScale.value; };
+    const out = { lo: eff(.5), mid: eff(1.4), hi: eff(3.5) };
+    pd.setStone('marble'); out.marbleHi = eff(3.5); return out; });
+  expect(r.lo).toBeCloseTo(.5, 5); expect(r.mid).toBeCloseTo(1.4, 5);
+  expect(r.hi, 'busy end squeezed').toBeLessThan(2); expect(r.hi).toBeGreaterThan(r.mid);
+  expect(r.marbleHi, 'other stones keep the full range').toBeCloseTo(3.5, 5);
+});
