@@ -251,3 +251,32 @@ test('a new blank design is plain off-white solid plastic, not the swirl default
   expect(new Set(r.colors).size).toBe(1);
   expect(r.colors[0]).toBe('#efe9dc');
 });
+
+// Phase 3 (PD-102.3): a die per term can use another design in the bag.
+test('a set mixes designs: @design notation, one look per design, rolls and reads correctly', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);   // bone is active; amethyst (swirl) and gold (metal) are other designs
+  await page.locator('#shapes button[data-id="custom"]').click();
+  await page.locator('#notation').fill('d6@nope'); await page.locator('#notapply').click();
+  await expect(page.locator('#noterr')).toContainText('No design');
+  await page.locator('#notation').fill('2d6@bone+1d8@gold+d20@amethyst+1'); await page.locator('#notapply').click();
+  await expect(page.locator('#noterr')).toHaveText('');
+  const r = await app.run(pd => ({ notation: pd.state.notation, dice: pd.dice.map(d => ({ name: d.name, other: !!d.look, metal: d.mat.metalness, sub: d.look && d.look.substrate })), roll: pd.simRoll() }));
+  expect(r.notation).toBe('2d6@bone+1d8@gold+1d20@amethyst+1');
+  expect(r.dice.map(d => d.name)).toEqual(['d6', 'd6', 'd8', 'd20']);
+  expect(r.dice.map(d => d.other)).toEqual([false, false, true, true]);          // the live design needs no copy
+  expect(r.dice[2].sub).toBe('metal'); expect(r.dice[3].sub).toBe('swirl');
+  expect(r.dice[2].metal).toBeGreaterThan(0.5); expect(r.dice[0].metal).toBeLessThan(0.5);   // gold is metal, bone is plastic
+  expect(r.roll.dice.length).toBe(4);
+  await expect(page.locator('#result')).toContainText('1d8 (Gold)');
+  await expect(page.locator('#termchips button')).toHaveCount(3);
+  await page.locator('#termchips button', { hasText: 'Gold' }).click();   // a chip removes its term
+  expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
+});
+
+test('a note that names a deleted design falls back to the live design instead of failing', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(async pd => { pd.state.notation = '2d6@gold+1'; pd.state.shape = 'custom'; await pd.bagOps.remove('gold'); pd.state.notation = '2d6@gold+1'; return pd.dice.length; });
+  expect(r).toBeGreaterThan(0);
+});
