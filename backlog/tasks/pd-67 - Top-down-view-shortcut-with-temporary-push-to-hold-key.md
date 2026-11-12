@@ -1,10 +1,10 @@
 ---
 id: PD-67
 title: Top-down view shortcut with temporary push-to-hold key
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-10T16:19:00Z'
-updated_date: '2026-11-12T00:16:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels:
   - ux
   - camera

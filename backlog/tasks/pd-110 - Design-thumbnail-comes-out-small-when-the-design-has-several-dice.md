@@ -1,7 +1,7 @@
 ---
 id: PD-110
 title: Design thumbnail comes out small when the design has several dice
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-11T23:55:00Z'
 updated_date: '2026-11-11T23:55:00Z'
@@ -26,6 +26,12 @@ Fix idea: while taking a thumbnail, temporarily use a one-die notation (and rest
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 A design with 6 dice gets a thumbnail framed like a single-die design
-- [ ] #2 Test: thumbnail of a 6d20 design matches that of the same design at 1d20 (same framing)
+- [x] #1 No design picture is taken while the camera is still easing back from the roll view
+- [x] #2 Test: roll, exit, updateThumbs mid-ease takes no picture; after the camera is home the picture is one die in a dark frame
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: Cause was not the dice count. The picture pass ran right after a roll ended: rolling is false at once but the camera (camBlend, and topBlend for the top-down hold) eases home over a second or more (tens of seconds on software GL), so the capture showed the roll view (table, tiny die). A six-dice design just rolls more often. Fix: updateThumbs defers (scheduleThumb) while camBlend or topBlend > .01. Test 'no design picture is taken while the camera eases back from the roll view (PD-110)' fails without the guard, passes with it. Test hooks: __pd.thumbBusy, thumbKey, camBlend (get/set). Needs owner check on the Rose epoxy case.
+<!-- SECTION:NOTES:END -->

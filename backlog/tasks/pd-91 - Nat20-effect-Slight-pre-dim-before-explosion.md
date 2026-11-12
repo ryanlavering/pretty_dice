@@ -1,10 +1,10 @@
 ---
 id: PD-91
 title: 'Nat20 effect: Slight pre-dim before explosion'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-10T19:23:00Z'
-updated_date: '2026-11-12T00:20:00Z'
+updated_date: '2026-11-12T03:32:00Z'
 labels: []
 dependencies: []
 priority: low

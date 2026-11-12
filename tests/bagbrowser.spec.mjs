@@ -208,14 +208,66 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   expect(await app.run(pd => pd.bag.designs.length)).toBe(1);
 });
 
-test('a design with several dice is pictured like a single die (PD-110)', async ({ app, page }) => {
-  test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
+test('Save bag writes the current state of edited designs; the session keeps them pending, and a loaded file is clean (PD-112)', async ({ app, page }) => {
+  test.setTimeout(120_000);
+  await app.open();
+  await app.run(SETUP);
+  await app.run(async pd => { pd.state.radius = 0.11; pd.save(); await pd.bagActivate('gold'); pd.state.radius = 0.09; pd.save(); });   // bone and gold both carry edits
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#savebag')]);
+  const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
+  expect(file.pending).toEqual({});
+  expect(file.designs.find(d => d.id === 'gold').design.edge_radius).toBe(0.09);
+  expect(file.designs.find(d => d.id === 'bone').design.edge_radius).toBe(0.11);
+  // the session: bag counts as saved, but the designs are still Modified and revert to their old state
+  await expect(page.locator('#bagdirty')).toBeHidden();
+  const s = await app.run(async pd => { const was = { gold: pd.isModified('gold'), bone: pd.isModified('bone') }; await pd.bagOps.revert('gold'); return { was, radiusAfter: pd.state.radius, goldMod: pd.isModified('gold') }; });
+  expect(s.was).toEqual({ gold: true, bone: true });
+  expect(s.goldMod).toBe(false); expect(s.radiusAfter).not.toBe(0.09);
+  // loading that file: the designs come in clean with the newer state
+  await page.click('#loadbag');   // the revert above changed the bag, so it asks first
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
+  await fc.setFiles({ name: 'x.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(JSON.stringify(file)) });
+  await expect.poll(() => app.run(pd => pd.bag.designs.find(d => d.id === 'bone').design.edge_radius)).toBe(0.11);
+  const l = await app.run(pd => ({ pending: Object.keys(pd.bag.pending), goldMod: pd.isModified('gold'), boneMod: pd.isModified('bone'), goldR: pd.bag.designs.find(d => d.id === 'gold').design.edge_radius }));
+  expect(l).toEqual({ pending: [], goldMod: false, boneMod: false, goldR: 0.09 });
+});
+
+test('Delete from the card menu confirms in the page (no browser dialog) and removes the design', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  page.on('dialog', d => d.dismiss());   // a browser confirm() is blocked in some embeds, so the app must not use one
+  await page.locator('#cards .card[data-id="gold"]').click({ button: 'right' });
+  await page.locator('#cardmenu button', { hasText: 'Delete…' }).click();
+  await expect(page.locator('#cardmenu .mh')).toContainText('Delete "Gold"?');
+  await page.locator('#cardmenu button', { hasText: /^Delete$/ }).click();
+  expect(await app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['amethyst', 'bone']);
+});
+
+test('a new blank design is plain off-white solid plastic, not the swirl default', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(async pd => { const id = await pd.bagOps.addBlank(); const d = pd.bag.designs.find(x => x.id === id).design; return { sub: d.substrate, colors: d.colors }; });
+  expect(r.sub).toBe('solid');
+  expect(new Set(r.colors).size).toBe(1);
+  expect(r.colors[0]).toBe('#efe9dc');
+});
+
+test('no design picture is taken while the camera eases back from the roll view (PD-110)', async ({ app, page }) => {
+  test.setTimeout(300_000); expect.configure({ timeout: 120_000 });
   await app.open({ query: 'thumbs=1' });
-  const shot = async n => app.run(async (pd, n) => {
-    pd.state.shape = 'custom'; pd.state.notation = n; pd.buildDice(); await new Promise(r => setTimeout(r, 400));
-    await pd.updateThumbs(); const j = pd.designToJSON(); return pd.thumbs[pd.thumbKey(j)];
-  }, n);
-  const many = await shot('6d20'), one = await shot('1d20');
-  expect(many).toMatch(/^data:image/);
-  expect(many).toBe(one);   // same look, same framing: the picture does not depend on how many dice the design rolls
+  await app.run(SETUP);
+  await expect.poll(() => app.run(pd => Object.keys(pd.thumbs).length), { timeout: 120_000 }).toBe(3);   // pictures taken at rest
+  const first = await app.run(pd => Object.keys(pd.thumbs));
+  await app.run(async pd => { pd.state.shape = 'custom'; pd.state.notation = '6d20'; pd.buildDice(); pd.startRoll(); await new Promise(r => setTimeout(r, 2500)); });   // six dice, like the reported card
+  const r = await app.run(async pd => {   // the roll is over: back to the showcase, camera still on its way home
+    pd.exitRoll(); pd.state.radius = 0.137; const eased = pd.camBlend, before = Object.keys(pd.thumbs).length;
+    await pd.updateThumbs(); return { eased, tookOne: Object.keys(pd.thumbs).length > before };
+  });
+  expect(r.eased).toBeGreaterThan(0.01);   // the situation really is mid-ease
+  expect(r.tookOne).toBe(false);           // so the picture waits instead of photographing the table and a tiny die
+  await app.run(pd => { pd.camBlend = 0; });   // the camera arrives home (software GL eases it for tens of seconds)
+  await expect.poll(() => app.run((pd, first) => Object.keys(pd.thumbs).some(k => !first.includes(k)), first), { timeout: 120_000 }).toBe(true);   // and the pass takes the picture for the new look
+  const fill = await page.evaluate(async first => { const pd = window.__pd, k = Object.keys(pd.thumbs).find(x => !first.includes(x)); const im = new Image(); im.src = pd.thumbs[k]; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data, bg = [d[0], d[1], d[2]]; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 60) n++; return n / (c.width * c.height); }, first);
+  expect(fill).toBeGreaterThan(0.1); expect(fill).toBeLessThan(0.6);   // one die in a dark frame, not a screen full of table
 });
