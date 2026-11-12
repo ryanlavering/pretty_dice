@@ -26,58 +26,76 @@
  },
  "meta": {
   "kc-chiplay2-2.wav": {
-   "db": 0
+   "db": 0,
+   "clack": 1
   },
   "kc-chipscollide1-1.wav": {
-   "db": 0
+   "db": 0,
+   "clack": 0.996
   },
   "k-diethrow1-3.wav": {
-   "db": -33.8
+   "db": -33.8,
+   "clack": 0.01
   },
   "k-diethrow2-2.wav": {
-   "db": -31.8
+   "db": -31.8,
+   "clack": 0.023
   },
   "k-dicethrow2-3.wav": {
-   "db": -29.8
+   "db": -29.8,
+   "clack": 0.041
   },
   "k-diethrow4-2.wav": {
-   "db": -28.4
+   "db": -28.4,
+   "clack": 0.016
   },
   "k-diethrow1-2.wav": {
-   "db": -27.3
+   "db": -27.3,
+   "clack": 0.008
   },
   "k-diethrow2-5.wav": {
-   "db": -26
+   "db": -26,
+   "clack": 0.014
   },
   "k-dicethrow1-3.wav": {
-   "db": -22
+   "db": -22,
+   "clack": 0.033
   },
   "k-diethrow3-2.wav": {
-   "db": -19.6
+   "db": -19.6,
+   "clack": 0.002
   },
   "k-diethrow3-5.wav": {
-   "db": -19.3
+   "db": -19.3,
+   "clack": 0
   },
   "k-diethrow3-3.wav": {
-   "db": -16.1
+   "db": -16.1,
+   "clack": 0.004
   },
   "k-dicethrow1-4.wav": {
-   "db": -12.1
+   "db": -12.1,
+   "clack": 0.012
   },
   "k-dicethrow3-3.wav": {
-   "db": -4.9
+   "db": -4.9,
+   "clack": 0.052
   },
   "k-dicethrow1-1.wav": {
-   "db": -1.5
+   "db": -1.5,
+   "clack": 0.097
   },
   "k-dicethrow3-1.wav": {
-   "db": 0
+   "db": 0,
+   "clack": 0.025
   },
   "k-diethrow3-1.wav": {
-   "db": 0
+   "db": 0,
+   "clack": 0.029
   },
   "kc-chiplay3-1.wav": {
-   "db": 0
+   "db": 0,
+   "clack": 0.045
   }
  }
 }

@@ -83,3 +83,19 @@ test('the limiter keeps a pile of overlapping full-scale hits at or below 1.0', 
   expect(peaks.raw, 'without a limiter the sum clips').toBeGreaterThan(1.5);
   expect(peaks.limited, 'with it, it does not').toBeLessThanOrEqual(1.0001);
 });
+
+test('pair hardness: hard materials ask for clacky clips, soft ones for dull clips', async ({ app, page }) => {
+  const clips = Array.from({ length: 12 }, (_, i) => `c${i}.wav`), meta = Object.fromEntries(clips.map((f, i) => [f, { db: 0, clack: +(i / 11).toFixed(3) }]));
+  await mockSet(page, 'kenney', { impact: { dice: clips.slice(0, 6), table: clips.slice(6) }, meta });
+  await app.open();
+  await app.run(pd => { pd.audioInit(); pd.setSoundBackend('kenney'); });
+  await page.waitForFunction(() => window.__pd.SB.kenney.state === 'ready');
+  const mean = (sub, surf, kind) => app.run((pd, [sub, surf, kind]) => { pd.state.substrate = sub; pd.state.surfaceMat = surf; const b = pd.SB.kenney; let t = 0;
+    for (let i = 0; i < 40; i++) { b.impact(9, kind); t += b.man.meta[b.lastPick].clack; } return t / 40; }, [sub, surf, kind]);
+  const stoneOnGlass = await mean('marble', 'glass', 'table'), plasticOnFelt = await mean('swirl', 'felt', 'table');
+  expect(stoneOnGlass, 'stone die on glass').toBeGreaterThan(0.75); expect(plasticOnFelt, 'plastic die on felt').toBeLessThan(0.25);
+  expect(await mean('marble', 'felt', 'table'), 'a soft partner dominates').toBeLessThan(0.45);
+  expect(await mean('metal', 'glass', 'dice'), 'metal die on metal die').toBeGreaterThan(0.75);
+  const h = await app.run(pd => { pd.state.substrate = 'marble'; pd.state.surfaceMat = 'glass'; const a = Array.from({ length: 50 }, () => pd.hardnessFor('table', 9)); return { min: Math.min(...a), max: Math.max(...a) }; });
+  expect(h.max - h.min, 'random wobble is present').toBeGreaterThan(0.05);
+});

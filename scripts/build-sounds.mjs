@@ -46,6 +46,21 @@ const wav = (d, gain) => { const b = Buffer.alloc(44 + d.length * 2); b.write('R
   b.writeUInt32LE(SR, 24); b.writeUInt32LE(SR * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(d.length * 2, 40);
   for (let i = 0; i < d.length; i++) b.writeInt16LE(Math.max(-32768, Math.min(32767, Math.round(d[i] * gain * 32767))), 44 + i * 2); return b; };
 
+const cutCache = new Map(); const cut = f => { if (!cutCache.has(f)) cutCache.set(f, slice(decode(f))); return cutCache.get(f); };
+const usable = c => !(c.data.length < SR * .035 || c.db < -34 || c.lead > 3);   // too short / too quiet / slow attack (>3 ms to reach -20 dB: not a crisp hit, it would sound late)
+
+/** "Clackiness" 0..1 (1 = the sharpest, brightest, driest click). Four cheap features, standardised over every usable clip from every source, weighted and rank-normalised.
+ *  Rough on purpose: the app adds its own randomness, so a good ordering matters more than an exact number. */
+function features(d) { let e = 1e-12, de = 0, lf = 0, y = 0; const a = 1 - Math.exp(-2 * Math.PI * 500 / SR);
+  for (let i = 0; i < d.length; i++) { e += d[i] * d[i]; if (i) de += (d[i] - d[i - 1]) ** 2; y += a * (d[i] - y); lf += y * y; }
+  return [Math.log(de / e + 1e-3), 0, Math.log(d.length / SR * 1000), lf / e]; }          // [high-frequency share, (filled in below), decay length, low-frequency (thud) share]
+function rankClack(allClips) {
+  allClips.forEach(c => { const f = features(c.data); f[1] = Math.log(c.bright); c.f = f; });
+  const W = [1, .7, -.5, -.8], n = allClips.length, mean = [0, 0, 0, 0], sd = [0, 0, 0, 0];
+  allClips.forEach(c => c.f.forEach((v, i) => mean[i] += v / n)); allClips.forEach(c => c.f.forEach((v, i) => sd[i] += (v - mean[i]) ** 2 / n)); sd.forEach((v, i) => sd[i] = Math.sqrt(v) || 1);
+  allClips.forEach(c => { c.raw = c.f.reduce((t, v, i) => t + W[i] * (v - mean[i]) / sd[i], 0); });
+  const sorted = [...allClips].sort((a, b) => a.raw - b.raw); sorted.forEach((c, i) => { c.clack = +(i / Math.max(1, n - 1)).toFixed(3); }); }
+
 const cand = [];            // everything the audition page lists
 /** Keep at most `cap` clips, spread evenly over the loudness range (so there are soft, medium and hard hits), preferring clips of a usable length. */
 const spread = (list, cap) => { if (list.length <= cap) return list; const s = [...list].sort((a, b) => a.c.db - b.c.db), out = [];
@@ -54,21 +69,22 @@ function build(id, groups, caps) {
   const dir = join('sounds', id); rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true });
   const man = { trim: 1, impact: { dice: [], table: [] }, meta: {} }, pool = { dice: [], table: [] };
   for (const g of groups) for (const f of g.files) {
-    const x = decode(f), { clips, filePeak } = slice(x), base = g.prefix + '-' + basename(f, extname(f)).replace(/[^a-z0-9]+/gi, '').toLowerCase();
-    clips.forEach((c, i) => { if (c.data.length < SR * .035 || c.db < -34 || c.lead > 3) return;   // too short / too quiet / slow attack (>3 ms to reach -20 dB: not a crisp hit, it would sound late)
-        // too short to be a clean hit / too quiet to matter
+    const { clips, filePeak } = cut(f), base = g.prefix + '-' + basename(f, extname(f)).replace(/[^a-z0-9]+/gi, '').toLowerCase();
+    clips.forEach((c, i) => { if (!usable(c)) return;   // too short to be a clean hit / too quiet to matter
       pool[c.bright > 3000 ? 'dice' : 'table'].push({ c, g, f, filePeak, name: `${base}-${i + 1}.wav` }); });   // brighter and drier = die on die; duller = die on the mat (a guess: confirm by ear in the audition page)
   }
   for (const role of ['dice', 'table']) for (const { c, g, f, filePeak, name } of spread(pool[role], caps[role])) {
     writeFileSync(join(dir, name), wav(c.data, .9 / filePeak));   // the source file's loudest peak maps to 0.9 full scale; quieter hits stay proportionally quieter
-    man.impact[role].push(name); man.meta[name] = { db: +c.db.toFixed(1) };
-    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000), lead: c.lead });
+    man.impact[role].push(name); man.meta[name] = { db: +c.db.toFixed(1), clack: c.clack };
+    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000), lead: c.lead, clack: c.clack });
   }
   writeFileSync(join(dir, 'manifest.json'), JSON.stringify(man, null, 1));
   console.log(id, 'dice', man.impact.dice.length, 'table', man.impact.table.length);
 }
 const K = 'Kenney Casino Audio (CC0)', D = 'OpenGameArt: 2 dice roll, 29 throws (CC0)', W = 'OpenGameArt: Wooden dice on wooden table roll (CC0)';
 const kf = files('kenney', ['.ogg']).filter(f => /die-throw|dice-throw/.test(f)), kChip = files('kenney', ['.ogg']).filter(f => /chips-collide|chip-lay/.test(f));
+{ const all = []; for (const f of [...kf, ...kChip, ...files('dice29', ['.wav']), ...files('wood', ['.flac'])]) for (const c of cut(f).clips) if (usable(c)) all.push(c);   // pre-pass: rank clack over every source
+  rankClack(all); console.log('clack ranked over', all.length, 'clips'); }
 build('kenney', [{ prefix: 'k', source: K, files: kf }, { prefix: 'kc', source: K + ' (chip sounds, as hard clacks)', files: kChip }], { dice: 10, table: 16 });
 build('best', [{ prefix: 'd29', source: D, files: files('dice29', ['.wav']) }, { prefix: 'w', source: W, files: files('wood', ['.flac']) }, { prefix: 'k', source: K, files: kf }], { dice: 24, table: 36 });
 writeFileSync('sounds/candidates.json', JSON.stringify(cand));
