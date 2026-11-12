@@ -94,6 +94,13 @@
   .tile{display:flex;flex-direction:column;gap:5px;align-items:stretch;position:relative;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;border-radius:12px}
   .tile .th{width:100%;height:auto;aspect-ratio:1} .tile.drag{opacity:.55;outline:2px dashed var(--accent)} .tile .nm{font-size:13px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tile .dots{position:absolute;top:4px;right:4px;width:28px;height:28px;padding:0;border-radius:50%;background:rgba(20,23,31,.8);line-height:1}
+  #sheettabs{display:flex;gap:6px;padding:8px 16px 0} #sheettabs button{border-radius:8px 8px 0 0;padding:7px 16px;background:none;border:1px solid var(--line);border-bottom:0;color:var(--dim)} #sheettabs button.on{color:var(--accent);background:#1d212c}
+  #setlist{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;align-content:start} #setlist[hidden]{display:none}
+  .setrow{display:flex;align-items:stretch;gap:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} .setrow .main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;background:#1d212c;border:1px solid var(--line)}
+  .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
+  .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
+  #logpanel{position:absolute;top:56px;right:10px;z-index:6;width:min(280px,72vw);max-height:55%;overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
+  #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto 1fr;gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);grid-row:span 2;align-self:center;min-width:28px;text-align:right} #logpanel .le small{color:var(--dim)}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
@@ -252,10 +259,10 @@
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
   </aside>
-  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button></div></div><div id="name"></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
-<div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span><button id="sheetsave" type="button" class="linkbtn">Save bag</button></span><button id="sheetclose" type="button">Close</button></div><div id="tiles"></div></div>
+<div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span><button id="sheetsave" type="button" class="linkbtn">Save bag</button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
 <div id="cardmenu" hidden></div>
 
 <script type="text/plain" id="main-src">
@@ -1306,7 +1313,7 @@ const BAG_SAVED='prettydice.bagsaved.v1';
 function bagFileJSON(){ const b=bagToJSON();
   for(const e of b.designs){ const p=b.pending[e.id]; if(p){ e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; } }
   b.pending={}; return b; }
-function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets,characters,jail,draft,name}); }
+function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets:sets.map(({last,...r})=>r),characters,jail,draft,name}); }
 function markBagSaved(){ try{ localStorage.setItem(BAG_SAVED,bagSig()); }catch{} }
 function bagDirty(){ if(!bag) return false; try{ const v=localStorage.getItem(BAG_SAVED); if(v===null){ markBagSaved(); return false; } return v!==bagSig(); }catch{ return false; } }
 function saveBagFile(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagFileJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
@@ -1418,11 +1425,58 @@ function cardItems(id){
     {label:'Delete…',danger:true,disabled:last===0,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${entryOf(id).name}"?`},{label:'Delete',danger:true,run:()=>bagOps.remove(id)},{label:'Cancel',run:()=>{}}]),0)}]; }
 
 /* All-designs sheet, with drag-to-reorder (long-press on a phone) */
-function renderSheet(){ const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
+function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
+  const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
+let sheetTab='designs';
+for(const b of document.querySelectorAll('#sheettabs button')) b.onclick=()=>{ sheetTab=b.dataset.tab; closeMenu(); renderSheet(); };
+/* ---------- bag sets (PD-102.4): named rolls owned by the bag; the roll log (PD-68) ---------- */
+const setNotation=st=>fmtNotation(st.terms,st.mod||0);
+const newSetName=()=>{ const used=new Set(bag.sets.map(x=>x.name)); let n=bag.sets.length+1; while(used.has(`Set ${n}`)) n++; return `Set ${n}`; };
+let rollSetId=null;   // the bag set whose dice are on the mat now (its last result is kept on the set)
+const dieName=t=>`d${t===100?'%':t}`;
+const setOps={
+  find(id){ return bag.sets.find(x=>x.id===id); },
+  saveCurrent(name){ const p=parseNotation(state.notation), terms=p.error?[{count:1,sides:20}]:p.terms; name=String(name||'').trim().slice(0,80)||newSetName();
+    const st={id:uniqueId(slug(name,'set'),new Set(bag.sets.map(x=>x.id))),name,terms:structuredClone(terms),mod:p.error?0:p.mod}; bag.sets.push(st); save(); return st.id; },
+  update(id){ const st=this.find(id), p=parseNotation(state.notation); if(!st||p.error) return; st.terms=structuredClone(p.terms); st.mod=p.mod; delete st.last; save(); },
+  rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=name; save(); },
+  remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
+  move(id,to){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.sets.length-1,to)); const [x]=bag.sets.splice(k,1); bag.sets.splice(to,0,x); save(); },
+  /* the row's main action: the set's dice go onto the mat and are thrown */
+  open(id){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(); syncUI(); save(); return true; },
+  /* the lightning button: a result without leaving the screen */
+  quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
+    const parts=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const sum=r.reduce((a,b)=>a+b,0); total+=sum; return `${t.count}${dieName(t.sides)}: ${r.join('+')}${r.length>1?' = '+sum:''}`; });
+    const detail=parts.join('  ·  ')+(st.mod?`  ·  ${st.mod>0?'+':''}${st.mod}`:''); st.last={total,at:Date.now()};
+    addLog({set:st.name,notation:setNotation(st),total:String(total),detail,quick:true}); return total; }
+};
+function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
+function logRoll(total,detail){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
+  if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
+  addLog({set:st?st.name:null,notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||''}); }
+function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replaceChildren();
+  const h=el('div','lh'); h.append(el('span','',`Roll log · ${bag.log.length}`)); const c=el('button','linkbtn','Clear'); c.type='button'; c.disabled=!bag.log.length; c.onclick=()=>{ bag.log=[]; save(); renderLog(); }; h.append(c); p.append(h);
+  if(!bag.log.length) p.append(el('div','setempty','No rolls yet.'));
+  for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts); d.append(el('b','',e.total),el('span','',`${e.set?e.set+' · ':''}${e.notation}${e.quick?' ⚡':''}`),el('small','',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}${e.detail?' · '+e.detail:''}`)); p.append(d); } }
+$('logbtn').onclick=()=>{ $('logpanel').hidden=!$('logpanel').hidden; renderLog(); };
+function editSetName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Set name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
+  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; if(ok&&inp.value.trim()&&inp.value.trim()!==cur) setOps.rename(id,inp.value); renderSheet(); };
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); inp.onclick=e=>e.stopPropagation(); }
+function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
+  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Use the current dice',run:()=>{ setOps.update(id); renderSheet(); }},
+    {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
+    {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
+function renderSets(){ const box=$('setlist'); $('sheettitle').textContent=`${bag.name} · ${bag.sets.length} set${bag.sets.length===1?'':'s'}`;
+  const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=state.notation; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
+  box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
+      const main=el('button','main'); main.type='button'; main.append(el('span','nm',st.name),el('small','',setNotation(st)+(st.last?`  ·  last ${st.last.total}`:''))); main.onclick=()=>setOps.open(st.id);
+      const q=el('button','quick','⚡'); q.type='button'; q.title='Quick roll'; q.setAttribute('aria-label','Quick roll '+st.name); q.onclick=()=>{ setOps.quick(st.id); renderSheet(); };
+      const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+st.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,setItems(st.id)); };
+      row.append(main,q,dots); return row; }):[el('div','setempty','No sets yet. Build dice in the editor, then save them here.')])); }
 let dragMoved=false;
 function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level listeners while dragging: moving the tile in the DOM drops any pointer capture
   const over=e=>{ const under=document.elementsFromPoint(e.clientX,e.clientY).find(n=>n!==t&&n.classList&&n.classList.contains('tile')&&n.dataset.id&&n.dataset.id!=='draft');
@@ -1617,7 +1671,7 @@ function finishRoll(){ restT=0;
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
-  updateLeanUI();
+  updateLeanUI(); logRoll(main,sub);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
@@ -1831,7 +1885,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
