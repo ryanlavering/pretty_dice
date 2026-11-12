@@ -329,8 +329,9 @@ test('a mouse drag scrolls the shelf and picks the card that lands in the middle
   await page.mouse.up();
   await expect.poll(() => app.run(pd => pd.bag.active.design)).not.toBe('bone');
   expect(await app.run(pd => pd.bag.designs.length)).toBe(3);   // a drag does not open a menu or add anything
+});
 
-// PD-116: a big bag must not freeze the page while pictures are made.
+// PD-117: a big bag must not freeze the page while pictures are made.
 test('a bag of ten designs shows tinted placeholders at once and makes one picture per slice', async ({ app, page }) => {
   test.setTimeout(240_000); expect.configure({ timeout: 90_000 });
   await app.open({ query: 'thumbs=1' });
