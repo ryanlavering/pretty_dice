@@ -122,7 +122,7 @@ test('design pictures are a d20 whatever the preview shape, appear without reope
   test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
   await app.open({ query: 'thumbs=1' });
   await app.run(SETUP);   // bone (d6, active), amethyst (d20), gold (d8)
-  await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage.startsWith('url("data:image'))), { timeout: 60000 }).toEqual([true, true, true]);
+  await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => /^url\("data:image\/(webp|jpeg)/.test(e.style.backgroundImage))), { timeout: 60000 }).toEqual([true, true, true]);
   await expect(page.locator('#bagth')).toHaveCSS('background-image', /data:image/);
   const r = await app.run(pd => ({ shape: pd.state.shape, active: pd.bag.active.design, mod: pd.isModified('bone'), n: Object.keys(pd.thumbs).length }));
   expect(r).toEqual({ shape: 'd6', active: 'bone', mod: false, n: 3 });
@@ -332,4 +332,25 @@ test('a mouse drag scrolls the shelf without changing the chosen design; cards s
   expect(await app.run(pd => pd.bag.active.design)).toBe('bone');   // browsing is not choosing
   expect(await page.evaluate(() => document.getElementById('cards').scrollLeft)).toBeGreaterThan(s0);
   expect(await app.run(pd => pd.bag.designs.length)).toBe(3);   // a drag does not open a menu or add anything
+});
+
+// PD-117: a big bag must not freeze the page while pictures are made.
+test('a bag of ten designs shows tinted placeholders at once and makes one picture per slice', async ({ app, page }) => {
+  test.setTimeout(240_000); expect.configure({ timeout: 90_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(async pd => {
+    const designs = Array.from({ length: 10 }, (_, i) => ({ id: `d${i}`, name: `Design ${i}`, design: { ...pd.designToJSON(), name: `Design ${i}`, substrate: i % 2 ? 'metal' : 'solid', colors: [`#${(i * 25 + 40).toString(16).padStart(2, '0')}3050`, '#ffffff', '#102030'] } }));
+    await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'Big', designs }, { replace: true });
+    pd.thumbs && Object.keys(pd.thumbs).forEach(k => delete pd.thumbs[k]);
+  });
+  await page.locator('#bagopen').click();
+  const bgs = await page.locator('#tiles .tile[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage));
+  expect(bgs.length).toBe(10);
+  expect(bgs.filter(b => b.startsWith('url("data:image/svg+xml')).length).toBeGreaterThanOrEqual(8);   // dummy d20 chips, until a real picture exists
+  expect(new Set(bgs.filter(b => b.startsWith('url("data:image/svg+xml'))).size).toBeGreaterThan(5);   // each tinted by its own colours
+  const before = await app.run(pd => Object.keys(pd.thumbs).length);
+  await app.run(async pd => { await pd.updateThumbs(); });
+  const after = await app.run(pd => Object.keys(pd.thumbs).length);
+  expect(after - before).toBeLessThanOrEqual(1);
+  await expect.poll(() => app.run(pd => Object.keys(pd.thumbs).length), { timeout: 150_000 }).toBeGreaterThanOrEqual(10);
 });

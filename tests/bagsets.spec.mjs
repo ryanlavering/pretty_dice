@@ -74,16 +74,29 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await page.locator('#setlist input.nmedit').fill('Mine'); await page.keyboard.press('Enter');
   await expect(page.locator('#setlist .setrow')).toHaveCount(3);
   await expect(page.locator('#setlist .setrow .nm', { hasText: 'Mine' })).toBeVisible();
+  await expect(page.locator('#setlist .setrow[data-id="adv"] .chip')).toHaveCount(1);   // a tinted dummy d20 per term
   await page.locator('#setlist .setrow[data-id="adv"] .quick').click();
   await expect(page.locator('#setlist .setrow[data-id="adv"] small')).toContainText('last ');
   expect(await app.run(pd => pd.bag.log.length)).toBe(1);
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Delete…' }).click();
   await page.locator('#cardmenu button', { hasText: /^Delete$/ }).click();
-  expect(await app.run(pd => pd.bag.sets.map(s => s.id))).toEqual(['adv', 'set-3']);
+  expect(await app.run(pd => pd.bag.sets.map(s => s.id))).toEqual(['adv', 'd6']);
   await page.locator('#setlist .setrow[data-id="adv"] .main').click();
   await expect(page.locator('#bagsheet')).toBeHidden();
   expect(await app.run(pd => ({ n: pd.state.notation, rolling: pd.rolling }))).toEqual({ n: '2d20@amethyst', rolling: true });
   await page.locator('#logbtn').click();
   await expect(page.locator('#logpanel .le')).toHaveCount(1);
+});
+
+test('saving the current dice names the set after what is selected', async ({ shared: app }) => {
+  const r = await app.run(pd => {
+    const add = (shape, notation) => { pd.state.shape = shape; if (notation) pd.state.notation = notation; const id = pd.setOps.saveCurrent(); return pd.bag.sets.find(s => s.id === id); };
+    const custom = add('custom', '3d6+d10@amethyst+2'), s7 = add('set7'), d12 = add('d12', '4d4'), pct = add('d100');   // the stale custom text is ignored when Custom is not selected
+    return { custom: [custom.name, custom.mod], s7: [s7.name, s7.terms.map(t => t.sides)], d12: [d12.name, d12.terms], pct: [pct.name, pct.terms] };
+  });
+  expect(r.custom).toEqual(['3d6+1d10@amethyst+2', 2]);
+  expect(r.s7).toEqual(['Standard 7', [4, 6, 8, 10, 100, 12, 20]]);
+  expect(r.d12).toEqual(['d12', [{ count: 1, sides: 12 }]]);
+  expect(r.pct).toEqual(['d%', [{ count: 1, sides: 100 }]]);
 });
