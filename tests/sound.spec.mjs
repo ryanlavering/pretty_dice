@@ -122,11 +122,13 @@ test('the tuning tool uses the same material hardness table as the app', async (
 test('metal and glass ring: only metal or glass pairings ring; strength follows impact speed; the slider scales it', async ({ app }) => {
   await app.open();
   const r = await app.run(pd => { pd.audioInit(); const ring = (sub, surf, kind, amt = 1, speed = 14) => { pd.state.substrate = sub; pd.state.surfaceMat = surf; pd.state.ringLevel = amt; pd.sfx.rings = 0; return pd.ringFor(kind, speed); };   // rings = 0: the app caps simultaneous rings at 8, and this test fires many at once
-    return { plasticFelt: ring('swirl', 'felt', 'table'), plasticGlass: ring('swirl', 'glass', 'table'), metalFelt: ring('metal', 'felt', 'table'), metalDie: ring('metal', 'felt', 'dice'),
+    const glassVoices = (ring('swirl', 'glass', 'table'), pd.sfx.rings);
+    return { glassVoices, plasticFelt: ring('swirl', 'felt', 'table'), plasticGlass: ring('swirl', 'glass', 'table'), metalFelt: ring('metal', 'felt', 'table'), metalDie: ring('metal', 'felt', 'dice'),
       plasticGlassDice: ring('swirl', 'glass', 'dice'), off: ring('metal', 'glass', 'table', 0), half: ring('metal', 'glass', 'table', 0.5), full: ring('metal', 'glass', 'table', 1),
       soft: ring('metal', 'glass', 'table', 1, 2.5), mid: ring('metal', 'glass', 'table', 1, 7), hard: ring('metal', 'glass', 'table', 1, 14) }; });
   expect(r.plasticFelt, 'plastic on felt: no ring').toBe(0);
   expect(r.plasticGlass, 'plastic on glass: glass rings').toBeGreaterThan(0);
+  expect(r.glassVoices, 'the glass FM voice starts a ring').toBeGreaterThan(0);
   expect(r.metalFelt, 'metal die on felt: metal rings').toBeGreaterThan(0);
   expect(r.metalDie, 'metal die on die rings').toBeGreaterThan(0);
   expect(r.plasticGlassDice, 'the glass surface is not involved in die on die').toBe(0);
@@ -135,15 +137,4 @@ test('metal and glass ring: only metal or glass pairings ring; strength follows 
   expect(r.soft, 'always applied, even to a soft tap').toBeGreaterThan(0);
   expect(r.soft, 'soft < mid < hard: proportional to speed').toBeLessThan(r.mid); expect(r.mid).toBeLessThan(r.hard);
   expect(r.hard, 'metal and glass together are stronger than metal alone').toBeGreaterThan(r.metalFelt);
-});
-
-test('glass ring sources: samples, FM, both and additive each make sound; samples load', async ({ app, page }) => {
-  await app.open();
-  await app.run(pd => pd.audioInit());
-  await page.waitForFunction(() => window.__pd.ringBuf.state === 'ready');
-  const r = await app.run(pd => { pd.state.substrate = 'swirl'; pd.state.surfaceMat = 'glass'; pd.state.ringLevel = 1; const out = { clips: pd.ringBuf.glass.length };
-    for (const src of ['sample', 'fm', 'both', 'add']) { pd.state.glassSrc = src; pd.sfx.rings = 0; const s = pd.ringFor('table', 14); out[src] = { strength: s, voices: pd.sfx.rings }; } return out; });
-  expect(r.clips, 'glass clips decoded').toBeGreaterThan(5);
-  for (const src of ['sample', 'fm', 'both', 'add']) { expect(r[src].strength, src).toBeGreaterThan(0); expect(r[src].voices, `${src} voices`).toBeGreaterThan(0); }
-  expect(r.both.voices, 'both = samples + FM').toBe(2);
 });

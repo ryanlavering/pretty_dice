@@ -240,7 +240,6 @@
     <div class="row" id="sndmixrow"><label>Best ↔ Kenney</label><input type="range" id="sndmix" min="0" max="1" step="0.01"><select id="sndmixmode"><option value="random">Per hit</option><option value="layer">Layered</option><option value="auto">Auto (by hardness)</option></select></div>
     <div class="row"><label>Surface (for sound)</label><select id="sndsurf"></select></div>
     <div class="row"><label>Metal / glass ring</label><input type="range" id="sndring" min="0" max="1" step="0.01"></div>
-    <div class="row"><label>Glass ring from</label><select id="sndglass"><option value="sample">Real samples</option><option value="fm">FM synth</option><option value="both">Samples + FM</option><option value="add">Additive (old)</option></select></div>
     <div class="row"><span id="sndbkstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
     <div class="row"><button id="soundtest" type="button" style="padding:7px 12px;flex:none">Test sound</button><span id="soundstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
   </section>
@@ -735,7 +734,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, glassSrc:'sample', rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1', LOG_MAX=200;
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -1600,7 +1599,7 @@ function audioInit(){
     const buf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate), d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; sfx.noise=buf;
     const src=ctx.createBufferSource(); src.buffer=buf; src.loop=true; sfx.rFilter=ctx.createBiquadFilter(); sfx.rFilter.type='lowpass'; sfx.rFilter.frequency.value=260;
     sfx.rGain=ctx.createGain(); sfx.rGain.gain.value=0; src.connect(sfx.rFilter); sfx.rFilter.connect(sfx.rGain); sfx.rGain.connect(sfx.trim); src.start();   // rolling rumble loop
-    setVolume(); applyTrim(); loadRingSamples(); SB[sfx.bk].activate(); if(ctx.state!=='running') ctx.resume().catch(()=>{});
+    setVolume(); applyTrim(); SB[sfx.bk].activate(); if(ctx.state!=='running') ctx.resume().catch(()=>{});
   }catch{ sfx.ctx=null; } return sfx.ctx;
 }
 function audioStatus(){ const c=sfx.ctx; return 'audio '+(c?c.state:'not started')+(navigator.audioSession?', session '+navigator.audioSession.type:'')+(sfx.hold&&!sfx.hold.paused?', silent-mode bypass on':'')+(state.sound?'':', sound is off')+(IS_IOS?'. No sound? Check the ring/silent switch.':''); }
@@ -1700,13 +1699,8 @@ async function soundBytes(path){ const E=window.__SOUNDS; if(E){ if(!E[path]) th
 const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
 // "ringLevel" 0..1 -> peak strength ringLevel*0.08 at full impact speed. The ring is always applied and its strength is proportional to impact speed (v = speed/14, capped at 1), so over a roll the average is about half the peak:
 // the range is doubled to compensate (50% = the sweet spot the owner found earlier, which used a sparser gate). Returns the total ring strength started (0 = none).
-// Glass has four sources (state.glassSrc): real clinks from sounds/ring (default), a classic FM glass voice, both, or the old additive partials. Metal always uses the additive partials.
+// Glass is an FM voice (GLASS_FM); metal uses additive partials (RING).
 const GLASS_FM=[[2200,1.41,2.5,.08,.5,1],[3500,2.76,1.5,.05,.25,.5]];   // FM glass voices: [carrier Hz, modulator:carrier ratio, peak modulation index, index decay s, amplitude decay s, gain]. A bright inharmonic "tink" (index falls fast) that settles into a pure ring.
-const ringBuf={glass:[],state:'idle',last:-1};
-async function loadRingSamples(){ if(ringBuf.state!=='idle'||!sfx.ctx) return; ringBuf.state='loading';
-  try{ const man=JSON.parse(new TextDecoder().decode(await soundBytes('ring/manifest.json'))); const bufs=await Promise.all(man.glass.map(async f=>{ try{ return await sfx.ctx.decodeAudioData(await soundBytes('ring/'+f)); }catch{ return null; } })); ringBuf.glass=bufs.filter(Boolean); ringBuf.state='ready'; }catch{ ringBuf.state='failed'; } }
-function ringSample(level,v,t){ const L=ringBuf.glass; if(!L.length||sfx.rings>=8) return 0; let i=Math.floor(Math.random()*L.length); if(L.length>1&&i===ringBuf.last) i=(i+1)%L.length; ringBuf.last=i;
-  const ctx=sfx.ctx, src=ctx.createBufferSource(), g=ctx.createGain(); src.buffer=L[i]; src.playbackRate.value=rndr(.95,1.05); g.gain.value=level*v*.3*rndr(.8,1.1); src.connect(g); g.connect(sfx.trim); sfx.rings++; src.onended=()=>{ sfx.rings--; try{g.disconnect();}catch{} }; src.start(t); return 1; }
 function ringFM(strength,v,t){ if(sfx.rings>=8) return 0; const ctx=sfx.ctx, life=.6+.6*v; sfx.rings++; const out=ctx.createGain(), lp=ctx.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=7000; lp.Q.value=.5; out.connect(lp); lp.connect(sfx.trim); let end=0;
   for(const [fc0,ratio,idx,idxDec,ampDec,gn] of GLASS_FM){ const fc=fc0*rndr(.97,1.03), car=ctx.createOscillator(), mod=ctx.createOscillator(), mg=ctx.createGain(), e=ctx.createGain(), depth=idx*fc*ratio*Math.min(1,v*1.4+.2);   // harder hits brighten the attack
     car.frequency.value=fc; mod.frequency.value=fc*ratio; mg.gain.setValueAtTime(depth,t); mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*.02),t+idxDec); mod.connect(mg); mg.connect(car.frequency);
@@ -1717,13 +1711,11 @@ function ringAdditive(m,strength,v,t){ if(sfx.rings>=8) return 0; const ctx=sfx.
   ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,v*1.4):1), f=base*r*rndr(.99,1.01); if(a<.02||f>16000) return; const o=ctx.createOscillator(), e=ctx.createGain(); o.frequency.value=f;   // harder hits also wake the upper partials
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+atk); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); });
   setTimeout(()=>{ sfx.rings--; try{out.disconnect();lp.disconnect();}catch{} },(dec[0]*life+.2)*1000); return 1; }
-function ringFor(kind,speed,when=0){ const L=Math.min(1,state.ringLevel), E=L*.08; if(!sfx.ctx||!(L>0)) return 0;   // callers have already checked audioReady()
+function ringFor(kind,speed,when=0){ const E=Math.min(1,state.ringLevel)*.08; if(!sfx.ctx||!(E>0)) return 0;   // callers have already checked audioReady()
   const rings=new Set(); if(RING[matClass(state.substrate)]) rings.add(matClass(state.substrate)); if(kind==='table'&&RING[state.surfaceMat]) rings.add(state.surfaceMat);   // the die rings, and so does the surface it lands on
   const t=sfx.ctx.currentTime+when, v=Math.min(1,speed/14); let total=0;
-  for(const m of rings){ const strength=RING[m][1]*E*v*rndr(.7,1.1), src=m==='glass'?state.glassSrc:'add'; total+=strength;
-    if(src==='sample'||src==='both') ringSample(L,v,t);
-    if(src==='fm'||src==='both'||(src==='sample'&&!ringBuf.glass.length)) ringFM(strength,v,t);   // samples not loaded (yet): the FM voice stands in
-    if(src==='add'||m!=='glass') ringAdditive(m,strength,v,t); }
+  for(const m of rings){ const strength=RING[m][1]*E*v*rndr(.7,1.1); total+=strength;
+    if(m==='glass') ringFM(strength,v,t); else ringAdditive(m,strength,v,t); }
   return total; }
 // sample backends: manifest {trim, impact:{dice:[..],table:[..],plastic|resin|metal|stone:[..]}, chime:[..], fumble:[..], roll:"loop.ogg"}; files are relative to sounds/<id>/
 function sampleBackend(id,label){
@@ -1774,7 +1766,6 @@ function auditionSound(){ const ctx=audioInit(); if(!ctx) return; setVolume(); c
   const sel=$('sndbk'); if(sel){ sel.innerHTML=Object.entries(SB).map(([k,v])=>'<option value="'+k+'">'+v.label+'</option>').join(''); sel.value=sfx.bk; sel.onchange=e=>{ setSoundBackend(e.target.value,true); }; }
   const aud=$('sndaud'); if(aud) aud.onclick=auditionSound;
   const sf=$('sndsurf'); if(sf){ sf.innerHTML=SURFACES.map(k=>'<option value="'+k+'">'+k+'</option>').join(''); if(!MAT_HARD[state.surfaceMat]) state.surfaceMat='felt'; sf.value=state.surfaceMat; sf.onchange=()=>{ state.surfaceMat=sf.value; save(); }; }
-  const gs=$('sndglass'); if(gs){ gs.value=state.glassSrc; gs.onchange=()=>{ state.glassSrc=gs.value; save(); }; }
   const rg=$('sndring'); if(rg){ rg.value=state.ringLevel; rg.oninput=()=>{ state.ringLevel=+rg.value; save(); }; }
   const mx=$('sndmix'), md=$('sndmixmode'); if(mx){ mx.value=state.soundMix; mx.oninput=()=>{ state.soundMix=+mx.value; save(); }; } if(md){ md.value=state.soundMixMode; md.onchange=()=>{ state.soundMixMode=md.value; save(); }; } mixUI(); }
 
@@ -1931,7 +1922,7 @@ window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get 
     return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
-  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit, SB, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, ringBuf, setSoundBackend, get soundBackend(){ return sfx.bk; }};
+  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit, SB, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, setSoundBackend, get soundBackend(){ return sfx.bk; }};
 window.__dice=window.__pd;   // old name
 </script>
 </body>

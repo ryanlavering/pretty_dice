@@ -94,9 +94,6 @@ th{font:500 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;col
       <label for="ring" class="dim">Metal / glass ring</label><input type="range" id="ring" min="0" max="1" step="0.01" value="0.5"><span class="dim" style="font-size:13px">Struck metal and glass sing. Try a metal die, or a glass or metal surface.</span>
     </div>
     <div class="row">
-      <label for="glasssrc" class="dim">Glass ring from</label><select id="glasssrc"><option value="sample">Real samples</option><option value="fm">FM synth</option><option value="both">Samples + FM</option><option value="add">Additive (old)</option></select>
-    </div>
-    <div class="row">
       <label for="bounce" class="dim">Bounciness</label><input type="range" id="bounce" min="0.25" max="0.7" step="0.01" value="0.5">
       <label for="power" class="dim">Throw strength</label><input type="range" id="power" min="6" max="14" step="0.5" value="12">
     </div>
@@ -165,7 +162,7 @@ function startAt(b,gain,t,rate=1,d=0){ const c=audio(), s=c.createBufferSource()
   tail.connect(bus()); s.start(t); }
 function watchPeak(ms){ const buf=new Float32Array(2048); let pk=0, red=0; const end=performance.now()+ms; (function tick(){ ana.getFloatTimeDomainData(buf); for(let i=0;i<buf.length;i++){ const v=Math.abs(buf[i]); if(v>pk) pk=v; } if(comp.reduction<red) red=comp.reduction;
   $('peak').textContent='Output peak '+(pk>0?(20*Math.log10(pk)).toFixed(1):'-inf')+' dBFS, limiter pulled down by up to '+(-red).toFixed(1)+' dB'; if(performance.now()<end) requestAnimationFrame(tick); })(); }
-let warmed=null; function warm(){ return warmed||(warmed=Promise.all([...CLIPS.map(c=>buf(c.file)),warmRing()]).catch(e=>{ warmed=null; throw e; })); }
+let warmed=null; function warm(){ return warmed||(warmed=Promise.all(CLIPS.map(c=>buf(c.file))).catch(e=>{ warmed=null; throw e; })); }
 const clipsOf=(set,role)=>CLIPS.filter(c=>c.set===set&&c.role===role).sort((a,b)=>b.db-a.db);
 // hardness model: same as the app. Each material 0 (felt) to 1 (glass); a pair is 2ab/(a+b) so the softer partner dominates; harder hits and die-on-die lean sharper; random wobble on top.
 const MAT_HARD={ felt:.05, carpet:.08, leather:.15, cardboard:.25, plastic:.45, wood:.5, resin:.5, stone:.8, metal:.9, glass:.95 };
@@ -175,8 +172,6 @@ function hardnessFor(kind,speed){ const die=MAT_HARD[$('diemat').value], other=k
 // metal and glass ring (same model as the app): decaying sine partials on top of the hit when the die or the surface is metal or glass
 const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
 const GLASS_FM=[[2200,1.41,2.5,.08,.5,1],[3500,2.76,1.5,.05,.25,.5]];   // FM glass voices, as in the app
-let ringFiles=null; async function warmRing(){ if(ringFiles) return; ringFiles=window.EMBED?EMBED.ring:(await (await fetch(BASE+'ring/manifest.json')).json()).glass; await Promise.all(ringFiles.map(f=>buf('ring/'+f).catch(()=>null))); }
-function ringSample(level,v,t){ const L=(ringFiles||[]).map(f=>cache['ring/'+f]).filter(Boolean); if(!L.length) return 0; const c=audio(), s=c.createBufferSource(), g=c.createGain(); s.buffer=L[Math.floor(Math.random()*L.length)]; s.playbackRate.value=rr(.95,1.05); g.gain.value=level*v*.3*rr(.8,1.1); s.connect(g); g.connect(bus()); s.start(t); return 1; }
 function ringFM(strength,v,t){ const c=audio(), life=.6+.6*v, out=c.createGain(), lp=c.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=7000; lp.Q.value=.5; out.connect(lp); lp.connect(bus());
   for(const [fc0,ratio,idx,idxDec,ampDec,gn] of GLASS_FM){ const fc=fc0*rr(.97,1.03), car=c.createOscillator(), mod=c.createOscillator(), mg=c.createGain(), e=c.createGain(), depth=idx*fc*ratio*Math.min(1,v*1.4+.2);
     car.frequency.value=fc; mod.frequency.value=fc*ratio; mg.gain.setValueAtTime(depth,t); mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*.02),t+idxDec); mod.connect(mg); mg.connect(car.frequency);
@@ -185,13 +180,11 @@ function ringFM(strength,v,t){ const c=audio(), life=.6+.6*v, out=c.createGain()
 function ringAdditive(m,strength,v,t){ const c=audio(), [f0,amp,ratio,gain,dec,lpHz,atk]=RING[m], out=c.createGain(), lp=c.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=lpHz; lp.Q.value=.5; out.connect(lp); lp.connect(bus()); const base=f0*rr(.97,1.03), life=.6+.6*v;
   ratio.forEach((r,i)=>{ const a=gain[i]*(i?Math.min(1,v*1.4):1), f=base*r*rr(.99,1.01); if(a<.02||f>16000) return; const o=c.createOscillator(), e=c.createGain(); o.frequency.value=f;
     e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(a,t+atk); e.gain.exponentialRampToValueAtTime(.0005,t+dec[i]*life); o.connect(e); e.connect(out); o.start(t); o.stop(t+dec[i]*life+.05); }); return 1; }
-function ringFor(kind,speed,t){ const L=Math.min(1,+$('ring').value), E=L*.08; if(!(L>0)) return 0;   // same as the app: always on, strength proportional to impact speed, peak = level*0.08
+function ringFor(kind,speed,t){ const E=Math.min(1,+$('ring').value)*.08; if(!(E>0)) return 0;   // same as the app: always on, strength proportional to impact speed, peak = level*0.08
   const rings=new Set(), die=$('diemat').value, surf=$('surf').value; if(RING[die]) rings.add(die); if(kind==='table'&&RING[surf]) rings.add(surf);
   const v=Math.min(1,speed/14); let total=0;
-  for(const m of rings){ const strength=RING[m][1]*E*v*rr(.7,1.1), src=m==='glass'?$('glasssrc').value:'add'; total+=strength;
-    if(src==='sample'||src==='both') ringSample(L,v,t);
-    if(src==='fm'||src==='both'||(src==='sample'&&!(ringFiles&&ringFiles.length))) ringFM(strength,v,t);
-    if(src==='add'||m!=='glass') ringAdditive(m,strength,v,t); }
+  for(const m of rings){ const strength=RING[m][1]*E*v*rr(.7,1.1); total+=strength;
+    if(m==='glass') ringFM(strength,v,t); else ringAdditive(m,strength,v,t); }
   return total; }
 // candidates: every kept clip of the chosen sets, scored by distance from the wanted clack plus distance from the wanted level
 function cands(sets,speed,kind){ const g=Math.min(1,Math.pow(speed/14,.8)), T=20*Math.log10(g), h=hardnessFor(kind,speed);
