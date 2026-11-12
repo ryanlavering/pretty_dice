@@ -54,3 +54,32 @@ test('the choice persists, can be preset with ?sound=, and the dropdown drives i
   expect(await app.run(pd => pd.soundBackend)).toBe('classic');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('prettydice.v1')).soundBk)).toBe('classic');
 });
+
+test('blend backend plays both ways and the slider extremes pick one set', async ({ app, page }) => {
+  await mockSet(page, 'kenney', { impact: { dice: ['a.wav'], table: ['a.wav'] } });
+  await mockSet(page, 'best', { impact: { dice: ['a.wav'], table: ['a.wav'] } });
+  await app.open();
+  await app.run(pd => { pd.audioInit(); pd.setSoundBackend('mix'); });
+  await page.waitForFunction(() => window.__pd.SB.kenney.state === 'ready' && window.__pd.SB.best.state === 'ready');
+  const count = (mix, mode) => app.run((pd, [mix, mode]) => { pd.state.soundMix = mix; pd.state.soundMixMode = mode; const calls = { kenney: 0, best: 0 };
+    for (const id of ['kenney', 'best']) { const o = pd.SB[id].impact; pd.SB[id].impact = (...a) => { calls[id]++; return o.apply(pd.SB[id], a); }; }
+    for (let i = 0; i < 40; i++) pd.SB.mix.impact(9, 'table'); return calls; }, [mix, mode]);
+  expect(await count(0, 'random')).toEqual({ kenney: 0, best: 40 });
+  expect(await count(1, 'random')).toEqual({ kenney: 40, best: 0 });
+  const mid = await count(0.5, 'random');   expect(mid.kenney).toBeGreaterThan(5); expect(mid.best).toBeGreaterThan(5);
+  const both = await count(0.5, 'layer'); expect(both.kenney).toBeGreaterThan(0); expect(both.best).toBeGreaterThan(0);
+});
+
+test('the limiter keeps a pile of overlapping full-scale hits at or below 1.0', async ({ app }) => {
+  await app.open();
+  const peaks = await app.run(async pd => {
+    const render = async limited => { const sr = 44100, off = new OfflineAudioContext(1, sr, sr), b = off.createBuffer(1, 2000, sr), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.exp(-i / 800);   // a full-scale one-sided pulse (not an alternating click: starts fall between samples and would cancel it)
+      const out = limited ? pd.makeLimiter(off) : null; if (out) out.output.connect(off.destination);
+      for (let k = 0; k < 30; k++) { const s = off.createBufferSource(); s.buffer = b; s.connect(limited ? out.input : off.destination); s.start(k * 0.004); }
+      const r = await off.startRendering(), x = r.getChannelData(0); let m = 0; for (const v of x) m = Math.max(m, Math.abs(v)); return m; };
+    return { raw: await render(false), limited: await render(true) };
+  });
+  expect(peaks.raw, 'without a limiter the sum clips').toBeGreaterThan(1.5);
+  expect(peaks.limited, 'with it, it does not').toBeLessThanOrEqual(1.0001);
+});
