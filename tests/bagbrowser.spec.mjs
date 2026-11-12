@@ -280,3 +280,18 @@ test('a note that names a deleted design falls back to the live design instead o
   const r = await app.run(async pd => { pd.state.notation = '2d6@gold+1'; pd.state.shape = 'custom'; await pd.bagOps.remove('gold'); pd.state.notation = '2d6@gold+1'; return pd.dice.length; });
   expect(r).toBeGreaterThan(0);
 });
+
+test('dice that look the same share one atlas and geometry; different designs or shapes do not (profiling, PD-102.3)', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(pd => {
+    const uniq = k => new Set(pd.dice.map(d => d[k])).size, build = n => { pd.state.shape = 'custom'; pd.state.notation = n; pd.buildDice(); };
+    build('12d20'); const same = { atlases: uniq('atlas'), geos: uniq('geo'), mats: uniq('mat'), dice: pd.dice.length };
+    build('6d20+6d20@gold'); const two = { atlases: uniq('atlas'), dice: pd.dice.length };      // the same shape in two designs: two atlases (gold has its own look but the same number style, so it may share)
+    build('6d20+6d8'); const shapes = uniq('atlas');
+    return { same, two, shapes };
+  });
+  expect(r.same).toEqual({ atlases: 1, geos: 1, mats: 12, dice: 12 });   // a material per die: each die glows and dims by itself
+  expect(r.two.dice).toBe(12); expect(r.two.atlases).toBeLessThanOrEqual(2);
+  expect(r.shapes).toBe(2);
+});

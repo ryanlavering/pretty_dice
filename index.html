@@ -904,34 +904,45 @@ function updateInclusions(){ for(const d of dice){ if(!d.inc) continue; const L=
 let buildTok=0, rollKey='';          // buildTok: only the newest async rebuild runs; rollKey: what the running roll was built for
 /* Mixed sets: every design in the set other than the live one gets its own look and uniform set. Rolls use pending edits, like the live design. */
 const foreign=new Map(), fontAsked=new Set();
+/* Dice that look the same (same shape, same number style) share one number atlas and one geometry: 20 identical d20 hold 2 textures, not 40. A material stays per die, because each die glows and dims by itself. */
+let partCache=new Map();
 const liveId=()=>bag&&!bag.active.draft?bag.active.design:null;
 function lookFor(id){ if(!id||!bag||id===liveId()) return null; let f=foreign.get(id); if(f) return f.look;
   const e=bag.designs.find(d=>d.id===id); if(!e) return null; const j=bag.pending[id]||e.design; if(!designOK(j)) return null;
   const look=lookFromDesign(j); foreign.set(id,{look,uni:makeUniforms()});
-  const F=FONTS[look.font]; if(F&&F.load&&!document.fonts.check(F.load)&&!fontAsked.has(look.font)){ fontAsked.add(look.font); ensureFont(look.font).then(()=>{ fontAsked.delete(look.font); scheduleRebuild(); }); }
+  const F=FONTS[look.font]; if(F&&F.load&&!document.fonts.check(F.load)&&!fontAsked.has(look.font)){ fontAsked.add(look.font); ensureFont(look.font).then(()=>{ fontAsked.delete(look.font); for(const [k,pt] of partCache) if(k.includes('|'+look.font+'|')){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); partCache.delete(k); } scheduleRebuild(); }); }   // numbers drawn in the fallback font are not reused
   return look; }
 function buildDice(keepRoll){
   buildTok++;
   if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)
   if(!keepRoll) exitRoll(true);
-  rig.clear(); dice.forEach(d=>{d.geo.dispose();d.mat.dispose();d.atlas.bump.dispose();d.atlas.mask.dispose();}); dice=[]; foreign.clear();
+  rig.clear(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
   const specs=specsFor(state.shape);
   specs.forEach(s=>{
     const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
-    const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
-    if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
-    let opts={};
-    if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'){          // vertex value = label of the face opposite it
-      const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
-      opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
-    } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
-    const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft}), mat=makeMaterial(atlas,own?foreign.get(s.design).uni:U);
+    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree].join('|');
+    let part=nextParts.get(key)||partCache.get(key);
+    if(!part){
+      const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
+      if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
+      let opts={};
+      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'){          // vertex value = label of the face opposite it
+        const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
+        opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
+      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
+      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
+      part={faces,labs,atlas,geo};
+    }
+    nextParts.set(key,part);
+    const {faces,labs,atlas,geo}=part, mat=makeMaterial(atlas,own?foreign.get(s.design).uni:U);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
     const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,part:s.part,look:own,inradius:Math.min(...faces.map(f=>f.d))};
     if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
+  for(const [k,pt] of partCache) if(!nextParts.has(k)){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); }   // parts no die uses any more
+  partCache=nextParts;
   needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 1.5;   // a single die must fit a narrow (portrait) screen too
   baseZ = state.shape==='set7' ? 13 : state.shape==='custom' ? customZoom : specs.length>1 ? 7.6 : 5.4;
   applyLook();
