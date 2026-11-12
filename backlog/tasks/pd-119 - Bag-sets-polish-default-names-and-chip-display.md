@@ -1,10 +1,10 @@
 ---
 id: PD-119
 title: 'Bag sets polish: default names and chip display'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T19:32:00Z'
+updated_date: '2026-11-12T23:04:00Z'
 labels:
   - feature
   - bag
@@ -28,4 +28,6 @@ Saving the current dice names the set after what is selected: the formula when C
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12: a name box + Save under the Custom controls saves the current dice as a new set (always a copy; blank name uses the formula, shown as the placeholder). Editing an existing set is PD-124.
+
+2026-11-12: owner approved.
 <!-- SECTION:NOTES:END -->
