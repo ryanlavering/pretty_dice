@@ -218,3 +218,12 @@ test('Delete from the card menu confirms in the page (no browser dialog) and rem
   await page.locator('#cardmenu button', { hasText: /^Delete$/ }).click();
   expect(await app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['amethyst', 'bone']);
 });
+
+test('a new blank design is plain off-white solid plastic, not the swirl default', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(async pd => { const id = await pd.bagOps.addBlank(); const d = pd.bag.designs.find(x => x.id === id).design; return { sub: d.substrate, colors: d.colors }; });
+  expect(r.sub).toBe('solid');
+  expect(new Set(r.colors).size).toBe(1);
+  expect(r.colors[0]).toBe('#efe9dc');
+});
