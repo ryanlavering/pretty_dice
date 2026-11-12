@@ -1,7 +1,7 @@
 ---
 id: PD-108
 title: Load bag should replace (with unsaved-changes prompt); bag Modified badges and Save bag links; drop Replace bag
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-11T23:40:00Z'
 updated_date: '2026-11-11T23:40:00Z'
@@ -27,7 +27,13 @@ Owner feedback 2026-11-11. Today Settings > Load bag appends the file's designs 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Load bag replaces the bag; unsaved bag prompts Save / Discard / Cancel
-- [ ] #2 Bag Modified badge and Save bag link shown on the bag controls
-- [ ] #3 Replace bag… removed; From a file… still appends
+- [x] #1 Load bag replaces the bag; unsaved bag prompts Save / Discard / Cancel
+- [x] #2 Bag Modified badge and Save bag link shown on the bag controls
+- [x] #3 Replace bag… removed; From a file… still appends
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-11: Load bag replaces; dirty = bag content differs from the last file save/load (stored in localStorage prettydice.bagsaved.v1, compared by content). Save/Discard/Cancel dialog (#bagask). 'Bag modified' pill + Save bag link in the settings bag row and sheet header; dot on #savebag and the shelf bag button. Replace bag… removed; From a file… (shelf +) still appends. Test: bagbrowser.spec 'Load bag replaces the bag...(PD-108)'. playwright.config PD_PORT override so worktrees do not reuse another checkout's :8124 server. Full suite: 82 passed, 2 flaky (logic filigree, physics watchdog) under heavy machine load. Needs owner check.
+<!-- SECTION:NOTES:END -->

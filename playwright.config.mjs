@@ -1,7 +1,7 @@
 // Test suite config. Design: docs/design/testing.md
 import { defineConfig } from '@playwright/test';
 
-const PORT = 8124;
+const PORT = Number(process.env.PD_PORT) || 8124;   // worktrees set PD_PORT so they do not reuse another checkout's server
 const inDocker = !!process.env.PD_DOCKER;   // visual baselines are only made and compared inside the pinned image
 
 export default defineConfig({
