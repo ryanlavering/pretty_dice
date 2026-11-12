@@ -6,6 +6,9 @@
 <title>Pretty Dice</title>
 <style>
   :root{--bg:#0e1015;--panel:#161922;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c}
+  /* dark, thin scrollbars everywhere (Firefox/Chrome/Safari 18 use the standard properties; older WebKit uses the pseudo-elements) */
+  *{scrollbar-width:thin;scrollbar-color:#3a4052 transparent}
+  ::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-track{background:transparent} ::-webkit-scrollbar-thumb{background:#3a4052;border-radius:8px;border:2px solid transparent;background-clip:content-box} ::-webkit-scrollbar-thumb:hover{background:#565e75;background-clip:content-box} ::-webkit-scrollbar-corner{background:transparent}
   *{box-sizing:border-box} [hidden]{display:none!important}
   html{box-sizing:border-box} body{box-sizing:border-box}
   html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 Inter,system-ui,sans-serif}
@@ -108,7 +111,7 @@
   #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheettitle .bnedit{width:min(220px,46vw);font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
   .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
-  #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
+  #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
   #logpanel .lt{display:flex;align-items:baseline;gap:8px;min-width:0} #logpanel .tm{color:var(--dim);flex:none} #logpanel .ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0} #logpanel .lr{color:var(--dim);margin-top:2px} #logpanel .lr .rt{display:flex;margin:2px 0}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}

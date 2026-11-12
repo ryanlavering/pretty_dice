@@ -209,3 +209,14 @@ test('the bag name is editable in the sheet title and names the saved file', asy
   await page.locator('#sheettitle input').fill('Nope'); await page.keyboard.press('Escape');
   expect(await app.run(pd => pd.bag.name)).toBe('Dungeon night!');   // Escape keeps the old name
 });
+
+test('scrollbars are thin and dark, and the roll log never scrolls sideways', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  const sb = await page.evaluate(() => { const c = getComputedStyle(document.querySelector('aside')); return { w: c.scrollbarWidth, col: c.scrollbarColor }; });
+  expect(sb.w).toBe('thin'); expect(sb.col).toContain('58, 64, 82');
+  await app.run(pd => { pd.startRoll(); for (let i = 0; i < 30; i++) pd.setOps.quick('dmg'); });
+  await page.locator('#logbtn').click();
+  const over = await page.locator('#logpanel').evaluate(e => ({ x: e.scrollWidth > e.clientWidth + 1, y: e.scrollHeight > e.clientHeight }));
+  expect(over.x).toBe(false);
+});
