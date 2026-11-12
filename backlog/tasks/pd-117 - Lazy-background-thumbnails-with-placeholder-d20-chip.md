@@ -1,10 +1,10 @@
 ---
 id: PD-117
 title: Lazy background thumbnails with placeholder d20 chip
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T06:15:00Z'
-updated_date: '2026-11-12T08:48:00Z'
+updated_date: '2026-11-12T22:52:00Z'
 labels:
   - bug
   - bag
@@ -32,4 +32,6 @@ Loading a bag of 10 designs locked the page: the thumbnail pass renders every mi
 Thumbnail pass now makes one picture per idle slice (pauses while the user touches things); designs show a tinted dummy d20 (colours + substrate from the design JSON) until the real picture exists. Bag sets show per-term chips. Test: ten-design bag.
 
 Follow-up (owner): (1) editing a design keeps its previous real picture on screen until the new one lands (no flash of the stand-in); (2) the stand-in is framed like the real 144 px render (measured: die ~74% of width, centred ~46% down, on the stage backdrop gradient).
+
+2026-11-12: owner approved ('background loading looks good'). Bag-sheet save/load/copy buttons requested during this review are PD-128.
 <!-- SECTION:NOTES:END -->
