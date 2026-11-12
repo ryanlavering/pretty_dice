@@ -64,7 +64,7 @@ test('the roll log keeps the last 200 rolls and rolls without a set are logged t
   expect(r.n).toBe(200); expect(r.after).toBe(200); expect(r.e.set).toBeNull(); expect(r.e.notation).toBe('d20');
 });
 
-test('Sets tab: save the current dice, quick roll, open on the mat, delete from the menu', async ({ app, page }) => {
+test('Sets tab: save the current dice, quick roll, open on the mat, delete from the menu @slow', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
   await page.click('#bagbtn');
@@ -74,7 +74,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await page.locator('#setlist input.nmedit').fill('Mine'); await page.keyboard.press('Enter');
   await expect(page.locator('#setlist .setrow')).toHaveCount(3);
   await expect(page.locator('#setlist .setrow .nm', { hasText: 'Mine' })).toBeVisible();
-  await expect(page.locator('#setlist .setrow[data-id="adv"] .chip')).toHaveCount(1);   // a tinted dummy d20 per term
+  await expect(page.locator('#setlist .setrow[data-id="adv"] .term')).toHaveText('d20 ×2');   // a tinted dummy d20 per term
   await page.locator('#setlist .setrow[data-id="adv"] .quick').click();
   await expect(page.locator('#setlist .setrow[data-id="adv"] small')).toContainText('last ');
   expect(await app.run(pd => pd.bag.log.length)).toBe(1);
@@ -95,8 +95,18 @@ test('saving the current dice names the set after what is selected', async ({ sh
     const custom = add('custom', '3d6+d10@amethyst+2'), s7 = add('set7'), d12 = add('d12', '4d4'), pct = add('d100');   // the stale custom text is ignored when Custom is not selected
     return { custom: [custom.name, custom.mod], s7: [s7.name, s7.terms.map(t => t.sides)], d12: [d12.name, d12.terms], pct: [pct.name, pct.terms] };
   });
-  expect(r.custom).toEqual(['3d6+1d10@amethyst+2', 2]);
+  expect(r.custom).toEqual(['3d6+1d10+2', 2]);
   expect(r.s7).toEqual(['Standard 7', [4, 6, 8, 10, 100, 12, 20]]);
   expect(r.d12).toEqual(['d12', [{ count: 1, sides: 12 }]]);
   expect(r.pct).toEqual(['d%', [{ count: 1, sides: 100 }]]);
+});
+
+test('Copy bag JSON puts the bag file text on the clipboard @slow', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
+  await page.locator('#copybag').click();
+  await expect(page.locator('#copybag')).toHaveText('Copied');
+  const j = JSON.parse(await page.evaluate(() => window.__copied));
+  expect(j.format).toBe('pretty-dice-bag'); expect(j.designs.map(d => d.id)).toEqual(['amethyst', 'bone']); expect(j.sets.length).toBe(2);
 });

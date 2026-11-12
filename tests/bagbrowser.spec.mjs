@@ -12,7 +12,7 @@ const SETUP = async pd => {
 
 test.beforeEach(async ({ shared }) => { await shared.reset(1); await shared.run(SETUP); });
 
-test('editing marks the active design Modified; Save, Revert and Save as copy', async ({ shared: app }) => {
+test('editing marks the active design Modified; Save, Revert and Save as copy @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}; out.clean = pd.isModified('bone');
     pd.state.radius = 0.1; out.edited = pd.isModified('bone');
@@ -45,7 +45,7 @@ test('pending edits are exported and survive a reload', async ({ app, page }) =>
   expect(r).toEqual({ active: 'gold', goldMod: true, boneMod: true, radius: 0.09, exported: ['bone', 'gold'] });
 });
 
-test('Randomize makes one draft; it never touches saved designs; Keep and Discard', async ({ shared: app }) => {
+test('Randomize makes one draft; it never touches saved designs; Keep and Discard @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}, before = JSON.stringify(pd.bag.designs);
     pd.randomize(true); const d1 = JSON.stringify(pd.bagToJSON().draft);
@@ -63,7 +63,7 @@ test('Randomize makes one draft; it never touches saved designs; Keep and Discar
   expect(r.discarded).toEqual({ draft: null, active: false, on: r.kept && r.discarded.on, n: 4 });
 });
 
-test('duplicate, rename, move, delete', async ({ shared: app }) => {
+test('duplicate, rename, move, delete @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}, ids = () => pd.bag.designs.map(d => d.id);
     await pd.bagOps.duplicate('amethyst'); out.dup = { ids: ids(), active: pd.bag.active.design };
@@ -103,7 +103,7 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await page.keyboard.press('Escape'); await expect(page.locator('#bagsheet')).toBeHidden();
 });
 
-test('menu actions work on a modified design that is not active', async ({ shared: app }) => {
+test('menu actions work on a modified design that is not active @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const out = {}; pd.state.radius = 0.1; pd.save(); await pd.bagActivate('gold');   // bone now has pending edits
     await pd.bagOps.revert('bone'); out.revert = { mod: pd.isModified('bone'), active: pd.bag.active.design };
@@ -244,7 +244,7 @@ test('Delete from the card menu confirms in the page (no browser dialog) and rem
   expect(await app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['amethyst', 'bone']);
 });
 
-test('a new blank design is plain off-white solid plastic, not the swirl default', async ({ app }) => {
+test('a new blank design is plain off-white solid plastic, not the swirl default @quick', async ({ app }) => {
   await app.open();
   await app.run(SETUP);
   const r = await app.run(async pd => { const id = await pd.bagOps.addBlank(); const d = pd.bag.designs.find(x => x.id === id).design; return { sub: d.substrate, colors: d.colors }; });
@@ -295,7 +295,7 @@ test('a set mixes designs: @design notation, one look per design, rolls and read
   expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
 });
 
-test('a note that names a deleted design falls back to the live design instead of failing', async ({ app }) => {
+test('a note that names a deleted design falls back to the live design instead of failing @quick', async ({ app }) => {
   await app.open();
   await app.run(SETUP);
   const r = await app.run(async pd => { pd.state.notation = '2d6@gold+1'; pd.state.shape = 'custom'; await pd.bagOps.remove('gold'); pd.state.notation = '2d6@gold+1'; return pd.dice.length; });
@@ -353,4 +353,22 @@ test('a bag of ten designs shows tinted placeholders at once and makes one pictu
   const after = await app.run(pd => Object.keys(pd.thumbs).length);
   expect(after - before).toBeLessThanOrEqual(1);
   await expect.poll(() => app.run(pd => Object.keys(pd.thumbs).length), { timeout: 150_000 }).toBeGreaterThanOrEqual(10);
+});
+
+// PD-117 follow-up: editing a design keeps its old picture until the new one lands; the stand-in matches the real picture's framing.
+test('an edited design keeps its old picture until the new one lands; the stand-in is framed like a render', async ({ app, page }) => {
+  test.setTimeout(240_000); expect.configure({ timeout: 90_000 });
+  await app.open({ query: 'thumbs=1' });
+  await app.run(SETUP);
+  const real = /^url\("data:image\/(webp|jpeg)/;
+  await expect.poll(() => page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage), { timeout: 120_000 }).toMatch(real);
+  const before = await page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage);
+  await app.run(async pd => { await pd.bagActivate('gold'); pd.state.radius = 0.07; pd.save(); });
+  await page.waitForTimeout(400);   // the card has re-rendered for the edit, but the new picture is not ready yet
+  const during = await page.locator('#cards .card[data-id="gold"] .th').evaluate(e => e.style.backgroundImage);
+  expect(during).toMatch(real);
+  expect(await page.locator('#bagth').evaluate(e => e.style.backgroundImage)).toMatch(real);
+  void before;
+  const svg = decodeURIComponent(await app.run(pd => pd.dieChip({ colors: ['#7a3fb0', '#c89be0', '#3b1d66'], substrate: 'swirl' }, 'd20', '20', false, true)));
+  expect(svg).toContain('<rect width="100" height="100"'); expect(svg).toContain('translate(50 46)');
 });

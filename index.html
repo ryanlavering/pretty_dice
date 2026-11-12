@@ -61,7 +61,7 @@
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
   #tools button:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)}
   #tools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round} #mode svg{width:24px;height:24px} #spinbtn svg{fill:currentColor;stroke:none}
-  body.inroll #spinbtn{display:none}
+  body.inroll #spinbtn{display:none} #logbtn{display:none} body.inroll #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
   #hint{white-space:pre-line;display:none} #hint.show{display:block}
   #hint{position:absolute;left:50%;transform:translateX(-50%);bottom:108px;width:min(360px,calc(100% - 140px));background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:13px;line-height:1.45;text-align:left;pointer-events:auto;cursor:pointer;z-index:6;box-shadow:0 8px 30px #000a;backdrop-filter:blur(8px)}   /* floating info panel: click it, or the i button, to dismiss */
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
@@ -98,7 +98,7 @@
   #setlist{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;align-content:start} #setlist[hidden]{display:none}
   .setrow{display:flex;align-items:stretch;gap:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} .setrow .main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;background:#1d212c;border:1px solid var(--line)}
   .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
-  .setrow .chips{display:flex;gap:4px;flex-wrap:wrap} .setrow .chip{position:relative;width:30px;height:30px;background-size:contain;background-repeat:no-repeat} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
+  .setrow .chips{display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center} .setrow .term{display:inline-flex;align-items:center;gap:3px;white-space:nowrap} .setrow .term small,.setrow .mod{color:var(--ink);font-size:12px} .chip{display:inline-block;position:relative;flex:none;width:30px;height:30px;background-size:contain;background-repeat:no-repeat;vertical-align:middle} .chip.flat{width:16px;height:16px} #shapes .chip,.step .chip{width:22px;height:22px;margin-right:4px} .step .chip.flat,#shapes .chip.flat,#termchips .chip{width:14px;height:14px;margin:0 4px 0 0} #shapes button{display:flex;align-items:center;justify-content:center} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:56px;right:10px;z-index:6;width:min(280px,72vw);max-height:55%;overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto 1fr;gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);grid-row:span 2;align-self:center;min-width:28px;text-align:right} #logpanel .le small{color:var(--dim)}
@@ -253,14 +253,14 @@
     <div class="grid two"><button id="exppng">PNG</button><button id="expjpg">JPG</button></div>
     <div class="row" style="margin-top:6px"><label>Name</label><input id="dname" type="text" maxlength="80" placeholder="e.g. Giant club attack" style="flex:2;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"></div>
     <div class="grid two" style="margin-top:6px"><button id="savejson">Save design</button><button id="loadjson">Load design</button></div>
-    <div class="grid two" style="margin-top:6px"><button id="savebag">Save bag</button><button id="loadbag" title="Replace this bag with a bag file (to add designs instead: shelf + > From a file)">Load bag</button></div>
+    <div class="grid two" style="margin-top:6px"><button id="savebag">Save bag</button><button id="loadbag" title="Replace this bag with a bag file (to add designs instead: shelf + > From a file)">Load bag</button><button id="copybag" type="button" style="grid-column:span 2" title="Put the bag file text on the clipboard (debugging, or export where file saving is blocked)">Copy bag JSON</button></div>
     <input type="file" id="bagfile" hidden>
     <input type="file" id="jsonfile" hidden>   <!-- no accept filter: phones label saved .json files text/plain or octet-stream and grey them out -->
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
   </aside>
-  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span><button id="sheetsave" type="button" class="linkbtn">Save bag</button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
@@ -303,7 +303,7 @@ const SHAPES = {
   d14: {label:'d14', verts:()=>trapezohedron(7), labels:range(1,14)},
   d16: {label:'d16', verts:()=>dipyramid(8,0.9), labels:range(1,16)},
   set7:{label:'Standard 7', set:true},
-  custom:{label:'Custom set', set:true},
+  custom:{label:'Custom', set:true},
   rd12:{label:'rhombic d12', verts:()=>{const o=signs(1,1,1); for(const s of [2,-2]) o.push(V(s,0,0),V(0,s,0),V(0,0,s)); return o;}, labels:range(1,12)},
 };
 
@@ -1026,8 +1026,46 @@ async function undo(){ checkpoint(); if(hIdx>0){ hIdx--; await restore(history[h
 async function redo(){ checkpoint(); if(hIdx<history.length-1){ hIdx++; await restore(history[hIdx]); } }
 $('undo').onclick=undo; $('redo').onclick=redo;
 
+/* Until a design has its real picture it shows a dummy die in the design's colour chip (colours and substrate, read from the design itself). Dice chips draw each shape (2.5d facets), or a plain outline when tiny. */
+const chipCache=new Map();
+const polar=(n,r,a0,cx=50,cy=50)=>Array.from({length:n},(_,k)=>[cx+r*Math.cos(a0+2*Math.PI*k/n),cy+r*Math.sin(a0+2*Math.PI*k/n)]);
+function trapezo(m){ const A=Array.from({length:m+1},(_,k)=>[8+84*k/m,38]), B=Array.from({length:m},(_,k)=>[8+84*(k+.5)/m,62]), T=[50,4], Bot=[50,96], f=[], sh=[];
+  for(let k=0;k<m;k++){ f.push([T,A[k],B[k],A[k+1]]); sh.push(.2-.4*(k+.5)/m); }
+  f.push([Bot,B[0],A[0],[4,60]]); sh.push(-.1);
+  for(let k=0;k<m-1;k++){ f.push([Bot,B[k],A[k+1],B[k+1]]); sh.push(-.2-.1*k); }
+  f.push([Bot,B[m-1],A[m],[96,60]]); sh.push(-.38);
+  return {f,sh,out:[T,A[m],[96,60],Bot,[4,60],A[0]]}; }
+const DIE_CHIP={
+  d4:{f:[[[50,8],[6,86],[50,62]],[[50,8],[94,86],[50,62]],[[6,86],[94,86],[50,62]]],sh:[.14,-.1,-.28],out:[[50,8],[94,86],[6,86]],ty:78},
+  d6:{f:[[[50,8],[90,30],[50,52],[10,30]],[[10,30],[50,52],[50,94],[10,72]],[[90,30],[50,52],[50,94],[90,72]]],sh:[.22,-.04,-.3],out:[[50,8],[90,30],[90,72],[50,94],[10,72],[10,30]],ty:66},
+  d8:{f:[[[50,6],[8,48],[50,66]],[[50,6],[92,48],[50,66]],[[8,48],[50,66],[50,94]],[[92,48],[50,66],[50,94]]],sh:[.18,-.08,-.18,-.34],out:[[50,6],[92,48],[50,94],[8,48]],ty:56},
+  d10:{...trapezo(2),ty:66}, d14:{...trapezo(4),ty:70},
+  d16:(()=>{ const E=[[8,50],[29,57],[50,62],[71,57],[92,50]], f=[], sh=[]; for(let k=0;k<4;k++){ f.push([[50,4],E[k],E[k+1]]); sh.push(.22-.14*k); } for(let k=0;k<4;k++){ f.push([[50,96],E[k],E[k+1]]); sh.push(-.1-.1*k); } return {f,sh,out:[[50,4],[92,50],[50,96],[8,50]],ty:60}; })(),
+  d12:(()=>{ const I=polar(5,24,-Math.PI/2), O=polar(5,46,-Math.PI/2), M=polar(5,40,-Math.PI/2+Math.PI/5), f=[[...I]], sh=[.1]; for(let k=0;k<5;k++){ const k2=(k+1)%5; f.push([I[k],O[k],M[k],O[k2],I[k2]]); sh.push(.18-.12*k); } return {f,sh,out:O.flatMap((o,k)=>[o,M[k]]),ty:56}; })(),
+  d20:{f:[[[50,6],[12,28],[50,28]],[[50,6],[88,28],[50,28]],[[12,28],[26,70],[50,28]],[[88,28],[74,70],[50,28]],[[12,28],[12,72],[26,70]],[[88,28],[88,72],[74,70]],[[12,72],[50,94],[26,70]],[[88,72],[50,94],[74,70]],[[26,70],[74,70],[50,94]],[[50,28],[74,70],[26,70]]],sh:[.16,0,.1,-.12,.18,-.2,.06,-.26,-.34,0],out:[[50,6],[88,28],[88,72],[50,94],[12,72],[12,28]],ty:58}
+};
+DIE_CHIP.rd12=DIE_CHIP.d6;
+Object.assign(DIE_CHIP.d4,{fo:[[50,8],[94,86],[6,86]]}); Object.assign(DIE_CHIP.d6,{fo:[[14,14],[86,14],[86,86],[14,86]]});
+Object.assign(DIE_CHIP.d8,{fo:[[50,10],[97,50],[50,90],[3,50]]}); Object.assign(DIE_CHIP.d10,{fo:[[50,2],[78,36],[50,98],[22,36]]});
+Object.assign(DIE_CHIP.d12,{fo:polar(5,48,-Math.PI/2,50,54)}); Object.assign(DIE_CHIP.d14,{fo:polar(7,47,-Math.PI/2)}); Object.assign(DIE_CHIP.d16,{fo:polar(8,47,Math.PI/8)});
+DIE_CHIP.d100={...DIE_CHIP.d10,fo:null,fos:[[[30,6],[50,34],[30,94],[10,34]],[[68,6],[90,34],[68,94],[46,34]]]};
+DIE_CHIP.rd12={...DIE_CHIP.d6,fo:[[28,12],[72,12],[96,50],[72,88],[28,88],[4,50]]};
+const shapeOfSides=n=>n===100?'d100':'d'+n;
+function dieChip(j,shape='d20',label,flat=false,pic=false){
+  const D=DIE_CHIP[shape]||DIE_CHIP.d20, cols=(j.colors&&j.colors.length?j.colors:['#444','#666','#888']).map(c=>/^#[0-9a-f]{3,8}$/i.test(c)?c:'#666'), sub=j.substrate||'', key=cols.join()+sub+'|'+shape+'|'+label+(flat?'|f':'')+(pic?'|p':''); let u=chipCache.get(key); if(u) return u;
+  const c=i=>cols[i%cols.length], pts=f=>f.map(q=>q.map(v=>+v.toFixed(1)).join(',')).join(' '), metal=/metal|gold|silver|chrome/.test(sub);
+  const shine=`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${metal?.55:.2}"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${metal?.3:.2}"/></linearGradient>`;
+  const txt=label==null?'':`<text x="50" y="${D.ty}" text-anchor="middle" font-family="serif" font-weight="700" font-size="${String(label).length>2?15:19}" fill="#fff" fill-opacity=".9" stroke="#0007" stroke-width=".7">${label}</text>`;
+  const outs=flat?(D.fos||[D.fo||D.out]):[], body=flat?outs.map(o=>`<polygon points="${pts(o)}" fill="${c(0)}" stroke="#000a" stroke-width="5" stroke-linejoin="round"/><polygon points="${pts(o)}" fill="url(#g)"/>`).join('')
+    :D.f.map((f,i)=>`<polygon points="${pts(f)}" fill="${c(i%3)}"/><polygon points="${pts(f)}" fill="${D.sh[i]>=0?'#fff':'#000'}" fill-opacity="${Math.abs(D.sh[i])}" stroke="#0008" stroke-width="1" stroke-linejoin="round"/>`).join('')+`<polygon points="${pts(D.out)}" fill="url(#g)"/>`;
+  u=`url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>${shine}${pic?'<radialGradient id="bg" cx=".5" cy=".5" r=".75"><stop offset="0" stop-color="#191c26"/><stop offset="1" stop-color="#0e0e17"/></radialGradient>':''}</defs>${pic?'<rect width="100" height="100" fill="url(#bg)"/><g transform="translate(50 46) scale(.97 .89) translate(-50 -50)">':''}${body}${flat?'':txt}${pic?'</g>':''}</svg>`)}")`; chipCache.set(key,u); return u; }
+/* the stand-in for a design picture: same size and framing as the real 144 px render (die about 74% of the width, centred a little high, on the stage backdrop) */
+const chipThumb=(j,label='20')=>dieChip(j,'d20',label,false,true);
+/* a die chip element for N-sided dice in a design (null = the live one) */
+function chipEl(sides,j,{flat=false,label}={}){ const c=document.createElement('span'); c.className='chip'+(flat?' flat':''); c.style.backgroundImage=dieChip(j,typeof sides==='string'?sides:shapeOfSides(sides),flat?null:(label!==undefined?label:(sides===100?'%':String(sides))),flat); return c; }
+const liveChipJ=()=>({colors:state.colors,substrate:state.substrate});
 /* ---------- UI ---------- */
-for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2';
+for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2'; if(DIE_CHIP[id]||id==='d100') b.append(chipEl(id,liveChipJ(),{flat:true})); b.append(s.label);
   b.onclick=()=>{checkpoint(); state.shape=id; rebuildKeepMode(); }; $('shapes').append(b); }
 
 const rebuildKeepMode=()=>{ const was=rolling; buildDice(); if(was) startRoll(); };   // changing shape/set in roll view throws the new dice instead of leaving the roll
@@ -1042,7 +1080,7 @@ function setCounts(c,mod){ checkpoint(); const p=parseNotation(state.notation), 
   const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   state.notation=n; state.shape='custom'; rebuildKeepMode(); }
 STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step'; d.style.cssText='display:flex;align-items:center;gap:2px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:3px 4px;justify-content:space-between';
-  d.innerHTML=`<button data-d="-1" style="padding:2px 6px">−</button><span><b data-n="${t}">0</b><small style="color:var(--dim)"> d${t===100?'%':t}</small></span><button data-d="1" style="padding:2px 6px">+</button>`;
+  d.innerHTML=`<button data-d="-1" style="padding:2px 6px">−</button><span style="display:flex;align-items:center"><b data-n="${t}">0</b><small style="color:var(--dim)"> d${t===100?'%':t}</small></span><button data-d="1" style="padding:2px 6px">+</button>`; d.querySelector('span').prepend(chipEl(t,liveChipJ(),{flat:true}));
   d.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const {c,mod}=counts(); c[t]=Math.max(0,c[t]+ +b.dataset.d); setCounts(c,mod); };
   $('steppers').append(d); });
 $('stepdesign').onchange=e=>{ stepDesign=e.target.value||null; syncUI(); };
@@ -1061,10 +1099,14 @@ function syncSetDesigns(){   // design choice for new dice, and one chip per ter
   sel.value=stepDesign||''; $('dicedesignrow').hidden=!bag||bag.designs.length<2;
   const p=parseNotation(state.notation), box=$('termchips'); box.replaceChildren();
   if(!p.error&&bag&&bag.designs.length>1) p.terms.forEach((t,i)=>{ const b=document.createElement('button'); b.type='button'; b.title='Remove these dice from the set';
-    const e=t.design&&bag.designs.find(d=>d.id===t.design); { const x=document.createElement('span'); x.className='x'; x.textContent='×'; b.append(`${t.count}d${t.sides===100?'%':t.sides}${e?' · '+e.name:''}`,x); }
+    const e=t.design&&bag.designs.find(d=>d.id===t.design); { const x=document.createElement('span'); x.className='x'; x.textContent='×'; b.append(chipEl(t.sides,e?(bag.pending[e.id]||e.design):liveChipJ(),{flat:true}),`${t.count}d${t.sides===100?'%':t.sides}${e?' · '+e.name:''}`,x); }
     b.onclick=()=>{ const q=parseNotation(state.notation); if(q.terms.length<2) return; checkpoint(); q.terms.splice(i,1); state.notation=fmtNotation(q.terms,q.mod); state.shape='custom'; rebuildKeepMode(); }; box.append(b); }); }
+let chipSig='';
+function refreshChips(){ const sig=state.colors.join()+state.substrate; if(sig===chipSig) return; chipSig=sig; const j=liveChipJ();
+  document.querySelectorAll('#shapes button[data-id] .chip').forEach(c=>{ const id=c.parentNode.dataset.id; c.style.backgroundImage=dieChip(j,id,null,true); });
+  document.querySelectorAll('#steppers .step').forEach((d,i)=>{ d.querySelector('.chip').style.backgroundImage=dieChip(j,shapeOfSides(STEP_TYPES[i]),null,true); }); }
 function syncUI(){
-  syncSetDesigns();
+  syncSetDesigns(); refreshChips();
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
@@ -1318,6 +1360,10 @@ function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON()
 function markBagSaved(){ try{ localStorage.setItem(BAG_SAVED,bagSig()); }catch{} }
 function bagDirty(){ if(!bag) return false; try{ const v=localStorage.getItem(BAG_SAVED); if(v===null){ markBagSaved(); return false; } return v!==bagSig(); }catch{ return false; } }
 function saveBagFile(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagFileJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
+async function copyBagJSON(){ const txt=JSON.stringify(bagFileJSON(),null,2), b=$('copybag'); let ok=false;
+  try{ await navigator.clipboard.writeText(txt); ok=true; }catch{ try{ const t=document.createElement('textarea'); t.value=txt; t.style.cssText='position:fixed;opacity:0;top:0'; document.body.append(t); t.select(); ok=document.execCommand('copy'); t.remove(); }catch{} }
+  b.textContent=ok?'Copied':'Copy failed'; setTimeout(()=>{ b.textContent='Copy bag JSON'; },1800); return ok; }
+$('copybag').onclick=copyBagJSON;
 $('savebag').onclick=saveBagFile; $('bagsave').onclick=saveBagFile; $('sheetsave').onclick=saveBagFile;
 let bagReplace=false;
 const pickBag=replace=>{ bagReplace=replace; $('bagfile').click(); };
@@ -1358,16 +1404,9 @@ async function updateThumbs(){   // idle for a moment: picture the live design, 
       }finally{ await restore(snap); bagLoading--; $('dname').value=nm; history=h; hIdx=hi; syncHistoryUI(); cvs.style.visibility=''; } }
     persistThumbs(); renderBag(); if(more) setTimeout(()=>scheduleThumb(300),0);
   }catch(err){ console.warn('thumbnail pass failed',err); }finally{ thumbBusy=false; } }
-/* Until a design has its real picture it shows a generic d20 drawn in the design's colour chip (its colours and substrate, read from the design itself). */
-const chipCache=new Map();
-function chipThumb(j,label='20'){ const cols=(j.colors&&j.colors.length?j.colors:['#444','#666','#888']).map(c=>/^#[0-9a-f]{3,8}$/i.test(c)?c:'#666'), sub=j.substrate||'', key=cols.join()+sub+'|'+label; let u=chipCache.get(key);
-  if(!u){ const c=i=>cols[i%cols.length], F=[[[50,6],[12,28],[50,28]],[[50,6],[88,28],[50,28]],[[12,28],[26,70],[50,28]],[[88,28],[74,70],[50,28]],[[12,28],[12,72],[26,70]],[[88,28],[88,72],[74,70]],[[12,72],[50,94],[26,70]],[[88,72],[50,94],[74,70]],[[26,70],[74,70],[50,94]],[[50,28],[74,70],[26,70]]], sh=[.16,0,.1,-.12,.18,-.2,.06,-.26,-.34,0];
-    const shine=/metal|gold|silver|chrome/.test(sub)?'<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>':'<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>';
-    const polys=F.map((f,i)=>{ const pts=f.map(q=>q.join(',')).join(' '); return `<polygon points="${pts}" fill="${c(i%3)}"/><polygon points="${pts}" fill="${sh[i]>=0?'#fff':'#000'}" fill-opacity="${Math.abs(sh[i])}" stroke="#0008" stroke-width="1" stroke-linejoin="round"/>`; }).join('');
-    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs>${shine}</defs>${polys}<polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="url(#g)"/><text x="50" y="58" text-anchor="middle" font-family="serif" font-weight="700" font-size="17" fill="#fff" fill-opacity=".85" stroke="#0006" stroke-width=".6">${label}</text></svg>`;
-    u=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`; chipCache.set(key,u); } return u; }
 const swatch=chipThumb;
-function thumbStyle(j){ const u=thumbs[thumbKey(j)]; return u?`url(${u})`:chipThumb(j); }
+const lastThumb={};   // per design id: the most recent real picture, kept on screen until the new one lands (no flash of the stand-in while editing)
+function thumbStyle(j,id){ const u=thumbs[thumbKey(j)]; if(u){ if(id) lastThumb[id]=u; return `url(${u})`; } return id&&lastThumb[id]?`url(${lastThumb[id]})`:chipThumb(j); }
 
 const el=(tag,cls,txt)=>{ const n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
 function slots(){   // what the shelf and sheet show, in order: designs, then the draft
@@ -1379,7 +1418,7 @@ let lastSig='', lastCenter=null;
 function renderBag(){
   if(!bag) return; const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
   $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
-  $('bagth').style.backgroundImage=thumbStyle(liveJSON()); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
+  $('bagth').style.backgroundImage=thumbStyle(liveJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
   { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('savebag').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
   $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
@@ -1397,7 +1436,7 @@ function editName(span,id){ const cur=span.textContent, inp=el('input','nmedit')
   for(const t of ['click','pointerdown','pointerup']) inp.addEventListener(t,e=>e.stopPropagation()); }
 function cardEl(x){ const b=el('div','card'+(x.on?' on':'')+(x.draft?' ghost':'')); b.dataset.id=x.id; b.tabIndex=0; b.setAttribute('role','option'); b.setAttribute('aria-selected',x.on);
   b.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===b){ e.preventDefault(); b.click(); } };
-  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot')); b.append(th,nameEl(x)); wireCard(b,x); return b; }
+  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot')); b.append(th,nameEl(x)); wireCard(b,x); return b; }
 function plusEl(cls){ const b=el('button',cls); b.type='button'; const th=el('div','th','+'); b.append(th,el('span','nm','Add')); b.onclick=e=>openMenu(b,addItems()); return b; }
 function centerCard(c,smooth=true){ progScroll=Date.now(); const box=$('cards'); box.scrollTo({left:c.offsetLeft-box.clientWidth/2+c.offsetWidth/2,behavior:smooth?'smooth':'instant'}); }
 let progScroll=0, longFired=false;
@@ -1442,7 +1481,7 @@ function cardItems(id){
 /* All-designs sheet, with drag-to-reorder (long-press on a phone) */
 function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
   const sl=slots(), box=$('tiles'); $('sheettitle').textContent=`${bag.name} · ${bag.designs.length} design${bag.designs.length===1?'':'s'}`;
-  box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json); if(x.mod) th.append(el('span','dot'));
+  box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
@@ -1455,7 +1494,7 @@ let rollSetId=null;   // the bag set whose dice are on the mat now (its last res
 const dieName=t=>`d${t===100?'%':t}`;
 /* What is on the stage as a set: the custom formula when Custom is selected, otherwise the selected shape (Standard 7 keeps its name). */
 function currentDice(){
-  if(state.shape==='custom'){ const p=parseNotation(state.notation); if(!p.error) return {terms:structuredClone(p.terms),mod:p.mod,name:fmtNotation(p.terms,p.mod)}; }
+  if(state.shape==='custom'){ const p=parseNotation(state.notation); if(!p.error) return {terms:structuredClone(p.terms),mod:p.mod,name:fmtNotation(p.terms.map(({design,...r})=>r),p.mod)}; }
   if(state.shape==='set7') return {terms:SET7.map(([id])=>({count:1,sides:id==='dpct'?100:+id.slice(1)})),mod:0,name:'Standard 7'};
   const sh=SHAPES[state.shape]; if(sh&&sh.pair) return {terms:[{count:1,sides:100}],mod:0,name:'d%'};
   const m=/^d(\d+)$/.exec(state.shape); if(m&&(+m[1] in SIDES)) return {terms:[{count:1,sides:+m[1]}],mod:0,name:state.shape};
@@ -1495,8 +1534,9 @@ function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.l
 function renderSets(){ const box=$('setlist'); $('sheettitle').textContent=`${bag.name} · ${bag.sets.length} set${bag.sets.length===1?'':'s'}`;
   const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
   box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
-      const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), c=el('span','chip'); c.style.backgroundImage=chipThumb(j,t.sides===100?'%':String(t.sides)); c.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; if(t.count>1) c.append(el('i','',t.count)); chips.append(c); }
-      main.append(chips,el('span','nm',st.name),el('small','',setNotation(st)+(st.last?`  ·  last ${st.last.total}`:''))); main.onclick=()=>setOps.open(st.id);
+      const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${dieName(t.sides)}${t.count>1?' ×'+t.count:''}`)); chips.append(tm); }
+      if(st.mod) chips.append(el('small','mod',(st.mod>0?'+':'')+st.mod));
+      main.append(el('span','nm',st.name),chips,...(st.last?[el('small','',`last ${st.last.total}`)]:[])); main.onclick=()=>setOps.open(st.id);
       const q=el('button','quick','⚡'); q.type='button'; q.title='Quick roll'; q.setAttribute('aria-label','Quick roll '+st.name); q.onclick=()=>{ setOps.quick(st.id); renderSheet(); };
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+st.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,setItems(st.id)); };
       row.append(main,q,dots); return row; }):[el('div','setempty','No sets yet. Build dice in the editor, then save them here.')])); }
@@ -1908,7 +1948,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
