@@ -3,10 +3,10 @@ id: PD-114
 title: >-
   Sound system upgrade: three swappable backends (Kenney samples, best-of-real
   samples, new procedural) with runtime A/B switch
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-12T04:09:00Z'
-updated_date: '2026-11-12T22:42:00Z'
+updated_date: '2026-11-12T23:58:00Z'
 labels:
   - audio
 dependencies: []
@@ -53,3 +53,9 @@ Remaining: AC6 loudness matching across backends (trim), AC8 owner picks winner 
 
 2026-11-12 owner decision: keep ALL sound systems (classic, proc, best, kenney, mix) selectable at runtime for more perceptual testing; no pruning yet (AC8 stays open). Glass ring is FM only (samples tried and dropped, 3d05f94). Ring layer (metal additive, glass FM) applies to the sample backends (best, kenney, mix); classic and proc keep their own built-in sounds.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Merged into v3-dice-bag (90905fb). Sound engine: runtime-swappable sound sets (classic, procedural, Kenney samples, best-of samples, layered Best/Kenney blend = default), output limiter, clip clackiness score mapped to material-pair hardness (die x surface, die x die) with filter/pitch correction, metal additive ring and glass FM ring layered on every set (ringLevel slider), sample sets from CC0 sources (sounds/CREDITS.md) embedded in offline and artifact builds, maintained tuning tool tools/sound-audition.html (docs: sounds/README.md). Owner kept all sound sets selectable for perceptual testing. Not done: loudness matching across sets (AC6), pruning (AC8, deferred by owner), real stone/metal hits, rolling loop, stinger samples.
+<!-- SECTION:FINAL_SUMMARY:END -->
