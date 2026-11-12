@@ -30,10 +30,15 @@ function slice(x) {
     let j = Math.floor(pkAt / B), end = j; while (end < nb - 1 && lv[end] > db(pk) - 30 && (end - j) * B < SR * .22 && !(end > j + 6 && lv[end] - lv[end - 1] > 10)) end++;
     const e0 = Math.min(x.length, Math.max(end * B, s0 + Math.round(SR * .04)));
     if ((e0 - s0) < SR * .025) continue;
-    const d = x.slice(s0, e0), fo = Math.round(SR * .006); for (let k = 0; k < fo && k < d.length; k++) d[d.length - 1 - k] *= k / fo;
-    for (let k = 0; k < 40; k++) d[k] *= k / 40;
+    let d = x.slice(s0, e0);
+    // trim the lead-in: start at the first sample within 24 dB of the clip's own peak (minus 0.7 ms), so every clip sounds at the instant it is started
+    let cp = 0; for (const v of d) cp = Math.max(cp, Math.abs(v)); const thr = cp * 10 ** (-24 / 20); let i0 = 0; while (i0 < d.length && Math.abs(d[i0]) < thr) i0++;
+    d = d.slice(Math.max(0, i0 - Math.round(SR * .0007)));
+    const fo = Math.round(SR * .006); for (let k = 0; k < fo && k < d.length; k++) d[d.length - 1 - k] *= k / fo;
+    for (let k = 0; k < 16; k++) d[k] *= k / 16;   // 0.35 ms fade-in: no click
     let zc = 0; const n20 = Math.min(d.length, Math.round(SR * .02)); for (let k = 1; k < n20; k++) if ((d[k] >= 0) !== (d[k - 1] >= 0)) zc++;
-    out.push({ data: d, db: db(pk / filePeak), bright: Math.round(zc / (n20 / SR) / 2), at: s0 / SR });
+    let pk2 = 0; for (const v of d) pk2 = Math.max(pk2, Math.abs(v)); let l = 0; while (l < d.length && Math.abs(d[l]) < pk2 * .1) l++;
+    out.push({ data: d, db: db(pk / filePeak), bright: Math.round(zc / (n20 / SR) / 2), at: s0 / SR, lead: +(l / SR * 1000).toFixed(2) });
   }
   return { clips: out, filePeak };
 }
@@ -50,13 +55,14 @@ function build(id, groups, caps) {
   const man = { trim: 1, impact: { dice: [], table: [] }, meta: {} }, pool = { dice: [], table: [] };
   for (const g of groups) for (const f of g.files) {
     const x = decode(f), { clips, filePeak } = slice(x), base = g.prefix + '-' + basename(f, extname(f)).replace(/[^a-z0-9]+/gi, '').toLowerCase();
-    clips.forEach((c, i) => { if (c.data.length < SR * .035 || c.db < -34) return;   // too short to be a clean hit / too quiet to matter
+    clips.forEach((c, i) => { if (c.data.length < SR * .035 || c.db < -34 || c.lead > 3) return;   // too short / too quiet / slow attack (>3 ms to reach -20 dB: not a crisp hit, it would sound late)
+        // too short to be a clean hit / too quiet to matter
       pool[c.bright > 3000 ? 'dice' : 'table'].push({ c, g, f, filePeak, name: `${base}-${i + 1}.wav` }); });   // brighter and drier = die on die; duller = die on the mat (a guess: confirm by ear in the audition page)
   }
   for (const role of ['dice', 'table']) for (const { c, g, f, filePeak, name } of spread(pool[role], caps[role])) {
     writeFileSync(join(dir, name), wav(c.data, .9 / filePeak));   // the source file's loudest peak maps to 0.9 full scale; quieter hits stay proportionally quieter
     man.impact[role].push(name); man.meta[name] = { db: +c.db.toFixed(1) };
-    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000) });
+    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000), lead: c.lead });
   }
   writeFileSync(join(dir, 'manifest.json'), JSON.stringify(man, null, 1));
   console.log(id, 'dice', man.impact.dice.length, 'table', man.impact.table.length);
