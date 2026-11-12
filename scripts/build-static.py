@@ -13,7 +13,7 @@ js = lambda p: b64(p.read_bytes(), 'text/javascript')
 ARTIFACT = '--artifact' in sys.argv
 def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.wav", "best/manifest.json"); index.html reads window.__SOUNDS before fetching
     d = root / 'sounds'; files = {}
-    for sub in ('best', 'kenney'):
+    for sub in ('best', 'kenney', 'ring'):
         for f in sorted((d / sub).glob('*')):
             if f.suffix in ('.wav', '.json'): files[f'{sub}/{f.name}'] = base64.b64encode(f.read_bytes()).decode()
     return '<script>window.__SOUNDS=' + json.dumps(files) + ';</script>\n'

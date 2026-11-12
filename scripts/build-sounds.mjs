@@ -90,3 +90,12 @@ const kf = files('kenney', ['.ogg']).filter(f => /die-throw|dice-throw/.test(f))
 build('kenney', [{ prefix: 'k', source: K, files: kf }, { prefix: 'kc', source: K + ' (chip sounds, as hard clacks)', files: kChip }], { dice: 10, table: 16 });
 build('best', [{ prefix: 'd29', source: D, files: files('dice29', ['.wav']) }, { prefix: 'w', source: W, files: files('wood', ['.flac']) }, { prefix: 'k', source: K, files: kf }], { dice: 24, table: 36 });
 writeFileSync('sounds/candidates.json', JSON.stringify(cand));
+
+// ring samples: whole glass clinks (not cut into hits), used by the app's glass ring layer. Same lead-in trim, a 0.5 s cap, normalised so the loudest peak is 0.9.
+{ const dir = 'sounds/ring'; rmSync(dir, { recursive: true, force: true }); mkdirSync(dir, { recursive: true }); const man = { glass: [] }; let n = 0;
+  for (const f of [...files('glass1', ['.ogg']), ...files('glass2', ['.ogg'])]) { let x = decode(f), pk = 0; for (const v of x) pk = Math.max(pk, Math.abs(v)); const thr = pk * 10 ** (-24 / 20); let i0 = 0; while (i0 < x.length && Math.abs(x[i0]) < thr) i0++;
+    x = x.slice(Math.max(0, i0 - Math.round(SR * .0007)), Math.max(0, i0 - Math.round(SR * .0007)) + Math.round(SR * .5));
+    let end = x.length; for (let i = Math.round(SR * .1); i + 441 < x.length; i += 441) { let e = 0; for (let k = 0; k < 441; k++) e += x[i + k] ** 2; if (20 * Math.log10(Math.sqrt(e / 441) / pk + 1e-9) < -55) { end = i + 441; break; } }   // cut the silent tail
+    x = x.slice(0, end); const fo = Math.round(SR * .03); for (let k = 0; k < fo && k < x.length; k++) x[x.length - 1 - k] *= k / fo; for (let k = 0; k < 16; k++) x[k] *= k / 16;
+    const name = `glass-${++n}.wav`; writeFileSync(join(dir, name), wav(x, .9 / pk)); man.glass.push(name); }
+  writeFileSync(join(dir, 'manifest.json'), JSON.stringify(man, null, 1)); console.log('ring glass clips', man.glass.length); }
