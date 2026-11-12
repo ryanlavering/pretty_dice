@@ -155,7 +155,7 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await expect(page.locator('#bagbtn')).toBeVisible();
 });
 
-test('rotating the phone does not change the chosen design', async ({ app, page }) => {
+test('rotating the phone or flicking the shelf does not change the chosen design', async ({ app, page }) => {
   await page.setViewportSize({ width: 390, height: 780 });
   await app.open();
   await app.run(SETUP);
@@ -168,13 +168,14 @@ test('rotating the phone does not change the chosen design', async ({ app, page 
   // what a rotation does to the strip: it moves under the active card without anyone touching it
   await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; }); await page.waitForTimeout(900);
   expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
-  // a real flick still picks the card that lands in the middle
+  // a flick browses the strip but never changes the chosen design (owner decision 2026-11-11)
   // the loop above ends in landscape, where all the cards fit and the strip cannot scroll; flick in portrait, away from 0 first (a scroll to the same spot fires no event)
   await page.setViewportSize({ width: 390, height: 780 }); await page.waitForTimeout(900);
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 1e5; });
   await page.waitForTimeout(900);
   await page.locator('#cards').dispatchEvent('touchstart'); await page.evaluate(() => { document.getElementById('cards').scrollLeft = 0; });
-  await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('amethyst');
+  await page.waitForTimeout(900);
+  expect(await app.run(pd => pd.bag.active.design)).toBe('gold');
 });
 
 test('Load bag replaces the bag and asks first when it has unsaved changes; Save bag clears the badge (PD-108)', async ({ app, page }) => {
@@ -316,17 +317,19 @@ test('dice that look the same share one atlas and geometry; different designs or
   expect(r.shapes).toBe(2);
 });
 
-test('a mouse drag scrolls the shelf and picks the card that lands in the middle; cards sit as close as on a phone', async ({ app, page }) => {
+test('a mouse drag scrolls the shelf without changing the chosen design; cards sit as close as on a phone', async ({ app, page }) => {
   test.setTimeout(120_000); expect.configure({ timeout: 60_000 });
   await app.open({ query: 'thumbs=1' });
   await app.run(SETUP);   // bone (active), amethyst, gold
   await expect(page.locator('#cards .card[data-id]')).toHaveCount(3);
   const gap = await page.evaluate(() => { const c = [...document.querySelectorAll('#cards .card[data-id]')]; return { w: c[0].offsetWidth, step: c[1].offsetLeft - c[0].offsetLeft }; });
   expect(gap).toEqual({ w: 68, step: 76 });   // the phone spacing: 68 px cards, 8 px apart
-  const box = await page.locator('#cards').boundingBox(), y = box.y + box.height / 2;
+  const s0 = await page.evaluate(() => document.getElementById('cards').scrollLeft), box = await page.locator('#cards').boundingBox(), y = box.y + box.height / 2;
   await page.mouse.move(box.x + box.width / 2 + 120, y); await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 - 20, y, { steps: 8 }); await page.mouse.move(box.x + box.width / 2 - 150, y, { steps: 8 });   // drag left: later cards come to the middle
   await page.mouse.up();
-  await expect.poll(() => app.run(pd => pd.bag.active.design)).not.toBe('bone');
+  await page.waitForTimeout(900);
+  expect(await app.run(pd => pd.bag.active.design)).toBe('bone');   // browsing is not choosing
+  expect(await page.evaluate(() => document.getElementById('cards').scrollLeft)).toBeGreaterThan(s0);
   expect(await app.run(pd => pd.bag.designs.length)).toBe(3);   // a drag does not open a menu or add anything
 });

@@ -128,7 +128,7 @@ The roll and showcase scenes already build one mesh per die. Each die now gets i
 All three keep the current app shell: stage, bottom toolbar, Showcase/Roll switch, settings pane. They differ in where the bag lives and what comes first.
 
 ### A. Carousel shelf (design-first)
-A row of large die cards over the bottom toolbar. Swipe to flick through designs; the centre card is the active design and the stage shows it. Long-press a card for Rename, Duplicate, Delete, Move. A "+" card at the end adds a design (blank, randomized, or loaded from file). Sets live in the existing settings pane under "Sets".
+A row of large die cards over the bottom toolbar. Swipe or drag to browse; scrolling never changes the selection. Tap a card to choose it: the chosen card is centred and the stage shows it. Long-press a card for Rename, Duplicate, Delete, Move. A "+" card at the end adds a design (blank, randomized, or loaded from file). Sets live in the existing settings pane under "Sets".
 - **Getting there:** there are two ways in from the main UI: a new bag button in the toolbar, and a row at the top of the settings pane showing the active design ("Amethyst Swirl · 1 of 6 in Ryan's bag"). On a phone the shelf slides up over the settings pane, and the stage keeps showing the die. "Edit look" closes the shelf, and the usual settings then edit that design and save it into the bag. The row then reads "Editing Dragon's Gold", and tapping it opens the shelf again.
 - **Good:** the most direct answer to "carousel browser"; it is fun and shows off the dice; adds little chrome.
 - **Weak:** sets and characters stay buried in the pane; big bags (30+) need search or filters.

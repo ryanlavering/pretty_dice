@@ -1396,14 +1396,8 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   b.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
   b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
   b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on){ activate(x.id==='draft'?'draft':x.id); centerCard(b); } }; }
-/* shelf: the card in the middle is the active design, so flicking changes it once the strip settles */
-{ let t=null, gesture=0; for(const ev of ['pointerdown','touchstart','wheel','keydown']) $('cards').addEventListener(ev,()=>{ gesture=Date.now(); },{passive:true});
-  /* only a person scrolling the shelf may change the design: rotating the phone or resizing re-centres the strip, which must not pick whichever card lands in the middle */
-  new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
-  const settle=()=>{ if(Date.now()-progScroll<700||Date.now()-gesture>3500) return; const box=$('cards'), mid=box.scrollLeft+box.clientWidth/2; let best=null,bd=1e9;
-    for(const c of box.querySelectorAll('.card[data-id]')){ const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid); if(d<bd){ bd=d; best=c; } }
-    if(best&&!best.classList.contains('on')) activate(best.dataset.id==='draft'?'draft':best.dataset.id); };
-  $('cards').addEventListener('scroll',()=>{ clearTimeout(t); t=setTimeout(settle,160); },{passive:true}); }
+/* shelf: scrolling only browses; a tap picks the design (owner decision 2026-11-11). Rotating the phone or resizing re-centres the strip on the active card. */
+new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
 
 /* a mouse can drag the shelf like a finger can (touch and trackpads scroll it natively) */
 { const box=$('cards'); let sx=0, s0=0, down=false, moved=false;
@@ -1411,9 +1405,7 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-sx; if(!moved&&Math.abs(dx)<6) return;
     if(!moved){ moved=true; box.style.scrollSnapType='none'; box.style.cursor='grabbing'; } box.scrollLeft=s0-dx; });
   const end=()=>{ if(!down) return; down=false; if(moved){ box.style.scrollSnapType=''; box.style.cursor='';
-    const mid=box.scrollLeft+box.clientWidth/2; let best=null, bd=1e9;   // the card nearest the middle is the active design, as after a flick
-    for(const c of box.querySelectorAll('.card[data-id]')){ const d=Math.abs(c.offsetLeft+c.offsetWidth/2-mid); if(d<bd){ bd=d; best=c; } }
-    if(best){ if(!best.classList.contains('on')) activate(best.dataset.id==='draft'?'draft':best.dataset.id); centerCard(best); } } };
+ } };   // the strip snaps to the nearest card; the selection does not change
   addEventListener('pointerup',end); addEventListener('pointercancel',end);
   box.addEventListener('click',e=>{ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true); }   // the click that ends a drag is not a tap on a card
 
@@ -1897,7 +1889,7 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
