@@ -1618,7 +1618,7 @@ function onImpact(speed,kind){
   sfx.count++; if(!audioReady()||speed<.8) return; const now=performance.now(); if(now-sfx.last<10) return; sfx.last=now;
   playImpactNow(speed,kind);
 }
-function playImpactNow(speed,kind){ SB[sfx.bk].impact(speed,kind); if(SB[sfx.bk].samples) ringFor(kind,speed); }
+function playImpactNow(speed,kind){ SB[sfx.bk].impact(speed,kind); ringFor(kind,speed); }   // the metal/glass ring layer sits on top of every sound set, so they compare fairly
 function classicImpact(speed,kind){
   const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', stone=sub==='marble', heavy=sub==='epoxy', dice=kind==='dice', r=()=>.85+Math.random()*.3;
   voice(.3,(ctx,out,t)=>{
@@ -1922,7 +1922,7 @@ window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get 
     return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
-  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit, SB, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, setSoundBackend, get soundBackend(){ return sfx.bk; }};
+  memory(){ return {...renderer.info.memory}; }, get sfx(){ return sfx; }, audioInit, SB, playImpactNow, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, setSoundBackend, get soundBackend(){ return sfx.bk; }};
 window.__dice=window.__pd;   // old name
 </script>
 </body>

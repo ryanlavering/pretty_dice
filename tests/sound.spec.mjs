@@ -138,3 +138,12 @@ test('metal and glass ring: only metal or glass pairings ring; strength follows 
   expect(r.soft, 'soft < mid < hard: proportional to speed').toBeLessThan(r.mid); expect(r.mid).toBeLessThan(r.hard);
   expect(r.hard, 'metal and glass together are stronger than metal alone').toBeGreaterThan(r.metalFelt);
 });
+
+test('the ring layer sits on top of every sound set, not just the sample ones', async ({ app }) => {
+  await app.open();
+  const r = await app.run(pd => { pd.audioInit(); pd.state.substrate = 'metal'; pd.state.surfaceMat = 'glass'; pd.state.ringLevel = 1; const out = {};
+    for (const id of ['classic', 'proc', 'kenney', 'best', 'mix']) { pd.setSoundBackend(id); pd.sfx.rings = 0; pd.playImpactNow(14, 'table'); out[id] = pd.sfx.rings; }
+    pd.state.ringLevel = 0; pd.setSoundBackend('classic'); pd.sfx.rings = 0; pd.playImpactNow(14, 'table'); out.off = pd.sfx.rings; return out; });
+  for (const id of ['classic', 'proc', 'kenney', 'best', 'mix']) expect(r[id], `${id}: ring voices`).toBeGreaterThan(0);
+  expect(r.off, 'slider at 0 turns the layer off').toBe(0);
+});
