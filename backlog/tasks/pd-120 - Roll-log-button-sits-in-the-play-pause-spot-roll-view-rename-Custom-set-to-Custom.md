@@ -6,7 +6,7 @@ title: >-
 status: Needs Review
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T08:48:00Z'
+updated_date: '2026-11-12T17:15:00Z'
 labels:
   - ux
 dependencies: []
@@ -24,3 +24,9 @@ The roll log toggle takes the bottom-right slot the showcase play/pause button u
 - [ ] #1 Log button in the play/pause position during rolls
 - [ ] #2 Shape button reads Custom without wrapping
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12 fix: the log button was still visible in showcase (the #tools button display rule outranked the hide rule); now hidden outside roll view, with a test.
+<!-- SECTION:NOTES:END -->

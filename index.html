@@ -61,7 +61,7 @@
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
   #tools button:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)}
   #tools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round} #mode svg{width:24px;height:24px} #spinbtn svg{fill:currentColor;stroke:none}
-  body.inroll #spinbtn{display:none} #logbtn{display:none} body.inroll #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
+  body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
   #hint{white-space:pre-line;display:none} #hint.show{display:block}
   #hint{position:absolute;left:50%;transform:translateX(-50%);bottom:108px;width:min(360px,calc(100% - 140px));background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:13px;line-height:1.45;text-align:left;pointer-events:auto;cursor:pointer;z-index:6;box-shadow:0 8px 30px #000a;backdrop-filter:blur(8px)}   /* floating info panel: click it, or the i button, to dismiss */
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
@@ -99,8 +99,12 @@
   .setrow{display:flex;align-items:stretch;gap:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} .setrow .main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;background:#1d212c;border:1px solid var(--line)}
   .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
   .setrow .chips{display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center} .setrow .term{display:inline-flex;align-items:center;gap:3px;white-space:nowrap} .setrow .term small,.setrow .mod{color:var(--ink);font-size:12px} .chip{display:inline-block;position:relative;flex:none;width:30px;height:30px;background-size:contain;background-repeat:no-repeat;vertical-align:middle} .chip.flat{width:16px;height:16px} #shapes .chip,.step .chip{width:22px;height:22px;margin-right:4px} .step .chip.flat,#shapes .chip.flat,#termchips .chip{width:14px;height:14px;margin:0 4px 0 0} #shapes button{display:flex;align-items:center;justify-content:center} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
+  .step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:5px 4px} .step .sl{display:flex;align-items:center;gap:2px;color:var(--dim);font-size:12px} .step .sc{display:flex;align-items:center;justify-content:space-between;width:100%} .step .sc button{padding:2px 8px} .step .sc b{font-size:15px}
+  #quickres{position:fixed;top:30%;left:0;right:0;z-index:40;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;text-shadow:0 2px 18px #000,0 0 6px #000;padding:26px 0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(8,10,15,.92),rgba(8,10,15,.7) 55%,transparent 80%)} #quickres.on{opacity:1;transition:opacity .12s}
+  #quickres .tot{font:800 min(54px,16vw) Cinzel,serif;color:var(--accent)} #quickres .brk{font-size:13px;color:var(--ink);opacity:.9;padding:0 16px;margin-top:2px}
+  .rt{display:inline-flex;align-items:center;gap:3px;margin:0 7px;white-space:nowrap} .rt .chip{width:22px;height:22px} #logpanel .rt .chip{width:16px;height:16px} #logpanel .rt{margin:0 6px 0 0}
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
-  #logpanel{position:absolute;top:56px;right:10px;z-index:6;width:min(280px,72vw);max-height:55%;overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
+  #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow:auto;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto 1fr;gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);grid-row:span 2;align-self:center;min-width:28px;text-align:right} #logpanel .le small{color:var(--dim)}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
@@ -264,6 +268,7 @@
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span><button id="sheetsave" type="button" class="linkbtn">Save bag</button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
+<div id="quickres" aria-live="polite"></div>
 <div id="cardmenu" hidden></div>
 
 <script type="text/plain" id="main-src">
@@ -1079,8 +1084,8 @@ function setCounts(c,mod){ checkpoint(); const p=parseNotation(state.notation), 
   const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign}:{count:c[t],sides:t}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
   const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   state.notation=n; state.shape='custom'; rebuildKeepMode(); }
-STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step'; d.style.cssText='display:flex;align-items:center;gap:2px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:3px 4px;justify-content:space-between';
-  d.innerHTML=`<button data-d="-1" style="padding:2px 6px">−</button><span style="display:flex;align-items:center"><b data-n="${t}">0</b><small style="color:var(--dim)"> d${t===100?'%':t}</small></span><button data-d="1" style="padding:2px 6px">+</button>`; d.querySelector('span').prepend(chipEl(t,liveChipJ(),{flat:true}));
+STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step';
+  d.innerHTML=`<span class="sl"><small>d${t===100?'%':t}</small></span><span class="sc"><button data-d="-1">−</button><b data-n="${t}">0</b><button data-d="1">+</button></span>`; d.querySelector('.sl').prepend(chipEl(t,liveChipJ(),{flat:true}));
   d.onclick=e=>{ const b=e.target.closest('button'); if(!b) return; const {c,mod}=counts(); c[t]=Math.max(0,c[t]+ +b.dataset.d); setCounts(c,mod); };
   $('steppers').append(d); });
 $('stepdesign').onchange=e=>{ stepDesign=e.target.value||null; syncUI(); };
@@ -1101,10 +1106,12 @@ function syncSetDesigns(){   // design choice for new dice, and one chip per ter
   if(!p.error&&bag&&bag.designs.length>1) p.terms.forEach((t,i)=>{ const b=document.createElement('button'); b.type='button'; b.title='Remove these dice from the set';
     const e=t.design&&bag.designs.find(d=>d.id===t.design); { const x=document.createElement('span'); x.className='x'; x.textContent='×'; b.append(chipEl(t.sides,e?(bag.pending[e.id]||e.design):liveChipJ(),{flat:true}),`${t.count}d${t.sides===100?'%':t.sides}${e?' · '+e.name:''}`,x); }
     b.onclick=()=>{ const q=parseNotation(state.notation); if(q.terms.length<2) return; checkpoint(); q.terms.splice(i,1); state.notation=fmtNotation(q.terms,q.mod); state.shape='custom'; rebuildKeepMode(); }; box.append(b); }); }
-let chipSig='';
-function refreshChips(){ const sig=state.colors.join()+state.substrate; if(sig===chipSig) return; chipSig=sig; const j=liveChipJ();
-  document.querySelectorAll('#shapes button[data-id] .chip').forEach(c=>{ const id=c.parentNode.dataset.id; c.style.backgroundImage=dieChip(j,id,null,true); });
-  document.querySelectorAll('#steppers .step').forEach((d,i)=>{ d.querySelector('.chip').style.backgroundImage=dieChip(j,shapeOfSides(STEP_TYPES[i]),null,true); }); }
+let chipSig='', stepSig='';
+const stepChipJ=()=>{ const e=stepDesign&&entryOf(stepDesign); return e?(bag.pending[e.id]||e.design):liveChipJ(); };   // the dice-use design (or the live one)
+function refreshChips(){ const sig=state.colors.join()+state.substrate;
+  if(sig!==chipSig){ chipSig=sig; const j=liveChipJ(); document.querySelectorAll('#shapes button[data-id] .chip').forEach(c=>{ c.style.backgroundImage=dieChip(j,c.parentNode.dataset.id,null,true); }); }
+  const sj=stepChipJ(), ssig=(stepDesign||'')+'|'+(sj.colors||[]).join()+sj.substrate; if(ssig===stepSig) return; stepSig=ssig;
+  document.querySelectorAll('#steppers .step').forEach((d,i)=>{ d.querySelector('.chip').style.backgroundImage=dieChip(sj,shapeOfSides(STEP_TYPES[i]),null,true); }); }
 function syncUI(){
   syncSetDesigns(); refreshChips();
   document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
@@ -1507,34 +1514,41 @@ const setOps={
   rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=name; save(); },
   remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
   move(id,to){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.sets.length-1,to)); const [x]=bag.sets.splice(k,1); bag.sets.splice(to,0,x); save(); },
-  /* the row's main action: the set's dice go onto the mat and are thrown */
-  open(id){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(); syncUI(); save(); return true; },
+  /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
+  open(id,{roll=false}={}){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
   quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
-    const parts=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const sum=r.reduce((a,b)=>a+b,0); total+=sum; return `${t.count}${dieName(t.sides)}: ${r.join('+')}${r.length>1?' = '+sum:''}`; });
-    const detail=parts.join('  ·  ')+(st.mod?`  ·  ${st.mod>0?'+':''}${st.mod}`:''); st.last={total,at:Date.now()};
-    addLog({set:st.name,notation:setNotation(st),total:String(total),detail,quick:true}); return total; }
+    const items=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const sum=r.reduce((a,b)=>a+b,0); total+=sum; return {sides:t.sides,design:t.design,text:`${t.count}${dieName(t.sides)}: ${r.join('+')}${r.length>1?' = '+sum:''}`}; });
+    const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
+    addLog({set:st.name,notation:setNotation(st),total:String(total),detail,items,modText,quick:true}); showQuick(st.name,total,items,modText); return total; }
 };
+/* roll lines: a mini die chip in front of each term's text, like the set list */
+const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.design):liveChipJ(); };
+function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
+  for(const it of items){ const sp=el('span','rt'); if(it.sides) sp.append(chipEl(it.sides,designChipJ(it.design),{label:null})); sp.append(it.text); f.append(sp); }
+  if(modText) f.append(el('span','rt',modText)); return f; }
+let quickT=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
+function showQuick(name,total,items,modText){ const q=$('quickres'); q.replaceChildren(); const t=el('div','tot',String(total)); q.append(t); const b=el('div','brk',name?name+' ':''); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
-function logRoll(total,detail){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
+function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
   if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
-  addLog({set:st?st.name:null,notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||''}); }
+  addLog({set:st?st.name:null,notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{})}); }
 function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replaceChildren();
   const h=el('div','lh'); h.append(el('span','',`Roll log · ${bag.log.length}`)); const c=el('button','linkbtn','Clear'); c.type='button'; c.disabled=!bag.log.length; c.onclick=()=>{ bag.log=[]; save(); renderLog(); }; h.append(c); p.append(h);
   if(!bag.log.length) p.append(el('div','setempty','No rolls yet.'));
-  for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts); d.append(el('b','',e.total),el('span','',`${e.set?e.set+' · ':''}${e.notation}${e.quick?' ⚡':''}`),el('small','',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}${e.detail?' · '+e.detail:''}`)); p.append(d); } }
+  for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts); d.append(el('b','',e.total),el('span','',`${e.set?e.set+' · ':''}${e.notation}${e.quick?' ⚡':''}`),(()=>{ const sm=el('small','',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} `); if(e.items) sm.append(rollItemsEl(e.items,e.modText)); else if(e.detail) sm.append(e.detail); return sm; })()); p.append(d); } }
 $('logbtn').onclick=()=>{ $('logpanel').hidden=!$('logpanel').hidden; renderLog(); };
 function editSetName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Set name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
   const fin=ok=>{ if(done) return; done=true; inp.onblur=null; if(ok&&inp.value.trim()&&inp.value.trim()!==cur) setOps.rename(id,inp.value); renderSheet(); };
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); inp.onclick=e=>e.stopPropagation(); }
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
-  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Use the current dice',run:()=>{ setOps.update(id); renderSheet(); }},
+  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},{label:'Use the current dice',run:()=>{ setOps.update(id); renderSheet(); }},
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
 function renderSets(){ const box=$('setlist'); $('sheettitle').textContent=`${bag.name} · ${bag.sets.length} set${bag.sets.length===1?'':'s'}`;
   const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
   box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ const row=el('div','setrow'); row.dataset.id=st.id;
-      const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${dieName(t.sides)}${t.count>1?' ×'+t.count:''}`)); chips.append(tm); }
+      const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${t.count}${dieName(t.sides)}`)); chips.append(tm); }
       if(st.mod) chips.append(el('small','mod',(st.mod>0?'+':'')+st.mod));
       main.append(el('span','nm',st.name),chips,...(st.last?[el('small','',`last ${st.last.total}`)]:[])); main.onclick=()=>setOps.open(st.id);
       const q=el('button','quick','⚡'); q.type='button'; q.title='Quick roll'; q.setAttribute('aria-label','Quick roll '+st.name); q.onclick=()=>{ setOps.quick(st.id); renderSheet(); };
@@ -1582,13 +1596,13 @@ $('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) ret
 $('dname').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') e.target.blur(); };   // Enter accepts the name
 $('dname').oninput=()=>save();   // a typed name is an edit: show Modified and keep it
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
-$('roll').onclick=()=>startRoll();
+$('roll').onclick=()=>startRoll(placed);
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
 addEventListener('keydown',e=>{
   const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) setCalm(!document.body.classList.contains('calm')); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(placed); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) setCalm(!document.body.classList.contains('calm')); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
 addEventListener('keyup',e=>{ if(e.key==='t'||e.key==='T') holdTop(false); });
 addEventListener('blur',()=>holdTop(false));
 $('hint').textContent=['drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view','space = randomize · ctrl+z / ctrl+y = undo / redo · r = roll · flick in roll view = roll again','hold the total, or hold t = top-down look at the dice (controls step aside)','h, or long-press the layout button = distraction-free view (one button left to bring the controls back)','buttons: layout = hide / show settings · speaker = sound · bag = all designs · pause = stop the spin'].join('\n');
@@ -1637,14 +1651,15 @@ addEventListener('resize',()=>{ resize(); }); addEventListener('orientationchang
 /* ---------- physics roll (cannon-es) ---------- */
 let topHold=false, topBlend=0;     // hold the total (or the t key) in the roll view: the camera swings straight overhead to check the dice, and returns on release
 function holdTop(on){ topHold=!!on&&rolling; $('result').classList.toggle('peek',topHold); document.body.classList.toggle('peek',topHold); }
+let placed=false, placing=false;   // placed: the dice are set out on the mat at rest, no roll yet (the next roll throws them from where they lie)
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
-function startRoll(launch=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
+function startRoll(launch=false,place=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
+  placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
@@ -1677,12 +1692,16 @@ function startRoll(launch=false){        // launch: re-roll from the dice's curr
     b.angularVelocity.set(R()*40,R()*40,R()*40); }
     b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; onImpact(Math.abs(e.contact.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table'); });   // one sound per pair
     world.addBody(b); return b;});
+  if(place){   // set the dice out as if put down by hand: let them fall and come to rest out of sight (no sound, no result), then wait for a roll
+    placing=true; try{ simSteps(1500); }finally{ placing=false; } settled=true; placed=true; restT=0;
+    dice.forEach((d,i)=>{ d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion); });
+    const R=$('result'); R.textContent=''; const h=document.createElement('div'); h.className='brk'; h.textContent='Ready: tap Roll or flick the dice'; R.append(h); R.classList.add('on'); }
 }
 function exitRoll(instant){
   holdTop(false);
   clearFx(); clearLeans();
   if(!rolling&&!instant) return;
-  rolling=false; world=null; bodies=[]; $('result').classList.remove('on'); syncMode();
+  rolling=false; placed=false; world=null; bodies=[]; $('result').classList.remove('on'); syncMode();
   dice.forEach(d=>{d.mesh.position.set(d.x,d.y,0); d.mesh.quaternion.identity();});
   rig.position.set(0,0,0); if(!instant) rig.quaternion.identity();
 }
@@ -1708,7 +1727,7 @@ function assistSettle(dt){          // tracks how long each die has been nearly 
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
   return rollT>12 || bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);   // after 12 s stop waiting on a die that will not go still
 }
-function finishRoll(){ restT=0;
+function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   const parts=readResult();
   leanDice=bodies.map((b,i)=>isLean(i));   // propped on another die, or cocked: flagged, never re-thrown automatically
   const alone=leanDice.map((l,i)=>l&&!bodies.some((o,j)=>j!==i&&bodies[i].position.distanceTo(o.position)<(dice[i].r+dice[j].r)));   // leaning yet no other die within reach: it is not propped on anything
@@ -1718,13 +1737,14 @@ function finishRoll(){ restT=0;
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans();
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
-  let main, sub='';
+  let main, sub='', subItems=null, subMod='';
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), groups=P.terms.map(()=>[]);
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
     const sums=groups.map(g=>g.reduce((a,b)=>a+b,0)), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     main=String(total);
-    if(P.terms.length>1||P.terms[0].count>1||P.mod) sub=P.terms.map((t,i)=>`${t.count}d${t.sides===100?'%':t.sides}${t.design&&bag&&bag.designs.find(d=>d.id===t.design)?' ('+bag.designs.find(d=>d.id===t.design).name+')':''}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`).join('  ·  ')+(P.mod?`  ·  ${P.mod>0?'+':''}${P.mod}`:'');
+    if(P.terms.length>1||P.terms[0].count>1||P.mod){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:`${t.count}d${t.sides===100?'%':t.sides}${t.design&&bag&&bag.designs.find(d=>d.id===t.design)?' ('+bag.designs.find(d=>d.id===t.design).name+')':''}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`})); subMod=P.mod?`${P.mod>0?'+':''}${P.mod}`:'';
+      sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
   }
   else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value
   else if(SHAPES[state.shape].pair){ const t=parts[0].label+parts[1].label; main=String(t===0?100:t); }
@@ -1733,8 +1753,8 @@ function finishRoll(){ restT=0;
   for(const ev of ['pointerup','pointercancel','lostpointercapture']) m.addEventListener(ev,()=>holdTop(false));
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
-  if(sub){ const d2=document.createElement('div'); d2.className='brk'; d2.textContent=sub; R.append(d2); }
-  updateLeanUI(); logRoll(main,sub);
+  if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
+  updateLeanUI(); logRoll(main,sub,subItems,subMod);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
@@ -1777,7 +1797,7 @@ function noiseHit(ctx,out,t,freq,q,gain,dur,type='bandpass'){ const src=ctx.crea
   const g=ctx.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(.0008,t+dur); src.connect(f); f.connect(g); g.connect(out); src.start(t,Math.random()*.5,dur+.02); }
 function tone(ctx,out,t,type,f0,f1,gain,dur,delay=0){ const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(f0,t+delay); if(f1!==f0) o.frequency.exponentialRampToValueAtTime(f1,t+delay+dur);
   g.gain.setValueAtTime(.0001,t+delay); g.gain.linearRampToValueAtTime(gain,t+delay+.006); g.gain.exponentialRampToValueAtTime(.0004,t+delay+dur); o.connect(g); g.connect(out); o.start(t+delay); o.stop(t+delay+dur+.05); }
-function onImpact(speed,kind){
+function onImpact(speed,kind){ if(placing) return;
   sfx.count++; if(!audioReady()||speed<.8) return; const now=performance.now(); if(now-sfx.last<10) return; sfx.last=now;
   const g=Math.min(1,Math.pow(speed/14,.8))*.9, sub=state.substrate, metal=sub==='metal', stone=sub==='marble', heavy=sub==='epoxy', dice=kind==='dice', r=()=>.85+Math.random()*.3;
   voice(.3,(ctx,out,t)=>{
@@ -1950,7 +1970,7 @@ const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/6
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
-  get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
