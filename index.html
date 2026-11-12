@@ -732,7 +732,7 @@ const rig=new THREE.Group(); scene.add(rig);
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
 const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'classic', soundMix:.5, soundMixMode:'random', surfaceMat:'felt', rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.5, soundMixMode:'layer', surfaceMat:'felt', rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1', LOG_MAX=200;
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -1688,14 +1688,17 @@ const procBackend={ label:'Procedural synth (new)', trim:1, activate(){},
   fumble(){ voice(1,(ctx,out,t)=>{ tone(ctx,out,t,'sine',150,42,.55,.7,.05); noiseHit(ctx,out,t,300,.8,.3,.25); noiseHit(ctx,out,t+.12,180,.6,.18,.3,'lowpass'); }); },
   rumble(lvl){ if(!sfx.ctx) return; const r=procRumbleInit(), t=sfx.ctx.currentTime; r.base.gain.setTargetAtTime(Math.min(.6,lvl*.03),t,.05); r.bp.frequency.setTargetAtTime(500+Math.min(1500,lvl*45),t,.08); } };
 
+// sound files: embedded as base64 in window.__SOUNDS by scripts/build-static.py (offline and artifact builds), otherwise fetched from sounds/
+async function soundBytes(path){ const E=window.__SOUNDS; if(E){ if(!E[path]) throw new Error('not embedded: '+path); const bin=atob(E[path]), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u.buffer; }
+  const r=await fetch('sounds/'+path); if(!r.ok) throw new Error('no '+path+' ('+r.status+')'); return r.arrayBuffer(); }
 // sample backends: manifest {trim, impact:{dice:[..],table:[..],plastic|resin|metal|stone:[..]}, chime:[..], fumble:[..], roll:"loop.ogg"}; files are relative to sounds/<id>/
 function sampleBackend(id,label){
   const b={ label, id, trim:1, man:null, bufs:{}, state:'idle', note:'', last:{}, loop:null,
     activate(){ if(b.state==='idle'&&sfx.ctx) b.load(); },
     async load(){ if(b.state!=='idle') return; b.state='loading'; b.note='loading…'; sbStatus();
-      try{ const base='sounds/'+id+'/', r=await fetch(base+'manifest.json'); if(!r.ok) throw new Error('no manifest ('+r.status+')'); b.man=await r.json(); b.trim=b.man.trim||1;
+      try{ b.man=JSON.parse(new TextDecoder().decode(await soundBytes(id+'/manifest.json'))); b.trim=b.man.trim||1;
         const files=new Set(); const add=v=>[].concat(v||[]).forEach(f=>files.add(f)); Object.values(b.man.impact||{}).forEach(add); add(b.man.chime); add(b.man.fumble); add(b.man.roll);
-        let bad=0; await Promise.all([...files].map(async f=>{ try{ const res=await fetch(base+f); if(!res.ok) throw 0; b.bufs[f]=await sfx.ctx.decodeAudioData(await res.arrayBuffer()); }catch{ bad++; } }));
+        let bad=0; await Promise.all([...files].map(async f=>{ try{ b.bufs[f]=await sfx.ctx.decodeAudioData(await soundBytes(id+'/'+f)); }catch{ bad++; } }));
         b.state='ready'; b.note=(files.size-bad)+' clips loaded'+(bad?', '+bad+' failed (synth fills in)':''); if(sfx.bk===id) applyTrim();
       }catch(e){ b.state='failed'; b.note='no samples ('+(e.message||e)+'): using procedural synth'; } sbStatus(); },
     pick(list){ const L=(list||[]).filter(f=>b.bufs[f]); if(!L.length) return null; let i=Math.floor(Math.random()*L.length); const k=L.join(); if(L.length>1&&i===b.last[k]) i=(i+1)%L.length; b.last[k]=i; return b.bufs[L[i]]; },
@@ -1722,7 +1725,7 @@ const mixBackend={ label:'Blend: Best + Kenney', trim:1, activate(){ SB.best.act
     if(state.soundMixMode==='layer'){ const kg=Math.sin(p*Math.PI/2), bg=Math.cos(p*Math.PI/2); if(bg>.02) SB.best.impact(speed,kind,bg); if(kg>.02) SB.kenney.impact(speed,kind,kg); }
     else if(state.soundMixMode==='auto'){ const c=[...SB.best.cands(speed,kind),...SB.kenney.cands(speed,kind)]; if(c.length) c[0].b.playPick(c,1); else procBackend.impact(speed,kind); }   // both sets as one pool, chosen by hardness alone
     else (Math.random()<p?SB.kenney:SB.best).impact(speed,kind); },
-  chime:j=>procBackend.chime(j), fumble:()=>procBackend.fumble(), rumble:l=>procBackend.rumble(l) };
+  chime:classicChime, fumble:classicFumble, rumble:classicRumble };   // the stingers and rolling rumble stay on the classic synth until they get samples of their own
 const SB={ classic:{label:'Classic synth (current)', trim:1, activate(){}, impact:classicImpact, chime:classicChime, fumble:classicFumble, rumble:classicRumble},
   proc:procBackend, mix:mixBackend, kenney:sampleBackend('kenney','Real samples: Kenney only'), best:sampleBackend('best','Real samples: best of all libraries') };
 function applyTrim(){ if(sfx.trim) sfx.trim.gain.value=SB[sfx.bk].trim||1; }

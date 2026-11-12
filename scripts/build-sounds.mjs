@@ -46,6 +46,8 @@ const wav = (d, gain) => { const b = Buffer.alloc(44 + d.length * 2); b.write('R
   b.writeUInt32LE(SR, 24); b.writeUInt32LE(SR * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(d.length * 2, 40);
   for (let i = 0; i < d.length; i++) b.writeInt16LE(Math.max(-32768, Math.min(32767, Math.round(d[i] * gain * 32767))), 44 + i * 2); return b; };
 
+const peaksOf = (d, n = 40) => { const step = Math.ceil(d.length / n), out = []; let top = 1e-9;   // 40 amplitude bars for the audition page's waveform thumbnails
+  for (let i = 0; i < n; i++) { let m = 0; for (let k = i * step; k < Math.min(d.length, (i + 1) * step); k++) m = Math.max(m, Math.abs(d[k])); out.push(m); top = Math.max(top, m); } return out.map(v => +(v / top).toFixed(2)); };
 const cutCache = new Map(); const cut = f => { if (!cutCache.has(f)) cutCache.set(f, slice(decode(f))); return cutCache.get(f); };
 const usable = c => !(c.data.length < SR * .035 || c.db < -34 || c.lead > 3);   // too short / too quiet / slow attack (>3 ms to reach -20 dB: not a crisp hit, it would sound late)
 
@@ -76,7 +78,7 @@ function build(id, groups, caps) {
   for (const role of ['dice', 'table']) for (const { c, g, f, filePeak, name } of spread(pool[role], caps[role])) {
     writeFileSync(join(dir, name), wav(c.data, .9 / filePeak));   // the source file's loudest peak maps to 0.9 full scale; quieter hits stay proportionally quieter
     man.impact[role].push(name); man.meta[name] = { db: +c.db.toFixed(1), clack: c.clack };
-    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000), lead: c.lead, clack: c.clack });
+    cand.push({ set: id, file: `${id}/${name}`, role, source: g.source, from: basename(f), db: +c.db.toFixed(1), bright: c.bright, ms: Math.round(c.data.length / SR * 1000), lead: c.lead, clack: c.clack, peaks: peaksOf(c.data) });
   }
   writeFileSync(join(dir, 'manifest.json'), JSON.stringify(man, null, 1));
   console.log(id, 'dice', man.impact.dice.length, 'table', man.impact.table.length);

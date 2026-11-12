@@ -1,5 +1,6 @@
 // Sound backends (PD-114): the app calls one API; the active backend (classic / proc / kenney / best) can be switched live.
 // Headless Chromium keeps the AudioContext suspended, so these check wiring (voices created, no errors, state saved), not audibility.
+import { readFileSync } from 'node:fs';
 import { test, expect } from './helpers/app.mjs';
 
 /** A tiny valid 16-bit mono WAV (a 20 ms click) for mocked sample sets. */
@@ -19,11 +20,11 @@ const hear = (pd, id) => {   // one of everything through backend id; returns vo
   return { id: pd.soundBackend, voices: pd.sfx.voices - v0 };
 };
 
-test('boots on the classic synth and every backend plays without errors', async ({ app, page }) => {
+test('boots on the blend and every backend plays without errors', async ({ app, page }) => {
   await mockSet(page, 'kenney', { impact: { dice: ['a.wav'], table: ['a.wav'] }, chime: ['a.wav'], fumble: ['a.wav'], roll: 'a.wav' });
   await mockSet(page, 'best', { impact: {}, chime: [] });   // a set with no clips falls back to the procedural synth per role
   await app.open();
-  expect(await app.run(pd => pd.soundBackend)).toBe('classic');
+  expect(await app.run(pd => pd.soundBackend)).toBe('mix');
   for (const id of ['classic', 'proc', 'kenney', 'best']) {
     if (id === 'kenney' || id === 'best') await page.waitForFunction(id => window.__pd.SB[id].state !== 'loading', id).catch(() => {});
     const r = await app.run(hear, id);
@@ -98,4 +99,20 @@ test('pair hardness: hard materials ask for clacky clips, soft ones for dull cli
   expect(await mean('metal', 'glass', 'dice'), 'metal die on metal die').toBeGreaterThan(0.75);
   const h = await app.run(pd => { pd.state.substrate = 'marble'; pd.state.surfaceMat = 'glass'; const a = Array.from({ length: 50 }, () => pd.hardnessFor('table', 9)); return { min: Math.min(...a), max: Math.max(...a) }; });
   expect(h.max - h.min, 'random wobble is present').toBeGreaterThan(0.05);
+});
+
+test('the tuning tool boots from the served repo and lists the clips', async ({ page }) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto('/tools/sound-audition.html');
+  await page.waitForSelector('.clip');
+  expect(await page.locator('.clip').count(), 'clips listed').toBeGreaterThan(10);
+  await page.selectOption('#sortby', 'clack');
+  const clacks = await page.locator('.clip .meta').evaluateAll(els => els.map(e => +e.textContent.match(/clack ([\d.]+)/)[1]));
+  expect(clacks, 'clackiest first').toEqual([...clacks].sort((a, b) => b - a));
+  expect(errors).toEqual([]);
+});
+
+test('the tuning tool uses the same material hardness table as the app', async () => {
+  const table = f => readFileSync(f, 'utf8').match(/const MAT_HARD=(\{[^}]*\})/)[1].replace(/\s+/g, '');
+  expect(table('tools/sound-audition.html')).toBe(table('index.html'));
 });
