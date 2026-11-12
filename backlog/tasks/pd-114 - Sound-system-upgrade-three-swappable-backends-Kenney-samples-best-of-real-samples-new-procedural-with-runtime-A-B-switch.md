@@ -3,10 +3,10 @@ id: PD-114
 title: >-
   Sound system upgrade: three swappable backends (Kenney samples, best-of-real
   samples, new procedural) with runtime A/B switch
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-12T04:09:00Z'
-updated_date: '2026-11-12T07:38:00Z'
+updated_date: '2026-11-12T08:03:00Z'
 labels:
   - audio
 dependencies: []
@@ -48,4 +48,6 @@ Design notes: define one backend interface (impact(speed, material/substrate, sh
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-11/12 progress. Engine mapped into the app: blend backend (mix) is the default, layered mode; limiter on the output; clackiness score per clip + material-pair hardness mapping (MAT_HARD, surface-for-sound setting) with filter/pitch correction; sample sets (best, kenney) built by scripts/build-sounds.mjs from CC0 sources (sounds/CREDITS.md); sets embedded in the offline/artifact builds. Owner listened via the audition tool: layered slider mimics surface hardness well; best = bright/clacky (wood, plastic), kenney = dark/rich (felt, leather); metal and glass not yet auditioned. Tuning tool is maintained in the repo: tools/sound-audition.html (docs: sounds/README.md). Stingers and rolling rumble still on the classic synth.
 Remaining: AC6 loudness matching across backends (trim), AC8 owner picks winner / prune (classic and proc kept as fallbacks for now); real stone/metal/glass hits, rolling loop, stinger samples (see PD-52).
+
+2026-11-12: metal/glass ring layer added (RING table, 'Metal / glass ring' slider). Full npm test: 95 passed, 3 flaky (undo/redo, filigree atlas, 25 s watchdog; all passed on retry, none touch sound). Branch feat/pd-114-sound, not pushed. Review: listen via /tools/sound-audition.html and in the app (default set is the layered blend).
 <!-- SECTION:NOTES:END -->
