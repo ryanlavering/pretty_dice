@@ -45,6 +45,12 @@ The controls sit in a settings pane beside the dice (above them on a phone). The
 
 Drag to orbit, scroll or pinch to zoom, double-click to reset the view. Showcase and Roll keep their own camera angle and zoom.
 
+## The Dice Bag
+
+The shelf along the bottom holds your designs as cards; tap one to select it, wheel or drag to scroll. Each card's menu copies, renames, moves and deletes it, and a changed design shows **Modified** with Save, Revert and Save as copy.
+
+The **Sets** tab holds named rolls (like `2d6+3`, or a mix of designs). **Quick roll** logs a total without leaving the screen; **Open and roll now** puts the dice on the mat. Edit a set with its menu, the ✎ button on wide screens, or a long press on a phone; ✕ asks before dropping unsaved edits. The **roll log** keeps the last 200 rolls; tap a set name to bring it to the mat without rolling.
+
 ## Rolling Dice
 
 Press **Roll** (or `r`) to throw the dice onto a table using rigid-body physics (cannon-es). Flick the table (or click it) to roll again. Natural 20s and natural 1s get their own effects: a glow and fireworks, or a greyed die and a dimmed room.
@@ -81,6 +87,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 
 - **Settings** persist automatically in localStorage.
 - **Export** the current view as PNG or JPG at current size, 1024, 2048 or 4096 px.
+- **The bag** (designs, sets, roll log) persists in localStorage and saves, loads and copies as one file from the Bag sheet.
 - **Save design / Load design** writes and reads a versioned JSON file (with a design name). Format: [docs/design/design-format.md](docs/design/design-format.md).
 
 ## Other Features
@@ -117,7 +124,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 
 # Known gaps
 
-- Roll feel presets (wood, felt, glass...), a drawn tray, and a "dice bag" of many designs are planned (see `backlog/`).
+- Roll feel presets (wood, felt, glass...), a drawn tray, characters and a dice jail are planned (see `backlog/`).
 - Epoxy lacks internal depth.
 - Sound: no recordings yet for stone, metal or glass hits, and the nat 20 / nat 1 effects are synthesised.
 - No d24 or d30 yet.

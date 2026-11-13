@@ -1,6 +1,6 @@
 # Dice bag — conceptual design (PD-102)
 
-Status: draft for owner review, 2026-11-11. Mock-ups: https://claude.ai/artifact/8mKiUWPknCMLQqevH5PCAk
+Status: v3.0 implemented (designs, sets, roll log, bag file); characters and jail are v4.0. Originally a draft for owner review, 2026-11-11. Mock-ups: https://claude.ai/artifact/8mKiUWPknCMLQqevH5PCAk
 
 ## Problem
 

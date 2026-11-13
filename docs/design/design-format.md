@@ -27,6 +27,22 @@ Dice designs are saved/loaded from the app (Export -> Save design / Load design)
 - `numbers.depth` and `softness` are rendering values (bump scale, blur px) today, not millimetres.
 - Loading validates the version, shape, substrate and colours, and clamps numeric ranges. Unknown fields are ignored.
 
+## Bag file
+
+The whole bag saves and loads as one file (Bag sheet: Save, Load, Copy). Single design files above still load, as a bag of one named after the design.
+
+```json
+{ "format": "pretty-dice-bag", "version": 1, "name": "My bag",
+  "designs": [ { "id": "d1", "name": "Blue swirl", "design": { /* a design as above */ } } ],
+  "sets": [ { "id": "s1", "name": "Fireball", "terms": [ /* dice terms */ ], "mod": 0 } ],
+  "pending": {}, "log": [] }
+```
+
+- `sets[].terms` refer to designs by id (`@design` follows the selection). `mod` is the flat modifier.
+- `pending` holds unsaved edits so nothing is lost on export; `log` is the roll log (last 200 rolls).
+- Import adds designs and sets and renames id and name clashes (`Name 2`). Invalid designs and dangling references are dropped and reported. `characters` and `jail` are reserved for later versions.
+- The browser keeps the bag in localStorage under `prettydice.bag.v1`; first run converts the old `prettydice.v1` settings into a bag of one.
+
 ## Reserved for manufacturing (not implemented)
 
 `size_mm` (across-flats), `material`, `finish`, `number_depth_mm`, `quantity`. Adding these bumps `version` to 2; v1 files will still load.
