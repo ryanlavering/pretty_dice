@@ -68,6 +68,15 @@
   #extras{position:absolute;right:calc(max(10px,env(safe-area-inset-right,0px)) + 52px);bottom:8px;z-index:9;display:flex;gap:8px;flex-direction:row-reverse;pointer-events:none}
   #extras[hidden]{display:none} #extras button{pointer-events:auto;width:auto!important;height:44px;border-radius:22px!important;padding:0 16px!important;display:flex!important;gap:8px;align-items:center;font-weight:600;animation:xin .18s ease-out} #extras button svg{width:20px;height:20px}
   @keyframes xin{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}} @media (prefers-reduced-motion:reduce){#extras button{animation:none}}
+  #gamepanel{position:absolute;z-index:12;top:8px;right:8px;width:min(250px,calc(100% - 16px));max-height:calc(100% - 140px);overflow:auto;background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:14px;padding:10px 12px;backdrop-filter:blur(8px);font-size:13px}
+  #gamepanel[hidden]{display:none} #gamepanel h2{font:700 15px Cinzel,serif;letter-spacing:.06em;margin:0;color:var(--accent);flex:1} #gamepanel .gh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  #gamepanel .row{display:flex;gap:8px;align-items:center;margin:6px 0} #gamepanel input[type=text]{flex:1;min-width:0;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px}
+  #gamepanel .gstat{font-weight:600;margin:4px 0 8px} #gamepanel .gstat small{display:block;color:var(--dim);font-weight:400}
+  #gamepanel table{border-collapse:collapse;width:100%} #gamepanel td,#gamepanel th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center} #gamepanel td:first-child,#gamepanel th:first-child{text-align:left}
+  #gamepanel th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} #gamepanel th.cur{color:var(--accent)} #gamepanel td.cur{background:#2a2619}
+  #gamepanel td.sug{color:var(--dim);font-style:italic} #gamepanel td.best{color:var(--accent);font-weight:700;font-style:normal} #gamepanel td.pick{cursor:pointer} #gamepanel td.pick:hover{outline:1px solid var(--accent)}
+  #gamepanel tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} #gamepanel tr.tot td{font-weight:700}
+  @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   #mode.xopen{border-color:var(--accent);color:var(--accent)}
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
   #hint{white-space:pre-line;display:none} #hint.show{display:block}
@@ -390,7 +399,7 @@
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
   </aside>
-  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div><div id="extras" role="menu" aria-label="More" hidden><button id="xgames" type="button" role="menuitem"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>Games</button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div></div>
+  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div><div id="extras" role="menu" aria-label="More" hidden><button id="xgames" type="button" role="menuitem"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>Games</button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span></span><span id="sheetact"><button id="sheetsave" type="button" class="sico" title="Save bag to a file" aria-label="Save bag to a file"><svg viewBox="0 0 24 24"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg></button><button id="sheetload" type="button" class="sico" title="Load a bag file (replaces this bag)" aria-label="Load a bag file"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 8.5l4-4 4 4M5 19h14"/></svg></button><button id="sheetcopy" type="button" class="sico" title="Copy the bag JSON to the clipboard" aria-label="Copy bag JSON"><svg viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="10.5" height="11.5" rx="2"/><path d="M15.5 8.5V6A2 2 0 0 0 13.5 4H7A2 2 0 0 0 5 6v9.5A2 2 0 0 0 7 17.5h1.5"/></svg></button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
@@ -404,6 +413,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import * as GAMES from 'pd-games';   // pure rules engine (docs/design/games-engine.md); the app rolls the dice, the engine scores them
 
 /* ---------- utils ---------- */
 const mulberry32 = a => () => { a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
@@ -1872,6 +1882,7 @@ let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f};
+let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[];       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
 function clearHolds(){ held.clear(); dropHoldRings(); updateHoldUI(); }
@@ -1880,14 +1891,14 @@ function syncHoldRings(){ dropHoldRings(); if(!rolling) return;
     m.renderOrder=11; m.rotation.x=-Math.PI/2; m.userData={i}; m.position.set(bodies[i].position.x,TABLE_Y+.05,bodies[i].position.z); rig.add(m); holdRings.push(m); }
   updateHoldUI(); }
 function updateHoldUI(){ for(const m of holdRings) m.visible=!leanDice[m.userData.i];   // a die that is both held and cocked shows the cocked ring only
-  const R=$('result'); R.querySelectorAll('.heldnote').forEach(e=>e.remove()); if(!held.size||!settled) return;
+  const R=$('result'); R.querySelectorAll('.heldnote').forEach(e=>e.remove()); if(!held.size||!settled||game) return;
   const b=document.createElement('button'); b.className='relean heldnote'; b.textContent=held.size+(held.size>1?' dice held':' die held')+' \u00B7 release'; b.onclick=ev=>{ ev.stopPropagation(); clearHolds(); }; R.append(b); }
-function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }
+function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(game){ if(!gameHold(i)) return false; } else if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }   // in a game the engine decides what may be held
 const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2();
 function pickDie(cx,cy){ if(!rolling||!settled||!bodies.length) return -1; const r=cv.getBoundingClientRect(); _ndc.set((cx-r.left)/r.width*2-1,-((cy-r.top)/r.height)*2+1); _ray.setFromCamera(_ndc,camera);
   let best=-1,bd=1e9; dice.forEach((d,i)=>{ const h=_ray.intersectObject(d.mesh,true); if(h.length&&h[0].distance<bd){ bd=h[0].distance; best=i; } }); return best; }
 function startRoll(launch=false,place=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
-  if(!dice.length) return; if(state.sound) audioInit();
+  if(!dice.length) return; if(game&&!place&&!gameBeforeRoll()) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
   placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
@@ -1930,6 +1941,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     const R=$('result'); R.textContent=''; const h=document.createElement('div'); h.className='brk'; h.textContent='Ready: tap Roll or flick the dice'; R.append(h); R.classList.add('on'); }
 }
 function exitRoll(instant){
+  if(game&&!instant) return;   // a game keeps the dice on the mat until it ends
   holdTop(false); clearHolds();
   clearFx(); clearLeans();
   if(!rolling&&!instant) return;
@@ -1986,7 +1998,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
-  updateLeanUI(); updateHoldUI(); logRoll(main,sub,subItems,subMod);
+  updateLeanUI(); updateHoldUI(); logRoll(main,sub,subItems,subMod); if(game) gameOnSettled(parts);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
@@ -2444,10 +2456,69 @@ window.__ready=true; window.__bootDone&&window.__bootDone();
 if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) startLab();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
+
+/* ---------- games (PD-142.4/.5): panel, setup, scorecard; the engine is 'pd-games' ---------- */
+const GP=$('gamepanel'), GKEY='prettydice.games';
+let gcollapsed=matchMedia('(max-width:700px)').matches;   // phones start with the scorecard folded away so the dice stay visible
+let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{}};
+try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
+const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
+const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
+function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
+function gameHold(i){ const st=GAMES.status(game.state); if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
+  const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
+function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg='Pick a box on the scorecard'; renderGame(); return false; }
+  held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); gameAwaiting=true; gameMsg=''; renderGame(); return true; }
+function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
+  const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
+  const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
+  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; renderGame(); }
+function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+  game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
+  gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
+async function startGame(id,players,options){
+  const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
+  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false;
+  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); renderGame(); }
+function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } GP.hidden=true; }
+function renderGame(){
+  GP.textContent=''; GP.hidden=false;
+  const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
+  if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else GP.hidden=true; });
+    const games=GAMES.listGames().filter(g=>g.id==='yahtzee'), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
+    GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
+    const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
+    GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
+    const n=Math.min(gprefs.count,g.maxPlayers), nameIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}); nameIn.push(inp); GP.append(gel('div',{className:'row'},inp)); }
+    const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
+      if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); } }
+    const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'})));
+    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else startGame(g.id,nameIn.map((x,i)=>x.value.trim()||('Player '+(i+1))),opts); }})));
+    return; }
+  const S=game.state, st=GAMES.status(S), sug=GAMES.suggest(S), over=st.phase==='over';
+  hd(game.info.name,()=>endGame(),'End game'); GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  const res=over?GAMES.result(S):null;
+  if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
+  if(!over){ const n=GAMES.rollSpec(S).slots.length, rb=gel('button',{className:'big',type:'button',textContent:st.canRoll?(st.rollsUsed?'Roll '+n+(n>1?' dice':' die'):'Roll'):'Roll (pick a box)',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}); GP.append(gel('div',{className:'row'},rb)); }
+  if(gcollapsed){ GP.append(gel('div',{className:'gstat'},S.players.map((n,p)=>n+' '+GAMES.scorecard(S,p).total).join(' · '))); return; }
+  const cards=S.players.map((_,p)=>GAMES.scorecard(S,p)), tb=gel('table'), hr=gel('tr'); hr.append(gel('th'));
+  S.players.forEach((nm,p)=>hr.append(gel('th',{textContent:nm,className:p===st.player&&!over?'cur':'',title:nm}))); tb.append(gel('thead',{},hr));
+  const body=gel('tbody'); const cell=(tr,p,txt,cls,fn)=>{ const td=gel('td',{textContent:txt,className:cls}); if(fn) td.onclick=fn; tr.append(td); };
+  cards[0].sections.forEach((sec,si)=>{ body.append(gel('tr',{className:'sec'},gel('td',{textContent:sec.label,colSpan:S.players.length+1})));
+    sec.rows.forEach((row,ri)=>{ const tr=gel('tr'); tr.append(gel('td',{textContent:row.label}));
+      S.players.forEach((_,p)=>{ const pt=cards[p].sections[si].rows[ri].points, cur=p===st.player&&!over; let txt=pt==null?'':String(pt), cls=cur?'cur':'', fn=null;
+        if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; fn=()=>gameScore(row.category); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; fn=()=>gameScore(row.category); } }
+        cell(tr,p,txt,cls.trim(),fn); }); body.append(tr); });
+    if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yahtzee bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
+  const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
+}
+document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } renderGame(); });
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
-  get held(){return [...held];}, get extrasOpen(){return !extrasEl.hidden;}, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
+  get held(){return [...held];}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, get extrasOpen(){return !extrasEl.hidden;}, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
