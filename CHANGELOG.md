@@ -2,6 +2,22 @@
 
 User-facing changes. Versions are git tags.
 
+## 3.0 (unreleased)
+
+### New
+- **A new sound engine.** Impacts are short recordings of real dice (public-domain CC0 sources, credited in `sounds/CREDITS.md`) chosen by how hard each die hits. Pick a **Sound set** in settings: **Blend** (the default), **Kenney samples**, **Best-of samples**, **Procedural synth** or the **Classic synth**, and switch while you roll. **Audition** plays a sample roll.
+- **Best ↔ Kenney blend.** The slider mixes the bright, clacky recordings (wood, plastic) with the darker, richer ones (felt, leather). *Layered* plays every hit from both sets, *Per hit* picks one set for each hit, *Auto* chooses by hardness.
+- **Surface (for sound).** Pick felt, carpet, leather, cardboard, wood, plastic, stone, metal or glass. Together with the die material it sets how sharp each hit is, so stone on glass clacks brightly and plastic on felt thuds softly. It changes the sound only, not how the dice roll.
+- **Metal / glass ring.** Metal dice, and metal or glass surfaces, ring when struck, more strongly on harder hits. A slider sets the amount (0 is off).
+- **Spatial width (stereo).** Each hit is placed left or right by where it lands in the view, and is quieter and duller the farther it is from the camera. 0 is mono; the default is half. It shows on headphones or stereo speakers.
+- **Rolling sound.** Soft ticks as each die tumbles across the mat, played with the same sounds and the same stereo placement as impacts. Off by default.
+- Overlapping hits are limited so a big roll cannot clip.
+
+### Changed
+- **The rolling rumble is gone.** The continuous low noise sounded like wind on a phone microphone. The option is now **Rolling sound** (see above).
+- Turning sound on no longer plays a blip (the Test sound button still does).
+- The offline copy and the artifact build carry the sound samples inside the file.
+
 ## 2.0 (2026-11-11)
 
 ### New

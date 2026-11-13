@@ -1,10 +1,12 @@
 ---
 id: PD-118
-title: 'Docs refresh for v3.0: README, CHANGELOG, design-format, dice-bag-design, testing'
+title: >-
+  Docs refresh for v3.0: README, CHANGELOG, design-format, dice-bag-design,
+  testing
 status: To Do
 assignee: []
 created_date: '2026-11-12T08:30:00Z'
-updated_date: '2026-11-12T08:30:00Z'
+updated_date: '2026-11-13T03:01:00Z'
 labels:
   - v3.0
   - docs
@@ -40,3 +42,9 @@ Things the docs must now say (decisions made while landing PD-107/108/110/112/11
 - [ ] #6 In-app hint text and button titles match the docs (spot check)
 - [ ] #7 Links and file names checked; docs reviewed once by the owner
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: the sound system's docs are already written: README.md (Sound section, Development, Further reading, Known gaps) and CHANGELOG.md (a '3.0 (unreleased)' section with the sound entries). When cutting the 3.0 section, merge the other v3.0 items into that heading instead of adding a second one.
+<!-- SECTION:NOTES:END -->

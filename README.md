@@ -52,7 +52,21 @@ Press **Roll** (or `r`) to throw the dice onto a table using rigid-body physics 
 - **The tray** is sized from the dice (how many and how big), not from the screen, and the camera starts far enough back to show all of it. Zoom is yours to change.
 - **Roll feel & sound** (it moves to the top of the pane while you roll): **Bounciness**, **Dice friction** and **Mat friction** change how the dice behave; the defaults are slippery enough that dice slide apart instead of snagging.
 - **Leaning dice** are never hidden. A die that comes to rest propped on another, or balanced on an edge, gets an orange ring on the mat and a warning. **Re-roll leaning** drops only those dice in again from above. If one of them later tips over, the result and any natural 20 effect are read again.
-- **Sound** is off until you turn it on (the speaker button on the view, or the checkbox). Rolling rumble is a separate option. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** shows what the browser says about audio, which helps when a phone stays quiet.
+- **Sound** is off until you turn it on (the speaker button on the view, or the checkbox); see [Sound](#sound) below. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** plays a blip and shows what the browser says about audio, which helps when a phone stays quiet.
+
+### Sound
+
+Impacts are short recordings of real dice (CC0), picked by how hard each die hits and by what it hits, with a synthesised fallback. The controls are in **Roll feel & sound**:
+
+- **Sound set**: *Blend* (default), *Kenney samples*, *Best-of samples*, *Procedural synth* or *Classic synth*. Switch any time; **Audition** plays a sample roll through the current set.
+- **Best ↔ Kenney** blends the two sample sets: Best is bright and clacky (wood, plastic), Kenney is darker and richer (felt, leather). *Layered* plays every hit from both sets at once, *Per hit* picks one set for each hit, *Auto* chooses by hardness alone.
+- **Surface (for sound)**: felt, carpet, leather, cardboard, wood, plastic, stone, metal or glass. With the die's material it sets how sharp each hit is: stone on glass is a bright clack, plastic on felt a soft thud. This changes the sound only, not how the dice roll.
+- **Metal / glass ring**: struck metal and glass ring. A metal die, or a metal or glass surface, adds a ring that gets stronger with harder hits. 0 turns it off.
+- **Spatial width (stereo)**: each hit is placed left or right by where it lands in the view, and gets quieter and duller the farther it is from the camera. 0 is mono; the default is half. You hear it on headphones or stereo speakers, not on a phone's built-in speaker.
+- **Rolling sound** (off by default): soft ticks as dice tumble across the mat.
+- Pile-ups of overlapping hits are limited so they cannot clip.
+
+How it works and how to tune it: [sounds/README.md](sounds/README.md).
 
 ### Rolling Multiple Dice
 
@@ -92,10 +106,12 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 - Tests: `npm install` once (dev-only; the app itself still needs no install), then `npm test`. `npm run test:docker` runs the same suite in the pinned Playwright image, including the visual baselines. See [docs/design/testing.md](docs/design/testing.md).
 - `?seed=N` makes the look and the rolls reproducible. `?full=1` starts with the settings pane hidden.
 - Clear localStorage when testing defaults.
+- Sound: the sample sets are built by `scripts/build-sounds.mjs`; tune by ear at `/tools/sound-audition.html` while serving the repo ([sounds/README.md](sounds/README.md)).
 - To test offline, block the CDNs, e.g. with Chrome's `--host-resolver-rules="MAP cdn.jsdelivr.net ~NOTFOUND, MAP fonts.googleapis.com ~NOTFOUND, MAP fonts.gstatic.com ~NOTFOUND"`.
 
 # Further reading
 
+- Sound engine, sample sets and tuning: [sounds/README.md](sounds/README.md) (sample credits: [sounds/CREDITS.md](sounds/CREDITS.md))
 - Design file format: [docs/design/design-format.md](docs/design/design-format.md)
 - Ordering real dice: [docs/design/manufacturing-plan.md](docs/design/manufacturing-plan.md)
 
@@ -103,6 +119,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 
 - Roll feel presets (wood, felt, glass...), a drawn tray, and a "dice bag" of many designs are planned (see `backlog/`).
 - Epoxy lacks internal depth.
+- Sound: no recordings yet for stone, metal or glass hits, and the nat 20 / nat 1 effects are synthesised.
 - No d24 or d30 yet.
 - No manufacturer-ready export (STL/STEP) yet.
 
