@@ -1,9 +1,10 @@
 ---
 id: PD-133
 title: 'Thumbnail lab: linked live viewports to tune the picture angle and lights'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-13T03:27:00Z'
+updated_date: '2026-11-13T04:10:00Z'
 labels:
   - tool
   - bag
@@ -23,3 +24,9 @@ Owner request 2026-11-12 while choosing the design-picture view (PD-131): a dev 
 - [ ] #2 Dragging one viewport turns all; sliders move the lights live
 - [ ] #3 Settings read-out can be copied
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Lab now has Compare mode (?lab=thumbs&cmp=1) with all candidates; list kept in docs/design/picture-candidates.md.
+<!-- SECTION:NOTES:END -->

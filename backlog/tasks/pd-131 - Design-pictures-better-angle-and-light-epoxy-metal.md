@@ -4,7 +4,7 @@ title: 'Design pictures: better angle and light (epoxy, metal)'
 status: Needs Review
 assignee: []
 created_date: '2026-11-13T00:58:00Z'
-updated_date: '2026-11-13T03:46:00Z'
+updated_date: '2026-11-13T04:10:00Z'
 labels:
   - bug
   - bag
@@ -39,4 +39,8 @@ Owner is looking for more, then wants a head-to-head comparison.
 - Candidate D: quaternion [0.167, -0.888, 0.173, -0.391] (euler deg xyz 164.483, 48.846, 165.821); camera 5.2/-0.1/fov 32; room turn [0.55, 3.15, 0]; exposure 1.5; key (-0.1,1.9,3.2) 1.3; sheen on (4,0.7,1.4) 1.25; back on (-1.2,2,-4) 2.4. Same lighting as C, pose a few degrees from C.
 
 - Candidate E: quaternion [0.624, -0.604, -0.223, 0.443] (euler deg xyz 150.867, -54.453, 72.909); camera 4.9/-0.1/32; room turn [0.2, 2.9, -0.05]; exposure 1.5; key (-0.2,1.9,3.2) 1.1; sheen (4,0.7,1.4) 1.1; back (-1.2,2,-4) 2.4.
+
+- Candidate F: quaternion [-0.219, 0.718, -0.598, 0.28]; camera 4.9/-0.1/32; room turn [0, 3.142, 0]; key/sheen/back as A. All candidates (A-F, E with 20 outward = in the app) are in docs/design/picture-candidates.md; view with ?lab=thumbs&cmp=1.
+
+Applied candidate E with the 20 face toward the camera (pose .601,-.619,.184,-.47; room .2,2.9,-.05; camera 4.9). Alternatives rolled -35/-50/-65 deg are in the lab. Quick tier 56 passed.
 <!-- SECTION:NOTES:END -->
