@@ -10,6 +10,7 @@
     "test:update": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh --update-snapshots",
     "test:slow": "sh scripts/with-test-lock.sh playwright test --project=slow --pass-with-no-tests",
     "probe": "node scripts/probe.mjs",
+    "guide": "node scripts/guide-shots.mjs",
     "test:lock": "sh scripts/test-lock-status.sh",
     "test:quick": "sh scripts/with-test-lock.sh playwright test --project=fast --grep \"physics.spec|logic.spec|bag.spec|bagsets.spec|@quick\" --grep-invert @slow"
   },
