@@ -38,3 +38,18 @@ test('hold: tapping a die on the canvas toggles it', async ({ shared: app }) => 
   await app.page.mouse.click(pt.x, pt.y);
   expect(await app.run(pd => pd.held)).toContain(0);
 });
+
+test('rings: every meaning has its own colour; cocked is red-magenta, not gold; held+cocked shows cocked', async ({ shared: app }) => {
+  await open(app, 24);
+  const colors = await app.run(pd => pd.RING_COLORS);
+  expect(new Set(Object.values(colors)).size).toBe(Object.keys(colors).length);
+  const hue = c => { const r = (c >> 16) / 255, g = ((c >> 8) & 255) / 255, b = (c & 255) / 255, mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+    return d === 0 ? 0 : (mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60; };
+  expect(hue(colors.hold), 'hold is gold').toBeGreaterThan(35); expect(hue(colors.hold)).toBeLessThan(55);
+  const hc = hue(colors.cocked); expect(hc > 300 || hc < 15, `cocked hue ${hc} is red/magenta`).toBe(true);
+  await app.run(async pd => { pd.state.shape = 'custom'; pd.state.notation = '3d6'; await pd.buildDice(); pd.simRoll(); pd.toggleHold(1); });
+  expect(await app.run(pd => pd.holdRingsVisible)).toBe(1);
+  await app.run(pd => pd.markLean(1));
+  expect(await app.run(pd => pd.holdRingsVisible), 'held and cocked: the hold ring hides').toBe(0);
+  expect(await app.run(pd => pd.leanRingCount)).toBeGreaterThan(0);
+});
