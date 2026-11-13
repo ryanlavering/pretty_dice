@@ -77,6 +77,7 @@
   #gamepanel td.sug{color:var(--dim);font-style:italic} #gamepanel td.best{color:var(--accent);font-weight:700;font-style:normal} #gamepanel td.pick{cursor:pointer} #gamepanel td.pick:hover{outline:1px solid var(--accent)}
   #gamepanel .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} #gamepanel .sugs button.best{color:var(--accent);font-weight:700}
   #gamepanel .rules p{margin:4px 0;font-size:12px;color:var(--dim)} #gamepanel .rules b{color:var(--ink)} #gamepanel input[type=number]{width:80px;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px}
+  #gamepanel .tiles{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0} #gamepanel .tile{min-width:30px;padding:6px 0;font-weight:700} #gamepanel .tile.shut{opacity:.3;text-decoration:line-through} #gamepanel .tile.sel{outline:2px solid var(--accent);color:var(--accent)}
   #gamepanel tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} #gamepanel tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   #mode.xopen{border-color:var(--accent);color:var(--accent)}
@@ -2467,9 +2468,9 @@ try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{
 const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
-const TURN_GAMES=['farkle','pig'];   // dice-and-bank games: no scorecard, a running turn total
-let gsel=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
-function gameHold(i){ const st=GAMES.status(game.state); if(game.id==='craps') return false;
+const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
+let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
+function gameHold(i){ const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
   if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
     if(st.held[i]){ gameMsg='That die is already set aside'; renderGame(); return false; }
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
@@ -2477,14 +2478,15 @@ function gameHold(i){ const st=GAMES.status(game.state); if(game.id==='craps') r
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
 function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
   gsel.clear();
-  held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); gameAwaiting=true; gameMsg=''; renderGame(); return true; }
+  { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
+  gameAwaiting=true; gameMsg=''; renderGame(); return true; }
 function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
   if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
   if(game.id==='craps'){ const ev=r.events, tot=ev.find(e=>e.type==='rolled')?.total, pay=ev.filter(e=>e.type==='payout'&&e.amount);
     gameMsg='Rolled '+tot+(ev.some(e=>e.type==='sevenOut')?' · seven out':'')+(ev.some(e=>e.type==='pointMade')?' · point made':'')+pay.map(e=>' · '+game.state.players[e.player]+' '+(e.amount>0?'+':'')+e.amount).join(''); }
-  if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); gameMsg=bust?'Bust! Turn total lost':''; if(bust) gameSync(); }
+  if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); const pts=r.events.find(e=>e.type==='turnScore'||e.type==='scored'); gameMsg=bust?'Bust! Turn total lost':(pts?(game.id==='bunco'&&pts.kind==='bunco'?'BUNCO! ':'')+'+'+pts.points:''); gameSync(); gtiles.clear(); }
   renderGame(); }
 function gameSetAside(slots){ const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
@@ -2495,14 +2497,14 @@ function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 async function startGame(id,players,options){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); cbet.amount=null; cbet.who=null;
+  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.amount=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); renderGame(); }
 function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } GP.hidden=true; }
 function renderGame(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else GP.hidden=true; });
-    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
@@ -2554,16 +2556,25 @@ function renderCraps(S,st,over){
   const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Bankroll'}),gel('th',{textContent:'On the table'}))));
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'), on=st.bets.filter(b=>b.player===p).reduce((a,b)=>a+b.amount,0); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.bankrolls[p]),className:cur?'cur':''}),gel('td',{textContent:on?String(on):'',className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
+function turnInfo(S,st){ const id=game.id, rd=st.rounds?'Round '+st.round+' of '+st.rounds+' · ':'';
+  if(id==='shutbox') return rd+'open tiles add up to '+st.openSum+' · lower wins';
+  if(id==='shipcaptain') return rd+'roll '+Math.max(st.rollsUsed,0)+' of 3 · cargo '+st.cargo+(st.lock?' · '+['ship','captain','crew'].filter(k=>st.lock[k]!=null).join(', '):'');
+  if(id==='bunco') return rd+'this turn '+(st.turnTotal||0);
+  return 'Turn total '+st.turnTotal+' · first to '+st.target+(st.finalRound?' · final round':''); }
+function gameCloseTiles(tiles){ const r=GAMES.act(game.state,{type:'score',tiles:[...tiles].sort((a,b)=>a-b)}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gtiles.clear(); gameMsg=''; clearHolds(); gameSync(); renderGame(); }
 function renderTurn(S,st,over){
   const res=over?GAMES.result(S):null, farkle=game.id==='farkle', sug=farkle?GAMES.suggest(S):[];
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
-  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.message||'').replace(/^[^:]*: /,''),gel('small',{textContent:'Turn total '+st.turnTotal+' · first to '+st.target+(st.finalRound?' · final round':'')+(gameMsg?' · '+gameMsg:'')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.message||'').replace(S.players[st.player]+': ',''),gel('small',{textContent:turnInfo(S,st)+(gameMsg?' · '+gameMsg:'')})));
   if(!over){ const live=GAMES.rollSpec(S).slots.length, row=gel('div',{className:'row'});
     row.append(gel('button',{className:'big',type:'button',textContent:st.canRoll?(farkle&&st.turnTotal?'Roll '+live+(live>1?' dice':' die'):'Roll'):'Roll (set aside first)',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
-    row.append(gel('button',{type:'button',textContent:'Bank '+st.turnTotal,disabled:!st.canBank||gameAwaiting,onclick:gameBank})); GP.append(row);
+    if(['farkle','pig','shipcaptain'].includes(game.id)) row.append(gel('button',{type:'button',textContent:'Bank '+(game.id==='shipcaptain'?st.cargo:st.turnTotal),disabled:!st.canBank||gameAwaiting,onclick:gameBank})); GP.append(row);
+    if(game.id==='shutbox'){ const tg=gel('div',{className:'tiles'}); st.tiles.forEach((open,k)=>{ const n=k+1; tg.append(gel('button',{type:'button',className:'tile'+(open?'':' shut')+(gtiles.has(n)?' sel':''),textContent:String(n),disabled:!open||!st.canScore,ariaPressed:String(gtiles.has(n)),onclick:()=>{ if(gtiles.has(n)) gtiles.delete(n); else gtiles.add(n); renderGame(); }})); }); GP.append(tg);
+      if(st.canScore){ const sum=[...gtiles].reduce((a,b)=>a+b,0), tot=st.dice?st.dice.reduce((a,b)=>a+b,0):0; GP.append(gel('div',{className:'row'},gel('button',{type:'button',textContent:gtiles.size?'Close '+[...gtiles].sort((a,b)=>a-b).join('+')+' = '+sum+' (need '+tot+')':'Pick tiles that add to '+tot,disabled:!gtiles.size,onclick:()=>gameCloseTiles(gtiles)})));
+        const sg=GAMES.suggest(S); if(gprefs.suggest&&sg.length){ const box=gel('div',{className:'sugs'}); for(const r of sg) box.append(gel('button',{type:'button',className:r.best?'best':'',textContent:r.label,onclick:()=>gameCloseTiles(r.tiles)})); GP.append(box); } } }
     if(farkle&&st.canScore){ GP.append(gel('div',{className:'row'},gel('button',{type:'button',textContent:gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',disabled:!gsel.size||!settled,onclick:()=>gameSetAside(gsel)})));
       if(gprefs.suggest&&sug.length){ const box=gel('div',{className:'sugs'}); for(const r of sug) box.append(gel('button',{type:'button',className:r.best?'best':'',textContent:r.label+' = '+r.points,onclick:()=>gameSetAside(r.slots)})); GP.append(box); } } }
-  const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Banked'}))));
+  const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:game.id==='farkle'||game.id==='pig'?'Banked':'Score'}))));
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.scores[p]),className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } renderGame(); });

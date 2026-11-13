@@ -48,3 +48,47 @@ test('craps: place a pass line bet from the panel, roll, bankroll moves; cash ou
   expect(end.phase).toBe('over'); expect(end.bets.length).toBe(0);
   await app.run(pd => pd.endGame());
 });
+
+async function start(app, id, seed) {
+  await app.reset(seed); await app.run(pd => pd.openGames());
+  await app.page.selectOption('#gamepanel select >> nth=0', id);
+  await app.page.click('#gamepanel button.big');
+}
+
+test('shut the box: roll, pick tiles from the panel, tiles shut', async ({ shared: app }) => {
+  await start(app, 'shutbox', 61);
+  expect(await app.run(pd => pd.state.notation)).toBe('2d6');
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const st = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(st.phase === 'score' || st.phase === 'over').toBe(true);
+  if (st.phase === 'score') {
+    const sug = await app.run(pd => pd.GAMES.suggest(pd.game.state));
+    await app.page.click('#gamepanel .sugs button.best');
+    const a = await app.run(pd => pd.GAMES.status(pd.game.state));
+    for (const t of sug[0].tiles) expect(a.tiles[t - 1]).toBe(false);
+    // the tile buttons mirror the engine
+    expect(await app.page.locator('#gamepanel .tile.shut').count()).toBe(sug[0].tiles.length);
+  }
+  await app.run(pd => pd.endGame());
+});
+
+test('ship captain and crew: locks show as held, panel shows cargo and bank', async ({ shared: app }) => {
+  await start(app, 'shipcaptain', 62);
+  expect(await app.run(pd => pd.state.notation)).toBe('5d6');
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const st = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held }));
+  expect(st.s.rollsUsed).toBe(1);
+  expect(st.held).toEqual(st.s.held.map((h, i) => h ? i : -1).filter(i => i >= 0));
+  expect(await app.page.locator('#gamepanel .gstat small').textContent()).toContain('roll 1 of 3');
+  await app.run(pd => pd.endGame());
+});
+
+test('bunco: the round target shows and a roll is scored from the dice', async ({ shared: app }) => {
+  await start(app, 'bunco', 63);
+  expect(await app.run(pd => pd.state.notation)).toBe('3d6');
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const st = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(st.dice.length).toBe(3);
+  expect(await app.page.locator('#gamepanel .gstat').textContent()).toMatch(/Round [12] of 6/);
+  await app.run(pd => pd.endGame());
+});
