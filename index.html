@@ -2077,7 +2077,7 @@ const BURST_N=260, BURST_GAP=.5, BURST_LIFE=2.4, BURST_LEAD=.55, bursts=[];   //
 function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3)); geo.setAttribute('color',new THREE.BufferAttribute(new Float32Array(BURST_N*3),3));
   const pts=new THREE.Points(geo,new THREE.PointsMaterial({size:.3,map:sprTex,vertexColors:true,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,sizeAttenuation:true}));
   pts.frustumCulled=false; pts.visible=false; scene.add(pts);
-  const fl=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:sprTex,color:0xffd35a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0})); fl.visible=false; scene.add(fl);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:sprTex,color:0xffd35a,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,depthTest:false,opacity:0})); fl.visible=false; scene.add(fl);
   return {pts,fl,vel:new Float32Array(BURST_N*3),origin:new THREE.Vector3(),die:null,start:0,fired:false,done:true}; }
 const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
