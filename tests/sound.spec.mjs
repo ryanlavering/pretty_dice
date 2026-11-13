@@ -16,7 +16,7 @@ const mockSet = async (page, id, manifest) => {
 };
 const hear = (pd, id) => {   // one of everything through backend id; returns voices created
   pd.audioInit(); pd.setSoundBackend(id); const b = pd.SB[id], v0 = pd.sfx.voices;
-  b.impact(9, 'table'); b.impact(9, 'dice'); b.chime(1); b.fumble(); b.rumble(12); b.rumble(0);
+  b.impact(9, 'table'); b.impact(9, 'dice'); b.chime(1); b.fumble();
   return { id: pd.soundBackend, voices: pd.sfx.voices - v0 };
 };
 
@@ -157,4 +157,28 @@ test('switching sound on makes no noise; the Test sound button still blips', asy
   expect(await app.run(pd => pd.sfx.lastBlip), 'Test sound: audible').toEqual({ quiet: false });
   await page.evaluate(() => document.getElementById('snd').click()); await page.evaluate(() => document.getElementById('snd').click());
   expect(await app.run(pd => pd.sfx.lastBlip), 'the sound button also enables silently').toEqual({ quiet: true });
+});
+
+test('spatial stereo: pan follows the impact\'s place on screen, distance darkens it, width 0 is mono', async ({ app }) => {
+  await app.open();
+  const r = await app.run(pd => { pd.audioInit(); const at = (x, z = 0, w = 0.5) => { pd.state.spatialWidth = w; return pd.makeSpatial({ x, y: -1.6, z }); };
+    const left = at(-1.5), right = at(1.5), mid = at(0), wide = at(1.5, 0, 1), near = at(0, 2), far = at(0, -3), mono = at(1.5, 0, 0), behind = at(0, 30);
+    pd.state.spatialWidth = 0.5; pd.sfx.spat = 'stale'; pd.playImpactNow(14, 'table', { x: 1, y: -1.6, z: 0 });
+    return { left: left.pan, right: right.pan, mid: mid.pan, wide: wide.pan, nearGain: near.gain, farGain: far.gain, nearCut: near.cutoff, farCut: far.cutoff, mono, behind, spatAfter: pd.sfx.spat }; });
+  expect(r.left, 'left of centre pans left').toBeLessThan(-0.05); expect(r.right, 'right pans right').toBeGreaterThan(0.05);
+  expect(Math.abs(r.mid), 'centre stays near the middle').toBeLessThan(0.05);
+  expect(r.wide, 'full width pans further than half width').toBeGreaterThan(r.right);
+  expect(r.nearGain, 'nearer is louder').toBeGreaterThan(r.farGain); expect(r.nearCut, 'farther is duller').toBeGreaterThan(r.farCut);
+  expect(r.mono, 'width 0 = mono, no extra nodes').toBeNull(); expect(r.behind, 'behind the camera = centred').toBeNull();
+  expect(r.spatAfter, 'the spatial input is cleared after each impact').toBeNull();
+});
+
+test('rolling sound: soft ticks as a die turns about one face edge; none when it is still or in the air', async ({ app }) => {
+  await app.open();
+  const r = await app.run(pd => { const Y = -1.6, body = (y, w, v) => ({ position: { x: 0, y }, angularVelocity: { length: () => w }, velocity: { x: v, z: 0 } });
+    const run = (name, w, v, y = Y) => { const b = body(y, w, v); let n = 0; for (let i = 0; i < 40; i++) n += pd.rollTick(b, name, 0.016); return n; };
+    return { d6: run('d6', 10, 1), d20: run('d20', 10, 1), slow: run('d6', 0.5, 0.2), air: run('d6', 10, 1, Y + 5), fast: run('d6', 30, 3), pct: run('d%', 10, 1) }; });
+  expect(r.d6, 'a tumbling d6 ticks').toBeGreaterThan(1); expect(r.d20, 'a d20 has more edges per turn, so more ticks').toBeGreaterThan(r.d6);
+  expect(r.slow, 'a nearly still die is silent').toBe(0); expect(r.air, 'a die in the air is silent').toBe(0);
+  expect(r.fast, 'faster tumbling ticks faster').toBeGreaterThan(r.d6); expect(r.pct, 'the percentile die parses its name').toBeGreaterThan(0);
 });
