@@ -2201,7 +2201,34 @@ function labLayout(){ const W=stage.clientWidth, H=stage.clientHeight, narrow=W<
   y+=Math.ceil(4/cols)*(M+gap+18)+6;
   for(let i=0;i<4;i++){ const c=i%cols; out.push({m:i,s:60,x:x0+c*(M+gap),y:y}); }
   return out; }
-function labDraw(){ const W=stage.clientWidth, H=stage.clientHeight; renderer.setScissorTest(true); renderer.setClearColor(0x0e1015,1); renderer.setViewport(0,0,W,H); renderer.setScissor(0,0,W,H); renderer.clear();
+
+/* head-to-head (?lab=thumbs&cmp=1): every saved candidate pose (with its own room turn and lights) on the four materials, tile and shelf size */
+let cmpOn=false, cmpEnvs=null;
+const CMP_BACK={p:[-1.2,2,-4],i:2.4}, CMP_R0=[0,Math.PI,0], CMP_R1=[.55,3.15,0];
+const CMP=[{n:'A',q:[.252,.627,.025,.737],env:CMP_R0,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'B',q:[.463,.327,-.644,-.514],env:CMP_R0,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'C',q:[.208,-.882,.179,-.384],env:CMP_R1,key:{p:[-.1,1.9,3.2],i:1.3},sheen:{p:[4,.7,1.4],i:1.25}},
+ {n:'D',q:[.167,-.888,.173,-.391],env:CMP_R1,key:{p:[-.1,1.9,3.2],i:1.3},sheen:{p:[4,.7,1.4],i:1.25}},
+ {n:'E',q:[0.624,-0.604,-0.223,0.443],env:[0.2,2.9,-0.05],cz:4.9,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'E, 20 outward',q:[0.601,-0.619,0.184,-0.47],env:[0.2,2.9,-0.05],cz:4.9,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'E, 20 rolled -35°',q:[0.387,-0.771,0.317,-0.393],env:[0.2,2.9,-0.05],cz:4.9,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'E, 20 rolled -50°',q:[0.283,-0.815,0.366,-0.348],env:[0.2,2.9,-0.05],cz:4.9,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}},
+ {n:'E, 20 rolled -65°',q:[0.174,-0.845,0.408,-0.298],env:[0.2,2.9,-0.05],cz:4.9,key:{p:[-.2,1.9,3.2],i:1.1},sheen:{p:[4,.7,1.4],i:1.1}}];
+function cmpDraw(){ const W=stage.clientWidth, H=stage.clientHeight, x0=8, gap=10, n=CMP.length;
+  if(!cmpEnvs){ const cache={}; cmpEnvs=CMP.map(c=>cache[c.env]||(cache[c.env]=picEnv(...c.env))); }
+  const byW=Math.floor((W-2*x0-4*gap)/4)-64, byH=Math.floor((H-16)/n)-22, M=Math.max(70,Math.min(byW,byH,260)), cw=M+64;
+  renderer.setScissorTest(true); renderer.setClearColor(0x0e1015,1); renderer.setViewport(0,0,W,H); renderer.setScissor(0,0,W,H); renderer.clear(); renderer.toneMappingExposure=1.5;
+  const caps=[];
+  CMP.forEach((c,ri)=>{ const y=8+ri*(M+22);
+    labSc.forEach((s,m)=>{ const x=x0+m*(cw+gap);
+      s.sc.environment=cmpEnvs[ri]; s.d.mesh.quaternion.set(...c.q).normalize(); s.key.position.set(...c.key.p); s.key.intensity=c.key.i; s.sheen.visible=true; s.sheen.position.set(...c.sheen.p); s.sheen.intensity=c.sheen.i; s.back.visible=true; s.back.position.set(...CMP_BACK.p); s.back.intensity=CMP_BACK.i;
+      s.cam.position.set(0,-.1,c.cz||5.2); s.cam.fov=32; s.cam.updateProjectionMatrix();
+      for(const [vx,vy,vs] of [[x,y,M],[x+M+4,y+M-60,60]]){ renderer.setViewport(vx,H-vy-vs,vs,vs); renderer.setScissor(vx,H-vy-vs,vs,vs); renderer.render(s.sc,s.cam); }
+      caps.push([x,y+M+2,M,ri===0?s.name+' · '+c.n:c.n]); }); });
+  renderer.setScissorTest(false);
+  const hit=$('labhit'), sig='cmp'+W+'x'+H; if(hit&&hit.dataset.sig!==sig){ hit.dataset.sig=sig; hit.replaceChildren(...caps.map(([x,y,w,t])=>{ const e=el('div','labcap',t); e.style.cssText=`left:${x}px;top:${y}px;width:${w}px`; return e; })); } }
+function setCmp(on){ cmpOn=on; const hit=$('labhit'), pn=$('labpanel'); if(hit){ hit.dataset.sig=''; hit.style.cursor=on?'default':'grab'; } if(pn) pn.style.display=on?'none':''; const b=$('cmpbtn'); if(b) b.textContent=on?'Back to the lab':'Compare candidates'; if(!on) labEnvUpdate(); labDirty=true; }
+function labDraw(){ if(cmpOn) return cmpDraw(); const W=stage.clientWidth, H=stage.clientHeight; renderer.setScissorTest(true); renderer.setClearColor(0x0e1015,1); renderer.setViewport(0,0,W,H); renderer.setScissor(0,0,W,H); renderer.clear();
   renderer.toneMappingExposure=LAB.exposure; for(const s of labSc) labApply(s);
   const L=labLayout(); for(const v of L){ const s=labSc[v.m]; renderer.setViewport(v.x,H-v.y-v.s,v.s,v.s); renderer.setScissor(v.x,H-v.y-v.s,v.s,v.s); renderer.render(s.sc,s.cam); }
   renderer.setScissorTest(false); const hit=$('labhit'); if(hit&&hit.dataset.sig!==JSON.stringify(L)){ hit.dataset.sig=JSON.stringify(L); hit.replaceChildren(...L.filter(v=>v.s>60).map(v=>{ const c=el('div','labcap',labSc[v.m].name); c.style.cssText=`left:${v.x}px;top:${v.y+v.s+2}px;width:${v.s}px`; return c; })); } }
@@ -2212,9 +2239,9 @@ let labEnvT=0; function labEnvThrottle(){ clearTimeout(labEnvT); labEnvT=setTime
 function startLab(){ if(labOn) return; labOn=true; document.body.classList.add('lab'); const root=el('div'); root.id='labui';
   const hit=el('div'); hit.id='labhit'; let drag=null;
   hit.addEventListener('pointerdown',e=>{ drag=[e.clientX,e.clientY]; hit.setPointerCapture(e.pointerId); });
-  hit.addEventListener('pointermove',e=>{ if(!drag) return; const k=.008, dx=e.clientX-drag[0], dy=e.clientY-drag[1]; drag=[e.clientX,e.clientY]; LAB.q.premultiply(labEu(dy*k,dx*k,0)).normalize(); labChanged(); });
+  hit.addEventListener('pointermove',e=>{ if(!drag||cmpOn) return; const k=.008, dx=e.clientX-drag[0], dy=e.clientY-drag[1]; drag=[e.clientX,e.clientY]; LAB.q.premultiply(labEu(dy*k,dx*k,0)).normalize(); labChanged(); });
   const end=()=>{ drag=null; }; hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
-  hit.addEventListener('wheel',e=>{ e.preventDefault(); LAB.camZ=THREE.MathUtils.clamp(LAB.camZ+e.deltaY*.003,2.5,9); labChanged(); syncAll(); },{passive:false});
+  hit.addEventListener('wheel',e=>{ if(cmpOn) return; e.preventDefault(); LAB.camZ=THREE.MathUtils.clamp(LAB.camZ+e.deltaY*.003,2.5,9); labChanged(); syncAll(); },{passive:false});
   const panel=el('div'); panel.id='labpanel'; const sync=[]; const syncAll=()=>sync.forEach(f=>f());
   const head=el('div','labhead'); head.append(el('b','','Thumbnail lab')); const tog=el('button','','Hide'); tog.type='button'; tog.onclick=()=>{ labPanelOpen=!labPanelOpen; panel.classList.toggle('shut',!labPanelOpen); tog.textContent=labPanelOpen?'Hide':'Controls'; labDirty=true; }; head.append(tog); panel.append(head);
   panel.append(el('p','labnote','Drag any picture to turn the die in all of them; scroll to move the camera. The numbers below follow along: copy them back to me.'));
@@ -2230,7 +2257,8 @@ function startLab(){ if(labOn) return; labOn=true; document.body.classList.add('
   sec('Settings to copy back'); const out=el('textarea'); out.id='labout'; out.readOnly=true; out.rows=14; out.value=labReadout(); panel.append(out);
   const copy=el('button','','Copy settings'); copy.type='button'; copy.onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(out.value); ok=true; }catch{ out.select(); try{ ok=document.execCommand('copy'); }catch{} } copy.textContent=ok?'Copied':'Select and copy the text'; setTimeout(()=>{ copy.textContent='Copy settings'; },1800); }; panel.append(copy);
   sync.push(()=>{ out.value=labReadout(); });
-  root.append(hit,panel); stage.append(root); labBuild().then(()=>{ resize(); labDirty=true; }); }
+  const cb=el('button','','Compare candidates'); cb.id='cmpbtn'; cb.type='button'; cb.style.cssText='position:absolute;z-index:7;top:8px;right:8px;padding:8px 12px;border-radius:10px;border:1px solid #3a4052;background:#1b1f2a;color:#e8ecf4;font:600 13px system-ui'; cb.onclick=()=>setCmp(!cmpOn); addEventListener('resize',()=>{ labDirty=true; });
+  root.append(hit,panel,cb); stage.append(root); if(new URLSearchParams(location.search).get('cmp')) setTimeout(()=>setCmp(true),0); labBuild().then(()=>{ resize(); labDirty=true; }); }
 
 let frameErrs=0;
 renderer.setAnimationLoop(t=>{ try{ loop(t); }catch(e){ if(frameErrs++<3) console.error('frame error',e); } });   // an exception in one frame used to end the loop for good (three.js stops scheduling frames), which looks like a hang
