@@ -1,10 +1,10 @@
 ---
 id: PD-135
 title: 'Roll log: clicking a set name brings that set to the mat (not rolled)'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-13T06:11:00Z'
-updated_date: '2026-11-13T06:12:00Z'
+updated_date: '2026-11-13T08:09:00Z'
 labels: []
 milestone: m-0
 dependencies: []

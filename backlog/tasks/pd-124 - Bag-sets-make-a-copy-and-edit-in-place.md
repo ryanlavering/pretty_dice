@@ -4,7 +4,7 @@ title: 'Bag sets: make a copy and edit in place'
 status: Needs Review
 assignee: []
 created_date: '2026-11-12T17:11:00Z'
-updated_date: '2026-11-13T00:28:00Z'
+updated_date: '2026-11-13T07:10:00Z'
 labels:
   - feature
   - bag
@@ -34,4 +34,6 @@ Future (owner request 2026-11-12): sets need Copy and Edit. The editor re-uses t
 2026-11-12: implemented. Row menu has Edit… and Make a copy (Use the current dice is gone). Edit expands the row into an inline editor: name, single-shape presets (d4..d20, Standard 7), formula field (typed @design checked), Dice use picker, term chips, steppers, modifier, Save / Cancel. It works on a draft of that one set, so the live Custom selection is never touched; Save also clears the set's last result. Copy puts 'X copy' right after the original. Checked at 1100 px and 390 px.
 
 2026-11-12 owner feedback: editor was too spread out on desktop; now a compact panel (max 400 px, left aligned, tighter rows, presets in 5 columns) with a close X in its header (closes without saving) plus Save / Cancel.
+
+2026-11-13 phone review: Cancel removed (duplicated the X); X asks before discarding edits; see PD-136.
 <!-- SECTION:NOTES:END -->

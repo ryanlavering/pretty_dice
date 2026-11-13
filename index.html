@@ -103,7 +103,7 @@
   #sheettabs{display:flex;gap:6px;padding:8px 16px 0} #sheettabs button{border-radius:8px 8px 0 0;padding:7px 16px;background:none;border:1px solid var(--line);border-bottom:0;color:var(--dim)} #sheettabs button.on{color:var(--accent);background:#1d212c}
   #setlist{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;align-content:start} #setlist[hidden]{display:none}
   .setrow{display:flex;align-items:stretch;gap:8px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none} .setrow .main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border-radius:10px;background:#1d212c;border:1px solid var(--line)}
-  .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .quick,.setrow .dots{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
+  .setrow .nm{font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow small{color:var(--dim);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .setrow .pen{display:none} @media (min-width:700px) and (hover:hover){ .setrow .pen{display:block} } .setrow .quick,.setrow .dots,.setrow .pen{width:44px;flex:none;border-radius:10px;padding:0;font-size:18px}
   .setrow .chips{display:flex;gap:4px 10px;flex-wrap:wrap;align-items:center} .setrow .term{display:inline-flex;align-items:center;gap:3px;white-space:nowrap} .setrow .term small,.setrow .mod{color:var(--ink);font-size:12px} .chip{display:inline-block;position:relative;flex:none;width:30px;height:30px;background-size:contain;background-repeat:no-repeat;vertical-align:middle} .chip.flat{width:16px;height:16px} #shapes .chip,.step .chip{width:22px;height:22px;margin-right:4px} .step .chip.flat,#shapes .chip.flat,#termchips .chip{width:14px;height:14px;margin:0 4px 0 0} #shapes button{display:flex;align-items:center;justify-content:center} .setrow .chip i{position:absolute;right:-3px;bottom:-3px;font:700 10px Inter,sans-serif;font-style:normal;background:var(--accent);color:#111;border-radius:7px;padding:0 4px}
   .step{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0;background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:5px 4px} .step .sl{display:flex;align-items:center;gap:2px;color:var(--dim);font-size:12px} .step .sc{display:flex;align-items:center;justify-content:space-between;width:100%} .step .sc button{padding:2px 8px} .step .sc b{font-size:15px}
   #quickres{position:fixed;top:26%;left:50%;transform:translateX(-50%);z-index:40;width:min(360px,88vw);box-sizing:border-box;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;padding:12px 16px 14px;background:rgba(14,16,21,.93);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px #000a} #quickres.on{opacity:1;transition:opacity .12s}
@@ -112,6 +112,7 @@
   #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheethead.renaming #sheetact,#sheethead.renaming #sheetbag,#sheethead.renaming #sheetclose{display:none} #sheethead.renaming #sheettitle{flex:1;display:flex;align-items:center;gap:6px;overflow:visible} #sheettitle .bnedit{flex:1;min-width:0;max-width:420px;width:auto;font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
   .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
   .seted{background:#1d212c;border:1px solid var(--accent);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;max-width:400px;box-sizing:border-box} .seted input[type=text]{font:inherit;color:var(--ink);background:#14171f;border:1px solid var(--line);border-radius:6px;padding:5px 7px;text-align:left;width:100%;box-sizing:border-box} .seted .sename{font-weight:600}
+  .seted{position:relative} .seted.dirty::after{content:'';position:absolute;top:-5px;right:-5px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)} .seted.dirty .sesave{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:600}
   .seted .sehead{display:flex;gap:6px;align-items:center} .seted .seclose{flex:none;width:30px;height:30px;padding:0;border-radius:50%;display:grid;place-items:center;color:var(--dim)}
   .seted .selab{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px} .seted .presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px} .seted .presets button{display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 2px;font-size:12px}
   .seted .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px} .seted .step{padding:3px 4px;gap:1px} .seted .step .sc button{padding:1px 7px} .seted .step .sc b{font-size:14px} .seted .tch{display:flex;flex-wrap:wrap;gap:5px} .seted .tch button{padding:2px 8px;font-size:12px;border-radius:999px;display:inline-flex;align-items:center;gap:3px} .seted .tch .x{color:var(--dim)}
@@ -1537,13 +1538,13 @@ $('cards').addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)<=Math.abs(e.delta
   box.addEventListener('click',e=>{ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true); }   // the click that ends a drag is not a tap on a card
 
 /* menus */
-let menuAnchor=null;
-function openMenu(anchor,items){ { const r0=anchor.getBoundingClientRect(); menuAnchor={getBoundingClientRect:()=>r0}; } const m=$('cardmenu'); m.replaceChildren(); for(const it of items){ if(it.head){ m.append(el('div','mh',it.head)); continue; }
+let menuAnchor=null, menuEl=null, menuShut=null;   // tapping the same ⋯ again closes the menu instead of reopening it
+function openMenu(anchor,items){ if(menuShut&&menuShut.a===anchor&&Date.now()-menuShut.t<500){ menuShut=null; return; } menuEl=anchor; { const r0=anchor.getBoundingClientRect(); menuAnchor={getBoundingClientRect:()=>r0}; } const m=$('cardmenu'); m.replaceChildren(); for(const it of items){ if(it.head){ m.append(el('div','mh',it.head)); continue; }
     const b=el('button',it.danger?'danger':'',it.label); b.type='button'; if(it.disabled) b.disabled=true; b.onclick=()=>{ closeMenu(); it.run(); }; m.append(b); }
   m.hidden=false; const r=anchor.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px'; m.style.top=Math.max(8,(r.top-h-6>8?r.top-h-6:r.bottom+6))+'px'; }
 function closeMenu(){ $('cardmenu').hidden=true; }
-addEventListener('pointerdown',e=>{ if(!$('cardmenu').hidden&&!e.target.closest('#cardmenu')) closeMenu(); },true);
+addEventListener('pointerdown',e=>{ if(!$('cardmenu').hidden&&!e.target.closest('#cardmenu')){ menuShut=menuEl&&menuEl.contains&&menuEl.contains(e.target)?{a:menuEl,t:Date.now()}:null; closeMenu(); } },true);
 const addItems=()=>[{head:'Add to the bag'},{label:'New blank design',run:()=>bagOps.addBlank()},{label:'Random draft (Randomize)',run:()=>randomize()},{label:'From a file…',run:()=>{ bagReplace=false; $('bagfile').click(); }}];
 function cardItems(id){
   if(id==='draft') return [{label:'Keep in the bag',run:()=>bagOps.keep()},{label:'Discard draft',danger:true,run:()=>bagOps.discard()}];
@@ -1620,19 +1621,19 @@ function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replac
     const rows=el('div','lr'); if(e.items) rows.append(rollItemsEl(e.items,e.modText)); else if(e.detail) rows.append(e.detail);
     body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }
 $('logbtn').onclick=()=>{ $('logpanel').hidden=!$('logpanel').hidden; renderLog(); };
-function editSetName(span,id){ const cur=span.textContent, inp=el('input','nmedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Set name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
-  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; if(ok&&inp.value.trim()&&inp.value.trim()!==cur) setOps.rename(id,inp.value); renderSheet(); };
-  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); inp.onclick=e=>e.stopPropagation(); }
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
-  return [{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0)},{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},
+  return [{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
 /* Inline set editor (PD-124): the Custom controls (notation, dice use, term chips, steppers, modifier) plus single-shape presets, working on a draft of one set. The live Custom selection is never touched. */
 let editSet=null;   // {id,name,terms,mod,use,err}
-function openSetEditor(id){ const st=setOps.find(id); if(!st) return; editSet={id,name:st.name,terms:structuredClone(st.terms),mod:st.mod||0,use:null,err:'',orig:JSON.stringify([st.name,st.terms,st.mod||0])}; renderSheet(); setTimeout(()=>{ const n=document.querySelector('#setlist .seted .sename'); if(n){ n.focus(); n.select(); n.scrollIntoView({block:'nearest'}); } },0); }
+function openSetEditor(id){ const st=setOps.find(id); if(!st) return;
+  if(editSet&&editSet.id!==id&&setDirty(editSet)){ const anchor=document.querySelector('#setlist .seted .seclose')||document.getElementById('setlist'); openMenu(anchor,[{head:`Discard your changes to "${editSet.name||'this set'}"?`},{label:'Discard and open',danger:true,run:()=>{ editSet=null; openSetEditor(id); }},{label:'Keep editing',run:()=>{}}]); return; }
+  editSet={id,name:st.name,terms:structuredClone(st.terms),mod:st.mod||0,use:null,err:'',orig:JSON.stringify([st.name,st.terms,st.mod||0])}; renderSheet(); setTimeout(()=>{ const n=document.querySelector('#setlist .seted .sename'); if(n) n.scrollIntoView({block:'nearest'}); },0); }
 function draftApply(terms,mod){ const note=fmtNotation(terms,mod), p=parseNotation(note); if(p.error){ editSet.err=p.error; renderSheet(); return false; } editSet.terms=p.terms; editSet.mod=p.mod; editSet.err=''; renderSheet(); return true; }
-function setEditor(){ const E=editSet, host=el('div','seted'); host.dataset.id=E.id;
-  const nm=el('input','sename'); nm.type='text'; nm.value=E.name; nm.maxLength=80; nm.placeholder='Set name'; nm.setAttribute('aria-label','Set name'); nm.oninput=()=>{ E.name=nm.value; }; nm.onkeydown=ev=>{ ev.stopPropagation(); };
+const setDirty=E=>JSON.stringify([E.name,E.terms,E.mod])!==E.orig;
+function setEditor(){ const E=editSet, host=el('div','seted'+(setDirty(E)?' dirty':'')); host.dataset.id=E.id;
+  const nm=el('input','sename'); nm.type='text'; nm.value=E.name; nm.maxLength=80; nm.placeholder='Set name'; nm.setAttribute('aria-label','Set name'); nm.oninput=()=>{ E.name=nm.value; host.classList.toggle('dirty',setDirty(E)); }; nm.onkeydown=ev=>{ ev.stopPropagation(); };
   const useJ=()=>designChipJ(E.use);
   const pre=el('div','presets'); for(const t of STEP_TYPES){ const b=el('button','',dieName(t)); b.type='button'; b.title=`A single ${dieName(t)}`; b.prepend(chipEl(t,useJ(),{flat:true})); b.onclick=()=>draftApply([E.use?{count:1,sides:t,design:E.use}:{count:1,sides:t}],E.mod); pre.append(b); }
   { const b=el('button','','Standard 7'); b.type='button'; b.style.gridColumn='span 2'; b.onclick=()=>draftApply(SET7.map(([id])=>({count:1,sides:id==='dpct'?100:+id.slice(1)})),0); pre.append(b); }
@@ -1646,19 +1647,24 @@ function setEditor(){ const E=editSet, host=el('div','seted'); host.dataset.id=E
     const mk=(txt,dl)=>{ const b=el('button','',txt); b.type='button'; b.setAttribute('aria-label',`${dl>0?'Add':'Remove'} a ${dieName(t)}`); b.onclick=()=>{ const n={...c,[t]:Math.max(0,c[t]+dl)}, others=E.terms.filter(x=>!sameDesign(x.design,E.use)), mine=STEP_TYPES.filter(k=>n[k]>0).map(k=>E.use?{count:n[k],sides:k,design:E.use}:{count:n[k],sides:k}), terms=E.use?[...others,...mine]:[...mine,...others]; if(terms.length) draftApply(terms,E.mod); }; return b; };
     sc.append(mk('−',-1),el('b','',String(c[t])),mk('+',1)); d.append(sl,sc); steps.append(d); }
   const mod=el('div','row2'); { const m=(txt,dl)=>{ const b=el('button','',txt); b.type='button'; b.setAttribute('aria-label',dl>0?'Modifier up':'Modifier down'); b.onclick=()=>draftApply(E.terms,E.mod+dl); return b; }; mod.append(el('label','','Modifier'),m('−',-1),el('b','mv',String(E.mod)),m('+',1)); }
-  const act=el('div','row2 acts'); const save=el('button','primary','Save'); save.type='button'; save.onclick=()=>{ if(setOps.edit(E.id,{name:E.name,terms:E.terms,mod:E.mod})){ editSet=null; renderSheet(); } };
-  act.append(save);
-  const head=el('div','sehead'), close=el('button','seclose','✕'); close.type='button'; close.title='Close without saving'; close.setAttribute('aria-label','Close the editor without saving'); close.onclick=()=>{ const shut=()=>{ editSet=null; renderSheet(); }; if(JSON.stringify([E.name,E.terms,E.mod])===E.orig) shut(); else openMenu(close,[{head:'Discard your changes?'},{label:'Discard',danger:true,run:shut},{label:'Keep editing',run:()=>{}}]); }; head.append(nm,close);
-  host.append(head,el('div','selab','Presets'),pre,el('div','selab','Formula'),nt,el('div','seerr',E.err||''),use,tch,steps,mod,act); return host; }
+  const save=el('button','primary sesave','Save'); save.type='button'; save.onclick=()=>{ if(setOps.edit(E.id,{name:E.name,terms:E.terms,mod:E.mod})){ editSet=null; renderSheet(); } };
+  const head=el('div','sehead'), close=el('button','seclose','✕'); close.type='button'; close.title='Close without saving'; close.setAttribute('aria-label','Close the editor without saving'); close.onclick=()=>{ const shut=()=>{ editSet=null; renderSheet(); }; if(!setDirty(E)) shut(); else openMenu(close,[{head:'Discard your changes?'},{label:'Discard',danger:true,run:shut},{label:'Keep editing',run:()=>{}}]); }; head.append(nm,save,close);
+  host.append(head,el('div','selab','Presets'),pre,el('div','selab','Formula'),nt,el('div','seerr',E.err||''),use,tch,steps,mod); return host; }
 function renderSets(){ const box=$('setlist'); setSheetTitle(`${bag.sets.length} set${bag.sets.length===1?'':'s'}`);
-  const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
+  const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); editSet=null; openSetEditor(id); };
   box.replaceChildren(save1,...(bag.sets.length?bag.sets.map(st=>{ if(editSet&&editSet.id===st.id) return setEditor(); const row=el('div','setrow'); row.dataset.id=st.id;
       const main=el('button','main'); main.type='button'; const chips=el('span','chips'); for(const t of st.terms.slice(0,8)){ const e=t.design&&entryOf(t.design), j=e?(bag.pending[e.id]||e.design):liveJSON(), tm=el('span','term'), c=chipEl(t.sides,j,{label:null}); tm.title=`${t.count}${dieName(t.sides)}${e?' ('+e.name+')':''}`; tm.append(c,el('small','',`${t.count}${dieName(t.sides)}`)); chips.append(tm); }
       if(st.mod) chips.append(el('small','mod',(st.mod>0?'+':'')+st.mod));
-      main.append(el('span','nm',st.name),chips,...(st.last?[el('small','',`last ${st.last.total}`)]:[])); main.onclick=()=>setOps.open(st.id);
+      main.append(el('span','nm',st.name),chips,...(st.last?[el('small','',`last ${st.last.total}`)]:[])); let lt=null,lx=0,ly=0,lf=false; const lc=()=>clearTimeout(lt);   // long press opens the editor
+      main.addEventListener('pointerdown',e=>{ lf=false; lx=e.clientX; ly=e.clientY; lc(); lt=setTimeout(()=>{ lf=true; openSetEditor(st.id); },500); });
+      for(const t of ['pointerup','pointerleave','pointercancel']) main.addEventListener(t,lc);
+      main.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-lx,e.clientY-ly)>8) lc(); });
+      main.addEventListener('contextmenu',e=>e.preventDefault());
+      main.onclick=()=>{ if(lf){ lf=false; return; } setOps.open(st.id); };
       const q=el('button','quick','⚡'); q.type='button'; q.title='Quick roll'; q.setAttribute('aria-label','Quick roll '+st.name); q.onclick=()=>{ setOps.quick(st.id); renderSheet(); };
+      const pen=el('button','pen','✎'); pen.type='button'; pen.title='Edit'; pen.setAttribute('aria-label','Edit '+st.name); pen.onclick=()=>openSetEditor(st.id);
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+st.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,setItems(st.id)); };
-      row.append(main,q,dots); return row; }):[el('div','setempty','No sets yet. Build dice in the editor, then save them here.')])); }
+      row.append(main,q,pen,dots); return row; }):[el('div','setempty','No sets yet. Build dice in the editor, then save them here.')])); }
 let dragMoved=false;
 function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level listeners while dragging: moving the tile in the DOM drops any pointer capture
   const over=e=>{ const under=document.elementsFromPoint(e.clientX,e.clientY).find(n=>n!==t&&n.classList&&n.classList.contains('tile')&&n.dataset.id&&n.dataset.id!=='draft');

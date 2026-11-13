@@ -1,10 +1,10 @@
 ---
 id: PD-133
 title: 'Thumbnail lab: linked live viewports to tune the picture angle and lights'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-13T03:27:00Z'
-updated_date: '2026-11-13T04:10:00Z'
+updated_date: '2026-11-13T08:09:00Z'
 labels:
   - tool
   - bag

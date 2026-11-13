@@ -71,7 +71,8 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await page.locator('#sheettabs button[data-tab="sets"]').click();
   await expect(page.locator('#setlist .setrow')).toHaveCount(2);
   await page.locator('#setsave').click();
-  await page.locator('#setlist input.nmedit').fill('Mine'); await page.keyboard.press('Enter');
+  await expect(page.locator('#setlist .seted')).toBeVisible();   // the new set opens in the editor
+  await page.locator('#setlist .seted .sename').fill('Mine'); await page.locator('#setlist .seted .sesave').click();
   await expect(page.locator('#setlist .setrow')).toHaveCount(3);
   await expect(page.locator('#setlist .setrow .nm', { hasText: 'Mine' })).toBeVisible();
   await expect(page.locator('#setlist .setrow[data-id="adv"] .term')).toHaveText('2d20');   // a tinted dummy d20 per term
@@ -246,7 +247,7 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await expect(ed.locator('.tch button')).toHaveCount(3);                       // one chip per term
   await ed.locator('button[aria-label="Modifier up"]').click();
   await ed.locator('.sename').fill('Big damage');
-  await ed.locator('.acts .primary').click();
+  await ed.locator('.sesave').click();
   await expect(page.locator('#setlist .seted')).toHaveCount(0);
   const r = await app.run(pd => ({ s: pd.bag.sets[0], live: pd.state.notation }));
   expect(r.s).toMatchObject({ id: 'dmg', name: 'Big damage', mod: 4, terms: [{ count: 1, sides: 6 }, { count: 1, sides: 12 }, { count: 1, sides: 4, design: 'amethyst' }] });
@@ -328,7 +329,7 @@ test('the set editor has one way out (the X), which asks before discarding edits
     const q = s => document.querySelector(s), menuBtn = t => [...document.querySelectorAll('#cardmenu button')].find(b => b.textContent === t || b.textContent.startsWith(t));
     const id = pd.bag.sets[0].id; document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
     const openEd = () => { q(`#setlist .setrow[data-id="${id}"] .dots`).click(); menuBtn('Edit').click(); };
-    openEd(); const buttons = [...document.querySelectorAll('.seted .acts button, .seted .seclose')].map(b => b.textContent);
+    openEd(); const buttons = [...document.querySelectorAll('.seted .sesave, .seted .seclose')].map(b => b.textContent);
     q('.seted .seclose').click(); const cleanClosed = !q('.seted');   // nothing changed: closes at once
     openEd(); const nm = q('.seted .sename'); nm.value = 'Changed'; nm.dispatchEvent(new Event('input'));
     q('.seted .seclose').click(); const asked = !!q('.seted') && /Discard your changes/.test(document.getElementById('cardmenu').textContent);
@@ -337,4 +338,40 @@ test('the set editor has one way out (the X), which asks before discarding edits
     return { buttons, cleanClosed, asked, kept, discarded, name: pd.bag.sets.find(s => s.id === id).name };
   });
   expect(r.buttons.sort()).toEqual(['Save', '✕']); expect(r.cleanClosed).toBe(true); expect(r.asked).toBe(true); expect(r.kept).toBe(true); expect(r.discarded).toBe(true); expect(r.name).not.toBe('Changed');
+});
+
+test('a long press on a set opens its editor, the pencil does too, and the menu has no Rename @quick', async ({ shared: app }) => {
+  const r = await app.run(async pd => {
+    const q = s => document.querySelector(s), wait = ms => new Promise(r => setTimeout(r, ms));
+    const id = pd.bag.sets[0].id; document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const main = () => q(`#setlist .setrow[data-id="${id}"] .main`), ptr = (el, type) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: 5, clientY: 5, pointerType: 'touch' }));
+    const m = main(); ptr(m, 'pointerdown'); await wait(650); ptr(m, 'pointerup'); m.click();   // the click after a long press must not also open the set
+    const byPress = !!q('.seted') && document.activeElement !== q('.seted .sename');
+    q('.seted .seclose').click();
+    q(`#setlist .setrow[data-id="${id}"] .pen`).click(); const byPen = !!q('.seted'); q('.seted .seclose').click();
+    const dots = q(`#setlist .setrow[data-id="${id}"] .dots`); ptr(dots, 'pointerdown'); dots.click();
+    const labels = [...document.querySelectorAll('#cardmenu button')].map(b => b.textContent);
+    ptr(dots, 'pointerdown'); dots.click(); const toggled = document.getElementById('cardmenu').hidden;   // a second tap on ⋯ closes it
+    return { byPress, byPen, labels, toggled };
+  });
+  expect(r.byPress).toBe(true); expect(r.byPen).toBe(true); expect(r.toggled).toBe(true);
+  expect(r.labels[0]).toMatch(/^Edit/); expect(r.labels.some(l => /^Rename/.test(l))).toBe(false);
+});
+
+test('a dirty set editor shows a corner dot and a yellow Save, and opening another set asks before discarding @quick', async ({ shared: app }) => {
+  const r = await app.run(async pd => {
+    const q = s => document.querySelector(s), menuBtn = t => [...document.querySelectorAll('#cardmenu button')].find(b => b.textContent.startsWith(t));
+    const [a, b] = pd.bag.sets.map(s => s.id); document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const pen = id => q(`#setlist .setrow[data-id="${id}"] .pen`), ed = () => q('.seted');
+    pen(a).click(); const cleanDot = ed().classList.contains('dirty');
+    const nm = q('.seted .sename'); nm.value = 'Edited'; nm.dispatchEvent(new Event('input'));
+    const dirty = ed().classList.contains('dirty'), save = getComputedStyle(q('.seted .sesave')).backgroundColor, dot = getComputedStyle(ed(), '::after').content;
+    pen(b).click(); const asked = /Discard your changes/.test(document.getElementById('cardmenu').textContent) && ed().dataset.id === a;
+    menuBtn('Keep editing').click(); const kept = ed().dataset.id === a && q('.seted .sename').value === 'Edited';
+    pen(b).click(); menuBtn('Discard and open').click(); const moved = ed().dataset.id === b;
+    pen(a).click(); const cleanSwitch = ed().dataset.id === a;   // nothing edited in b, so no question
+    return { cleanDot, dirty, save, dot, asked, kept, moved, cleanSwitch };
+  });
+  expect(r.cleanDot).toBe(false); expect(r.dirty).toBe(true); expect(r.save).not.toBe('rgba(0, 0, 0, 0)'); expect(r.dot).not.toBe('none');
+  expect(r.asked).toBe(true); expect(r.kept).toBe(true); expect(r.moved).toBe(true); expect(r.cleanSwitch).toBe(true);
 });
