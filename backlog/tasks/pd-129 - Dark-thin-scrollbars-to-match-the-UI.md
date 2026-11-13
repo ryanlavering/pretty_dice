@@ -1,10 +1,10 @@
 ---
 id: PD-129
 title: Dark, thin scrollbars to match the UI
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T23:07:00Z'
-updated_date: '2026-11-12T23:15:00Z'
+updated_date: '2026-11-13T00:58:00Z'
 labels:
   - ux
 dependencies: []
@@ -22,3 +22,9 @@ Found during review (owner, 2026-11-12): the default light scrollbars (sidebar, 
 - [ ] #1 Scrollbars are thin and dark in the sidebar, sheet, set list, roll log and shelf
 - [ ] #2 The roll log panel has no horizontal scrollbar
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-11-12: owner approved.
+<!-- SECTION:NOTES:END -->

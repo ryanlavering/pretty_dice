@@ -372,3 +372,33 @@ test('an edited design keeps its old picture until the new one lands; the stand-
   const svg = decodeURIComponent(await app.run(pd => pd.dieChip({ colors: ['#7a3fb0', '#c89be0', '#3b1d66'], substrate: 'swirl' }, 'd20', '20', false, true)));
   expect(svg).toContain('<rect width="100" height="100"'); expect(svg).toContain('translate(50 46)');
 });
+
+// PD-130: the shelf and the mouse.
+test('the wheel scrolls the shelf sideways; a tap does not move it; an off-screen selection recentres it', async ({ app, page }) => {
+  test.setTimeout(180_000);
+  await app.open();
+  await app.run(async pd => {
+    const mk = n => ({ ...pd.designToJSON(), name: n });
+    await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'Big', designs: Array.from({ length: 16 }, (_, i) => ({ id: `d${i}`, name: `Design ${i}`, design: mk(`Design ${i}`) })), active: { design: 'd8' } }, { replace: true });
+  });
+  const box = page.locator('#cards');
+  await expect.poll(() => box.evaluate(e => e.scrollWidth > e.clientWidth)).toBe(true);
+  const start = await box.evaluate(e => e.scrollLeft);
+  const bb = await box.boundingBox(); await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => box.evaluate(e => e.scrollLeft)).toBeGreaterThan(start + 50);   // down on the wheel moves the strip right
+  await page.mouse.wheel(0, -300);
+  await expect.poll(() => box.evaluate(e => e.scrollLeft)).toBeLessThan(start + 50);
+  // a tap on a visible card selects it and leaves the strip where it is
+  const before = await box.evaluate(e => e.scrollLeft);
+  const vis = await box.evaluate(e => { const r = e.getBoundingClientRect(); return [...e.querySelectorAll('.card[data-id]')].filter(c => !c.classList.contains('on')).map(c => { const q = c.getBoundingClientRect(); return { id: c.dataset.id, mid: q.left + q.width / 2 }; }).filter(c => c.mid > r.left + 60 && c.mid < r.right - 60 && Math.abs(c.mid - (r.left + r.width / 2)) > 90)[0]; });
+  await page.locator(`#cards .card[data-id="${vis.id}"]`).click();
+  await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe(vis.id);
+  await page.waitForTimeout(600);
+  expect(Math.abs((await box.evaluate(e => e.scrollLeft)) - before)).toBeLessThan(4);
+  // selecting a design that is off screen by another route brings it into view
+  const far = await box.evaluate(e => { const r = e.getBoundingClientRect(); const c = [...e.querySelectorAll('.card[data-id]')].find(c => { const q = c.getBoundingClientRect(); return q.right < r.left || q.left > r.right; }); return c && c.dataset.id; });
+  expect(far).toBeTruthy();
+  await app.run((pd, id) => pd.bagActivate(id), far);
+  await expect.poll(() => box.evaluate(e => { const r = e.getBoundingClientRect(), q = e.querySelector('.card.on').getBoundingClientRect(); return q.left > r.left - 1 && q.right < r.right + 1; })).toBe(true);
+});

@@ -1420,13 +1420,15 @@ function scheduleThumb(ms=900){ if(!thumbsOn||!bag||thumbTimer) return; thumbTim
    whatever the stage camera, a roll or the showcase spin are doing. three.js tone-maps and sRGB-encodes only what goes to the screen (or an XR target), so the target is marked as one
    (isXRRenderTarget, the flag three.js uses itself; three.js is pinned to 0.160). The die is drawn on a transparent clear at twice the size, then shrunk onto the stage's backdrop picture. */
 const PIC_PX=144, PIC_RS=288; let picKit=null;
-const PIC_Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,.5,.12));
-function picGear(){ if(picKit) return picKit; const sc=new THREE.Scene(); sc.environment=scene.environment;
-  const l=new THREE.DirectionalLight(0xffffff,1.6); l.position.set(3,6,4); sc.add(l);
+/* The die is shown vertex first, tilted a little: no big flat face squarely mirrors the light and the room, which washed clear epoxy out and flattened metal (PD-131). */
+const PIC_Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.3,.4,.4)).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.atan(1/PHI),0,0)));
+const picEnv=(rx=0,ry=0,rz=0)=>{ const room=new RoomEnvironment(), pg=new THREE.PMREMGenerator(renderer); room.rotation.set(rx,ry,rz); room.updateMatrixWorld(true); const t=pg.fromScene(room,0.04).texture; pg.dispose(); return t; };   // the studio room, turned, so its bright ceiling does not mirror in the top faces
+function picGear(){ if(picKit) return picKit; const sc=new THREE.Scene(); sc.environment=picEnv(0,Math.PI,0);   // the same studio room as the stage, turned round so its bright ceiling lights are behind the die
+  const l=new THREE.DirectionalLight(0xffffff,1.1); l.position.set(-.2,1.9,3.2); sc.add(l);   // a soft key from the front
   const cam=new THREE.PerspectiveCamera(32,1,.3,60); cam.position.set(0,-.1,4.9);   // die about 74% of the width, centred a little high: the framing of the earlier stage captures
   const rt=new THREE.WebGLRenderTarget(PIC_RS,PIC_RS,{samples:0}); rt.isXRRenderTarget=true; rt.texture.colorSpace=THREE.SRGBColorSpace;
   const big=document.createElement('canvas'); big.width=big.height=PIC_RS;
-  return picKit={sc,cam,rt,buf:new Uint8Array(PIC_RS*PIC_RS*4),big}; }
+  return picKit={sc,cam,rt,buf:new Uint8Array(PIC_RS*PIC_RS*4),buf2:new Uint8Array(PIC_RS*PIC_RS*4),big,mask:new THREE.MeshBasicMaterial({color:0xffffff})}; }
 async function renderDesignPicture(j){
   const L=lookFromDesign(j); await ensureFont(L.font);
   const g=picGear(), spec=SHAPES.d20, verts=spec.verts(), R=Math.max(...verts.map(v=>v.length())); verts.forEach(v=>v.multiplyScalar(1/R));
@@ -1436,8 +1438,11 @@ async function renderDesignPicture(j){
   const mesh=new THREE.Mesh(geo,mat); mesh.quaternion.copy(PIC_Q); g.sc.add(mesh);
   if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); const inr=Math.min(...faces.map(f=>f.d)); inc.scale.setScalar(inr*L.inclSize); inc.position.set(0,L.inclY*inr,0); inc.rotation.set(0,THREE.MathUtils.degToRad(L.inclTurn),0); } }
   const clr=new THREE.Color(), ca=renderer.getClearAlpha(); renderer.getClearColor(clr);
-  try{ renderer.setClearColor(0x000000,0); renderer.setRenderTarget(g.rt); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf); }
-  finally{ renderer.setRenderTarget(null); renderer.setClearColor(clr,ca); g.sc.remove(mesh); geo.dispose(); atlas.bump.dispose(); atlas.mask.dispose(); mat.dispose(); }
+  const clear=SUBSTRATES[L.substrate].trans;   // a see-through die refracts whatever is behind it: on a transparent clear it would come out half transparent, so it is drawn against the dark backdrop colour and cut out with a flat white pass
+  try{ renderer.setRenderTarget(g.rt);
+    renderer.setClearColor(clear?0x191c26:0x000000,clear?1:0); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf);
+    if(clear){ g.sc.overrideMaterial=g.mask; renderer.setClearColor(0x000000,0); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf2); g.sc.overrideMaterial=null; for(let i=3;i<g.buf.length;i+=4) g.buf[i]=g.buf2[i]; } }
+  finally{ g.sc.overrideMaterial=null; renderer.setRenderTarget(null); renderer.setClearColor(clr,ca); g.sc.remove(mesh); geo.dispose(); atlas.bump.dispose(); atlas.mask.dispose(); mat.dispose(); }
   const bx=g.big.getContext('2d'), img=bx.createImageData(PIC_RS,PIC_RS);
   for(let y=0;y<PIC_RS;y++) img.data.set(g.buf.subarray(y*PIC_RS*4,(y+1)*PIC_RS*4),(PIC_RS-1-y)*PIC_RS*4);   // readback is bottom-up
   bx.putImageData(img,0,0);
@@ -1475,7 +1480,8 @@ function renderBag(){
   if(document.activeElement&&document.activeElement.classList.contains('nmedit')) return;   // never rebuild under a name being typed
   const sl=slots(), sig=JSON.stringify([sl.map(x=>[x.id,x.name,x.on,!!x.mod,thumbKey(x.json),!!thumbs[thumbKey(x.json)]]),bag.name]); if(sig===lastSig) return; lastSig=sig;
   const cards=$('cards'), keep=cards.scrollLeft; cards.replaceChildren(...sl.map(x=>cardEl(x)),plusEl('card plus'));
-  const on=cards.querySelector('.card.on'); if(on&&lastCenter!==x_id(on)){ lastCenter=x_id(on); centerCard(on,false); } else cards.scrollLeft=keep;
+  cards.scrollLeft=keep;   // the strip stays where it was; it only moves to bring a newly selected card into view (a card you just tapped is already in view)
+  const on=cards.querySelector('.card.on'); if(on&&lastCenter!==x_id(on)){ const first=lastCenter===null; lastCenter=x_id(on); if(first||!cardInView(on)) centerCard(on,false); }
   if(!$('bagsheet').hidden) renderSheet();
 }
 const x_id=n=>n.dataset.id;
@@ -1488,6 +1494,7 @@ function cardEl(x){ const b=el('div','card'+(x.on?' on':'')+(x.draft?' ghost':''
   b.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===b){ e.preventDefault(); b.click(); } };
   const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot')); b.append(th,nameEl(x)); wireCard(b,x); return b; }
 function plusEl(cls){ const b=el('button',cls); b.type='button'; const th=el('div','th','+'); b.append(th,el('span','nm','Add')); b.onclick=e=>openMenu(b,addItems()); return b; }
+const cardInView=c=>{ const box=$('cards'), mid=c.offsetLeft+c.offsetWidth/2; return mid>=box.scrollLeft&&mid<=box.scrollLeft+box.clientWidth; };
 function centerCard(c,smooth=true){ progScroll=Date.now(); const box=$('cards'); box.scrollTo({left:c.offsetLeft-box.clientWidth/2+c.offsetWidth/2,behavior:smooth?'smooth':'instant'}); }
 let progScroll=0, longFired=false;
 function wireCard(b,x){ let t=null,sx=0,sy=0;
@@ -1495,10 +1502,12 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   const cancel=()=>clearTimeout(t); b.addEventListener('pointerup',cancel); b.addEventListener('pointerleave',cancel); b.addEventListener('pointercancel',cancel);
   b.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
   b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
-  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on){ activate(x.id==='draft'?'draft':x.id); centerCard(b); } }; }
+  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on) activate(x.id==='draft'?'draft':x.id); }; }   // tapping a card selects it without moving the strip
 /* shelf: scrolling only browses; a tap picks the design (owner decision 2026-11-11). Rotating the phone or resizing re-centres the strip on the active card. */
 new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
 
+/* the mouse wheel scrolls the shelf sideways (a trackpad's sideways swipe already does) */
+$('cards').addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)<=Math.abs(e.deltaX)) return; e.preventDefault(); $('cards').scrollBy({left:e.deltaY}); },{passive:false});
 /* a mouse can drag the shelf like a finger can (touch and trackpads scroll it natively) */
 { const box=$('cards'); let sx=0, s0=0, down=false, moved=false;
   box.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.button!==0) return; down=true; moved=false; sx=e.clientX; s0=box.scrollLeft; });
