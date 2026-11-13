@@ -168,14 +168,106 @@
 <!--/BOOTSTRAP-->
 </head>
 <body>
-<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#0e1015;color:#8b90a0;font:14px Inter,sans-serif;z-index:50;text-align:center;padding:24px">Loading Pretty Dice…</div>
+<div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#0e1015;color:#8b90a0;font:14px Inter,sans-serif;z-index:50;text-align:center;padding:24px"><div id="bootbox" style="width:min(360px,86vw)">
+  <div style="color:#e8ecf4;font-size:16px;letter-spacing:.14em;margin-bottom:14px">PRETTY DICE</div>
+  <div style="height:6px;border-radius:3px;background:#1b1f2a;overflow:hidden"><div id="bootbar" style="height:100%;width:2%;background:#e2b85c;transition:width .25s"></div></div>
+  <div id="bootmsg" style="margin-top:12px;min-height:20px">Loading Pretty Dice…</div>
+  <div id="bootlog" style="margin-top:8px;font:11px ui-monospace,monospace;color:#5d6375;min-height:15px"></div>
+  <style>
+  /* CSS-only tumbling d6: transform/opacity animations run on the compositor, so it keeps moving while the main thread is busy compiling shaders (and costs no JS). If it stops, the page is frozen. */
+  #bootdice{height:96px;margin:6px auto 0;perspective:420px;position:relative}
+  #bootdice .hop{width:44px;height:44px;margin:0 auto;position:relative;animation:pdhop 1.5s cubic-bezier(.3,.1,.5,1) infinite}
+  #bootdice .cube{width:44px;height:44px;position:absolute;inset:0;transform-style:preserve-3d;animation:pdtumble 4.5s cubic-bezier(.35,.1,.25,1) infinite}
+  #bootdice .f{position:absolute;inset:0;border-radius:9px;background:#e8e2d0;border:1px solid #bdb59c;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:6px;box-sizing:border-box;backface-visibility:hidden}
+  #bootdice .f i{width:6px;height:6px;border-radius:50%;background:#1b1f2a;place-self:center}
+  #bootdice .f1{transform:translateZ(22px)} #bootdice .f2{transform:rotateY(90deg) translateZ(22px)} #bootdice .f3{transform:rotateY(180deg) translateZ(22px)}
+  #bootdice .f4{transform:rotateY(-90deg) translateZ(22px)} #bootdice .f5{transform:rotateX(90deg) translateZ(22px)} #bootdice .f6{transform:rotateX(-90deg) translateZ(22px)}
+  #bootdice .sh{position:absolute;left:50%;bottom:2px;width:40px;height:8px;margin-left:-20px;border-radius:50%;background:#000;opacity:.5;animation:pdshadow 1.5s cubic-bezier(.3,.1,.5,1) infinite}
+  @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
+  @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
+  @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
+  @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
+  </style>
+  <div id="bootdice" title="Keeps rolling while the page loads; if it stops, the page is frozen"><div class="sh"></div><div class="hop"><div class="cube">
+    <div class="f f1"><i style="grid-area:2/2"></i></div><div class="f f2"><i style="grid-area:1/1"></i><i style="grid-area:3/3"></i></div><div class="f f3"><i style="grid-area:1/1"></i><i style="grid-area:2/2"></i><i style="grid-area:3/3"></i></div>
+    <div class="f f4"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div><div class="f f5"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/2"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div><div class="f f6"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/1"></i><i style="grid-area:2/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div>
+  </div></div></div>
+</div></div>
 <script>
-(function(){ var b=document.getElementById('boot'), shown=false;
+(function(){ var b=document.getElementById('boot'), shown=false, bar=document.getElementById('bootbar'), msg=document.getElementById('bootmsg'), lg=document.getElementById('bootlog'), t0=performance.now(), stages=[];
+  /* Staged progress: boot code calls __bootStage(label, fraction 0..1). The log line shows the elapsed time per finished stage, the spinner is pure CSS so a frozen page stops it. */
+  window.__bootStages=stages;
+  window.__bootStage=function(label,frac){ var now=performance.now(); if(stages.length) stages[stages.length-1].ms=Math.round(now-stages[stages.length-1].t); stages.push({label:label,t:now,ms:null});
+    if(shown) return; if(msg) msg.textContent=label; if(bar&&frac!=null) bar.style.width=Math.max(2,Math.min(100,frac*100))+'%';
+    if(lg) lg.textContent=((now-t0)/1000).toFixed(1)+' s'+(stages.length>1?' · '+stages[stages.length-2].label+' '+stages[stages.length-2].ms+' ms':''); };
+  /* resolves after the browser has had a chance to paint, so the new label is visible before the next heavy step starts */
+  window.__bootYield=function(){ return new Promise(function(r){ var d=false, f=function(){ if(!d){ d=true; r(); } }; requestAnimationFrame(function(){ setTimeout(f,0); }); setTimeout(f,60); }); };
+  window.__bootStage('Starting',0.02);
+  var tick=setInterval(function(){ if(window.__bootMs){ clearInterval(tick); return; } if(!shown&&lg&&stages.length) lg.textContent=((performance.now()-t0)/1000).toFixed(1)+' s · step '+((performance.now()-stages[stages.length-1].t)/1000).toFixed(1)+' s'+(stages.length>1?' · last: '+stages[stages.length-2].label+' '+stages[stages.length-2].ms+' ms':''); },250);   // a live clock: while the page is frozen it stops, like the dice would not
   function show(msg){ shown=true; b.style.display='grid'; b.innerHTML='<div><div style="color:#e2b85c;font-size:18px;margin-bottom:10px">Pretty Dice could not start</div><div style="max-width:560px">'+msg+'</div><p><a style="color:#e2b85c" href="?reset=1">Reset saved settings and reload</a></p></div>'; }
-  window.__bootDone=function(){ b.style.display='none'; };
+  window.__bootDone=function(){ if(stages.length) stages[stages.length-1].ms=Math.round(performance.now()-stages[stages.length-1].t); window.__bootMs=Math.round(performance.now()-t0); b.style.display='none'; };
   window.addEventListener('error',function(e){ if(!window.__ready) show('Error: '+(e.message||'unknown')+(e.lineno?' (line '+e.lineno+')':'')); });
   window.addEventListener('unhandledrejection',function(e){ if(!window.__ready) show('Error: '+((e.reason&&e.reason.message)||e.reason)); });
-  setTimeout(function(){ if(!window.__ready&&!shown) show('Still loading after 10 s. three.js and cannon-es load from cdn.jsdelivr.net, so check the network connection, then reload (or use the offline copy: add ?libs=local, which needs the vendor/ folder and a local web server).'); },10000);
+  var wd=setInterval(function(){ if(window.__ready){ clearInterval(wd); return; } if(!shown&&stages.length&&performance.now()-stages[stages.length-1].t>10000) show('No progress for 10 s (last step: '+(stages.length?stages[stages.length-1].label:'none')+'). three.js and cannon-es load from cdn.jsdelivr.net, so check the network connection, then reload (or use the offline copy: add ?libs=local, which needs the vendor/ folder and a local web server).'); },2000);
+})();
+</script>
+<script>
+/* Lag monitor (dev diagnostics, always on, cheap). Finds stretches where the main thread was blocked and records what was running.
+   - heartbeat every 100 ms: a gap well over 100 ms means the page was frozen for that long (hidden tabs are ignored)
+   - PerformanceObserver: 'longtask' and 'long-animation-frame' (Chrome; the latter names the script/function and its position)
+   - spans: app code wraps heavy work in __lag.span(name, fn); breadcrumbs of recent input events and boot stages
+   - a Worker watchdog survives a hang that never ends (Chrome's "Page unresponsive"): it keeps the last known activity in IndexedDB, reported on the next load
+   Read it: __lag.report() (JSON), __lag.copy(), or the toast that appears after a pause of 1 s or more. Last events persist in localStorage 'prettydice.lag'. */
+(function(){
+  var KEEP=60, MIN=200, TOAST=1000, KEY='prettydice.lag', HB=100;
+  var events=[], spans=[], stack=[], inputs=[], T0=performance.now(), prev=[]; try{ prev=JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){}
+  var L=window.__lag={ events:events, ctx:null, min:MIN, toast:TOAST, enabled:true };
+  function now(){ return performance.now(); }
+  function r(x){ return Math.round(x); }
+  function post(){ if(L.worker) try{ L.worker.postMessage({t:Date.now(),ops:stack.map(function(o){return o.name;}),stage:L.stage(),input:inputs.length?inputs[inputs.length-1]:null}); }catch(e){} }
+  L.stage=function(){ var s=window.__bootStages; return window.__ready?null:(s&&s.length?s[s.length-1].label:null); };
+  L.span=function(name,fn){ var o={name:name,t:now()}; stack.push(o); post(); var done=function(){ o.end=now(); var i=stack.lastIndexOf(o); if(i>=0) stack.splice(i,1); spans.push(o); if(spans.length>80) spans.shift(); post(); };
+    var res; try{ res=fn(); }catch(e){ done(); throw e; } if(res&&typeof res.then==='function'){ o.async=true; res.then(done,done); } else done(); return res; };
+  L.wrap=function(name,fn){ return function(){ var self=this, a=arguments; return L.span(name,function(){ return fn.apply(self,a); }); }; };
+  function overlapping(t0,t1){ var out=[]; spans.concat(stack).forEach(function(o){ var e=o.end||t1; if(e>=t0&&o.t<=t1) out.push({name:o.name,ms:r(e-o.t),async:!!o.async,running:!o.end}); }); return out.sort(function(a,b){return b.ms-a.ms;}).slice(0,8); }
+  function env(){ var e={ua:navigator.userAgent,cores:navigator.hardwareConcurrency,mem:navigator.deviceMemory,dpr:devicePixelRatio,view:innerWidth+'x'+innerHeight,libs:window.__libs,url:location.search};
+    try{ var m=performance.memory; if(m) e.heapMB=r(m.usedJSHeapSize/1048576); }catch(x){}
+    try{ var gl=document.createElement('canvas').getContext('webgl2'); var d=gl&&gl.getExtension('WEBGL_debug_renderer_info'); if(d) e.gpu=gl.getParameter(d.UNMASKED_RENDERER_WEBGL); }catch(x){} return e; }
+  var envCache; L.report=function(){ envCache=envCache||env(); return {env:envCache,bootMs:window.__bootMs,bootStages:(window.__bootStages||[]).map(function(s){return [s.label,s.ms];}),uptimeS:r((now()-T0)/1000),events:events.slice(),previousSession:prev}; };
+  L.copy=function(){ var txt=JSON.stringify(L.report(),null,1); var ok=false; try{ return navigator.clipboard.writeText(txt).then(function(){return true;},function(){return fallback(txt);}); }catch(e){ return Promise.resolve(fallback(txt)); } };
+  function fallback(txt){ try{ var t=document.createElement('textarea'); t.value=txt; t.style.cssText='position:fixed;opacity:0;top:0'; document.body.append(t); t.select(); var ok=document.execCommand('copy'); t.remove(); return ok; }catch(e){ return false; } }
+  L.clear=function(){ events.length=0; try{ localStorage.removeItem(KEY); }catch(e){} };
+  function persist(){ try{ localStorage.setItem(KEY,JSON.stringify(events.slice(-20))); }catch(e){} }
+  function record(ev){ if(!L.enabled) return; ev.at=new Date().toISOString(); ev.sinceLoadS=+((now()-T0)/1000).toFixed(1); ev.visible=document.visibilityState; ev.stage=L.stage();
+    var recent=inputs.filter(function(i){ return now()-i.t<5000; }).slice(-4).map(function(i){ return {ago:r(now()-i.t),what:i.what}; }); if(recent.length) ev.input=recent;
+    if(L.ctx) try{ ev.app=L.ctx(); }catch(e){ ev.app={err:String(e)}; } try{ var m=performance.memory; if(m) ev.heapMB=r(m.usedJSHeapSize/1048576); }catch(e){}
+    events.push(ev); if(events.length>KEEP) events.shift(); persist(); if(ev.ms>=1) try{ console.warn('[lag] '+ev.src+' '+ev.ms+' ms'+(ev.ops&&ev.ops.length?' in '+ev.ops.map(function(o){return o.name+' '+o.ms+'ms';}).join(', '):''),ev); }catch(e){}
+    if(ev.ms>=L.toast&&ev.src==='heartbeat') showToast(ev); }
+  /* heartbeat */
+  var last=now(), hiddenAt=document.hidden?last:-1e9;
+  document.addEventListener('visibilitychange',function(){ hiddenAt=now(); last=now(); });
+  setInterval(function(){ var t=now(), gap=t-last-HB; last=t; post(); if(document.hidden||t-hiddenAt<HB*3||window.__lagOff) return; if(gap>=L.min) record({src:'heartbeat',ms:r(gap),ops:overlapping(t-gap-HB,t)}); },HB);
+  /* browser-reported long tasks and long animation frames */
+  function obs(type,fn){ try{ new PerformanceObserver(function(l){ l.getEntries().forEach(fn); }).observe({type:type,buffered:true}); }catch(e){} }
+  obs('longtask',function(e){ if(e.duration>=L.min&&!document.hidden) record({src:'longtask',ms:r(e.duration),startS:+(e.startTime/1000).toFixed(1),ops:overlapping(e.startTime,e.startTime+e.duration),attr:(e.attribution||[]).map(function(a){return a.containerType+' '+(a.containerName||a.containerSrc||'');}).join(';')}); });
+  obs('long-animation-frame',function(e){ if(e.duration<L.min*1.5||document.hidden) return; record({src:'loaf',ms:r(e.duration),startS:+(e.startTime/1000).toFixed(1),blockingMs:r(e.blockingDuration||0),renderMs:r(Math.max(0,(e.startTime+e.duration)-(e.renderStart||e.startTime+e.duration))),styleLayoutMs:r(Math.max(0,(e.startTime+e.duration)-(e.styleAndLayoutStart||e.startTime+e.duration))),ops:overlapping(e.startTime,e.startTime+e.duration),
+    scripts:(e.scripts||[]).slice(0,5).map(function(s){ return {fn:s.sourceFunctionName||s.invoker,via:s.invokerType,url:(s.sourceURL||'').split('/').pop().slice(0,40),pos:s.sourceCharPosition,ms:r(s.duration)}; })}); });
+  /* breadcrumbs: what the user just did */
+  function crumb(ev){ var t=ev.target, id=t&&(t.id||(t.className&&String(t.className).split(' ')[0])||t.tagName); inputs.push({t:now(),what:ev.type+(ev.key?' '+ev.key:'')+' '+(id||'')}); if(inputs.length>20) inputs.shift(); }
+  ['pointerdown','keydown','change','wheel'].forEach(function(n){ addEventListener(n,crumb,{capture:true,passive:true}); });
+  /* toast */
+  var toast; function showToast(ev){ if(!document.body) return; if(!toast){ toast=document.createElement('button'); toast.type='button'; toast.id='lagtoast'; toast.style.cssText='position:fixed;left:12px;bottom:12px;z-index:60;max-width:min(360px,90vw);text-align:left;padding:8px 12px;border-radius:10px;border:1px solid #3a4052;background:#1b1f2acc;color:#e8ecf4;font:12px system-ui;cursor:pointer;display:none'; document.body.append(toast);
+      toast.onclick=function(){ L.copy().then(function(ok){ toast.textContent=ok?'Diagnostics copied':'Copy failed: see the console (__lag.report())'; setTimeout(function(){ toast.style.display='none'; },2500); }); }; }
+    var top=ev.ops&&ev.ops[0]; toast.textContent='UI paused '+(ev.ms/1000).toFixed(1)+' s'+(top?' ('+top.name+')':'')+' · tap to copy details'; toast.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(function(){ toast.style.display='none'; },10000); }
+  /* watchdog worker: notices a main thread that has not reported for 3 s and writes it to IndexedDB, so a hang that ends in a killed page is still reported on the next load */
+  try{ var src='var last=null,open=false,db=null;var q=indexedDB.open("pdlag",1);q.onupgradeneeded=function(){q.result.createObjectStore("h");};q.onsuccess=function(){db=q.result;};'+
+      'function put(v){if(db)try{db.transaction("h","readwrite").objectStore("h").put(v,"hang");}catch(e){}}'+
+      'onmessage=function(e){last=e.data;last.rx=Date.now();if(open){open=false;put(Object.assign({},last,{resolved:true,silentMs:Date.now()-open0}));}};var open0=0;'+
+      'setInterval(function(){if(!last)return;var s=Date.now()-last.rx;if(s>3000){if(!open){open=true;open0=last.rx;}put(Object.assign({},last,{resolved:false,silentMs:s}));}},1000);';
+    L.worker=new Worker(URL.createObjectURL(new Blob([src],{type:'text/javascript'}))); post();
+    var q=indexedDB.open('pdlag',1); q.onupgradeneeded=function(){ q.result.createObjectStore('h'); };
+    q.onsuccess=function(){ try{ var st=q.result.transaction('h','readwrite').objectStore('h'), g=st.get('hang'); g.onsuccess=function(){ var h=g.result; if(h&&!h.resolved){ events.push({src:'previous-session-hang',ms:h.silentMs,ops:(h.ops||[]).map(function(n){return {name:n};}),stage:h.stage,input:h.input,at:new Date(h.rx).toISOString(),note:'main thread was silent this long and the page ended without recovering'}); persist(); } st.delete('hang'); }; }catch(e){} };
+  }catch(e){}
 })();
 </script>
 <div id="app">
@@ -746,6 +838,8 @@ function pickPaint(cols,sub,r,mode='auto'){
 }
 
 /* ---------- scene ---------- */
+const __bs=async(l,f)=>{ if(window.__bootStage){ window.__bootStage(l,f); await window.__bootYield(); } };   // boot progress: label + fraction, then let the browser paint it
+await __bs('Setting up the 3D scene',.30);
 const stage=document.getElementById('stage');
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
@@ -761,6 +855,7 @@ const scene=new THREE.Scene();
     lg.addColorStop(0,'rgba(190,205,240,0)'); lg.addColorStop(.5,`rgba(190,205,240,${a0})`); lg.addColorStop(1,'rgba(190,205,240,0)');
     g.save(); g.translate(256,256); g.rotate(.35); g.translate(-256,-256); g.fillStyle=lg; g.fillRect(-200,-200,912,912); g.restore(); }
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; scene.background=t; }
+await __bs('Building the lighting',.40);
 scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
 const key=new THREE.DirectionalLight(0xffffff,1.6); key.position.set(3,6,4); key.castShadow=true; key.shadow.mapSize.set(2048,2048); key.shadow.bias=-.0004; key.shadow.normalBias=.03;
 Object.assign(key.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:.5,far:30}); scene.add(key);
@@ -2278,16 +2373,25 @@ function startLab(){ if(labOn) return; labOn=true; document.body.classList.add('
   root.append(hit,panel,cb); stage.append(root); if(new URLSearchParams(location.search).get('cmp')) setTimeout(()=>setCmp(true),0); labBuild().then(()=>{ resize(); labDirty=true; }); }
 
 let frameErrs=0;
-renderer.setAnimationLoop(t=>{ try{ loop(t); }catch(e){ if(frameErrs++<3) console.error('frame error',e); } });   // an exception in one frame used to end the loop for good (three.js stops scheduling frames), which looks like a hang
+let frameN=0;
+const startLoop=()=>renderer.setAnimationLoop(t=>{ const f=()=>{ try{ loop(t); }catch(e){ if(frameErrs++<3) console.error('frame error',e); } }; (window.__lag&&frameN++<6)?window.__lag.span('frame '+frameN,f):f(); });   // the first few frames are named in lag reports: new materials compile on first use   // an exception in one frame used to end the loop for good (three.js stops scheduling frames), which looks like a hang
 addEventListener('visibilitychange',()=>{ if(!document.hidden){ clock.getDelta(); if(sfx.ctx&&sfx.ctx.state!=='running') sfx.ctx.resume().catch(()=>{}); resize(); } });   // coming back to the tab: drop the long gap and wake audio
 
+/* ---------- lag monitor hooks: name the heavy operations so a pause report says what was running ---------- */
+if(window.__lag){ const L=window.__lag;
+  buildDice=L.wrap('buildDice',buildDice); randomize=L.wrap('randomize',randomize); restore=L.wrap('restore',restore); loadDesign=L.wrap('loadDesign',loadDesign); importBag=L.wrap('importBag',importBag);
+  renderDesignPicture=L.wrap('renderDesignPicture',renderDesignPicture); updateThumbs=L.wrap('updateThumbs',updateThumbs); startRoll=L.wrap('startRoll',startRoll); audioInit=L.wrap('audioInit',audioInit);
+  L.ctx=()=>({shape:state.shape,sub:state.substrate,notation:state.notation,dice:dice.length,bagDesigns:bag?bag.designs.length:0,rolling,thumbBusy,thumbs:Object.keys(thumbs).length,mem:{...renderer.info.memory},programs:(renderer.info.programs||[]).length,calls:renderer.info.render.calls,tris:renderer.info.render.triangles}); }
 /* ---------- go ---------- */
+await __bs('Loading fonts',.55);
 await ensureFont(state.font);
 if(state.inclusion!=='none'&&!MODELS[state.inclusion]) state.inclusion='none';
 { const q=new URLSearchParams(location.search); if(q.get('notation')&&!parseNotation(q.get('notation')).error) state.notation=q.get('notation'); if(q.get('orbit')){ const [a,b]=q.get('orbit').split(',').map(Number); orbit.az=a||0; orbit.el=b||0; } if(SHAPES[q.get('shape')]) state.shape=q.get('shape'); if(q.get('radius')) state.radius=+q.get('radius'); if(q.get('clarity')) state.clarity=+q.get('clarity'); if(MODELS[q.get('incl')]) state.inclusion=q.get('incl'); if(STONES[q.get("stone")]) state.stone=q.get("stone"); if(q.get("polish")) state.polish=+q.get("polish"); if(q.get('panel')) state.panel=+q.get('panel'); if(q.get('patina')) state.patina=+q.get('patina'); if(q.get('raised')) state.numRaised=true; if(q.get('nopaint')) state.numPaint=false; if(['scroll','beads','deco'].includes(q.get('fili'))) state.filigree=q.get('fili'); if(q.get('d4style')) state.d4Style=q.get('d4style')==='center'?'center':'tips'; if(q.get('d6style')) state.d6Style=q.get('d6style')==='pips'?'pips':'numbers';
   if(SUBSTRATES[q.get('sub')]){ setSubstrate(q.get('sub')); repaint(); } if(q.get('fresh')){ if(SUBSTRATES[q.get('sub')]) state.randsub=false; randomize(true); } }
 if(!localStorage.getItem(STORE)&&!new URLSearchParams(location.search).get('sub')) randomize(true);
+await __bs('Building the dice',.68);
 buildDice();
+await __bs('Opening your bag',.80);
 initBag(); renderBag(); scheduleThumb();
 history=[snapshot()]; hIdx=0; syncHistoryUI();
 if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of Object.keys(FONTS)){ await ensureFont(f); const labs=[0,1,6,8,9,10,20,90], at=makeAtlas(labs.length,labs,f,3,false), c=at.mask.image, g=c.getContext('2d'), out=[];
@@ -2297,6 +2401,12 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
     console.log('ATLAS',f,out.join(' ')); } }
 if(new URLSearchParams(location.search).get('test')==='models'){ rig.clear(); dice.forEach(d=>d.mesh.visible=false); const ks=Object.keys(MODELS); ks.forEach((k,i)=>{ const t=getTemplate(k).clone(true); const g=new THREE.Group(); g.add(t); g.scale.setScalar(1.15); g.position.set((i%4-1.5)*2.8,(1-Math.floor(i/4))*2.8,0); g.rotation.y=.5; rig.add(g); }); baseZ=14; state.zoom=1; }
 Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
+await __bs('Compiling shaders (slow on some GPUs)',.88);
+try{ await (window.__lag?window.__lag.span('compileAsync',()=>renderer.compileAsync(scene,camera)):renderer.compileAsync(scene,camera)); }catch(e){ console.warn('shader precompile',e); }   // parallel shader compile (KHR_parallel_shader_compile): does not block the page
+{ const f=()=>{ try{ loop(performance.now()); }catch(e){ console.error('first frame',e); } }; window.__lag?window.__lag.span('first frame (shader compile)',f):f(); }   // the big one-off freeze: pay it here, behind the progress screen
+{ const h=+new URLSearchParams(location.search).get('boothold'); if(h>0) await __bs('Holding the loading screen (?boothold='+h+')',.95), await new Promise(r=>setTimeout(r,h*1000)); }   // dev: keep the loading screen up to look at it
+await __bs('Almost there',.97);
+startLoop();   // frames start only now, so the first (shader-compiling) frame never hides inside an earlier boot stage
 window.__ready=true; window.__bootDone&&window.__bootDone();
 if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) startLab();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
