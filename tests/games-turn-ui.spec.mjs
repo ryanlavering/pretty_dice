@@ -6,7 +6,7 @@ test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: 
   await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
   await app.page.click('#gamepanel button.big');
   expect(await app.run(pd => pd.state.notation)).toBe('1d6');
-  await app.run(pd => pd.simRoll());
+  await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(st.dice[0]).toBeGreaterThanOrEqual(1);
   if (st.dice[0] === 1) { expect(st.player).toBe(0); expect(st.turnTotal).toBe(0); }   // 1 busts; one player keeps the turn
@@ -19,7 +19,7 @@ test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app 
   await app.page.selectOption('#gamepanel select >> nth=0', 'farkle');
   await app.page.click('#gamepanel button.big');
   expect(await app.run(pd => pd.state.notation)).toBe('6d6');
-  await app.run(pd => pd.simRoll());
+  await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   if (st.phase === 'score') {
     const sug = await app.run(pd => pd.GAMES.suggest(pd.game.state));
@@ -28,5 +28,23 @@ test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app 
     expect(a.st.turnTotal).toBe(sug[0].points);
     expect(a.held).toEqual(sug[0].slots);
   } else expect(st.turnTotal).toBe(0);   // busted
+  await app.run(pd => pd.endGame());
+});
+
+test('craps: place a pass line bet from the panel, roll, bankroll moves; cash out closes the table', async ({ shared: app }) => {
+  await app.reset(53); await app.run(pd => pd.openGames());
+  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.click('#gamepanel button.big');
+  expect(await app.run(pd => pd.state.notation)).toBe('2d6');
+  await app.page.click('#gamepanel button:has-text("Pass line")');
+  expect(await app.run(pd => pd.GAMES.status(pd.game.state).bankrolls[0])).toBe(495);
+  await app.page.click('#gamepanel .bet');   // the pass line bet cannot be taken down: the engine's error is shown, bet stays
+  expect(await app.run(pd => pd.GAMES.status(pd.game.state).bets.length)).toBe(1);
+  await app.run(pd => pd.simRoll({rerolls:6}));
+  const st = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(st.rollsUsed).toBe(1);
+  await app.page.click('#gamepanel button:has-text("Cash out")');
+  const end = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(end.phase).toBe('over'); expect(end.bets.length).toBe(0);
   await app.run(pd => pd.endGame());
 });

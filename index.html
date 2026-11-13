@@ -76,6 +76,7 @@
   #gamepanel th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} #gamepanel th.cur{color:var(--accent)} #gamepanel td.cur{background:#2a2619}
   #gamepanel td.sug{color:var(--dim);font-style:italic} #gamepanel td.best{color:var(--accent);font-weight:700;font-style:normal} #gamepanel td.pick{cursor:pointer} #gamepanel td.pick:hover{outline:1px solid var(--accent)}
   #gamepanel .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} #gamepanel .sugs button.best{color:var(--accent);font-weight:700}
+  #gamepanel .rules p{margin:4px 0;font-size:12px;color:var(--dim)} #gamepanel .rules b{color:var(--ink)} #gamepanel input[type=number]{width:80px;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px}
   #gamepanel tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} #gamepanel tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   #mode.xopen{border-color:var(--accent);color:var(--accent)}
@@ -2468,7 +2469,7 @@ const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig'];   // dice-and-bank games: no scorecard, a running turn total
 let gsel=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
-function gameHold(i){ const st=GAMES.status(game.state);
+function gameHold(i){ const st=GAMES.status(game.state); if(game.id==='craps') return false;
   if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
     if(st.held[i]){ gameMsg='That die is already set aside'; renderGame(); return false; }
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
@@ -2481,6 +2482,8 @@ function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) 
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
   if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
+  if(game.id==='craps'){ const ev=r.events, tot=ev.find(e=>e.type==='rolled')?.total, pay=ev.filter(e=>e.type==='payout'&&e.amount);
+    gameMsg='Rolled '+tot+(ev.some(e=>e.type==='sevenOut')?' · seven out':'')+(ev.some(e=>e.type==='pointMade')?' · point made':'')+pay.map(e=>' · '+game.state.players[e.player]+' '+(e.amount>0?'+':'')+e.amount).join(''); }
   if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); gameMsg=bust?'Bust! Turn total lost':''; if(bust) gameSync(); }
   renderGame(); }
 function gameSetAside(slots){ const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
@@ -2492,14 +2495,14 @@ function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 async function startGame(id,players,options){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear();
+  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); cbet.amount=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); renderGame(); }
 function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } GP.hidden=true; }
 function renderGame(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else GP.hidden=true; });
-    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
@@ -2514,6 +2517,7 @@ function renderGame(){
   const S=game.state, st=GAMES.status(S), sug=GAMES.suggest(S), over=st.phase==='over';
   hd(game.info.name,()=>endGame(),'End game'); GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
+  if(game.id==='craps'){ renderCraps(S,st,over); return; }
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
@@ -2530,6 +2534,26 @@ function renderGame(){
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yahtzee bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
 }
+let cbet={amount:null,who:null,rules:false};
+function gameBet(kind,number){ const st=GAMES.status(game.state), who=cbet.who!=null&&cbet.who<game.state.players.length?cbet.who:st.player, amount=cbet.amount||GAMES.suggest(game.state)[0].minBet;
+  const r=GAMES.act(game.state,{type:'bet',kind,amount,number,player:who}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=''; renderGame(); }
+function gameRemoveBet(id){ const r=GAMES.act(game.state,{type:'removeBet',id}); if(!r.ok) gameMsg=r.error; else { game.state=r.state; gameMsg=''; } renderGame(); }
+function gameCashOut(){ const r=GAMES.act(game.state,{type:'end'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=''; renderGame(); }
+function renderCraps(S,st,over){
+  const sug=GAMES.suggest(S), res=over?GAMES.result(S):null, minBet=sug.length?sug[0].minBet:5, who=cbet.who!=null&&cbet.who<S.players.length?cbet.who:st.player;
+  if(over) GP.append(gel('div',{className:'gstat'},'Table closed: '+res.winners.map(i=>S.players[i]).join(' & ')+' finish'+(res.winners.length>1?'':'es')+' on top',gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
+  else { GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+' shoots: ':'')+(st.stage==='point'?'point is '+st.point:'come-out roll'),gel('small',{textContent:(gameMsg||st.message||'')})));
+    const row=gel('div',{className:'row'}); row.append(gel('button',{className:'big',type:'button',textContent:'Roll',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}),gel('button',{type:'button',textContent:'Cash out',onclick:gameCashOut})); GP.append(row);
+    const amt=gel('input',{type:'number',min:minBet,step:minBet,value:cbet.amount||minBet,ariaLabel:'Bet amount',onchange:()=>{ cbet.amount=Math.max(minBet,Math.round(+amt.value)||minBet); amt.value=cbet.amount; }}), ar=gel('div',{className:'row'},gel('span',{textContent:'Bet'}),amt);
+    if(S.players.length>1){ const ws=gel('select',{ariaLabel:'Betting as',onchange:()=>{ cbet.who=+ws.value; renderGame(); }}); S.players.forEach((n,i)=>ws.append(gel('option',{value:i,textContent:n,selected:i===who}))); ar.append(ws); }
+    GP.append(ar);
+    const box=gel('div',{className:'sugs'}); for(const r of sug){ box.append(gel('button',{type:'button',textContent:r.number?'Place '+r.number:r.label,disabled:!r.available,title:(r.note?r.note+'. ':'')+r.help,onclick:()=>gameBet(r.kind,r.number)})); } GP.append(box);
+    GP.append(gel('button',{type:'button',textContent:cbet.rules?'Hide rules':'Rules',onclick:()=>{ cbet.rules=!cbet.rules; renderGame(); }}));
+    if(cbet.rules){ const seen=new Set(), d=gel('div',{className:'rules'}); for(const r of sug){ if(seen.has(r.kind)) continue; seen.add(r.kind); d.append(gel('p',{},gel('b',{textContent:(r.kind==='place'?'Place bets':r.label)+': '}),r.help)); } GP.append(d); }
+    const mine=st.bets.filter(b=>b.player===who); if(mine.length){ const bl=gel('div',{className:'sugs'}); for(const b of mine) bl.append(gel('button',{type:'button',className:'bet',textContent:(b.kind==='place'?'Place '+b.number:(sug.find(x=>x.kind===b.kind)||{label:b.kind}).label)+' '+b.amount+' ✕',title:'Take this bet down (not allowed for pass line and field)',onclick:()=>gameRemoveBet(b.id)})); GP.append(bl); } }
+  const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Bankroll'}),gel('th',{textContent:'On the table'}))));
+  S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'), on=st.bets.filter(b=>b.player===p).reduce((a,b)=>a+b.amount,0); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.bankrolls[p]),className:cur?'cur':''}),gel('td',{textContent:on?String(on):'',className:cur?'cur':''})); body.append(tr); });
+  tb.append(body); GP.append(tb); }
 function renderTurn(S,st,over){
   const res=over?GAMES.result(S):null, farkle=game.id==='farkle', sug=farkle?GAMES.suggest(S):[];
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
