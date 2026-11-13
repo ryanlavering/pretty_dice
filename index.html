@@ -109,7 +109,7 @@
   #quickres{position:fixed;top:26%;left:50%;transform:translateX(-50%);z-index:40;width:min(360px,88vw);box-sizing:border-box;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;padding:12px 16px 14px;background:rgba(14,16,21,.93);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 40px #000a} #quickres.on{opacity:1;transition:opacity .12s}
   #quickres .qn{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)} #quickres .tot{font:800 min(54px,16vw) Cinzel,serif;color:var(--accent);line-height:1.15;text-shadow:0 2px 14px #000} #quickres .rt{display:flex;justify-content:center;margin:3px 0;font-size:13px;color:var(--ink)} #quickres .rt .chip{width:20px;height:20px}
   .rt{display:inline-flex;align-items:center;gap:3px;margin:0 7px;white-space:nowrap} .rt .chip{width:22px;height:22px} #logpanel .rt .chip{width:16px;height:16px} #logpanel .rt{margin:0 6px 0 0}
-  #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheettitle .bnedit{width:min(220px,46vw);font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
+  #sheettitle .bn{cursor:text;border-bottom:1px dotted transparent} #sheettitle .bn:hover{border-bottom-color:var(--accent)} #sheethead.renaming #sheetact,#sheethead.renaming #sheetbag,#sheethead.renaming #sheetclose{display:none} #sheethead.renaming #sheettitle{flex:1;display:flex;align-items:center;gap:6px;overflow:visible} #sheettitle .bnedit{flex:1;min-width:0;max-width:420px;width:auto;font:700 16px Cinzel,serif;color:var(--accent);text-align:left}
   .setrow .nmedit{text-align:left;width:100%;box-sizing:border-box;font-weight:600}
   .seted{background:#1d212c;border:1px solid var(--accent);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;max-width:400px;box-sizing:border-box} .seted input[type=text]{font:inherit;color:var(--ink);background:#14171f;border:1px solid var(--line);border-radius:6px;padding:5px 7px;text-align:left;width:100%;box-sizing:border-box} .seted .sename{font-weight:600}
   .seted .sehead{display:flex;gap:6px;align-items:center} .seted .seclose{flex:none;width:30px;height:30px;padding:0;border-radius:50%;display:grid;place-items:center;color:var(--dim)}
@@ -1251,6 +1251,9 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
   a.download=`${(designToJSON().name||`pretty-dice-${state.shape}-${state.substrate}`).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pretty-dice'}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); };
 /* ---------- dice bag: many designs in one file (see docs/design/dice-bag-design.md, phase 1) ---------- */
 const slug=(t,fallback)=>String(t||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||fallback;
+/* Names are unique within a bag (designs, and sets, each among themselves): a clash gets the next number, 'Test copy' -> 'Test copy 2'. Compared ignoring case. */
+function uniqueName(others,name){ name=String(name||'').trim().slice(0,80); const used=new Set(others.map(x=>String(x).trim().toLowerCase())); if(!used.has(name.toLowerCase())) return name;
+  const m=name.match(/^(.*?)(?: (\d+))?$/), base=m[1]||name; let n=m[2]?+m[2]+1:2, c; do{ c=`${base.slice(0,76)} ${n++}`; }while(used.has(c.toLowerCase())); return c; }
 function uniqueId(base,taken){ let id=base, n=2; while(taken.has(id)) id=`${base}-${n++}`; return id; }
 function emptyBag(name='My bag'){ return {format:'pretty-dice-bag', version:1, name, designs:[], sets:[], characters:[], jail:[], pending:{}, draft:null, active:{design:null,set:null,draft:false}, log:[]}; }
 const designOK=d=>d&&d.format==='pretty-dice'&&d.version===1&&SHAPES[d.shape]&&SUBSTRATES[d.substrate];
@@ -1332,11 +1335,11 @@ async function activate(target,{skipSync=false}={}){   // target: a design id, o
 /* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
 function enterDraft(){ if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; $('dname').value=''; }
 function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.name)); let n=bag.designs.length+1; while(used.has(`${base} ${n}`)) n++; return `${base} ${n}`; }
-function addEntry(json,name,afterId){ const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
+function addEntry(json,name,afterId){ name=uniqueName(bag.designs.map(d=>d.name),name); const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
 const bagOps={
-  async save(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
-    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=j.name||e.name; e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
+  async save(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),p.name||e.name); e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
+    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),j.name||e.name); e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
   isOther(id){ return bag.active.draft||bag.active.design!==id; },
   async saveCopy(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; delete bag.pending[id]; addEntry(p,`${e.name} copy`,id); save(); return; }
     if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
@@ -1344,10 +1347,10 @@ const bagOps={
   async revert(id){ if(id&&this.isOther(id)){ delete bag.pending[id]; save(); return; }
     if(bag.active.draft) return this.discard(); const e=activeEntry(); delete bag.pending[e.id]; await loadSlot(e.design,e.name); normalizeActive(); save(); },
   async keep(){ if(!bag.active.draft) return; const j=liveJSON(), name=(j.name||'').trim()||newDesignName(), e=addEntry(j,name);
-    bag.active.design=e.id; bag.active.draft=false; bag.draft=null; $('dname').value=name; save(); },
+    bag.active.design=e.id; bag.active.draft=false; bag.draft=null; $('dname').value=e.name; save(); },
   async discard(){ bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); normalizeActive(); } save(); },
   async duplicate(id){ syncLive(); const e=entryOf(id); if(!e) return; const c=addEntry(structuredClone(bag.pending[id]||e.design),`${e.name} copy`,id); await activate(c.id); return c.id; },
-  rename(id,name){ name=String(name||'').trim().slice(0,80); if(!name) return;   // a rename is an outstanding edit like any other: it shows Modified until saved
+  rename(id,name){ name=String(name||'').trim().slice(0,80); if(!name) return; name=uniqueName(bag.designs.filter(d=>d.id!==id).map(d=>d.name),name);   // a rename is an outstanding edit like any other: it shows Modified until saved
     if(id==='draft'){ if(bag.active.draft) $('dname').value=name; else if(bag.draft) bag.draft.name=name; save(); return; }
     const e=entryOf(id); if(!e) return;
     if(!bag.active.draft&&bag.active.design===id){ $('dname').value=name; save(); return; }
@@ -1555,8 +1558,8 @@ function cardItems(id){
 /* All-designs sheet, with drag-to-reorder (long-press on a phone) */
 /* The bag's name sits in the sheet title and can be edited there; it is also the base of the saved file's name. */
 function setSheetTitle(count){ const t=$('sheettitle'), n=el('span','bn',bag.name); n.title='Click to rename the bag (also the saved file name)'; n.onclick=()=>editBagName(n); t.replaceChildren(n,el('span','',` · ${count}`)); }
-function editBagName(span){ const cur=bag.name, inp=el('input','nmedit bnedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Bag name'); span.replaceWith(inp); inp.focus(); inp.select(); let done=false;
-  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; const v=inp.value.trim().slice(0,80); if(ok&&v&&v!==cur){ bag.name=v; save(); } lastSig=''; renderBag(); renderSheet(); };
+function editBagName(span){ const cur=bag.name, inp=el('input','nmedit bnedit'); inp.type='text'; inp.value=cur; inp.maxLength=80; inp.setAttribute('aria-label','Bag name'); span.replaceWith(inp); $('sheethead').classList.add('renaming'); inp.focus(); inp.select(); let done=false;
+  const fin=ok=>{ if(done) return; done=true; inp.onblur=null; $('sheethead').classList.remove('renaming'); const v=inp.value.trim().slice(0,80); if(ok&&v&&v!==cur){ bag.name=v; save(); } lastSig=''; renderBag(); renderSheet(); };
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); }
 function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
   const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}`);
@@ -1580,13 +1583,13 @@ function currentDice(){
   return {terms:[{count:1,sides:20}],mod:0,name:'d20'}; }
 const setOps={
   find(id){ return bag.sets.find(x=>x.id===id); },
-  saveCurrent(name){ const cur=currentDice(), terms=cur.terms; name=String(name||'').trim().slice(0,80)||cur.name;
+  saveCurrent(name){ const cur=currentDice(), terms=cur.terms; name=uniqueName(bag.sets.map(x=>x.name),String(name||'').trim().slice(0,80)||cur.name);
     const st={id:uniqueId(slug(name,'set'),new Set(bag.sets.map(x=>x.id))),name,terms:structuredClone(terms),mod:cur.mod}; bag.sets.push(st); save(); return st.id; },
-  copy(id){ const k=bag.sets.findIndex(x=>x.id===id), st=bag.sets[k]; if(!st) return null; const c=structuredClone(st); delete c.last; c.name=`${st.name} copy`.slice(0,80);
+  copy(id){ const k=bag.sets.findIndex(x=>x.id===id), st=bag.sets[k]; if(!st) return null; const c=structuredClone(st); delete c.last; c.name=uniqueName(bag.sets.map(x=>x.name),`${st.name.replace(/ copy(?: \d+)?$/,'')} copy`);
     c.id=uniqueId(slug(c.name,'set'),new Set(bag.sets.map(x=>x.id))); bag.sets.splice(k+1,0,c); save(); return c.id; },
-  edit(id,{name,terms,mod}){ const st=this.find(id); if(!st||!terms||!terms.length) return false; name=String(name||'').trim().slice(0,80)||st.name; st.name=name; st.terms=structuredClone(terms); st.mod=mod||0; delete st.last; save(); return true; },
+  edit(id,{name,terms,mod}){ const st=this.find(id); if(!st||!terms||!terms.length) return false; name=uniqueName(bag.sets.filter(x=>x!==st).map(x=>x.name),String(name||'').trim().slice(0,80)||st.name); st.name=name; st.terms=structuredClone(terms); st.mod=mod||0; delete st.last; save(); return true; },
   update(id){ const st=this.find(id); if(!st) return; const cur=currentDice(); st.terms=cur.terms; st.mod=cur.mod; delete st.last; save(); },
-  rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=name; save(); },
+  rename(id,name){ const st=this.find(id); name=String(name||'').trim().slice(0,80); if(!st||!name) return; st.name=uniqueName(bag.sets.filter(x=>x!==st).map(x=>x.name),name); save(); },
   remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
   move(id,to){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.sets.length-1,to)); const [x]=bag.sets.splice(k,1); bag.sets.splice(to,0,x); save(); },
   /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
@@ -1626,7 +1629,7 @@ function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.l
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
 /* Inline set editor (PD-124): the Custom controls (notation, dice use, term chips, steppers, modifier) plus single-shape presets, working on a draft of one set. The live Custom selection is never touched. */
 let editSet=null;   // {id,name,terms,mod,use,err}
-function openSetEditor(id){ const st=setOps.find(id); if(!st) return; editSet={id,name:st.name,terms:structuredClone(st.terms),mod:st.mod||0,use:null,err:''}; renderSheet(); setTimeout(()=>{ const n=document.querySelector('#setlist .seted .sename'); if(n){ n.focus(); n.select(); n.scrollIntoView({block:'nearest'}); } },0); }
+function openSetEditor(id){ const st=setOps.find(id); if(!st) return; editSet={id,name:st.name,terms:structuredClone(st.terms),mod:st.mod||0,use:null,err:'',orig:JSON.stringify([st.name,st.terms,st.mod||0])}; renderSheet(); setTimeout(()=>{ const n=document.querySelector('#setlist .seted .sename'); if(n){ n.focus(); n.select(); n.scrollIntoView({block:'nearest'}); } },0); }
 function draftApply(terms,mod){ const note=fmtNotation(terms,mod), p=parseNotation(note); if(p.error){ editSet.err=p.error; renderSheet(); return false; } editSet.terms=p.terms; editSet.mod=p.mod; editSet.err=''; renderSheet(); return true; }
 function setEditor(){ const E=editSet, host=el('div','seted'); host.dataset.id=E.id;
   const nm=el('input','sename'); nm.type='text'; nm.value=E.name; nm.maxLength=80; nm.placeholder='Set name'; nm.setAttribute('aria-label','Set name'); nm.oninput=()=>{ E.name=nm.value; }; nm.onkeydown=ev=>{ ev.stopPropagation(); };
@@ -1644,8 +1647,8 @@ function setEditor(){ const E=editSet, host=el('div','seted'); host.dataset.id=E
     sc.append(mk('−',-1),el('b','',String(c[t])),mk('+',1)); d.append(sl,sc); steps.append(d); }
   const mod=el('div','row2'); { const m=(txt,dl)=>{ const b=el('button','',txt); b.type='button'; b.setAttribute('aria-label',dl>0?'Modifier up':'Modifier down'); b.onclick=()=>draftApply(E.terms,E.mod+dl); return b; }; mod.append(el('label','','Modifier'),m('−',-1),el('b','mv',String(E.mod)),m('+',1)); }
   const act=el('div','row2 acts'); const save=el('button','primary','Save'); save.type='button'; save.onclick=()=>{ if(setOps.edit(E.id,{name:E.name,terms:E.terms,mod:E.mod})){ editSet=null; renderSheet(); } };
-  const cancel=el('button','','Cancel'); cancel.type='button'; cancel.onclick=()=>{ editSet=null; renderSheet(); }; act.append(save,cancel);
-  const head=el('div','sehead'), close=el('button','seclose','✕'); close.type='button'; close.title='Close without saving'; close.setAttribute('aria-label','Close the editor without saving'); close.onclick=()=>{ editSet=null; renderSheet(); }; head.append(nm,close);
+  act.append(save);
+  const head=el('div','sehead'), close=el('button','seclose','✕'); close.type='button'; close.title='Close without saving'; close.setAttribute('aria-label','Close the editor without saving'); close.onclick=()=>{ const shut=()=>{ editSet=null; renderSheet(); }; if(JSON.stringify([E.name,E.terms,E.mod])===E.orig) shut(); else openMenu(close,[{head:'Discard your changes?'},{label:'Discard',danger:true,run:shut},{label:'Keep editing',run:()=>{}}]); }; head.append(nm,close);
   host.append(head,el('div','selab','Presets'),pre,el('div','selab','Formula'),nt,el('div','seerr',E.err||''),use,tch,steps,mod,act); return host; }
 function renderSets(){ const box=$('setlist'); setSheetTitle(`${bag.sets.length} set${bag.sets.length===1?'':'s'}`);
   const save1=el('button','','Save the current dice as a set'); save1.id='setsave'; save1.type='button'; save1.title=currentDice().name; save1.onclick=()=>{ const id=setOps.saveCurrent(); renderSheet(); setTimeout(()=>{ const n=document.querySelector(`#setlist .setrow[data-id="${id}"] .nm`); if(n) editSetName(n,id); },0); };
@@ -1696,7 +1699,9 @@ const readText=f=>f.text?f.text():new Promise((res,rej)=>{ const fr=new FileRead
 $('jsonfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
   try{ const txt=await readText(f); inp.value=''; await bagOps.addLoaded(JSON.parse(txt.replace(/^\uFEFF/,''))); }catch(err){ inp.value=''; alert('Could not load design: '+err.message); } };   // read first, then reset the input: clearing it early can empty the file on some phones
 $('dname').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') e.target.blur(); };   // Enter accepts the name
-$('dname').oninput=()=>save();   // a typed name is an edit: show Modified and keep it
+addEventListener('keydown',e=>{ const t=e.target; if(e.key==='Enter'&&t&&t.tagName==='INPUT'&&t.type==='text') setTimeout(()=>{ if(document.activeElement===t) t.blur(); },0); },true);   // iOS keeps the keyboard up on Enter otherwise
+$('dname').oninput=()=>save();
+$('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>startRoll(placed);
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };

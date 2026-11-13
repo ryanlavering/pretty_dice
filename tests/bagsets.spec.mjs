@@ -263,7 +263,7 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await ed.locator('.senote').fill('d6@nope'); await page.keyboard.press('Enter');
   await expect(ed.locator('.seerr')).toContainText('No design');
   await ed.locator('.presets button', { hasText: /^d4$/ }).click();
-  await ed.locator('.acts button', { hasText: 'Cancel' }).click();
+  await ed.locator('.seclose').click();   // nothing changed, so it closes at once
   expect(await app.run(pd => pd.bag.sets.find(s => s.id === 'adv').terms)).toEqual([{ count: 2, sides: 20, design: 'amethyst' }]);
 });
 
@@ -300,4 +300,41 @@ test('clicking a set name in the roll log brings that set to the mat without rol
   expect(r.links.length).toBe(2); expect(r.plain).toEqual(['Gone set']);
   expect(r.hidden).toBe(true); expect(r.active).toBe('dmg'); expect(r.shape).toBe('custom'); expect(r.notation).toBe('2d6@bone+1d8+3'); expect(r.dice).toBe(3);
   expect(r.placed).toBe(true); expect(r.rolling).toBe(true); expect(r.logLen).toBe(3);   // placed at rest on the mat (roll view), nothing thrown or logged
+});
+
+test('set and design names stay unique in the bag: copies and clashing renames get the next number @quick', async ({ shared: app }) => {
+  const r = await app.run(async pd => {
+    const sets = () => pd.bag.sets.map(s => s.name);
+    const c1 = pd.setOps.copy('dmg'), c2 = pd.setOps.copy('dmg'), c3 = pd.setOps.copy(c1);   // 'Damage copy', 'Damage copy 2', and a copy of a copy
+    const after = sets();
+    pd.setOps.rename('adv', 'Damage'); const renamed = pd.bag.sets.find(s => s.id === 'adv').name;   // 'Damage' is taken
+    pd.setOps.rename('adv', 'advantage'); const same = pd.bag.sets.find(s => s.id === 'adv').name;   // its own name (any case) is fine
+    pd.setOps.edit('adv', { name: 'damage copy 2', terms: [{ count: 1, sides: 20 }], mod: 0 }); const edited = pd.bag.sets.find(s => s.id === 'adv').name;
+    const id = pd.setOps.saveCurrent('Damage'); const saved = pd.bag.sets.find(s => s.id === id).name;
+    const first = pd.bag.designs[0];
+    await pd.bagOps.duplicate(first.id); await pd.bagOps.duplicate(first.id);
+    const names = pd.bag.designs.map(d => d.name);
+    pd.bagOps.rename(first.id, pd.bag.designs[1].name); const pend = pd.bag.pending[first.id] ? pd.bag.pending[first.id].name : null;
+    return { after, renamed, same, edited, saved, names, pend, second: pd.bag.designs[1].name };
+  });
+  expect(r.after.filter(n => n.startsWith('Damage copy')).sort()).toEqual(['Damage copy', 'Damage copy 2', 'Damage copy 3']);
+  expect(r.renamed).toBe('Damage 2'); expect(r.same).toBe('advantage'); expect(r.edited).toBe('damage copy 4'); expect(r.saved).toBe('Damage 2');   // the earlier 'Damage 2' was renamed away
+  expect(new Set(r.names.map(n => n.toLowerCase())).size).toBe(r.names.length);
+  expect(r.names).not.toContain(r.pend); expect(r.pend).toMatch(/ \d+$/);   // the next free number
+});
+
+test('the set editor has one way out (the X), which asks before discarding edits @quick', async ({ shared: app }) => {
+  const r = await app.run(async pd => {
+    const q = s => document.querySelector(s), menuBtn = t => [...document.querySelectorAll('#cardmenu button')].find(b => b.textContent === t || b.textContent.startsWith(t));
+    const id = pd.bag.sets[0].id; document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const openEd = () => { q(`#setlist .setrow[data-id="${id}"] .dots`).click(); menuBtn('Edit').click(); };
+    openEd(); const buttons = [...document.querySelectorAll('.seted .acts button, .seted .seclose')].map(b => b.textContent);
+    q('.seted .seclose').click(); const cleanClosed = !q('.seted');   // nothing changed: closes at once
+    openEd(); const nm = q('.seted .sename'); nm.value = 'Changed'; nm.dispatchEvent(new Event('input'));
+    q('.seted .seclose').click(); const asked = !!q('.seted') && /Discard your changes/.test(document.getElementById('cardmenu').textContent);
+    menuBtn('Keep editing').click(); const kept = !!q('.seted');
+    q('.seted .seclose').click(); menuBtn('Discard').click(); const discarded = !q('.seted');
+    return { buttons, cleanClosed, asked, kept, discarded, name: pd.bag.sets.find(s => s.id === id).name };
+  });
+  expect(r.buttons.sort()).toEqual(['Save', '✕']); expect(r.cleanClosed).toBe(true); expect(r.asked).toBe(true); expect(r.kept).toBe(true); expect(r.discarded).toBe(true); expect(r.name).not.toBe('Changed');
 });
