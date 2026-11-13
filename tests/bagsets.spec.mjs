@@ -287,3 +287,17 @@ test('the thumbnail lab shows linked viewports and a copyable settings read-out 
   await page.locator('#labpanel select').selectOption('2');                          // a preset angle
   expect((await read()).orientation.euler_deg_xyz).not.toEqual(after.orientation.euler_deg_xyz);
 });
+
+test('clicking a set name in the roll log brings that set to the mat without rolling it @quick', async ({ shared: app }) => {
+  const r = await app.run(pd => {
+    pd.setOps.quick('dmg'); pd.setOps.quick('adv');
+    pd.bag.log.push({ ts: Date.now(), set: 'Gone set', total: '9', detail: '' });   // a set that no longer exists is not a link
+    document.getElementById('logpanel').hidden = false; pd.renderLog();
+    const links = [...document.querySelectorAll('#logpanel .ttl.go')].map(n => n.textContent), plain = [...document.querySelectorAll('#logpanel .ttl:not(.go)')].map(n => n.textContent);
+    const first = [...document.querySelectorAll('#logpanel .ttl.go')].find(n => n.textContent.startsWith('Damage')); first.click();
+    return { links, plain, hidden: document.getElementById('logpanel').hidden, active: pd.bag.active.set, shape: pd.state.shape, notation: pd.state.notation, rolling: pd.rolling, placed: pd.placed, dice: pd.dice.length, logLen: pd.bag.log.length };
+  });
+  expect(r.links.length).toBe(2); expect(r.plain).toEqual(['Gone set']);
+  expect(r.hidden).toBe(true); expect(r.active).toBe('dmg'); expect(r.shape).toBe('custom'); expect(r.notation).toBe('2d6@bone+1d8+3'); expect(r.dice).toBe(3);
+  expect(r.placed).toBe(true); expect(r.rolling).toBe(true); expect(r.logLen).toBe(3);   // placed at rest on the mat (roll view), nothing thrown or logged
+});
