@@ -1701,7 +1701,7 @@ addEventListener('keydown',e=>{
   const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(placed); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) setCalm(!document.body.classList.contains('calm')); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(true); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) setCalm(!document.body.classList.contains('calm')); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
 addEventListener('keyup',e=>{ if(e.key==='t'||e.key==='T') holdTop(false); });
 addEventListener('blur',()=>holdTop(false));
 $('hint').textContent=['drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view','space = randomize · ctrl+z / ctrl+y = undo / redo · r = roll · flick in roll view = roll again','hold the total, or hold t = top-down look at the dice (controls step aside)','h, or long-press the layout button = distraction-free view (one button left to bring the controls back)','buttons: layout = hide / show settings · speaker = sound · bag = all designs · pause = stop the spin'].join('\n');
