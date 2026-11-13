@@ -3,10 +3,10 @@ id: PD-118
 title: >-
   Docs refresh for v3.0: README, CHANGELOG, design-format, dice-bag-design,
   testing
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-12T08:30:00Z'
-updated_date: '2026-11-13T03:01:00Z'
+updated_date: '2026-11-13T08:53:00Z'
 labels:
   - v3.0
   - docs
@@ -47,4 +47,6 @@ Things the docs must now say (decisions made while landing PD-107/108/110/112/11
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-11-12: the sound system's docs are already written: README.md (Sound section, Development, Further reading, Known gaps) and CHANGELOG.md (a '3.0 (unreleased)' section with the sound entries). When cutting the 3.0 section, merge the other v3.0 items into that heading instead of adding a second one.
+
+Docs pass done (CHANGELOG 3.0, README Dice Bag, bag file format, design status, testing tiers). Full npm test dry run: 129 passed, 3 flaky that passed on retry (watchdog; two bagbrowser tests under load).
 <!-- SECTION:NOTES:END -->
