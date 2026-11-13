@@ -55,8 +55,9 @@ On `ok: false` the original state is returned unchanged with a human-readable `e
 |---|---|
 | `{ type: 'roll', values: [3, 5, 1] }` | settled values for the slots from `rollSpec`, in slot order |
 | `{ type: 'hold', slot: 2, held: true }` | hold or release one die (`held` omitted = toggle); only when `canHold` |
-| `{ type: 'score', category: 'fullHouse' }` | take a score (Yahtzee); for Farkle use `{type:'score', dice:[slotsToSet aside]}`, `{type:'bank'}`; Pig `{type:'hold'}` is named `{type:'bank'}` too, see game notes |
-| `{ type: 'pass' }` | end the turn with no score where the game allows (Farkle bust is automatic, not a `pass`) |
+| `{ type: 'score', category: 'fullHouse' }` | take a score (Yahtzee) |
+| `{ type: 'score', dice: [0, 3] }` | Farkle: set these slots aside (every die must score) |
+| `{ type: 'bank' }` | Farkle and Pig: keep the turn total and pass the turn |
 
 `events` is an array the UI can animate or log: `{ type: 'scored', player, category, points }`, `{ type: 'bonus', player, name, points }`, `{ type: 'turn', player }`, `{ type: 'bust', player }`, `{ type: 'gameOver' }`. The engine advances the turn itself after a score; the UI never advances turns.
 
@@ -95,7 +96,9 @@ A game module exports a rule object; the engine core (`games/core.js`) supplies 
 ## Game notes
 
 - **Yahtzee** (PD-142.5): 13 categories, upper bonus 35 at 63+, Yahtzee bonus 100 per extra Yahtzee, forced Joker rule (option `joker`, default on). Rolls 5 dice up to 3 times; held dice are kept.
-- **Farkle / Pig** (PD-142.6): target score (options), per-turn running total, `bank` to keep, bust ends the turn with no score. Details land with that card.
+- **Farkle** (PD-142.6): 6 dice, options `target` (10000) and `opening` (500, minimum turn total to get on the board; 0 = off). Flow: `roll` (the live slots) -> `score {dice}` sets aside scoring dice -> `roll` the rest or `bank`. A roll with nothing scoring auto-busts (events `rolled`, `bust`, `turn`). Setting aside all six emits `hotDice`, clears the set-aside and all six are live again. Scoring: 1 = 100, 5 = 50, three of a kind = face x 100 (1s = 1000), each extra die doubles it, 1-6 straight = 1500, three pairs = 1500. Reaching the target starts a final round (one more turn for everyone else, event `finalRound`). `suggest` returns the valid set-aside choices for the current roll: `[{ slots, points, label, best }]` sorted by points (empty before a roll).
+- **Pig**: 1 die, option `target` (100). `roll` one value; a 1 busts (turn total lost, turn passes), otherwise it adds to the turn total; `bank` keeps it; reaching the target ends the game at once. `suggest` is always `[]`.
+- Extra `status` fields for these two: `canBank`, `turnTotal`, `scores` (banked totals per player), `target`, and for Farkle `finalRound`. `held` marks Farkle's set-aside slots (display only; `canHold` is false). `scorecard(state, p)` returns `{ sections: [], total, turnTotal }`.
 - **Craps** (PD-142.7): `rollSpec` is always 2d6; phases `comeOut` / `point`; bets list in state; play-money bankroll; `act` gains `{type:'bet', ...}` and `{type:'removeBet', id}`. Details land with that card.
 
 ## Testing

@@ -1,7 +1,9 @@
 // Turn/player model and the public API (PD-142.3). See docs/design/games-engine.md.
 import * as Y from './yahtzee.js';
+import * as Farkle from './farkle.js';
+import * as Pig from './pig.js';
 
-const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() } };
+const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine } };
 
 export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.stringify(g.info)));
 const eng = s => { const g = GAMES[s.game]; if (!g) throw new Error('unknown game ' + s.game); return g.mod; };
