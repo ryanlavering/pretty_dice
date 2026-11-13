@@ -16,7 +16,8 @@ The candidate list is `CMP` in `index.html` (search "head-to-head").
 | D | .167, -.888, .173, -.391 | 5.2 | .55, 3.15, 0 | as C | as C | as A |
 | E | .624, -.604, -.223, .443 | 4.9 | .2, 2.9, -.05 | 1.1 at (-.2,1.9,3.2) | 1.1 at (4,.7,1.4) | as A |
 | F | -.219, .718, -.598, .28 | 4.9 | 0, 3.142, 0 | 1.1 at (-.2,1.9,3.2) | 1.1 at (4,.7,1.4) | as A |
-| **E, 20 outward (in the app)** | .601, -.619, .184, -.47 | 4.9 | .2, 2.9, -.05 | as E | as E | as A |
-| E, 20 rolled -35 / -50 / -65 deg | .387,-.771,.317,-.393 / .283,-.815,.366,-.348 / .174,-.845,.408,-.298 | 4.9 | as E | as E | as E | as A |
+| G | .217, .233, .116, .941 | 4.9 | 0, 3.142, 0 | 1.1 at (-.2,1.9,3.2) | 1.1 at (4,.7,1.4) | as A |
+| E, 20 outward (unrolled) | .601, -.619, .184, -.47 | 4.9 | .2, 2.9, -.05 | as E | as E | as A |
+| E, 20 rolled -35 / **-50 (in the app)** / -65 deg | .387,-.771,.317,-.393 / .283,-.815,.366,-.348 / .174,-.845,.408,-.298 | 4.9 | as E | as E | as E | as A |
 
 All use fov 32, camera height -0.1, exposure 1.5. "E, 20 outward" is E with the die turned by an icosahedral symmetry so the face labelled 20 sits where E's front face (the 7) was; the rolled rows then spin it about the view axis so the 20 reads upright, at the cost of moving the highlights.

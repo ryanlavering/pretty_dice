@@ -4,7 +4,7 @@ title: 'Design pictures: better angle and light (epoxy, metal)'
 status: Needs Review
 assignee: []
 created_date: '2026-11-13T00:58:00Z'
-updated_date: '2026-11-13T04:10:00Z'
+updated_date: '2026-11-13T04:35:00Z'
 labels:
   - bug
   - bag
@@ -43,4 +43,8 @@ Owner is looking for more, then wants a head-to-head comparison.
 - Candidate F: quaternion [-0.219, 0.718, -0.598, 0.28]; camera 4.9/-0.1/32; room turn [0, 3.142, 0]; key/sheen/back as A. All candidates (A-F, E with 20 outward = in the app) are in docs/design/picture-candidates.md; view with ?lab=thumbs&cmp=1.
 
 Applied candidate E with the 20 face toward the camera (pose .601,-.619,.184,-.47; room .2,2.9,-.05; camera 4.9). Alternatives rolled -35/-50/-65 deg are in the lab. Quick tier 56 passed.
+
+Owner: E unrolled has too much sheen in practice; E rolled -50 deg is the new default (quaternion .283,-.815,.366,-.348).
+
+- Candidate G: quaternion [0.217, 0.233, 0.116, 0.941] (euler deg 24, 29.245, 7.754); camera 4.9/-0.1/32; room turn [0, 3.142, 0]; key/sheen/back as A. Not applied; in the Compare view and docs/design/picture-candidates.md.
 <!-- SECTION:NOTES:END -->
