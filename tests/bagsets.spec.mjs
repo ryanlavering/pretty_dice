@@ -266,3 +266,24 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await ed.locator('.acts button', { hasText: 'Cancel' }).click();
   expect(await app.run(pd => pd.bag.sets.find(s => s.id === 'adv').terms)).toEqual([{ count: 2, sides: 20, design: 'amethyst' }]);
 });
+
+// PD-131: the thumbnail lab (dev tool at ?lab=thumbs).
+test('the thumbnail lab shows linked viewports and a copyable settings read-out @slow', async ({ app, page }) => {
+  test.setTimeout(240_000); expect.configure({ timeout: 120_000 });
+  await page.goto('/index.html?libs=local&seed=1&lab=thumbs');
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 90_000 });
+  await expect(page.locator('body.lab')).toHaveCount(1);
+  await expect(page.locator('#labpanel')).toBeVisible();
+  await expect(page.locator('#labhit .labcap')).toHaveCount(4, { timeout: 120_000 });   // four materials once their dice are built
+  const read = async () => JSON.parse(await page.locator('#labout').inputValue());
+  const before = await read();
+  expect(before.orientation.quaternion).toHaveLength(4);
+  const hit = await page.locator('#labhit').boundingBox();
+  await page.mouse.move(hit.x + 500, hit.y + 120); await page.mouse.down(); await page.mouse.move(hit.x + 560, hit.y + 150, { steps: 4 }); await page.mouse.up();
+  const after = await read();
+  expect(after.orientation.quaternion).not.toEqual(before.orientation.quaternion);   // one drag turns the shared orientation
+  await page.locator('#labpanel .labrow', { hasText: 'Strength' }).first().locator('input').fill('2.5');
+  expect((await read()).key.intensity).toBe(2.5);
+  await page.locator('#labpanel select').selectOption('2');                          // a preset angle
+  expect((await read()).orientation.euler_deg_xyz).not.toEqual(after.orientation.euler_deg_xyz);
+});

@@ -116,6 +116,13 @@
   .seted .selab{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-top:2px} .seted .presets{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px} .seted .presets button{display:flex;align-items:center;justify-content:center;gap:3px;padding:4px 2px;font-size:12px}
   .seted .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px} .seted .step{padding:3px 4px;gap:1px} .seted .step .sc button{padding:1px 7px} .seted .step .sc b{font-size:14px} .seted .tch{display:flex;flex-wrap:wrap;gap:5px} .seted .tch button{padding:2px 8px;font-size:12px;border-radius:999px;display:inline-flex;align-items:center;gap:3px} .seted .tch .x{color:var(--dim)}
   .seted .row2{display:flex;align-items:center;gap:6px} .seted .row2 label{color:var(--dim);font-size:12px;margin-right:auto} .seted .row2 select{flex:1;max-width:60%} .seted .mv{min-width:24px;text-align:center} .seted .seerr{color:#e07a7a;font-size:12px} .seted .seerr:empty{display:none} .seted .acts{justify-content:flex-end;margin-top:2px} .seted .acts button{padding:5px 12px} .seted .acts .primary{background:var(--accent);color:#1a1405;font-weight:700}
+  body.lab aside,body.lab #shelf,body.lab #tools,body.lab #name,body.lab #hint,body.lab #result,body.lab #logpanel,body.lab #quickres{display:none!important}
+  #labhit{position:absolute;inset:0;z-index:5;cursor:grab;touch-action:none} #labhit .labcap{position:absolute;font-size:11px;color:var(--dim);text-align:center;pointer-events:none}
+  #labpanel{position:absolute;z-index:6;top:8px;left:8px;bottom:8px;width:320px;overflow-y:auto;background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12px} #labpanel.shut{bottom:auto;width:auto;overflow:visible}
+  #labpanel.shut>:not(.labhead){display:none} #labpanel .labhead{display:flex;justify-content:space-between;align-items:center} #labpanel .labhead b{font:700 14px Cinzel,serif;letter-spacing:.06em;color:var(--accent)} #labpanel .labnote{color:var(--dim);margin:0} #labpanel select{width:100%}
+  #labpanel .labsec{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-top:6px} #labpanel .labrow{display:grid;grid-template-columns:70px 1fr 40px;gap:6px;align-items:center} #labpanel .labrow input[type=checkbox]{justify-self:start} #labpanel output{text-align:right;color:var(--dim)}
+  #labpanel textarea{width:100%;box-sizing:border-box;font:11px/1.3 ui-monospace,Menlo,monospace;background:#12151c;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px}
+  @media (max-width:719px){ #labpanel{top:auto;bottom:8px;left:8px;right:8px;width:auto;height:46%} #labpanel.shut{height:auto} }
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
@@ -1420,29 +1427,34 @@ function scheduleThumb(ms=900){ if(!thumbsOn||!bag||thumbTimer) return; thumbTim
    whatever the stage camera, a roll or the showcase spin are doing. three.js tone-maps and sRGB-encodes only what goes to the screen (or an XR target), so the target is marked as one
    (isXRRenderTarget, the flag three.js uses itself; three.js is pinned to 0.160). The die is drawn on a transparent clear at twice the size, then shrunk onto the stage's backdrop picture. */
 const PIC_PX=144, PIC_RS=288; let picKit=null;
-/* The die is shown vertex first, tilted a little: no big flat face squarely mirrors the light and the room, which washed clear epoxy out and flattened metal (PD-131). */
-const PIC_Q=new THREE.Quaternion().setFromEuler(new THREE.Euler(-.3,.4,.4)).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.atan(1/PHI),0,0)));
+/* The view, lights and room turn were chosen by the owner in the thumbnail lab (2026-11-12, PD-131): a three-quarter view, a soft front key, a grazing sheen light from the right and a warm back light, so clear epoxy glows from inside, metal keeps its contrast and the number on the facing side stays readable. */
+const PIC_Q=new THREE.Quaternion(.252,.627,.025,.737).normalize();
 const picEnv=(rx=0,ry=0,rz=0)=>{ const room=new RoomEnvironment(), pg=new THREE.PMREMGenerator(renderer); room.rotation.set(rx,ry,rz); room.updateMatrixWorld(true); const t=pg.fromScene(room,0.04).texture; pg.dispose(); return t; };   // the studio room, turned, so its bright ceiling does not mirror in the top faces
 function picGear(){ if(picKit) return picKit; const sc=new THREE.Scene(); sc.environment=picEnv(0,Math.PI,0);   // the same studio room as the stage, turned round so its bright ceiling lights are behind the die
   const l=new THREE.DirectionalLight(0xffffff,1.1); l.position.set(-.2,1.9,3.2); sc.add(l);   // a soft key from the front
-  const cam=new THREE.PerspectiveCamera(32,1,.3,60); cam.position.set(0,-.1,4.9);   // die about 74% of the width, centred a little high: the framing of the earlier stage captures
+  const sheen=new THREE.DirectionalLight(0xdfe8ff,1.1); sheen.position.set(4,.7,1.4); const back=new THREE.DirectionalLight(0xfff0d0,2.4); back.position.set(-1.2,2,-4); sc.add(sheen,back);
+  const cam=new THREE.PerspectiveCamera(32,1,.3,60); cam.position.set(0,-.1,5.2);
   const rt=new THREE.WebGLRenderTarget(PIC_RS,PIC_RS,{samples:0}); rt.isXRRenderTarget=true; rt.texture.colorSpace=THREE.SRGBColorSpace;
   const big=document.createElement('canvas'); big.width=big.height=PIC_RS;
   return picKit={sc,cam,rt,buf:new Uint8Array(PIC_RS*PIC_RS*4),buf2:new Uint8Array(PIC_RS*PIC_RS*4),big,mask:new THREE.MeshBasicMaterial({color:0xffffff})}; }
-async function renderDesignPicture(j){
+/* one d20 in a design's look, ready to put in a scene: used by the offscreen pictures and by the thumbnail lab */
+async function picDie(j){
   const L=lookFromDesign(j); await ensureFont(L.font);
-  const g=picGear(), spec=SHAPES.d20, verts=spec.verts(), R=Math.max(...verts.map(v=>v.length())); verts.forEach(v=>v.multiplyScalar(1/R));
+  const spec=SHAPES.d20, verts=spec.verts(), R=Math.max(...verts.map(v=>v.length())); verts.forEach(v=>v.multiplyScalar(1/R));
   const faces=hull(verts), labs=assignLabels(faces,spec.labels), atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,false,{}),
     geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft}), uni=makeUniforms(), mat=makeMaterial(atlas,uni);
   paintLook(L,uni,[mat]);
-  const mesh=new THREE.Mesh(geo,mat); mesh.quaternion.copy(PIC_Q); g.sc.add(mesh);
+  const mesh=new THREE.Mesh(geo,mat);
   if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); const inr=Math.min(...faces.map(f=>f.d)); inc.scale.setScalar(inr*L.inclSize); inc.position.set(0,L.inclY*inr,0); inc.rotation.set(0,THREE.MathUtils.degToRad(L.inclTurn),0); } }
+  return {mesh,L,dispose(){ geo.dispose(); atlas.bump.dispose(); atlas.mask.dispose(); mat.dispose(); }}; }
+async function renderDesignPicture(j){
+  const g=picGear(), die=await picDie(j), L=die.L, mesh=die.mesh; mesh.quaternion.copy(PIC_Q); g.sc.add(mesh);
   const clr=new THREE.Color(), ca=renderer.getClearAlpha(); renderer.getClearColor(clr);
   const clear=SUBSTRATES[L.substrate].trans;   // a see-through die refracts whatever is behind it: on a transparent clear it would come out half transparent, so it is drawn against the dark backdrop colour and cut out with a flat white pass
   try{ renderer.setRenderTarget(g.rt);
     renderer.setClearColor(clear?0x191c26:0x000000,clear?1:0); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf);
     if(clear){ g.sc.overrideMaterial=g.mask; renderer.setClearColor(0x000000,0); renderer.render(g.sc,g.cam); renderer.readRenderTargetPixels(g.rt,0,0,PIC_RS,PIC_RS,g.buf2); g.sc.overrideMaterial=null; for(let i=3;i<g.buf.length;i+=4) g.buf[i]=g.buf2[i]; } }
-  finally{ g.sc.overrideMaterial=null; renderer.setRenderTarget(null); renderer.setClearColor(clr,ca); g.sc.remove(mesh); geo.dispose(); atlas.bump.dispose(); atlas.mask.dispose(); mat.dispose(); }
+  finally{ g.sc.overrideMaterial=null; renderer.setRenderTarget(null); renderer.setClearColor(clr,ca); g.sc.remove(mesh); die.dispose(); }
   const bx=g.big.getContext('2d'), img=bx.createImageData(PIC_RS,PIC_RS);
   for(let y=0;y<PIC_RS;y++) img.data.set(g.buf.subarray(y*PIC_RS*4,(y+1)*PIC_RS*4),(PIC_RS-1-y)*PIC_RS*4);   // readback is bottom-up
   bx.putImageData(img,0,0);
@@ -2129,6 +2141,7 @@ function updateFx(dt){
 const clock=new THREE.Clock();
 const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)
   const dt=dtOver??Math.min(clock.getDelta(),.05);
+  if(labOn){ if(labDirty&&labSc.length){ labDirty=false; labDraw(); } return; }   // the thumbnail lab draws only when something changed
   if(rolling&&!settled&&rollT>25){ freeTries=99; finishRoll(); }   // watchdog: whatever the cause, a roll never waits on the dice for more than 25 s
   if(!dragging&&!rolling){
     const idle = new THREE.Vector3(.12,.55,.05).multiplyScalar(state.spin*1.5);
@@ -2160,6 +2173,64 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   renderer.render(scene,camera);
 };
 
+/* ---------- thumbnail lab (dev tool, PD-131) ----------
+   ?lab=thumbs: four materials, each in two linked viewports (tile and shelf size), all drawn with the app's own materials on the main canvas. One shared setting set (orientation, camera,
+   studio-room turn, three lights); drag any viewport to turn the die in all of them, move the sliders to place lights, and copy the settings read-out back. */
+let labOn=false, labDirty=true, labSc=[], labEnvTex=null, labPanelOpen=true;
+const LAB={q:new THREE.Quaternion(), camZ:5.2, camY:-.1, fov:32, env:[0,Math.PI,0], exposure:1.5, key:{p:[-.2,1.9,3.2],i:1.1}, sheen:{on:true,p:[4,.7,1.4],i:1.1}, back:{on:true,p:[-1.2,2,-4],i:2.4}};
+const labEu=(x,y,z)=>new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z,'XYZ'));
+const LAB_VERT=labEu(Math.atan(1/PHI),0,0), LAB_FACE=(()=>{ const n=new THREE.Vector3(1,1,1).normalize(); return new THREE.Quaternion().setFromUnitVectors(n,new THREE.Vector3(0,0,1)); })(), LAB_ID=new THREE.Quaternion();
+const LAB_ANGLES=[['Vertex-first tilt (in the app)',LAB_VERT,[-.3,.4,.4]],['Vertex-on',LAB_VERT,[0,0,0]],['Face-on',LAB_FACE,[0,0,0]],['Face-on, rolled 20°',LAB_FACE,[0,0,.35]],['Face tilted up',LAB_FACE,[-.5,0,.2]],['Face tilted down',LAB_FACE,[.5,0,.2]],['Face turned 35°',LAB_FACE,[0,.6,.3]],
+  ['Vertex tilted up',LAB_VERT,[-.6,.2,0]],['Vertex tilted down',LAB_VERT,[.6,.3,.2]],['Vertex turned 35°',LAB_VERT,[0,.6,.5]],['Edge-on',LAB_ID,[0,0,0]],['Edge tilted',LAB_ID,[-.5,.5,.3]],['Three-quarter (earlier)',LAB_ID,[.62,.5,.12]],['Looking down on a face',LAB_FACE,[-1,.2,.1]]];
+LAB.q.copy(PIC_Q);
+function labDesigns(){ const base=designToJSON();
+  const mk=(sub,cols,paint,extra)=>{ const j=structuredClone(base); Object.assign(j,{shape:'d20',substrate:sub,colors:cols,paint,paint_mode:'custom',edge_radius:.04}); j.filigree={style:'none',filled:true,enamel:null}; j.inclusion={type:'none',size:.55,turn_deg:0,height:0}; j.relief={...(j.relief||{}),paint_numbers:true}; if(extra) extra(j); return j; };
+  return [['Clear epoxy',mk('epoxy',['#c8141c','#e0303a','#7a0a10'],'#ffffff',j=>{ j.resin={...(j.resin||{}),clarity:.9,glitter:0,bubbles:.25}; })],['Solid metal',mk('metal',['#d4af37','#f5e08a','#8a6d12'],'#ffffff')],['Solid plastic',mk('solid',['#d03a3a','#000000','#000000'],'#ffffff')],['Metallic plastic',mk('pearl',['#2a8a9a','#1a5a66','#70c0cc'],'#ffffff')]]; }
+function labEnvUpdate(){ const t=picEnv(...LAB.env); if(labEnvTex) labEnvTex.dispose(); labEnvTex=t; for(const s of labSc) s.sc.environment=t; labDirty=true; }
+async function labBuild(){ labSc=[]; const DL=THREE.DirectionalLight;
+  for(const [name,j] of labDesigns()){ const d=await picDie(j), sc=new THREE.Scene(); sc.background=scene.background; sc.add(d.mesh);
+    const key=new DL(0xffffff,1), sheen=new DL(0xdfe8ff,1), back=new DL(0xfff0d0,1); sc.add(key,sheen,back); labSc.push({name,d,sc,key,sheen,back,cam:new THREE.PerspectiveCamera(32,1,.3,60)}); }
+  labEnvUpdate(); }
+function labApply(s){ s.d.mesh.quaternion.copy(LAB.q); s.key.position.set(...LAB.key.p); s.key.intensity=LAB.key.i;
+  for(const k of ['sheen','back']){ s[k].visible=LAB[k].on; s[k].position.set(...LAB[k].p); s[k].intensity=LAB[k].i; }
+  s.cam.position.set(0,LAB.camY,LAB.camZ); s.cam.fov=LAB.fov; s.cam.updateProjectionMatrix(); }
+function labLayout(){ const W=stage.clientWidth, H=stage.clientHeight, narrow=W<720, open=labPanelOpen, x0=narrow?8:(open?340:16), availW=W-x0-8, cols=narrow?2:4, gap=10;
+  const M=Math.max(80,Math.min(280,Math.floor((availW-(cols-1)*gap)/cols))), out=[]; let y=narrow?8:16;
+  for(let i=0;i<4;i++){ const c=i%cols, r=Math.floor(i/cols); out.push({m:i,s:M,x:x0+c*(M+gap),y:y+r*(M+gap+18)}); }
+  y+=Math.ceil(4/cols)*(M+gap+18)+6;
+  for(let i=0;i<4;i++){ const c=i%cols; out.push({m:i,s:60,x:x0+c*(M+gap),y:y}); }
+  return out; }
+function labDraw(){ const W=stage.clientWidth, H=stage.clientHeight; renderer.setScissorTest(true); renderer.setClearColor(0x0e1015,1); renderer.setViewport(0,0,W,H); renderer.setScissor(0,0,W,H); renderer.clear();
+  renderer.toneMappingExposure=LAB.exposure; for(const s of labSc) labApply(s);
+  const L=labLayout(); for(const v of L){ const s=labSc[v.m]; renderer.setViewport(v.x,H-v.y-v.s,v.s,v.s); renderer.setScissor(v.x,H-v.y-v.s,v.s,v.s); renderer.render(s.sc,s.cam); }
+  renderer.setScissorTest(false); const hit=$('labhit'); if(hit&&hit.dataset.sig!==JSON.stringify(L)){ hit.dataset.sig=JSON.stringify(L); hit.replaceChildren(...L.filter(v=>v.s>60).map(v=>{ const c=el('div','labcap',labSc[v.m].name); c.style.cssText=`left:${v.x}px;top:${v.y+v.s+2}px;width:${v.s}px`; return c; })); } }
+const labReadout=()=>{ const r=v=>+(+v).toFixed(3), e=new THREE.Euler().setFromQuaternion(LAB.q,'XYZ'), L=k=>({position:LAB[k].p.map(r),intensity:r(LAB[k].i)});
+  return JSON.stringify({orientation:{quaternion:[LAB.q.x,LAB.q.y,LAB.q.z,LAB.q.w].map(r),euler_deg_xyz:[e.x,e.y,e.z].map(v=>r(v*180/Math.PI))},camera:{distance:r(LAB.camZ),y:r(LAB.camY),fov:r(LAB.fov)},room_rotation_rad:LAB.env.map(r),exposure:r(LAB.exposure),key:L('key'),sheen:{on:LAB.sheen.on,...L('sheen')},back:{on:LAB.back.on,...L('back')}},null,1); };
+function labChanged(env){ labDirty=true; const t=$('labout'); if(t) t.value=labReadout(); if(env) labEnvThrottle(); }
+let labEnvT=0; function labEnvThrottle(){ clearTimeout(labEnvT); labEnvT=setTimeout(labEnvUpdate,120); }
+function startLab(){ if(labOn) return; labOn=true; document.body.classList.add('lab'); const root=el('div'); root.id='labui';
+  const hit=el('div'); hit.id='labhit'; let drag=null;
+  hit.addEventListener('pointerdown',e=>{ drag=[e.clientX,e.clientY]; hit.setPointerCapture(e.pointerId); });
+  hit.addEventListener('pointermove',e=>{ if(!drag) return; const k=.008, dx=e.clientX-drag[0], dy=e.clientY-drag[1]; drag=[e.clientX,e.clientY]; LAB.q.premultiply(labEu(dy*k,dx*k,0)).normalize(); labChanged(); });
+  const end=()=>{ drag=null; }; hit.addEventListener('pointerup',end); hit.addEventListener('pointercancel',end);
+  hit.addEventListener('wheel',e=>{ e.preventDefault(); LAB.camZ=THREE.MathUtils.clamp(LAB.camZ+e.deltaY*.003,2.5,9); labChanged(); syncAll(); },{passive:false});
+  const panel=el('div'); panel.id='labpanel'; const sync=[]; const syncAll=()=>sync.forEach(f=>f());
+  const head=el('div','labhead'); head.append(el('b','','Thumbnail lab')); const tog=el('button','','Hide'); tog.type='button'; tog.onclick=()=>{ labPanelOpen=!labPanelOpen; panel.classList.toggle('shut',!labPanelOpen); tog.textContent=labPanelOpen?'Hide':'Controls'; labDirty=true; }; head.append(tog); panel.append(head);
+  panel.append(el('p','labnote','Drag any picture to turn the die in all of them; scroll to move the camera. The numbers below follow along: copy them back to me.'));
+  const sel=el('select'); sel.append(new Option('Start from an angle…','')); LAB_ANGLES.forEach((a,i)=>sel.append(new Option(`A${i+1} ${a[0]}`,i))); sel.onchange=()=>{ if(sel.value==='') return; const a=LAB_ANGLES[+sel.value]; LAB.q.copy(labEu(...a[2]).multiply(a[1])); labChanged(); };
+  panel.append(sel);
+  const sec=t=>{ const h=el('div','labsec',t); panel.append(h); };
+  const slider=(label,get,set,min,max,step,env)=>{ const row=el('label','labrow'), name=el('span','',label), r=el('input'), n=el('output'); r.type='range'; r.min=min; r.max=max; r.step=step; const upd=()=>{ r.value=get(); n.textContent=(+get()).toFixed(2); }; upd(); sync.push(upd);
+    r.oninput=()=>{ set(+r.value); n.textContent=(+r.value).toFixed(2); labChanged(env); }; row.append(name,r,n); panel.append(row); };
+  const check=(label,get,set)=>{ const row=el('label','labrow'), c=el('input'); c.type='checkbox'; c.checked=get(); c.onchange=()=>{ set(c.checked); labChanged(); }; row.append(c,el('span','',label)); panel.append(row); };
+  sec('Camera'); slider('Distance',()=>LAB.camZ,v=>LAB.camZ=v,2.5,9,.05); slider('Height',()=>LAB.camY,v=>LAB.camY=v,-1,1,.02); slider('Field of view',()=>LAB.fov,v=>LAB.fov=v,15,50,1); slider('Exposure',()=>LAB.exposure,v=>LAB.exposure=v,.5,3,.05);
+  sec('Studio room (turns the reflections)'); ['x','y','z'].forEach((a,i)=>slider('Turn '+a,()=>LAB.env[i],v=>LAB.env[i]=v,-3.15,3.15,.05,true));
+  for(const [k,t] of [['key','Key light'],['sheen','Sheen light'],['back','Back light']]){ sec(t); if(k!=='key') check('On',()=>LAB[k].on,v=>LAB[k].on=v); slider('Strength',()=>LAB[k].i,v=>LAB[k].i=v,0,4,.05); ['x','y','z'].forEach((a,i)=>slider('Place '+a,()=>LAB[k].p[i],v=>LAB[k].p[i]=v,-6,6,.1)); }
+  sec('Settings to copy back'); const out=el('textarea'); out.id='labout'; out.readOnly=true; out.rows=14; out.value=labReadout(); panel.append(out);
+  const copy=el('button','','Copy settings'); copy.type='button'; copy.onclick=async()=>{ let ok=false; try{ await navigator.clipboard.writeText(out.value); ok=true; }catch{ out.select(); try{ ok=document.execCommand('copy'); }catch{} } copy.textContent=ok?'Copied':'Select and copy the text'; setTimeout(()=>{ copy.textContent='Copy settings'; },1800); }; panel.append(copy);
+  sync.push(()=>{ out.value=labReadout(); });
+  root.append(hit,panel); stage.append(root); labBuild().then(()=>{ resize(); labDirty=true; }); }
+
 let frameErrs=0;
 renderer.setAnimationLoop(t=>{ try{ loop(t); }catch(e){ if(frameErrs++<3) console.error('frame error',e); } });   // an exception in one frame used to end the loop for good (three.js stops scheduling frames), which looks like a hang
 addEventListener('visibilitychange',()=>{ if(!document.hidden){ clock.getDelta(); if(sfx.ctx&&sfx.ctx.state!=='running') sfx.ctx.resume().catch(()=>{}); resize(); } });   // coming back to the tab: drop the long gap and wake audio
@@ -2181,10 +2252,11 @@ if(new URLSearchParams(location.search).get('test')==='atlas'){ for(const f of O
 if(new URLSearchParams(location.search).get('test')==='models'){ rig.clear(); dice.forEach(d=>d.mesh.visible=false); const ks=Object.keys(MODELS); ks.forEach((k,i)=>{ const t=getTemplate(k).clone(true); const g=new THREE.Group(); g.add(t); g.scale.setScalar(1.15); g.position.set((i%4-1.5)*2.8,(1-Math.floor(i/4))*2.8,0); g.rotation.y=.5; rig.add(g); }); baseZ=14; state.zoom=1; }
 Object.keys(FONTS).forEach(k=>ensureFont(k));   // warm every font so a randomize never waits on a font download
 window.__ready=true; window.__bootDone&&window.__bootDone();
+if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) startLab();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
