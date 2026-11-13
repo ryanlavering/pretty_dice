@@ -1,10 +1,10 @@
 ---
 id: PD-136
 title: 'Review fixes: unique names, discard confirm, iOS Enter, bag-name rename width'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-13T07:04:00Z'
-updated_date: '2026-11-13T08:26:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels: []
 milestone: m-0
 dependencies: []

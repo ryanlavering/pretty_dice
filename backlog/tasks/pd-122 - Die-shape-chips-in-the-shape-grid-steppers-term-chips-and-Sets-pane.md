@@ -1,10 +1,10 @@
 ---
 id: PD-122
 title: Die-shape chips in the shape grid, steppers, term chips and Sets pane
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T23:01:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - feature
   - bag

@@ -1,10 +1,10 @@
 ---
 id: PD-130
 title: 'Shelf: mouse wheel scrolls sideways; clicking a card does not recentre'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-13T00:58:00Z'
-updated_date: '2026-11-13T08:09:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - ux
 dependencies: []

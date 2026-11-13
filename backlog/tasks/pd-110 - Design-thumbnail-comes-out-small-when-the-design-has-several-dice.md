@@ -1,10 +1,10 @@
 ---
 id: PD-110
 title: Design thumbnail comes out small when the design has several dice
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-11T23:55:00Z'
-updated_date: '2026-11-12T16:20:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - bug
   - dice-bag

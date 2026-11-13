@@ -1,10 +1,10 @@
 ---
 id: PD-129
 title: Dark, thin scrollbars to match the UI
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T23:07:00Z'
-updated_date: '2026-11-13T00:58:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - ux
 dependencies: []

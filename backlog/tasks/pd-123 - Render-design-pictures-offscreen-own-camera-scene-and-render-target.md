@@ -1,10 +1,10 @@
 ---
 id: PD-123
 title: Render design pictures offscreen (own camera, scene and render target)
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T16:20:00Z'
-updated_date: '2026-11-13T06:34:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - feature
   - bag

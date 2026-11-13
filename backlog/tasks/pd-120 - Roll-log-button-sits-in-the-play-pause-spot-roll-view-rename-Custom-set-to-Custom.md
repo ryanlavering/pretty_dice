@@ -3,10 +3,10 @@ id: PD-120
 title: >-
   Roll log button sits in the play/pause spot (roll view); rename Custom set to
   Custom
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T07:10:00Z'
-updated_date: '2026-11-12T23:05:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - ux
 dependencies: []

@@ -1,10 +1,10 @@
 ---
 id: PD-128
 title: 'Bag sheet: Save, Load and Copy JSON icon buttons beside Close'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-12T22:46:00Z'
-updated_date: '2026-11-12T23:06:00Z'
+updated_date: '2026-11-13T16:41:00Z'
 labels:
   - feature
   - bag
