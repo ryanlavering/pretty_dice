@@ -3,8 +3,12 @@ import * as Y from './yahtzee.js';
 import * as Farkle from './farkle.js';
 import * as Pig from './pig.js';
 import * as Craps from './craps.js';
+import * as ShutBox from './shutbox.js';
+import * as ShipCaptain from './shipcaptain.js';
+import * as Bunco from './bunco.js';
 
-const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine } };
+const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine },
+  shutbox: { info: ShutBox.info, mod: ShutBox.engine }, shipcaptain: { info: ShipCaptain.info, mod: ShipCaptain.engine }, bunco: { info: Bunco.info, mod: Bunco.engine } };
 
 export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.stringify(g.info)));
 const eng = s => { const g = GAMES[s.game]; if (!g) throw new Error('unknown game ' + s.game); return g.mod; };
