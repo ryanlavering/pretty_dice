@@ -3,10 +3,10 @@ id: PD-118
 title: >-
   Docs refresh for v3.0: README, CHANGELOG, design-format, dice-bag-design,
   testing
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-12T08:30:00Z'
-updated_date: '2026-11-13T08:53:00Z'
+updated_date: '2026-11-13T16:35:00Z'
 labels:
   - v3.0
   - docs
