@@ -655,12 +655,13 @@ function makeMaterial(atlas,uni=U){
         varying vec4 vCell; varying vec3 vOP; varying vec2 vPUv; varying vec3 vView; varying vec3 vONrm;
         uniform float uGlitter,uBubbles,uTint; varying float vRec; uniform vec3 uEnamel; uniform float uFill,uPatina,uNumPaint;
         bool inCell(vec2 u){return u.x>=vCell.x&&u.y>=vCell.y&&u.x<=vCell.z&&u.y<=vCell.w;}
-        vec4 bumpSample(sampler2D t, vec2 u){return inCell(u)?texture2D(t,u):vec4(1.);}
+        vec4 cellTex(sampler2D t, vec2 u, vec4 off){vec4 s=texture2D(t,clamp(u,vCell.xy,vCell.zw)); return inCell(u)?s:off;}   // sample in uniform control flow (derivatives are undefined inside a branch: dotted ghost rectangle at the cell edge on 2x2-quad GPUs), then select
+        vec4 bumpSample(sampler2D t, vec2 u){return cellTex(t,u,vec4(1.));}
         ${GLSL_NOISE}
         ${GLSL_VOLUME}`)
       .replace('#include <bumpmap_pars_fragment>', THREE.ShaderChunk.bumpmap_pars_fragment.split('texture2D( bumpMap, ').join('bumpSample( bumpMap, '))
       .replace('#include <color_fragment>',`#include <color_fragment>
-        vec3 mk = inCell(vPUv) ? texture2D(uMask,vPUv).rgb : vec3(0.);
+        vec3 mk = cellTex(uMask,vPUv,vec4(0.)).rgb;
         float pm = smoothstep(.35,.65,mk.r)*uNumPaint;
         float pfo = smoothstep(.35,.65,mk.g)*(1.-smoothstep(.35,.65,mk.r))*uFill;
         vec3 volGlow=vec3(0.); vec3 baseCol = uMode==3 ? (gl_FrontFacing ? volume(vOP,vView,vONrm,volGlow) : uC1) : pattern(vOP*uScale+uOff);
