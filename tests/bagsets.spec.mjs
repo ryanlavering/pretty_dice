@@ -220,3 +220,49 @@ test('scrollbars are thin and dark, and the roll log never scrolls sideways', as
   const over = await page.locator('#logpanel').evaluate(e => ({ x: e.scrollWidth > e.clientWidth + 1, y: e.scrollHeight > e.clientHeight }));
   expect(over.x).toBe(false);
 });
+
+// PD-124: copy a set, and edit one in place with the Custom controls + single-shape presets.
+test('a set can be copied, and edited inline without touching the live Custom selection', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  const live = await app.run(pd => pd.state.notation);
+  await page.click('#bagbtn'); await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
+  await page.locator('#cardmenu button', { hasText: 'Make a copy' }).click();
+  expect(await app.run(pd => pd.bag.sets.map(s => [s.id, s.name]))).toEqual([['dmg', 'Damage'], ['damage-copy', 'Damage copy'], ['adv', 'Advantage']]);
+  // edit
+  await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
+  await page.locator('#cardmenu button', { hasText: 'Edit…' }).click();
+  const ed = page.locator('#setlist .seted');
+  await expect(ed).toBeVisible();
+  await expect(ed.locator('.senote')).toHaveValue('2d6@bone+1d8+3');
+  await ed.locator('.presets button', { hasText: /^d12$/ }).click();            // a single-shape preset
+  await expect(ed.locator('.senote')).toHaveValue('1d12+3');
+  await ed.locator('button[aria-label="Add a d6"]').click();                    // steppers
+  await expect(ed.locator('.senote')).toHaveValue('1d6+1d12+3');
+  await ed.locator('select').selectOption('amethyst');                          // dice use: the next dice take another design
+  await ed.locator('button[aria-label="Add a d4"]').click();
+  await expect(ed.locator('.senote')).toHaveValue('1d6+1d12+1d4@amethyst+3');
+  await expect(ed.locator('.tch button')).toHaveCount(3);                       // one chip per term
+  await ed.locator('button[aria-label="Modifier up"]').click();
+  await ed.locator('.sename').fill('Big damage');
+  await ed.locator('.acts .primary').click();
+  await expect(page.locator('#setlist .seted')).toHaveCount(0);
+  const r = await app.run(pd => ({ s: pd.bag.sets[0], live: pd.state.notation }));
+  expect(r.s).toMatchObject({ id: 'dmg', name: 'Big damage', mod: 4, terms: [{ count: 1, sides: 6 }, { count: 1, sides: 12 }, { count: 1, sides: 4, design: 'amethyst' }] });
+  expect(r.live).toBe(live);                                                    // the live Custom selection was never touched
+  // the panel stays small on a wide screen and has a close button
+  await page.locator('#setlist .setrow[data-id="adv"] .dots').click();
+  await page.locator('#cardmenu button', { hasText: 'Edit…' }).click();
+  expect((await ed.boundingBox()).width).toBeLessThanOrEqual(401);
+  await ed.locator('.seclose').click();
+  await expect(page.locator('#setlist .seted')).toHaveCount(0);
+  // typed formulas and Cancel
+  await page.locator('#setlist .setrow[data-id="adv"] .dots').click();
+  await page.locator('#cardmenu button', { hasText: 'Edit…' }).click();
+  await ed.locator('.senote').fill('d6@nope'); await page.keyboard.press('Enter');
+  await expect(ed.locator('.seerr')).toContainText('No design');
+  await ed.locator('.presets button', { hasText: /^d4$/ }).click();
+  await ed.locator('.acts button', { hasText: 'Cancel' }).click();
+  expect(await app.run(pd => pd.bag.sets.find(s => s.id === 'adv').terms)).toEqual([{ count: 2, sides: 20, design: 'amethyst' }]);
+});

@@ -253,7 +253,7 @@ test('a new blank design is plain off-white solid plastic, not the swirl default
   expect(r.colors[0]).toBe('#efe9dc');
 });
 
-test('no design picture is taken while the camera eases back from the roll view (PD-110)', async ({ app, page }) => {
+test('design pictures are drawn offscreen: right even while the camera eases back from a roll, and the stage is untouched (PD-110, PD-123)', async ({ app, page }) => {
   test.setTimeout(300_000); expect.configure({ timeout: 120_000 });
   await app.open({ query: 'thumbs=1' });
   await app.run(SETUP);
@@ -261,16 +261,15 @@ test('no design picture is taken while the camera eases back from the roll view 
   const first = await app.run(pd => Object.keys(pd.thumbs));
   await app.run(async pd => { pd.state.shape = 'custom'; pd.state.notation = '6d20'; pd.buildDice(); pd.startRoll(); await new Promise(r => setTimeout(r, 2500)); });   // six dice, like the reported card
   const r = await app.run(async pd => {   // the roll is over: back to the showcase, camera still on its way home
-    pd.exitRoll(); pd.state.radius = 0.137; const eased = pd.camBlend, before = Object.keys(pd.thumbs).length;
-    await pd.updateThumbs(); return { eased, tookOne: Object.keys(pd.thumbs).length > before };
+    pd.exitRoll(); pd.state.radius = 0.137; const eased = pd.camBlend, before = Object.keys(pd.thumbs).length, shape = pd.state.shape, notation = pd.state.notation, vis = pd.canvas.style.visibility;
+    await pd.updateThumbs(); return { eased, tookOne: Object.keys(pd.thumbs).length > before, same: pd.state.shape === shape && pd.state.notation === notation, vis, visAfter: pd.canvas.style.visibility };
   });
   expect(r.eased).toBeGreaterThan(0.01);   // the situation really is mid-ease
-  expect(r.tookOne).toBe(false);           // so the picture waits instead of photographing the table and a tiny die
-  await app.run(pd => { pd.camBlend = 0; });   // the camera arrives home (software GL eases it for tens of seconds)
-  await expect.poll(() => app.run((pd, first) => Object.keys(pd.thumbs).some(k => !first.includes(k)), first), { timeout: 120_000 }).toBe(true);   // and the pass takes the picture for the new look
+  expect(r.tookOne).toBe(true);            // the picture does not wait for the camera any more
+  expect(r.same).toBe(true); expect(r.visAfter).toBe(r.vis);   // and the stage was never touched (no canvas hiding, no design swap)
   const fill = await page.evaluate(async first => { const pd = window.__pd, k = Object.keys(pd.thumbs).find(x => !first.includes(x)); const im = new Image(); im.src = pd.thumbs[k]; await im.decode(); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
-    const d = g.getImageData(0, 0, c.width, c.height).data, bg = [d[0], d[1], d[2]]; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 60) n++; return n / (c.width * c.height); }, first);
-  expect(fill).toBeGreaterThan(0.1); expect(fill).toBeLessThan(0.6);   // one die in a dark frame, not a screen full of table
+    const d = g.getImageData(0, 0, c.width, c.height).data, bg = [d[0], d[1], d[2]]; let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) > 60) n++; return n / (d.length / 4); }, first);
+  expect(fill).toBeGreaterThan(0.2); expect(fill).toBeLessThan(0.65);   // one die in a dark frame, not a screen full of table
 });
 
 // Phase 3 (PD-102.3): a die per term can use another design in the bag.
