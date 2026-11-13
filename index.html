@@ -1178,11 +1178,11 @@ async function setShake(on){
   if(on&&!shakeOn){ addEventListener('devicemotion',onShake); if(state.sound) audioInit(); } else if(!on&&shakeOn) removeEventListener('devicemotion',onShake);
   shakeOn=on; state.shake=on; $('shake').checked=on; save(); }
 if('DeviceMotionEvent' in window&&matchMedia('(pointer:coarse)').matches){ $('shakerow').hidden=false; $('shake').onchange=e=>setShake(e.target.checked); if(state.shake&&typeof DeviceMotionEvent.requestPermission!=='function') setShake(true); else state.shake=false; }
-$('sound').onchange=e=>{ state.sound=e.target.checked; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(); };
+$('sound').onchange=e=>{ state.sound=e.target.checked; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(true); };
 $('rumble').onchange=e=>{ state.rumble=e.target.checked; save(); };
 $('soundtest').onclick=()=>{ playBlip(); $('soundstat').textContent='…'; setTimeout(()=>{ $('soundstat').textContent=audioStatus(); },400); };   // plays a blip and shows what the browser says about audio
 $('spinbtn').onclick=()=>{ if(state.spin>0){ spinLast=state.spin; state.spin=0; } else state.spin=spinLast||.3; save(); syncUI(); };   // pause remembers the speed it will resume at
-$('snd').onclick=()=>{ state.sound=!state.sound; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(); };
+$('snd').onclick=()=>{ state.sound=!state.sound; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(true); };
 for(const ev of ['pointerdown','touchend','click','keydown']) addEventListener(ev,()=>{ if(state.sound) audioInit(); },{capture:true,passive:true});   // iOS only lets audio start/resume inside a gesture, and 'interrupted' (app switch, call) needs one more: every tap re-wakes it
 $('randsub').onchange=e=>{state.randsub=e.target.checked; save();};
 $('randshape').onchange=e=>{state.randshape=e.target.checked; save();};
@@ -1816,9 +1816,9 @@ function audioInit(){
   }catch{ sfx.ctx=null; } return sfx.ctx;
 }
 function audioStatus(){ const c=sfx.ctx; return 'audio '+(c?c.state:'not started')+(navigator.audioSession?', session '+navigator.audioSession.type:'')+(sfx.hold&&!sfx.hold.paused?', silent-mode bypass on':'')+(state.sound?'':', sound is off')+(IS_IOS?'. No sound? Check the ring/silent switch.':''); }
-function playBlip(){        // a short audible tick played inside the tap itself: the most reliable way to start audio on iOS, and instant feedback that sound works
-  const ctx=audioInit(); if(!ctx) return; setVolume();
-  const go=()=>voice(.3,(c,out,t)=>{ const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.setValueAtTime(720,t); o.frequency.exponentialRampToValueAtTime(360,t+.14); g.gain.setValueAtTime(.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.22); o.connect(g); g.connect(out); o.start(t); o.stop(t+.25); });
+function playBlip(quiet){   // a short tick played inside the tap itself: the most reliable way to start audio on iOS. Audible for the Test sound button; silent (quiet) when sound is switched on, so enabling sound makes no noise
+  const ctx=audioInit(); if(!ctx) return; setVolume(); sfx.lastBlip={quiet:!!quiet};
+  const go=()=>voice(.3,(c,out,t)=>{ const o=c.createOscillator(), g=c.createGain(); o.type='sine'; o.frequency.setValueAtTime(720,t); o.frequency.exponentialRampToValueAtTime(360,t+.14); g.gain.setValueAtTime(quiet?.0001:.45,t); g.gain.exponentialRampToValueAtTime(.001,t+.22); if(quiet) g.gain.setValueAtTime(0,t+.0011); o.connect(g); g.connect(out); o.start(t); o.stop(t+.25); });
   if(ctx.state==='running') go(); else ctx.resume().then(go).catch(()=>{}); }
 function setVolume(){ if(sfx.master) sfx.master.gain.value=state.sound?Math.pow(state.volume,1.6):0; }
 const audioReady=()=>state.sound&&sfx.ctx&&sfx.ctx.state==='running'&&state.volume>0;

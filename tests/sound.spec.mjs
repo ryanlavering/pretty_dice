@@ -147,3 +147,14 @@ test('the ring layer sits on top of every sound set, not just the sample ones', 
   for (const id of ['classic', 'proc', 'kenney', 'best', 'mix']) expect(r[id], `${id}: ring voices`).toBeGreaterThan(0);
   expect(r.off, 'slider at 0 turns the layer off').toBe(0);
 });
+
+test('switching sound on makes no noise; the Test sound button still blips', async ({ app, page }) => {
+  await app.open();
+  await app.run(pd => { pd.state.sound = false; });
+  await page.evaluate(() => { const c = document.getElementById('sound'); c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); });
+  expect(await app.run(pd => pd.sfx.lastBlip), 'enable: silent unlock tick').toEqual({ quiet: true });
+  await page.evaluate(() => document.getElementById('soundtest').click());
+  expect(await app.run(pd => pd.sfx.lastBlip), 'Test sound: audible').toEqual({ quiet: false });
+  await page.evaluate(() => document.getElementById('snd').click()); await page.evaluate(() => document.getElementById('snd').click());
+  expect(await app.run(pd => pd.sfx.lastBlip), 'the sound button also enables silently').toEqual({ quiet: true });
+});
