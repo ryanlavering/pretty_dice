@@ -5,7 +5,7 @@
 # LAND_TESTS = this feature's spec(s) only. Full regression is the integrator's periodic job, not yours.
 set -e
 lane=$(git rev-parse --abbrev-ref HEAD)
-case "$lane" in v4/*) ;; *) echo "run from a v4/<lane> branch (you are on $lane)"; exit 1;; esac
+case "$lane" in v4/*|v4-*) ;; *) echo "run from a v4-<lane> branch (you are on $lane)"; exit 1;; esac
 [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo "commit your changes first"; exit 1; }
 exec 9>/tmp/pretty-dice-land.lock
 flock -w 1200 9 || { echo "land lock busy for 20 min: ask on the board"; exit 1; }
