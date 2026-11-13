@@ -21,3 +21,12 @@ The candidate list is `CMP` in `index.html` (search "head-to-head").
 | E, 20 rolled -35 / **-50 (in the app)** / -65 deg | .387,-.771,.317,-.393 / .283,-.815,.366,-.348 / .174,-.845,.408,-.298 | 4.9 | as E | as E | as E | as A |
 
 All use fov 32, camera height -0.1, exposure 1.5. "E, 20 outward" is E with the die turned by an icosahedral symmetry so the face labelled 20 sits where E's front face (the 7) was; the rolled rows then spin it about the view axis so the 20 reads upright, at the cost of moving the highlights.
+
+## Current default (2026-11-13)
+
+E-50 turned out too glary in practice, so the app went back to the pre-PD-123 look: the stage pose and lights (key 1.6 at (3,6,4), unturned studio room, no sheen or back light), camera distance 5.4 (the old stage framing was 5.4 to 6.2 depending on window shape), fov 32, exposure 1.5.
+The die is turned by an icosahedral symmetry ("h3 k1" in the pose sheet), quaternion -.0067, .8228, -.3034, .4805, so the 20 sits on the left front face, upright. The old pose itself is (.0054, .0247, .0022, .9997); the Compare view lists it as "Pre-123 stage look".
+Other symmetry turns tried: h2 k1 (18 and 20 side by side) is the best alternative.
+
+Owner then asked for the lean of the old pictures: the default is the pose above rolled 8 degrees left (about the view axis), quaternion [-0.0641, 0.8203, -0.2691, 0.5005].
+The pose is applied in `PIC_Q`; the picture is drawn in a corner of the stage canvas (not a render target, which washes out clear epoxy), camera distance 5.4, fov 29.7.

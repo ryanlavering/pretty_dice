@@ -4,7 +4,7 @@ title: 'Design pictures: better angle and light (epoxy, metal)'
 status: Needs Review
 assignee: []
 created_date: '2026-11-13T00:58:00Z'
-updated_date: '2026-11-13T04:35:00Z'
+updated_date: '2026-11-13T05:56:00Z'
 labels:
   - bug
   - bag
@@ -47,4 +47,8 @@ Applied candidate E with the 20 face toward the camera (pose .601,-.619,.184,-.4
 Owner: E unrolled has too much sheen in practice; E rolled -50 deg is the new default (quaternion .283,-.815,.366,-.348).
 
 - Candidate G: quaternion [0.217, 0.233, 0.116, 0.941] (euler deg 24, 29.245, 7.754); camera 4.9/-0.1/32; room turn [0, 3.142, 0]; key/sheen/back as A. Not applied; in the Compare view and docs/design/picture-candidates.md.
+
+Owner chose 'h3 k1': the pre-PD-123 look (stage pose/lights, camera 5.4) with the die turned by an icosahedral symmetry so the 20 is upright on the left front face. quaternion -.0067,.8228,-.3034,.4805. Replaces E-50 (too glary).
+
+Pictures: the render-target path washed out transmission (epoxy); now drawn in a corner of the stage canvas (hidden for that instant), matching the pre-123 stats. Pose h3 k1 rolled 8 deg left; camera 5.4, fov 29.7. Thumbnail cache key bumped to v2.
 <!-- SECTION:NOTES:END -->
