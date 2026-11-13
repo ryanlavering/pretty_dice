@@ -11,6 +11,12 @@ b64 = lambda data, mime: f"data:{mime};base64," + base64.b64encode(data).decode(
 js = lambda p: b64(p.read_bytes(), 'text/javascript')
 
 ARTIFACT = '--artifact' in sys.argv
+def games_imports():   # games/*.js as data: URLs: index.js is 'pd-games', the rest 'pd-games/<file>'; relative imports become those bare names
+    out = {}
+    for f in sorted((root / 'games').glob('*.js')):
+        src = re.sub(r"(from\s+)'\./([\w-]+\.js)'", r"\1'pd-games/\2'", f.read_text())
+        out['pd-games' if f.name == 'index.js' else 'pd-games/' + f.name] = b64(src.encode(), 'text/javascript')
+    return out
 def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.wav", "best/manifest.json"); index.html reads window.__SOUNDS before fetching
     d = root / 'sounds'; files = {}
     for sub in ('best', 'kenney'):
@@ -23,7 +29,7 @@ if not m: sys.exit('bootstrap markers not found in index.html')
 
 if ARTIFACT:
     V = 'https://cdn.jsdelivr.net/npm/three@0.160.0/'
-    cdn = {'three': V + 'build/three.module.js', 'cannon-es': 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js', 'three/addons/': V + 'examples/jsm/'}
+    cdn = {'three': V + 'build/three.module.js', 'cannon-es': 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js', 'three/addons/': V + 'examples/jsm/', **games_imports()}
     fl = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;800&family=Uncial+Antiqua&family=Metamorphous&display=swap'
     out = html.replace(m.group(0), '<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
     out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')
@@ -31,6 +37,7 @@ if ARTIFACT:
     p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
 
 imports = {
+    **games_imports(),
     'three': js(v / 'three/build/three.module.js'),
     'cannon-es': js(v / 'cannon-es/dist/cannon-es.js'),
 }

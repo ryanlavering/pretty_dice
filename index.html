@@ -151,6 +151,7 @@
 (function(){
   var V='three@0.160.0', CDN={"three":"https://cdn.jsdelivr.net/npm/"+V+"/build/three.module.js","cannon-es":"https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js","three/addons/":"https://cdn.jsdelivr.net/npm/"+V+"/examples/jsm/"};
   var LOCAL={"three":"./vendor/three/build/three.module.js","cannon-es":"./vendor/cannon-es/dist/cannon-es.js","three/addons/":"./vendor/three/examples/jsm/"};
+  CDN["pd-games"]=LOCAL["pd-games"]="./games/index.js";   /* pure rules engine, see docs/design/games-engine.md; build-static.py inlines games/*.js */
   var FONTS_CDN="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Inter:wght@400;500;600;800&family=Uncial+Antiqua&family=Metamorphous&display=swap";
   var force=new URLSearchParams(location.search).get('libs');
   function reachable(){ var c=new AbortController(), t=setTimeout(function(){c.abort();},3000);
