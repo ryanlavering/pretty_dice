@@ -75,6 +75,7 @@
   #gamepanel table{border-collapse:collapse;width:100%} #gamepanel td,#gamepanel th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center} #gamepanel td:first-child,#gamepanel th:first-child{text-align:left}
   #gamepanel th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} #gamepanel th.cur{color:var(--accent)} #gamepanel td.cur{background:#2a2619}
   #gamepanel td.sug{color:var(--dim);font-style:italic} #gamepanel td.best{color:var(--accent);font-weight:700;font-style:normal} #gamepanel td.pick{cursor:pointer} #gamepanel td.pick:hover{outline:1px solid var(--accent)}
+  #gamepanel .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} #gamepanel .sugs button.best{color:var(--accent);font-weight:700}
   #gamepanel tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} #gamepanel tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   #mode.xopen{border-color:var(--accent);color:var(--accent)}
@@ -2465,39 +2466,54 @@ try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{
 const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
-function gameHold(i){ const st=GAMES.status(game.state); if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
+const TURN_GAMES=['farkle','pig'];   // dice-and-bank games: no scorecard, a running turn total
+let gsel=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
+function gameHold(i){ const st=GAMES.status(game.state);
+  if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
+    if(st.held[i]){ gameMsg='That die is already set aside'; renderGame(); return false; }
+    if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
+  if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
-function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg='Pick a box on the scorecard'; renderGame(); return false; }
+function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
+  gsel.clear();
   held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); gameAwaiting=true; gameMsg=''; renderGame(); return true; }
 function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
-  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; renderGame(); }
+  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
+  if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); gameMsg=bust?'Bust! Turn total lost':''; if(bust) gameSync(); }
+  renderGame(); }
+function gameSetAside(slots){ const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+  game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
+function gameBank(){ const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+  game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
 function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 async function startGame(id,players,options){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false;
+  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear();
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); renderGame(); }
 function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } GP.hidden=true; }
 function renderGame(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else GP.hidden=true; });
-    const games=GAMES.listGames().filter(g=>g.id==='yahtzee'), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
     const n=Math.min(gprefs.count,g.maxPlayers), nameIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}); nameIn.push(inp); GP.append(gel('div',{className:'row'},inp)); }
     const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
-      if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); } }
+      if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); }
+      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); } }
     const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'})));
     GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else startGame(g.id,nameIn.map((x,i)=>x.value.trim()||('Player '+(i+1))),opts); }})));
     return; }
   const S=game.state, st=GAMES.status(S), sug=GAMES.suggest(S), over=st.phase==='over';
   hd(game.info.name,()=>endGame(),'End game'); GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
@@ -2514,6 +2530,18 @@ function renderGame(){
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yahtzee bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
 }
+function renderTurn(S,st,over){
+  const res=over?GAMES.result(S):null, farkle=game.id==='farkle', sug=farkle?GAMES.suggest(S):[];
+  if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.message||'').replace(/^[^:]*: /,''),gel('small',{textContent:'Turn total '+st.turnTotal+' · first to '+st.target+(st.finalRound?' · final round':'')+(gameMsg?' · '+gameMsg:'')})));
+  if(!over){ const live=GAMES.rollSpec(S).slots.length, row=gel('div',{className:'row'});
+    row.append(gel('button',{className:'big',type:'button',textContent:st.canRoll?(farkle&&st.turnTotal?'Roll '+live+(live>1?' dice':' die'):'Roll'):'Roll (set aside first)',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
+    row.append(gel('button',{type:'button',textContent:'Bank '+st.turnTotal,disabled:!st.canBank||gameAwaiting,onclick:gameBank})); GP.append(row);
+    if(farkle&&st.canScore){ GP.append(gel('div',{className:'row'},gel('button',{type:'button',textContent:gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',disabled:!gsel.size||!settled,onclick:()=>gameSetAside(gsel)})));
+      if(gprefs.suggest&&sug.length){ const box=gel('div',{className:'sugs'}); for(const r of sug) box.append(gel('button',{type:'button',className:r.best?'best':'',textContent:r.label+' = '+r.points,onclick:()=>gameSetAside(r.slots)})); GP.append(box); } } }
+  const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Banked'}))));
+  S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.scores[p]),className:cur?'cur':''})); body.append(tr); });
+  tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } renderGame(); });
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
