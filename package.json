@@ -1,5 +1,6 @@
 {
   "name": "pretty-dice-tests",
+  "version": "3.0.0",
   "private": true,
   "description": "Dev-only test tooling. The app itself needs no install (see README).",
   "type": "module",
