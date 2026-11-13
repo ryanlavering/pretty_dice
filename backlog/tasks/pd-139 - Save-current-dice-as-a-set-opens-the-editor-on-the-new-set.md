@@ -1,9 +1,10 @@
 ---
 id: PD-139
 title: Save current dice as a set opens the editor on the new set
-status: In Progress
+status: Review Complete
 assignee: []
 created_date: '2026-11-13T08:04:00Z'
+updated_date: '2026-11-13T08:26:00Z'
 labels: []
 milestone: m-0
 dependencies: []
