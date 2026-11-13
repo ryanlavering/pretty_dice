@@ -96,8 +96,8 @@ Decision needed from you: is Games the right headline, or do you want Characters
 | E. Performance ladder | Auto quality tiers, Lite 2D fallback, PWA |
 | F. Release | Full regression, docs, merge to main, tag 4.0 |
 
-## Open questions
-1. Headline: Games first, or Characters first?
-2. Is Basic/Advanced acceptable (some sliders hidden by default), or must everything stay one tap away?
-3. Playtest budget cap and timing (before or after batch A)?
-4. Lite 2D fallback: in v4.0, or a later release?
+## Owner decisions (2026-11-13)
+1. v4.0 is the "Game table" release, Games before Characters. Mock-ups come first, before the direction is locked (Games mock-ups published as an artifact; findings pending owner review).
+2. "Advanced" controls: first label them, then count. One or two advanced controls stay in place under an "Advanced" sub-label (users expect them to be subtler). A group with 3 or more advanced controls may collapse.
+3. Playtest budget: start with a cap of about 150k tokens total, check in at about 75k. Say which parts suit Haiku (e.g. bulk log or card filing) or Opus (e.g. DM narration design, if quality suffers).
+4. Lite 2D fallback stays in 4.0, watching the time it takes (can be deferred).

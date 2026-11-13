@@ -1,0 +1,240 @@
+<title>Pretty Dice Game Table</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: horizontal gallery of phone frames, then one desktop frame, then notes. Matches the app's dark UI; one committed look. */
+:root{--bg:#0e1015;--panel:#161922;--panel2:#1d212c;--line:#262a36;--ink:#e8e9ee;--dim:#8b90a0;--accent:#e2b85c;--felt:#16302c;--felt2:#0f221f;--good:#6fcf97;--bad:#e07a7a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
+main{max-width:1180px;margin:0 auto}
+h1{font-size:26px;margin:0 0 6px;text-wrap:balance}
+h2{font-size:18px;margin:44px 0 4px;text-wrap:balance}
+p.lede{color:var(--dim);max-width:68ch;margin:0 0 8px}
+p.note{color:var(--dim);max-width:62ch;margin:6px 0 0;font-size:13px}
+.tag{display:inline-block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.row{display:flex;flex-wrap:wrap;gap:28px;margin-top:18px;align-items:flex-start}
+.fig{width:300px;max-width:100%}
+.fig figcaption{margin-top:10px;font-size:13px;color:var(--dim)}
+.fig figcaption b{color:var(--ink);display:block;font-size:14px}
+.phone{width:300px;max-width:100%;height:600px;border:1px solid #333948;border-radius:30px;background:var(--bg);overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 8px 28px #0008}
+.desk{width:100%;max-width:880px;height:470px;border:1px solid #333948;border-radius:14px;background:var(--bg);overflow:hidden;position:relative;display:grid;grid-template-columns:1fr 300px}
+.top{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font-size:13px}
+.top .t{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim);white-space:nowrap}
+.pill.on{color:#1a1405;background:var(--accent);border-color:var(--accent);font-weight:600}
+.mat{flex:1;min-height:0;margin:0 10px;border-radius:16px;background:radial-gradient(120% 90% at 50% 30%,var(--felt),var(--felt2));border:1px solid #20403a;position:relative;overflow:hidden}
+.dice{position:absolute;inset:0}
+.die{position:absolute;width:46px;height:46px;border-radius:10px;background:linear-gradient(145deg,#f4efe2,#d9d2bf);box-shadow:0 5px 8px #0007,inset 0 -3px 0 #0002;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:7px;gap:1px}
+.die i{width:7px;height:7px;border-radius:50%;background:#20232b;place-self:center}
+.die.red{background:linear-gradient(145deg,#c9483f,#8f2a24)}.die.red i{background:#fff4}
+.die.num{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#20232b}
+.die.held{box-shadow:0 0 0 2px var(--accent),0 12px 14px #0008;transform:translateY(-10px)}
+.die.held::after{content:"HELD";position:absolute;left:50%;top:-18px;transform:translateX(-50%);font-size:9px;letter-spacing:.1em;color:var(--accent);font-weight:700}
+.die.pick{box-shadow:0 0 0 2px var(--good),0 6px 8px #0007}
+.die.dim{opacity:.4}
+.btnrow{display:flex;gap:8px;padding:10px}
+.btn{flex:1;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:10px;padding:11px 8px;text-align:center;font-weight:600;font-size:14px}
+.btn.big{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+.btn small{display:block;font-weight:400;font-size:11px;opacity:.75;margin-top:1px}
+.tabs{display:flex;border-top:1px solid var(--line);background:var(--panel)}
+.tabs span{flex:1;text-align:center;padding:10px 0 12px;font-size:12px;color:var(--dim)}
+.tabs span.on{color:var(--accent);box-shadow:inset 0 2px 0 var(--accent)}
+.sheet{background:var(--panel);border-top:1px solid var(--line);border-radius:16px 16px 0 0;padding:8px 12px 10px}
+.grab{width:36px;height:4px;border-radius:2px;background:#3a4052;margin:0 auto 8px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+td,th{padding:4px 6px;text-align:right;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--dim);font-size:11px;letter-spacing:.04em}
+td:first-child,th:first-child{text-align:left}
+td.sug{color:var(--good);font-weight:700}
+tr.hot td{background:#e2b85c14}
+td.sug span{border:1px dashed var(--good);border-radius:6px;padding:1px 6px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 12px 12px;overflow:hidden}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:3px;min-height:112px}
+.card .pic{height:40px;display:flex;gap:4px;align-items:center}
+.card .pic .die{position:static;width:22px;height:22px;border-radius:5px;padding:3px;box-shadow:0 2px 3px #0006}
+.card .pic .die i{width:3.5px;height:3.5px}
+.card b{font-size:14px}.card small{color:var(--dim);font-size:11.5px;line-height:1.3}
+.card.you{border-color:var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.seg span{flex:1;text-align:center;padding:7px 0;font-size:13px;color:var(--dim)}.seg span.on{background:var(--accent);color:#1a1405;font-weight:700}
+.form{padding:4px 14px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.form label{font-size:12px;color:var(--dim);display:block;margin-bottom:4px}
+.field{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 10px}
+.sw{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}.sw span:first-child{flex:1}
+.sw small{display:block;color:var(--dim);font-size:11.5px}
+.tg{width:34px;height:20px;border-radius:10px;background:#3a4052;position:relative;flex:none}.tg::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#bbb}
+.tg.on{background:var(--accent)}.tg.on::after{left:16px;background:#1a1405}
+.puck{position:absolute;width:44px;height:44px;border-radius:50%;background:#f4efe2;color:#20232b;font-weight:800;font-size:11px;text-align:center;line-height:1;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:0 4px 8px #0008;border:3px solid #20232b}
+.puck.off{background:#20232b;color:#f4efe2;border-color:#f4efe2}
+.bets{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px}
+.bet{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:8px;font-size:12px}
+.bet b{display:block;font-size:13px}.bet.live{border-color:var(--accent)}
+.chip{display:inline-block;min-width:34px;text-align:center;border-radius:999px;background:#c9483f;color:#fff;font-weight:700;font-size:11px;padding:3px 7px;border:2px dashed #fff8;margin-left:4px}
+.hud{display:flex;justify-content:space-between;align-items:baseline;padding:6px 14px 0;font-size:12px;color:var(--dim)}
+.hud b{color:var(--ink);font-size:20px;font-variant-numeric:tabular-nums}
+.toast{position:absolute;left:12px;right:12px;top:10px;background:#0009;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;text-align:center}
+.mini{font-size:12px;color:var(--dim);padding:2px 14px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font-size:12px;max-width:640px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:14px}
+.cols div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.cols h3{margin:0 0 6px;font-size:14px}.cols p{margin:0;color:var(--dim);font-size:13px}
+.wrap{overflow-x:auto}
+</style>
+
+<main>
+<span class="tag">Mock-ups · not built</span>
+<h1>Pretty Dice: Game table</h1>
+<p class="lede">Design sketches for the v4.0 headline: built-in dice games with scoring. Dice, mat and roll feel stay exactly as they are. A game adds a rule set, a scorecard and turn handling around them. Everything below is one proposal for you to react to.</p>
+
+<h2>1. Finding a game</h2>
+<p class="lede">A fourth tab, <b>Games</b>, sits beside Shape, Sets and Log. Each card shows the dice it uses and how many people play. Tap one, set it up, and you land on the roll mat.</p>
+<div class="row">
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">Pretty Dice</span><span class="pill">Bag</span></div>
+ <div class="seg" style="margin:0 14px 10px"><span>Shape</span><span>Sets</span><span class="on">Games</span><span>Log</span></div>
+ <div class="mini">Pick a game. Your current dice design is used for the dice.</div>
+ <div class="cards" id="gcards"></div>
+ <div style="flex:1"></div>
+ <div class="tabs"><span>Mat</span><span class="on">Games</span><span>Bag</span><span>Settings</span></div>
+</div><figcaption><b>Games tab</b>Eight launch candidates; Yahtzee, Farkle, Pig and Craps first. “Your design” means every die uses whichever design is selected in the bag, so the games look like your dice.</figcaption></figure>
+
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">‹ Yahtzee · Setup</span></div>
+ <div class="form">
+  <div><label>Players</label><div class="seg"><span class="on">1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div></div>
+  <div><label>Player 1</label><div class="field">Ryan</div></div>
+  <div><label>Dice</label><div class="field">5 × your current design (d6)</div></div>
+  <div><label>House rules</label>
+   <div class="sw"><span>Joker rules<small>Extra Yahtzees score as bonus</small></span><span class="tg on"></span></div>
+   <div class="sw"><span>Suggest scores<small>Show what each box would score</small></span><span class="tg on"></span></div>
+   <div class="sw"><span>Auto-score single choice<small>Skip the tap when only one box fits</small></span><span class="tg"></span></div>
+  </div>
+ </div>
+ <div style="flex:1"></div>
+ <div class="btnrow"><div class="btn big">Start game</div></div>
+</div><figcaption><b>Setup</b>Players, names, dice, and switches for the common house rules. Defaults are the official rules, so most people just tap Start.</figcaption></figure>
+</div>
+
+<h2>2. Yahtzee on a phone</h2>
+<p class="lede">The mat stays the star. Tapping a settled die <b>holds</b> it: it lifts and gets a gold ring. The big button rolls only the others. After the last roll, the scorecard sheet slides up and suggests what each box would score.</p>
+<div class="row">
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">Yahtzee · Ryan</span><span class="pill">Round 4/13</span></div>
+ <div class="mat"><div class="dice" id="y1"></div><div class="toast">Roll 2 of 3 · tap dice to hold</div></div>
+ <div class="btnrow"><div class="btn big">Roll 3 dice<small>2 held</small></div><div class="btn">Score…</div></div>
+ <div class="tabs"><span class="on">Mat</span><span>Scorecard</span><span>Log</span><span>Settings</span></div>
+</div><figcaption><b>Mid-turn</b>Two fives are held. “Score…” is always available, so you can stop early. Nothing is typed in.</figcaption></figure>
+
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">Yahtzee · Ryan</span><span class="pill">Round 4/13</span></div>
+ <div class="mat" style="flex:.55"><div class="dice" id="y2"></div></div>
+ <div class="sheet" style="flex:1;min-height:0;overflow:hidden"><div class="grab"></div>
+ <div class="wrap"><table>
+  <tr><th>Box</th><th>Ryan</th><th>Maya</th></tr>
+  <tr><td>Fives</td><td class="sug"><span>15</span></td><td>10</td></tr>
+  <tr><td>Three of a kind</td><td class="sug"><span>24</span></td><td>—</td></tr>
+  <tr class="hot"><td>Full house</td><td class="sug"><span>25</span></td><td>25</td></tr>
+  <tr><td>Chance</td><td class="sug"><span>24</span></td><td>—</td></tr>
+  <tr><td>Aces</td><td>3</td><td>2</td></tr>
+  <tr><td>Twos</td><td>6</td><td>8</td></tr>
+  <tr><td>Sm. straight</td><td>—</td><td>30</td></tr>
+  <tr><td>Upper bonus</td><td>–35 to go</td><td>–27</td></tr>
+  <tr><td><b>Total</b></td><td><b>34</b></td><td><b>83</b></td></tr>
+ </table></div></div>
+ <div class="tabs"><span>Mat</span><span class="on">Scorecard</span><span>Log</span><span>Settings</span></div>
+</div><figcaption><b>Score it</b>Open boxes show a dashed green number: what these dice would score there. Tap one to take it. The best box is highlighted, never chosen for you.</figcaption></figure>
+</div>
+
+<h2>3. Craps</h2>
+<p class="lede">A state machine rather than a scorecard: come-out roll, point, pass and don't pass, odds, payouts. Play money only. The point puck sits on the mat showing ON and the number, flipping to OFF between rounds, like a real table.</p>
+<div class="row">
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">Craps · Table</span><span class="pill on">Point 6</span></div>
+ <div class="hud"><span>Bankroll</span><span>Rolls this shooter: <b style="font-size:13px">4</b></span></div>
+ <div class="hud" style="padding-top:0"><b>$ 1,180</b><span style="color:var(--good)">+$180 session</span></div>
+ <div class="mat" style="margin-top:8px"><div class="dice" id="c1"></div>
+  <div class="puck" style="left:20px;top:16px">ON<br>6</div>
+  <div class="toast" style="top:auto;bottom:10px">Roll again: 6 wins the Pass Line, 7 loses</div></div>
+ <div class="bets" style="margin-top:10px">
+  <div class="bet live"><b>Pass Line <span class="chip">$25</span></b>Pays 1:1 on 6</div>
+  <div class="bet live"><b>Odds <span class="chip">$50</span></b>Pays 6:5 on 6</div>
+  <div class="bet"><b>Field</b>Tap to bet</div>
+  <div class="bet"><b>Place 8</b>Tap to bet</div>
+ </div>
+ <div class="btnrow"><div class="btn big">Roll<small>Shooter: you</small></div></div>
+ <div class="tabs"><span class="on">Table</span><span>Rules</span><span>Log</span><span>Settings</span></div>
+</div><figcaption><b>Point is 6</b>Bets are tappable chips with their payout spelled out. A “Rules” tab explains each bet in a sentence so a first-time player can follow along.</figcaption></figure>
+
+<figure class="fig" style="margin:0"><div class="phone">
+ <div class="top"><span class="t">Farkle · Maya</span><span class="pill">First to 10,000</span></div>
+ <div class="hud"><span>This turn</span><span>Bank: <b style="font-size:13px">2,350</b></span></div>
+ <div class="hud" style="padding-top:0"><b style="color:var(--accent)">450</b><span>Select scoring dice, then bank or roll</span></div>
+ <div class="mat" style="margin-top:8px"><div class="dice" id="f1"></div></div>
+ <div class="btnrow"><div class="btn">Bank 450</div><div class="btn big">Roll 3 dice<small>Hot dice needs 6</small></div></div>
+ <div class="tabs"><span class="on">Mat</span><span>Scores</span><span>Rules</span><span>Settings</span></div>
+</div><figcaption><b>Farkle</b>Scoring dice get a green ring as you tap them; the running turn total updates. Dice that cannot score are dimmed. A rolled Farkle says so, loses the turn total, and passes the dice.</figcaption></figure>
+</div>
+
+<h2>4. On a wide screen</h2>
+<p class="lede">The mat takes the left; the scorecard lives in a permanent right column instead of a sheet. Same data, same taps.</p>
+<div class="row"><div class="desk">
+ <div style="display:flex;flex-direction:column;min-width:0">
+  <div class="top"><span class="t">Yahtzee · Ryan</span><span class="pill">Round 4/13</span><span class="pill">Roll 2 of 3</span></div>
+  <div class="mat" style="flex:1;margin-bottom:0"><div class="dice" id="y3"></div></div>
+  <div class="btnrow"><div class="btn big">Roll 3 dice<small>space</small></div><div class="btn">Score…</div><div class="btn">Hold all</div></div>
+ </div>
+ <div style="border-left:1px solid var(--line);background:var(--panel);padding:12px;overflow:hidden">
+  <div class="seg" style="margin-bottom:10px"><span class="on">Scorecard</span><span>Rules</span><span>Log</span></div>
+  <table>
+   <tr><th>Box</th><th>Ryan</th><th>Maya</th></tr>
+   <tr><td>Aces</td><td>3</td><td>2</td></tr><tr><td>Twos</td><td>6</td><td>8</td></tr>
+   <tr><td>Threes</td><td>—</td><td>9</td></tr><tr><td>Fours</td><td>—</td><td>—</td></tr>
+   <tr><td>Fives</td><td class="sug"><span>15</span></td><td>10</td></tr>
+   <tr><td>Sixes</td><td>—</td><td>—</td></tr>
+   <tr><td>3 of a kind</td><td class="sug"><span>24</span></td><td>—</td></tr>
+   <tr><td>4 of a kind</td><td>—</td><td>—</td></tr>
+   <tr class="hot"><td>Full house</td><td class="sug"><span>25</span></td><td>25</td></tr>
+   <tr><td>Chance</td><td class="sug"><span>24</span></td><td>—</td></tr>
+   <tr><td><b>Total</b></td><td><b>34</b></td><td><b>83</b></td></tr>
+  </table>
+ </div>
+</div></div>
+
+<h2>5. How games are defined</h2>
+<p class="lede">Each game is a small data file, not code in the app: which dice, how many rolls, what can be held, how boxes score, when it ends. That keeps games testable, lets us add many, and later lets players share their own house variants.</p>
+<pre>{ "id": "farkle", "name": "Farkle", "players": [2, 8],
+  "dice": "6 x design",
+  "turn": { "rolls": "until-farkle-or-bank", "hold": "scoring-dice", "hotDice": true },
+  "score": [ { "match": "single 1", "pts": 100 }, { "match": "single 5", "pts": 50 },
+             { "match": "three of a kind", "pts": "face*100", "ones": 1000 },
+             { "match": "straight 1-6", "pts": 1500 } ],
+  "win": { "target": 10000, "finalRound": true } }</pre>
+<p class="note">Craps and Liar's Dice have state (point, bets, hidden bids), so they get a small named “engine” alongside their data, not a pure table. Each engine is tested alone with seeded rolls.</p>
+
+<h2>Where this fits</h2>
+<div class="cols">
+ <div><h3>Bag and dice</h3><p>Games use the dice designs you already own. A game just says “6 dice” or “2 dice”; the look is yours.</p></div>
+ <div><h3>Needs first</h3><p>Hold a die (tap), per-die results readable by the app, and a turn/player model. Those are also what Characters needs later.</p></div>
+ <div><h3>Out of scope for 4.0</h3><p>Online play, real-money anything (Craps is play money only), and rules the player must type in.</p></div>
+</div>
+<h2>Questions for you</h2>
+<div class="cols">
+ <div><h3>Entry point</h3><p>A Games tab beside Shape / Sets / Log, as drawn, or a launcher on the main mat screen?</p></div>
+ <div><h3>Suggestions</h3><p>Show what each scorecard box would score (drawn), on by default? It teaches the game but can feel like hand-holding.</p></div>
+ <div><h3>Launch set</h3><p>Yahtzee, Farkle, Pig, Craps first. Liar's Dice needs hidden dice and a pass-the-phone flow. Keep it for later?</p></div>
+</div>
+</main>
+
+<script>
+var P={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function die(v,x,y,cls,r){var d=document.createElement('div');d.className='die '+(cls||'');d.style.left=x+'px';d.style.top=y+'px';d.style.transform=(d.style.transform||'')+' rotate('+(r||0)+'deg)';
+ if(cls&&cls.indexOf('held')>=0){d.style.transform='translateY(-10px) rotate('+(r||0)+'deg)';}
+ for(var i=0;i<9;i++){var c=document.createElement('i');c.style.visibility=P[v].indexOf(i)>=0?'visible':'hidden';d.appendChild(c);}return d;}
+function put(id,list){var el=document.getElementById(id);list.forEach(function(a){el.appendChild(die.apply(null,a));});}
+put('y1',[[5,30,60,'held',-4],[5,100,40,'held',6],[2,200,70,'',20],[6,60,190,'',-14],[3,170,200,'',9]]);
+put('y2',[[5,24,30,'',-4],[5,84,22,'',6],[5,150,34,'',12],[2,210,28,'',-9],[4,120,70,'',20]]);
+put('c1',[[4,70,40,'red',22],[2,150,90,'red',-15]]);
+put('f1',[[1,30,50,'pick',8],[5,95,30,'pick',-12],[1,200,70,'pick',16],[3,50,170,'dim',-6],[2,130,190,'dim',14],[6,205,170,'dim',-20]]);
+put('y3',[[5,90,70,'held',-4],[5,170,60,'held',6],[2,290,100,'',20],[6,140,220,'',-14],[3,260,230,'',9]]);
+var G=[['Yahtzee','1–6 players · 5 dice','Roll, hold, fill 13 boxes',[1,3,5]],['Farkle','2–8 players · 6 dice','Push your luck to 10,000',[1,5,6]],['Pig','2–6 players · 1 die','Roll or bank, 1 loses all',[1]],['Craps','1–6 shooters · 2 dice','Pass line, odds, the point',[3,4]],['Liar’s Dice','2–6 players · 5 dice','Bid and bluff, hidden dice',[2,2,6]],['Shut the Box','1–4 players · 2 dice','Flip tiles to match the roll',[3,6]],['Bunco','4+ players · 3 dice','Round of 21 with rounds',[2,2,2]],['Ship, Captain, Crew','2+ players · 5 dice','6, 5, 4 in order',[6,5,4]]];
+var gc=document.getElementById('gcards');G.forEach(function(g,i){var c=document.createElement('div');c.className='card'+(i==0?' you':'');var pic=document.createElement('div');pic.className='pic';g[3].forEach(function(v){var d=die(v,0,0,'',0);d.style.transform='none';pic.appendChild(d);});c.appendChild(pic);c.insertAdjacentHTML('beforeend','<b>'+g[0]+'</b><small>'+g[1]+'<br>'+g[2]+'</small>');gc.appendChild(c);});
+</script>
