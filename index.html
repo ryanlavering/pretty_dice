@@ -1054,7 +1054,7 @@ function buildDice(keepRoll){
   buildTok++;
   if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)
   if(!keepRoll) exitRoll(true);
-  rig.clear(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
+  rig.clear(); clearHolds(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
   const specs=specsFor(state.shape);
   specs.forEach(s=>{
     const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
@@ -1832,7 +1832,8 @@ cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY
   flick=rolling&&e.button===0?{x:e.clientX,y:e.clientY,t:performance.now()}:null;
   if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
 let flick=null;           // roll view: a quick one-finger swipe throws the dice again
-const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll(true);
+const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)<8&&performance.now()-fl.t<400){ const hi=pickDie(e.clientX,e.clientY); if(hi>=0&&toggleHold(hi)) { ptrs.delete(e.pointerId); return; } }   // a short tap on a settled die holds or releases it
+   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll(true);
   ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
@@ -1864,6 +1865,19 @@ let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retri
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
+let held=new Set(), holdRings=[];       // PD-142.1: dice the player has locked; a roll throws only the others
+function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
+function clearHolds(){ held.clear(); dropHoldRings(); updateHoldUI(); }
+function syncHoldRings(){ dropHoldRings(); if(!rolling) return;
+  for(const i of held){ if(!bodies[i]) continue; const r=(dice[i].r||1)*1.25, m=new THREE.Mesh(new THREE.RingGeometry(r*.8,r,64),new THREE.MeshBasicMaterial({color:0xf2c14e,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+    m.renderOrder=11; m.rotation.x=-Math.PI/2; m.userData={i}; m.position.set(bodies[i].position.x,TABLE_Y+.05,bodies[i].position.z); rig.add(m); holdRings.push(m); }
+  updateHoldUI(); }
+function updateHoldUI(){ const R=$('result'); R.querySelectorAll('.heldnote').forEach(e=>e.remove()); if(!held.size||!settled) return;
+  const b=document.createElement('button'); b.className='relean heldnote'; b.textContent=held.size+(held.size>1?' dice held':' die held')+' \u00B7 release'; b.onclick=ev=>{ ev.stopPropagation(); clearHolds(); }; R.append(b); }
+function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }
+const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2();
+function pickDie(cx,cy){ if(!rolling||!settled||!bodies.length) return -1; const r=cv.getBoundingClientRect(); _ndc.set((cx-r.left)/r.width*2-1,-((cy-r.top)/r.height)*2+1); _ray.setFromCamera(_ndc,camera);
+  let best=-1,bd=1e9; dice.forEach((d,i)=>{ const h=_ray.intersectObject(d.mesh,true); if(h.length&&h[0].distance<bd){ bd=h[0].distance; best=i; } }); return best; }
 function startRoll(launch=false,place=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
@@ -1874,6 +1888,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
   const halfX=Math.max(2.4,Math.sqrt((foot+4)/1.5)), halfZ=Math.max(3.6,1.5*halfX);   // the tray is sized by how many (and how big) the dice are, not by the screen
   const sc=Math.max(1,halfZ/3.6); table.scale.setScalar(sc);
   Object.assign(key.shadow.camera,{left:-7.3*sc,right:7.3*sc,top:7.3*sc,bottom:-7.3*sc,far:20+10*sc}); key.shadow.camera.updateProjectionMatrix();
+  for(const i of [...held]) if(i>=dice.length) held.delete(i); dropHoldRings();
   rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
@@ -1886,6 +1901,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:1,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
+    if(held.has(i)&&!place){ b.type=CANNON.Body.STATIC; b.mass=0; b.updateMassProperties(); b.position.set(p.x,p.y,p.z); b.quaternion.set(q.x,q.y,q.z,q.w); world.addBody(b); return b; }   // held: stays exactly where it lies, the others bounce off it
     const n=dice.length, R=()=>rng()-.5, rq=randQuat();
     let px=0,pz=0; for(let t=0;t<60;t++){ px=(rng()*2-1)*(halfX-1.1); pz=(rng()*2-1)*(halfZ-1.1);
       if(starts.every(o=>Math.hypot(o[0]-px,o[1]-pz)>2.3)) break; }                      // random drop spot, kept apart from the other dice when there is room
@@ -1906,7 +1922,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     const R=$('result'); R.textContent=''; const h=document.createElement('div'); h.className='brk'; h.textContent='Ready: tap Roll or flick the dice'; R.append(h); R.classList.add('on'); }
 }
 function exitRoll(instant){
-  holdTop(false);
+  holdTop(false); clearHolds();
   clearFx(); clearLeans();
   if(!rolling&&!instant) return;
   rolling=false; placed=false; world=null; bodies=[]; $('result').classList.remove('on'); syncMode();
@@ -1962,7 +1978,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
-  updateLeanUI(); logRoll(main,sub,subItems,subMod);
+  updateLeanUI(); updateHoldUI(); logRoll(main,sub,subItems,subMod);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
@@ -2414,6 +2430,7 @@ const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/6
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
+  get held(){return [...held];}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
