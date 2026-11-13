@@ -2,7 +2,7 @@
 
 User-facing changes. Versions are git tags.
 
-## 3.0 (unreleased)
+## 3.0 (2026-11-13)
 
 ### New: the dice bag
 - **A bag of designs.** The shelf along the bottom holds your dice designs as cards with a picture of each. Tap a card to select it; the mouse wheel scrolls the shelf sideways. Every design keeps its own look, shape and numbers. Add, copy, rename, move and delete from each card's menu; **Randomize** makes a draft you can Keep or Discard without touching saved designs. A changed design shows **Modified** with Save, Revert and Save as copy.
