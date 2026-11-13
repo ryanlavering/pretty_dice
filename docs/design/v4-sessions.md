@@ -34,7 +34,7 @@ Why these cuts: `index.html` is one 2,400-line file, so three lanes edit it. The
 
 ## Common preamble (included in every starter prompt)
 
-> You are one of several parallel Claude Code sessions working on Pretty Dice v4 (repo /home/ryan/code/pretty_dice-v4, integration branch `v4`). First read CLAUDE.md, docs/design/v4-roadmap.md and docs/design/v4-sessions.md (protocol; follow it exactly). Set up your worktree and branch for your lane, run `sh scripts/board.sh tail`, and work only on your lane's cards. Use Sonnet-level effort, no subagents unless I ask, tests per feature only, land with scripts/land.sh.
+> You are one of several parallel Claude Code sessions working on Pretty Dice v4 (repo /home/ryan/code/pretty_dice-v4, integration branch `v4`). First read CLAUDE.md, docs/design/v4-roadmap.md and docs/design/v4-sessions.md (protocol; follow it exactly). First action: run `ListAgents`, read your own `[id]` from its first line, and post `sh scripts/board.sh <lane> "ID <lane> <id> (replaces <old id or none>)"`. Set up your worktree and branch for your lane, run `sh scripts/board.sh tail`, and work only on your lane's cards. Use Sonnet-level effort, no subagents unless I ask, tests per feature only, land with scripts/land.sh.
 
 ## Starter prompts
 
