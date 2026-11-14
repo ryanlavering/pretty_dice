@@ -23,7 +23,7 @@ export function newGame(id, { players = ['Player 1'], options = {} } = {}) {
 }
 export const status = s => eng(s).status(s);
 export const rollSpec = s => eng(s).rollSpec(s);
-export const suggest = s => eng(s).suggest(s);
+export const suggest = (s, player) => eng(s).suggest(s, player);
 export const result = s => eng(s).result(s);
 export const scorecard = (s, p) => eng(s).scorecard(s, p);
 export function act(state, action) {
