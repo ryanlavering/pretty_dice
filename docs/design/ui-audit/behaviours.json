@@ -1,0 +1,337 @@
+{
+ "showcase": {
+  "key r": {
+   "change": {
+    "view": "\"showcase\" -> \"roll\""
+   },
+   "qbarShown": false
+  },
+  "key Space": {
+   "change": {
+    "design": "618408638 -> 1170693002"
+   },
+   "qbarShown": false
+  },
+  "key h": {
+   "change": {
+    "calm": "false -> true",
+    "settingsShown": "true -> false",
+    "toolsShown": "7 -> 1"
+   },
+   "qbarShown": false
+  },
+  "key t (held)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "panel #roll (Showcase|Roll switch, Roll half)": {
+   "change": {
+    "view": "\"showcase\" -> \"roll\""
+   },
+   "qbarShown": false
+  },
+  "panel #back (Showcase half)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "mat #mode (round button, bottom right)": {
+   "change": {
+    "view": "\"showcase\" -> \"roll\""
+   },
+   "qbarShown": false
+  },
+  "drag on the mat (slow)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "right-drag on the mat": {
+   "change": {
+    "az": "0 -> -0.72",
+    "el": "0 -> 0.18"
+   },
+   "qbarShown": false
+  },
+  "wheel on the mat": {
+   "change": {
+    "zoom": "1 -> 1.3"
+   },
+   "qbarShown": false
+  },
+  "double-click the mat (after right-drag + wheel)": {
+   "change": {},
+   "note": "before reset az=-0.72 el=0.18 zoom=1.3; after az=0 el=0 zoom=1",
+   "qbarShown": false
+  },
+  "long-press #layout": {
+   "change": {
+    "calm": "false -> true",
+    "settingsShown": "true -> false",
+    "toolsShown": "7 -> 1"
+   },
+   "qbarShown": false
+  },
+  "mat #snd": {
+   "change": {
+    "sound": "false -> true"
+   },
+   "qbarShown": false
+  },
+  "mat #spinbtn": {
+   "change": {
+    "spin": "0.3 -> 0"
+   },
+   "qbarShown": false
+  },
+  "mat #layout": {
+   "change": {
+    "settingsShown": "true -> false"
+   },
+   "qbarShown": false
+  }
+ },
+ "roll (5d6, settled)": {
+  "key r": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "qbarShown": true
+  },
+  "key Space": {
+   "change": {
+    "design": "-1020136723 -> -951833648"
+   },
+   "qbarShown": true
+  },
+  "key h": {
+   "change": {
+    "calm": "false -> true",
+    "settingsShown": "true -> false",
+    "toolsShown": "7 -> 1"
+   },
+   "qbarShown": true
+  },
+  "key t (held)": {
+   "change": {
+    "topDown": "false -> true",
+    "toolsShown": "7 -> 0"
+   },
+   "qbarShown": true
+  },
+  "panel #roll (Showcase|Roll switch, Roll half)": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "qbarShown": true
+  },
+  "panel #back (Showcase half)": {
+   "change": {
+    "view": "\"roll\" -> \"showcase\""
+   },
+   "qbarShown": true
+  },
+  "mat #mode (round button, bottom right)": {
+   "change": {
+    "view": "\"roll\" -> \"showcase\""
+   },
+   "qbarShown": true
+  },
+  "quick bar Roll (empty box)": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "qbarShown": true
+  },
+  "quick bar d6 chip": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\"",
+    "design": "-1020136723 -> 1834446449",
+    "dice": "5 -> 1"
+   },
+   "qbarShown": true
+  },
+  "flick on the mat": {
+   "change": {},
+   "qbarShown": true
+  },
+  "tap a settled die": {
+   "change": {
+    "heldNote": "\"\" -> \"1 die held · release\""
+   },
+   "qbarShown": true
+  },
+  "drag on the mat (slow)": {
+   "change": {},
+   "qbarShown": true
+  },
+  "right-drag on the mat": {
+   "change": {
+    "az": "0 -> -0.72",
+    "el": "0 -> 0.18"
+   },
+   "qbarShown": true
+  },
+  "wheel on the mat": {
+   "change": {
+    "zoom": "1 -> 1.3"
+   },
+   "qbarShown": true
+  },
+  "double-click the mat (after right-drag + wheel)": {
+   "change": {},
+   "note": "before reset az=-0.72 el=0.18 zoom=1.3; after az=0 el=0 zoom=1",
+   "qbarShown": true
+  },
+  "hold the total / status line": {
+   "change": {
+    "topDown": "false -> true",
+    "toolsShown": "7 -> 0"
+   },
+   "qbarShown": true
+  },
+  "long-press #layout": {
+   "change": {
+    "settingsShown": "true -> false"
+   },
+   "qbarShown": true
+  },
+  "mat #snd": {
+   "change": {
+    "sound": "false -> true"
+   },
+   "qbarShown": true
+  },
+  "mat #layout": {
+   "change": {
+    "settingsShown": "true -> false"
+   },
+   "qbarShown": true
+  }
+ },
+ "game: Yahtzee after the first roll": {
+  "key r": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "1 -> 2"
+   },
+   "qbarShown": false
+  },
+  "key Space": {
+   "change": {
+    "design": "-1020136723 -> 1040544038"
+   },
+   "qbarShown": false
+  },
+  "panel #roll (Showcase|Roll switch, Roll half)": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "1 -> 2"
+   },
+   "qbarShown": false
+  },
+  "panel #back (Showcase half)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "mat #mode (round button, bottom right)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "quick bar Roll (empty box)": {
+   "error": "locator.click: Timeout 4000ms exceeded."
+  },
+  "quick bar d6 chip": {
+   "error": "locator.click: Timeout 4000ms exceeded."
+  },
+  "flick on the mat": {
+   "change": {},
+   "qbarShown": false
+  },
+  "tap a settled die": {
+   "change": {},
+   "qbarShown": false
+  },
+  "hold the total / status line": {
+   "change": {
+    "topDown": "false -> true",
+    "toolsShown": "7 -> 0"
+   },
+   "qbarShown": false
+  },
+  "game panel big button": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "1 -> 2"
+   },
+   "qbarShown": false
+  }
+ },
+ "game: Yahtzee before the first roll": {
+  "key r": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "0 -> 1"
+   },
+   "qbarShown": false
+  },
+  "key Space": {
+   "change": {
+    "design": "-1020136723 -> -951833648"
+   },
+   "qbarShown": false
+  },
+  "panel #roll (Showcase|Roll switch, Roll half)": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "0 -> 1"
+   },
+   "qbarShown": false
+  },
+  "panel #back (Showcase half)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "mat #mode (round button, bottom right)": {
+   "change": {},
+   "qbarShown": false
+  },
+  "quick bar Roll (empty box)": {
+   "error": "locator.click: Timeout 4000ms exceeded."
+  },
+  "quick bar d6 chip": {
+   "error": "locator.click: Timeout 4000ms exceeded."
+  },
+  "flick on the mat": {
+   "change": {},
+   "qbarShown": false
+  },
+  "game panel big button": {
+   "change": {
+    "settled": "true -> false",
+    "rollT": "\"old\" -> \"fresh\""
+   },
+   "afterSettle": {
+    "rollsUsed": "0 -> 1"
+   },
+   "qbarShown": false
+  }
+ }
+}
