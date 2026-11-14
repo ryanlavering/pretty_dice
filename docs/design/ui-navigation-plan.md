@@ -4,6 +4,8 @@ Status: 2026-11-14. The owner chose proposal A from [ui-navigation-proposals.md]
 
 ## Owner decisions (2026-11-14)
 
+All five questions from the proposals doc are closed (answered by the owner to the design lane and confirmed through the integrator). Nothing below is a default awaiting an answer.
+
 1. **Two rooms**: one switch, **Design | Play**. It changes room and never throws dice.
 2. **Full view** is required: a collapse handle on the pane (right end of the tab row on phone, panel edge on desktop) hides the side/bottom pane; a matching handle at the screen edge brings it back. "Full view" is also in the drawer and on the H key. Strip, dock and drawer stay visible.
 3. **Die chips load, they do not throw.** Tap d20 loads a d20, tap again makes 2d20. Only the dock's Roll button throws.
