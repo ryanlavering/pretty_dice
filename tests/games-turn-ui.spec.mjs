@@ -129,3 +129,27 @@ test('craps: no betting while the dice are rolling; bets open again once the rol
   expect(before).toBe(1);
   await app.run(pd => pd.endGame());
 });
+
+test('craps: grouped bets (hardway, horn), engine roll lock via rollStart, come bet after a point (PD-142.32 UI)', async ({ shared: app }) => {
+  await app.reset(56); await app.run(pd => pd.openGames());
+  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.click('#gamepanel button.big');
+  const bets = () => app.run(pd => pd.GAMES.status(pd.game.state).bets);
+  await app.page.click('#gamepanel summary:has-text("Numbers")');
+  await app.page.click('#gamepanel button:has-text("Hard 6")');
+  expect((await bets()).map(b => [b.kind, b.number, b.amount])).toEqual([['hardway', 6, 5]]);   // off on the come-out, still accepted
+  await app.page.click('#gamepanel summary:has-text("One roll")');
+  await app.page.click('#gamepanel button:has-text("Horn")');
+  expect((await bets()).find(b => b.kind === 'horn').amount).toBe(8);   // 5 rounded up to a multiple of 4
+  // roll lock comes from the engine too
+  await app.page.click('#gamepanel button.big');
+  const mid = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(mid.rolling).toBe(true); expect(mid.canBet).toBe(false);
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const end = await app.run(pd => pd.GAMES.status(pd.game.state));
+  expect(end.rolling).toBe(false); expect(end.canBet).toBe(true); expect(end.rollsUsed).toBe(1);
+  // the Come group only offers come bets once there is a point
+  const come = await app.run(pd => ({ stage: pd.GAMES.status(pd.game.state).stage, rows: pd.GAMES.suggest(pd.game.state).filter(r => r.kind === 'come').map(r => r.available) }));
+  expect(come.rows[0]).toBe(come.stage === 'point');
+  await app.run(pd => pd.endGame());
+});
