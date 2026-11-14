@@ -9,7 +9,7 @@ Written for the person (or session) running the playtest. Copy the **agent promp
 - [ ] The v4 build under test is served (the :8123 dev server, or a fresh `python3 -m http.server`), and you have noted the commit sha in the session log.
 - [ ] The user guide is current: run `npm run guide` and check the pages against the UI. Agents get the **docs/guide/ pages and images**, the project README and CHANGELOG, and nothing else from the repo. Give them a copy of those files in a separate folder rather than the repo, so `index.html`, `tests/` and `scripts/` are not within reach.
 - [ ] Each agent gets its **own browser instance** (separate profile, own tab), never a shared tab. localStorage is per profile, which is what keeps one character's bag from leaking into another's.
-- [ ] Budget agreed with the owner: about **150k tokens total**, check in with the owner at about **75k**. Cap at about six rounds and about 20 agent turns each. Screenshots only on demand.
+- [ ] Budget agreed with the owner: about **400k tokens total** (pacing target, raised from 150k after Playtest 1 used about 330k), check in with the owner at about **75k**. Cap at about six rounds and about 20 agent turns each. Screenshots only on demand.
 - [ ] Parent card "Playtest 1" created under PD-142.14 (see filing rules).
 
 ## Who runs what
@@ -57,7 +57,7 @@ The DM's log lives at `docs/playtests/2026-11-xx-session-1.md` (fill in the date
 ```
 # Playtest 1: <date>, build <sha>
 Cast: DM, <player 1>, <player 2>, <player 3>
-Budget used: <tokens> of 150k
+Budget used: <tokens> of 400k
 
 ## Rounds
 1. <what happened; who rolled what>
