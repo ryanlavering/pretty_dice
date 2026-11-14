@@ -1886,17 +1886,21 @@ function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.f
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f};
 let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
-let held=new Set(), holdRings=[];       // PD-142.1: dice the player has locked; a roll throws only the others
+let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
-function clearHolds(){ held.clear(); dropHoldRings(); updateHoldUI(); }
-function syncHoldRings(){ dropHoldRings(); if(!rolling) return;
+function clearHolds(){ held.clear(); heldPose={}; restoring=null; dropHoldRings(); updateHoldUI(); }
+function faceLabel(i,q){ const d=dice[i], four=d.faces.length===4; let best=0, bv=four?1e9:-1e9; d.faces.forEach((f,k)=>{ const y=f.n.clone().applyQuaternion(q).y; if(four?y<bv:y>bv){bv=y;best=k;} }); return d.labs[best]; }
+function recordHolds(){ for(const k of Object.keys(heldPose)) if(!held.has(+k)) delete heldPose[k];   // face of record is taken when a die is first held
+  if(!settled||restoring) return; for(const i of held){ if(heldPose[i]||!bodies[i]) continue; const b=bodies[i], q=new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w); heldPose[i]={q,y:b.position.y,label:faceLabel(i,q)}; } }
+function syncHoldRings(){ dropHoldRings(); recordHolds(); if(!rolling) return;
   for(const i of held){ if(!bodies[i]) continue; const r=(dice[i].r||1)*1.25, m=new THREE.Mesh(new THREE.RingGeometry(r*.8,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.hold,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
     m.renderOrder=11; m.rotation.x=-Math.PI/2; m.userData={i}; m.position.set(bodies[i].position.x,TABLE_Y+.05,bodies[i].position.z); rig.add(m); holdRings.push(m); }
   updateHoldUI(); }
 function updateHoldUI(){ for(const m of holdRings) m.visible=!leanDice[m.userData.i];   // a die that is both held and cocked shows the cocked ring only
   const R=$('result'); R.querySelectorAll('.heldnote').forEach(e=>e.remove()); if(!held.size||!settled||game) return;
   const b=document.createElement('button'); b.className='relean heldnote'; b.textContent=held.size+(held.size>1?' dice held':' die held')+' \u00B7 release'; b.onclick=ev=>{ ev.stopPropagation(); clearHolds(); }; R.append(b); }
-function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(game){ if(!gameHold(i)) return false; } else if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }   // in a game the engine decides what may be held
+function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(leanDice[i]&&!held.has(i)){ if(game){ gameMsg='That die is leaning: re-roll it first'; renderGame(); } return false; }   // lean trumps hold
+ if(game){ if(!gameHold(i)) return false; } else if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }   // in a game the engine decides what may be held
 const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2();
 function pickDie(cx,cy){ if(!rolling||!settled||!bodies.length) return -1; const r=cv.getBoundingClientRect(); _ndc.set((cx-r.left)/r.width*2-1,-((cy-r.top)/r.height)*2+1); _ray.setFromCamera(_ndc,camera);
   let best=-1,bd=1e9; dice.forEach((d,i)=>{ const h=_ray.intersectObject(d.mesh,true); if(h.length&&h[0].distance<bd){ bd=h[0].distance; best=i; } }); return best; }
@@ -1910,7 +1914,8 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
   const halfX=Math.max(2.4,Math.sqrt((foot+4)/1.5)), halfZ=Math.max(3.6,1.5*halfX);   // the tray is sized by how many (and how big) the dice are, not by the screen
   const sc=Math.max(1,halfZ/3.6); table.scale.setScalar(sc);
   Object.assign(key.shadow.camera,{left:-7.3*sc,right:7.3*sc,top:7.3*sc,bottom:-7.3*sc,far:20+10*sc}); key.shadow.camera.updateProjectionMatrix();
-  for(const i of [...held]) if(i>=dice.length) held.delete(i); dropHoldRings();
+  for(const i of [...held]) if(i>=dice.length) held.delete(i); dropHoldRings(); restoring=null; restoreTries=0;
+  if(!place) for(const i of held){ if(heldPose[i]||!poses[i]) continue; heldPose[i]={q:poses[i].q.clone(),y:poses[i].p.y,label:faceLabel(i,poses[i].q)}; }   // a die held without a record (engine locks) is recorded as it lies now
   rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
@@ -1918,12 +1923,13 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
   const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,material:matMat,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
   plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
+  const hookHit=b=>b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; const c=e.contact; _ip.set(c.bi.position.x+c.ri.x,c.bi.position.y+c.ri.y,c.bi.position.z+c.ri.z); onImpact(Math.abs(c.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table',_ip); });
   const starts=[], dropH=3.5+5*state.rollZoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
     const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:1,
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
-    if(held.has(i)&&!place){ b.type=CANNON.Body.STATIC; b.mass=0; b.updateMassProperties(); b.position.set(p.x,p.y,p.z); b.quaternion.set(q.x,q.y,q.z,q.w); world.addBody(b); return b; }   // held: stays exactly where it lies, the others bounce off it
+    if(held.has(i)&&!place){ b.position.set(p.x,p.y,p.z); b.quaternion.set(q.x,q.y,q.z,q.w); hookHit(b); world.addBody(b); return b; }   // held: starts where it lies and is not thrown; the others may bump it (finishRoll puts it back to its face of record)
     const n=dice.length, R=()=>rng()-.5, rq=randQuat();
     let px=0,pz=0; for(let t=0;t<60;t++){ px=(rng()*2-1)*(halfX-1.1); pz=(rng()*2-1)*(halfZ-1.1);
       if(starts.every(o=>Math.hypot(o[0]-px,o[1]-pz)>2.3)) break; }                      // random drop spot, kept apart from the other dice when there is room
@@ -1936,7 +1942,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40); }
-    b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; const c=e.contact; _ip.set(c.bi.position.x+c.ri.x,c.bi.position.y+c.ri.y,c.bi.position.z+c.ri.z); onImpact(Math.abs(c.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table',_ip); });   // one sound per pair
+    hookHit(b);   // one sound per pair
     world.addBody(b); return b;});
   if(place){   // set the dice out as if put down by hand: let them fall and come to rest out of sight (no sound, no result), then wait for a roll
     placing=true; try{ simSteps(1500); }finally{ placing=false; } settled=true; placed=true; restT=0;
@@ -1974,10 +1980,21 @@ function assistSettle(dt){          // tracks how long each die has been nearly 
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
   return rollT>12 || bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);   // after 12 s stop waiting on a die that will not go still
 }
+/* Restore (PD-142.28, shared with PD-125 / PD-63): a die that ended on the wrong face is lifted, spun to its face of record and set down. */
+const RESTORE_T=.75;
+function startRestore(ids){ restoring={t:0,ids,from:{}}; for(const i of ids){ const b=bodies[i]; restoring.from[i]={p:new THREE.Vector3(b.position.x,b.position.y,b.position.z),q:new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w)};
+    b.type=CANNON.Body.KINEMATIC; b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.wakeUp(); } }
+function tickRestore(dt){ if(!restoring) return; restoring.t+=dt; const u=Math.min(1,restoring.t/RESTORE_T), e=u*u*(3-2*u), tmp=new THREE.Quaternion();
+  for(const i of restoring.ids){ const f=restoring.from[i], b=bodies[i], rec=heldPose[i], lift=1.4*Math.sin(Math.PI*u)*(dice[i].r||1);
+    tmp.copy(f.q).slerp(rec.q,e); b.position.set(f.p.x,f.p.y+(rec.y-f.p.y)*e+lift,f.p.z); b.quaternion.set(tmp.x,tmp.y,tmp.z,tmp.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }
+  if(u>=1){ for(const i of restoring.ids){ const b=bodies[i]; b.type=CANNON.Body.DYNAMIC; b.mass=1; b.updateMassProperties(); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.slowT=0; b.wakeUp(); } restoring=null; } }
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
+  if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
   const parts=readResult();
+  { const bad=restoreTries<3?[...held].filter(i=>bodies[i]&&heldPose[i]&&(parts[i].label!==heldPose[i].label||isLean(i))):[];
+    if(bad.length){ restoreTries++; startRestore(bad); return; } }
   leanDice=bodies.map((b,i)=>isLean(i));   // propped on another die, or cocked: flagged, never re-thrown automatically
-  const alone=leanDice.map((l,i)=>l&&!bodies.some((o,j)=>j!==i&&bodies[i].position.distanceTo(o.position)<(dice[i].r+dice[j].r)));   // leaning yet no other die within reach: it is not propped on anything
+  const alone=leanDice.map((l,i)=>l&&!held.has(i)&&!bodies.some((o,j)=>j!==i&&bodies[i].position.distanceTo(o.position)<(dice[i].r+dice[j].r)));   // leaning yet no other die within reach: it is not propped on anything
   if(alone.some(Boolean)&&freeTries>=2&&freeTries<5){ freeTries++; rollT=Math.min(rollT,4); dropIn(alone.map((a,i)=>a?i:-1).filter(i=>i>=0)); leanDice=[]; return; }   // topple attempts did not free it: it drops in again from above
   if(alone.some(Boolean)&&freeTries<2){ freeTries++; rollT=Math.min(rollT,4); bodies.forEach((b,i)=>{ if(!alone[i]) return; b.free=true; b.angularDamping=.05; b.linearDamping=.02; b.wakeUp(); b.slowT=-1.2;
     const t=tiltInfo(i), ax=new THREE.Vector3().crossVectors(t.n,new THREE.Vector3(0,t.four?-1:1,0)), ang=Math.asin(Math.min(1,ax.length()));   // tip it the way gravity would: the die sits balanced on an edge/corner the solver will not release
@@ -2307,7 +2324,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     const a=angVel.length()*dt; if(a>1e-6) spinBy(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
   }
   if(rolling&&world){
-    world.step(1/60,dt,4); rollT+=dt;
+    world.step(1/60,dt,4); rollT+=dt; tickRestore(dt);
     if(!settled) assistSettle(dt); else if(leanRings.length){ pulseLeans(performance.now()/1000); refreshLeans(); }
     if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
@@ -2458,7 +2475,7 @@ startLoop();   // frames start only now, so the first (shader-compiling) frame n
 window.__ready=true; window.__bootDone&&window.__bootDone();
 if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) startLab();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
-const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
+const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; tickRestore(1/60); if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 
 /* ---------- games (PD-142.4/.5): panel, setup, scorecard; the engine is 'pd-games' ---------- */
 const GP=$('gamepanel'), GKEY='prettydice.games';
@@ -2581,8 +2598,8 @@ document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } ren
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
-  get held(){return [...held];}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, get extrasOpen(){return !extrasEl.hidden;}, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
-  get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  get held(){return [...held];}, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, get extrasOpen(){return !extrasEl.hidden;}, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
+  get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },

@@ -13,7 +13,9 @@ test('hold: a held die keeps its place and face through a re-roll, the others mo
   expect(await app.run(pd => pd.holdRings)).toBe(2);
   const after = await app.run(pd => { pd.step(0); const r = pd.simRoll(); return { r, pos: pd.bodies.map(b => b.position.toArray()), settled: r.settled }; });
   expect(after.settled).toBe(true);
-  for (const i of [1, 3]) after.pos[i].forEach((v, k) => expect(v, `held die ${i} axis ${k}`).toBeCloseTo(before[i].p[k], 2));
+  // physical holds (PD-142.28): a held die may be nudged by the throw, but it stays near its spot on its face of record
+  for (const i of [1, 3]) expect(Math.hypot(after.pos[i][0] - before[i].p[0], after.pos[i][2] - before[i].p[2]), `held die ${i} drift`).toBeLessThan(1.5);
+  for (const i of [1, 3]) expect(after.r.dice[i].label, `held die ${i} face`).toBe(await app.run((pd, i) => pd.heldPose[i].label, i));
   const moved = [0, 2, 4].filter(i => Math.hypot(after.pos[i][0] - before[i].p[0], after.pos[i][2] - before[i].p[2]) > 0.3);
   expect(moved.length, 'at least some free dice moved').toBeGreaterThan(0);
   expect(await app.run(pd => pd.held)).toEqual([1, 3]);   // still held after the roll
@@ -69,4 +71,27 @@ test('hold rings: redrawn after each re-roll, gone on release, tied to the held 
   expect(await app.run(pd => pd.holdRings)).toBe(1);
   await app.run(pd => { pd.clearHolds(); });
   expect(await app.run(pd => pd.holdRings)).toBe(0);
+});
+
+test('hold physical: a bumped or tipped held die is put back to its face of record; lean trumps hold (PD-142.28)', async ({ shared: app }) => {
+  await open(app, 23);
+  await app.run(async pd => { pd.state.shape = 'custom'; pd.state.notation = '4d6'; await pd.buildDice(); pd.simRoll(); pd.toggleHold(1); pd.toggleHold(2); });
+  await app.run(pd => { pd.simRoll(); });
+  // the re-roll leaves each held die on its face of record
+  const after = await app.run(pd => { const r = pd.simRoll(); return { labels: r.dice.map(d => d.label), rec: [1, 2].map(i => pd.heldPose[i].label), restoring: pd.restoring }; });
+  expect([after.labels[1], after.labels[2]]).toEqual(after.rec);
+  expect(after.restoring).toBe(false);
+  // tip a held die over by hand, as if a throw had knocked it: the settle step restores it
+  const r = await app.run(pd => {
+    const b = pd.bodies[1], want = pd.heldPose[1].label;
+    b.quaternion.set(0.38, 0, 0, 0.925); b.quaternion.normalize(); b.position.y += 0.4;   // cocked on an edge
+    pd.settled = false; pd.step(300);
+    return { want, restoring: pd.restoring, settled: pd.settled, tries: pd.restoreTries, leans: pd.leans, rings: pd.holdRings, held: pd.held };
+  });
+  expect(r.settled).toBe(true); expect(r.restoring).toBe(false); expect(r.tries).toBeGreaterThan(0);
+  expect(r.leans[1]).toBeFalsy(); expect(r.rings).toBe(2); expect(r.held).toEqual([1, 2]);
+  expect(await app.run(pd => pd.faces[1]), 'face of record restored').toBe(r.want);
+  // lean trumps hold: a leaning die cannot be held
+  const refused = await app.run(pd => { pd.toggleHold(1); pd.markLean(0); return pd.toggleHold(0); });
+  expect(refused).toBe(false);
 });
