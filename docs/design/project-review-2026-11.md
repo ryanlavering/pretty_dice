@@ -9,7 +9,7 @@ Related: [v4-roadmap.md](v4-roadmap.md), [testing.md](testing.md), [manufacturin
 1. **Games in 4.0:** five games stay: the Yahtzee-style game, the Farkle-style game, Pig, Craps and Liar's Dice. Shut the Box, Ship Captain and Crew and Bunco are dropped for now.
 2. **Names:** any game whose name is a trademark gets a non-trademark name in the app.
 
-How decision 2 applies (see "Game names" below): Yahtzee becomes **Yacht**. Farkle becomes **Ten Thousand** unless a USPTO check shows the bare word is free to use. Pig, Craps and Liar's Dice keep their names.
+How decision 2 applies (see "Game names" below): Yahtzee becomes **Yacht**. Farkle becomes **Ten Thousand** (owner confirmed 2026-11-14). Pig, Craps and Liar's Dice keep their names.
 
 ## 1. Niche and value proposition
 
@@ -72,7 +72,7 @@ Three releases (1.0 on 2026-11-09, 2.0 on 11-11, 3.0 on 11-13), 309 commits and 
 | Game | Finding | Name in the app |
 |---|---|---|
 | Yahtzee | Registered Hasbro trademark, listed as live. | **Yacht** (the older public-domain game). The five-of-a-kind category and its bonus need new labels too. |
-| Farkle | PlayMonster (formerly Patch Products) owns Farkle-family marks such as FARKLE FRENZY. The status of the bare word was not confirmed. | **Ten Thousand** (a traditional name for the game), unless a USPTO check clears "Farkle". |
+| Farkle | PlayMonster (formerly Patch Products) owns Farkle-family marks such as FARKLE FRENZY. The status of the bare word was not confirmed. | **Ten Thousand** (a traditional name for the game). Owner confirmed 2026-11-14. |
 | Pig | Traditional name. No trademark search was done for it. | Pig |
 | Craps | Traditional name. No trademark search was done for it. | Craps |
 | Liar's Dice | Traditional name (Perudo is the commercial brand). No trademark search was done for it. | Liar's Dice |
