@@ -17,6 +17,7 @@ test('hold: a held die keeps its place and face through a re-roll, the others mo
   const moved = [0, 2, 4].filter(i => Math.hypot(after.pos[i][0] - before[i].p[0], after.pos[i][2] - before[i].p[2]) > 0.3);
   expect(moved.length, 'at least some free dice moved').toBeGreaterThan(0);
   expect(await app.run(pd => pd.held)).toEqual([1, 3]);   // still held after the roll
+  expect(await app.run(pd => pd.holdRings), 'rings re-show when the re-roll settles (PD-142.28)').toBe(2);
 });
 
 test('hold: release clears; a new set and leaving the roll clear all holds; unsettled dice cannot be held', async ({ shared: app }) => {
@@ -52,4 +53,20 @@ test('rings: every meaning has its own colour; cocked is red-magenta, not gold; 
   await app.run(pd => pd.markLean(1));
   expect(await app.run(pd => pd.holdRingsVisible), 'held and cocked: the hold ring hides').toBe(0);
   expect(await app.run(pd => pd.leanRingCount)).toBeGreaterThan(0);
+});
+
+test('hold rings: redrawn after each re-roll, gone on release, tied to the held set (PD-142.28)', async ({ shared: app }) => {
+  await open(app, 22);
+  await app.run(async pd => { pd.state.shape = 'custom'; pd.state.notation = '4d6'; await pd.buildDice(); pd.simRoll(); pd.toggleHold(0); pd.toggleHold(2); });
+  for (let k = 0; k < 3; k++) {
+    await app.run(pd => { pd.simRoll(); });
+    expect(await app.run(pd => pd.holdRings), 're-roll ' + k).toBe(2);
+    expect(await app.run(pd => pd.held)).toEqual([0, 2]);
+  }
+  await app.run(pd => { pd.toggleHold(2); });
+  expect(await app.run(pd => pd.holdRings)).toBe(1);
+  await app.run(pd => { pd.simRoll(); });
+  expect(await app.run(pd => pd.holdRings)).toBe(1);
+  await app.run(pd => { pd.clearHolds(); });
+  expect(await app.run(pd => pd.holdRings)).toBe(0);
 });

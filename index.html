@@ -2001,7 +2001,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
-  updateLeanUI(); updateHoldUI(); logRoll(main,sub,subItems,subMod); if(game) gameOnSettled(parts);
+  updateLeanUI(); syncHoldRings(); logRoll(main,sub,subItems,subMod); if(game) gameOnSettled(parts);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
