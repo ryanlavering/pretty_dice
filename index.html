@@ -81,6 +81,11 @@
   :is(#gamepanel,#scorepane) .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} :is(#gamepanel,#scorepane) .sugs button.best{color:var(--accent);font-weight:700}
   :is(#gamepanel,#scorepane) details.bgroup{margin:4px 0} :is(#gamepanel,#scorepane) details.bgroup summary{cursor:pointer;color:var(--dim);font-size:12px;padding:2px 0} :is(#gamepanel,#scorepane) .rules p{margin:4px 0;font-size:12px;color:var(--dim)} :is(#gamepanel,#scorepane) .rules b{color:var(--ink)} :is(#gamepanel,#scorepane) input[type=number]{width:80px;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px}
   :is(#gamepanel,#scorepane) .tiles{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0} :is(#gamepanel,#scorepane) .tile{min-width:30px;padding:6px 0;font-weight:700} :is(#gamepanel,#scorepane) .tile.shut{opacity:.3;text-decoration:line-through} :is(#gamepanel,#scorepane) .tile.sel{outline:2px solid var(--accent);color:var(--accent)}
+  :is(#gamepanel,#scorepane) .ctab{display:flex;flex-direction:column;gap:4px;background:#0f3b2a;border:1px solid #1d5a41;border-radius:10px;padding:6px;margin:6px 0} .ctab .g6,.ctab .g4,.ctab .g3,.ctab .g2,.ctab .g1{display:grid;gap:3px} .ctab .g6{grid-template-columns:repeat(6,1fr)} .ctab .g4{grid-template-columns:repeat(4,1fr)} .ctab .g3{grid-template-columns:repeat(3,1fr)} .ctab .g2{grid-template-columns:repeat(2,1fr)} .ctab .g1{grid-template-columns:1fr}
+  .ctab .spot{display:flex;flex-direction:column;min-width:0;background:rgba(255,255,255,.06);border:1px solid #2a7a58;border-radius:6px;position:relative} .ctab .sp{background:none;border:0;color:#e9f3ec;padding:6px 1px 3px;font:600 12px system-ui;cursor:pointer;line-height:1.15;min-height:34px} .ctab .sp small{display:block;font-weight:400;font-size:9px;color:#9fc7b2} .ctab .sp:disabled{opacity:.4;cursor:default}
+  .ctab .stks{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;padding:0 2px 4px} .ctab .stk{background:none;border:0;padding:2px;display:flex;align-items:flex-end;gap:2px;color:#fff;font:700 10px system-ui;cursor:pointer;min-height:24px} .ctab .stk:disabled{opacity:.7;cursor:default} .ctab .discs{position:relative;display:block;width:16px;height:calc(11px + var(--n)*3px)} .ctab .disc{position:absolute;left:0;bottom:calc(var(--i)*3px);width:16px;height:10px;border-radius:50%;background:var(--pc);border:2px dashed rgba(255,255,255,.75);box-sizing:border-box}
+  .ctab .puck{position:absolute;top:-6px;right:-3px;width:16px;height:16px;border-radius:50%;background:#fff;color:#111;font:700 8px system-ui;display:grid;place-items:center;pointer-events:none} .ctab .ptxt{font-size:11px;color:#9fc7b2;display:flex;align-items:center;gap:6px} .ctab .ptxt .puck{position:static} .ctab .ptxt .puck.off{background:#111;color:#fff;border:1px solid #888}
+  :is(#gamepanel,#scorepane) .row.chips{flex-wrap:wrap;gap:4px} :is(#gamepanel,#scorepane) .chipsel{padding:4px 5px;min-width:0;flex:1} :is(#gamepanel,#scorepane) .chipsel.on{border-color:var(--accent);color:var(--accent);background:#2a2619}
   :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
@@ -2570,7 +2575,7 @@ function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 async function startGame(id,players,options){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.amount=null; cbet.who=null;
+  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); paneAuto=true; renderGame(); }
 function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
 function renderGame(){
@@ -2625,30 +2630,52 @@ function renderGameBody(){
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yahtzee bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
 }
-let cbet={amount:null,who:null,rules:false,open:{}};
+let cbet={chip:null,who:null,rules:false};
 const betsLocked=()=>gameAwaiting||(rolling&&!settled)||!!(game&&GAMES.status(game.state).rolling);   // owner rule: no betting while the dice are rolling, until the roll settles and is reported
-function gameBet(kind,number,on){ if(betsLocked()){ gameMsg='No betting while the dice are rolling'; renderGame(); return; } const st=GAMES.status(game.state), who=cbet.who!=null&&cbet.who<game.state.players.length?cbet.who:st.player, amount=cbet.amount||GAMES.suggest(game.state)[0].minBet;
-  const amt=kind==='horn'?Math.ceil(amount/4)*4:amount;   // a horn bet is split four ways
-  const r=GAMES.act(game.state,{type:'bet',kind,amount:amt,number,on,player:who}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=''; renderGame(); }
-function gameRemoveBet(id){ if(betsLocked()){ gameMsg='No betting while the dice are rolling'; renderGame(); return; } const r=GAMES.act(game.state,{type:'removeBet',id}); if(!r.ok) gameMsg=r.error; else { game.state=r.state; gameMsg=''; } renderGame(); }
+const PCOL=['#f2c14e','#5aa9e6','#e8647a','#6fcf97','#b78cf2','#f2994a'];   // chip colour per player seat
+function gameBet(r,chip){ if(betsLocked()){ gameMsg='No betting while the dice are rolling'; renderGame(); return; } const st=GAMES.status(game.state), who=cbet.who!=null&&cbet.who<game.state.players.length?cbet.who:st.player;
+  if(!r||!r.available){ gameMsg=(r&&r.note)||'That bet is not open'; renderGame(); return; }
+  const want=r.add?r.unit:r.minAmount, amt=Math.min(r.maxAmount,Math.max(want,chip?Math.ceil(chip/r.unit)*r.unit:want));   // a tap adds one unit; a chosen chip adds that much, snapped up to the bet's unit
+  const a=GAMES.act(game.state,{type:'bet',kind:r.kind,amount:amt,number:r.number,on:r.on,player:who}); if(!a.ok){ gameMsg=a.error; renderGame(); return; } game.state=a.state; gameMsg=''; renderGame(); }
+function gameTakeDown(b,whole){ if(betsLocked()){ gameMsg='No betting while the dice are rolling'; renderGame(); return; }
+  const a=GAMES.act(game.state,whole||!b.canReduce?{type:'removeBet',id:b.id}:{type:'removeBet',id:b.id,amount:b.unit}); if(!a.ok) gameMsg=a.error; else { game.state=a.state; gameMsg=''; } renderGame(); }
 function gameCashOut(){ if(betsLocked()){ gameMsg='Wait for the dice to stop'; renderGame(); return; } const r=GAMES.act(game.state,{type:'end'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=''; renderGame(); }
+function chipStack(b,st,who){   // one player's bet on a spot: discs in their colour (greedy by chip value, up to 5 shown) and the amount; tap takes down a unit, long-press the whole bet
+  let left=b.amount,n=0; for(const c of [...st.chips].sort((x,y)=>y-x)){ n+=Math.floor(left/c); left%=c; }
+  const k=Math.max(1,Math.min(5,n)), discs=gel('span',{className:'discs'}); discs.style.setProperty('--n',k);
+  for(let i=0;i<k;i++){ const d=gel('span',{className:'disc'}); d.style.setProperty('--i',i); discs.append(d); }
+  const tag=({come:'C',dontCome:'DC',comeOdds:'odds',dontComeOdds:'lay'})[b.kind]||'', who0=game.state.players[b.player];
+  const e=gel('button',{type:'button',className:'stk'+(b.player===who?' mine':''),ariaLabel:(game.state.players.length>1?who0+': ':'')+'chips '+b.amount+(tag?' ('+tag+')':'')+'. Tap takes down '+(b.canReduce?b.unit:'the bet')+', hold takes it all',title:who0+' · '+b.amount,disabled:betsLocked()||b.player!==who},discs,gel('span',{className:'amt',textContent:(tag&&tag.length<3?tag+' ':'')+b.amount}));
+  e.style.setProperty('--pc',PCOL[b.player%PCOL.length]); let t=null,long=false;
+  e.onpointerdown=()=>{ long=false; t=setTimeout(()=>{ long=true; gameTakeDown(b,true); },500); }; e.onpointerup=e.onpointerleave=e.onpointercancel=()=>clearTimeout(t);
+  e.onclick=ev=>{ if(long){ long=false; ev.preventDefault(); return; } gameTakeDown(b,false); }; return e; }
 function renderCraps(S,st,over){
-  const sug=GAMES.suggest(S), res=over?GAMES.result(S):null, minBet=sug.length?sug[0].minBet:5, who=cbet.who!=null&&cbet.who<S.players.length?cbet.who:st.player;
+  const who=cbet.who!=null&&cbet.who<S.players.length?cbet.who:st.player, sug=over?[]:GAMES.suggest(S,who), res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Table closed: '+res.winners.map(i=>S.players[i]).join(' & ')+' finish'+(res.winners.length>1?'':'es')+' on top',gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else { GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+' shoots: ':'')+(st.stage==='point'?'point is '+st.point:'come-out roll'),gel('small',{textContent:(gameMsg||st.message||'')+(rollSum(st)!=null?' · total '+rollSum(st):'')})));
     const row=gel('div',{className:'row'}); row.append(gel('button',{className:'big',type:'button',textContent:'Roll',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}),gel('button',{type:'button',textContent:'Cash out',disabled:betsLocked(),onclick:gameCashOut})); GP.append(row);
-    const amt=gel('input',{type:'number',disabled:betsLocked(),min:minBet,step:minBet,value:cbet.amount||minBet,ariaLabel:'Bet amount',onchange:()=>{ cbet.amount=Math.max(minBet,Math.round(+amt.value)||minBet); amt.value=cbet.amount; }}), ar=gel('div',{className:'row'},gel('span',{textContent:'Bet'}),amt);
+    const ar=gel('div',{className:'row chips'}); ar.append(gel('span',{textContent:'Chip'}));
+    for(const c of [null,...st.chips]) ar.append(gel('button',{type:'button',className:'chipsel'+((cbet.chip||null)===c?' on':''),textContent:c==null?'Unit':String(c),ariaLabel:c==null?'Add one unit per tap':'Add chips worth '+c,ariaPressed:String((cbet.chip||null)===c),disabled:betsLocked(),onclick:()=>{ cbet.chip=c; renderGame(); }}));
     if(S.players.length>1){ const ws=gel('select',{ariaLabel:'Betting as',onchange:()=>{ cbet.who=+ws.value; renderGame(); }}); S.players.forEach((n,i)=>ws.append(gel('option',{value:i,textContent:n,selected:i===who}))); ar.append(ws); }
     GP.append(ar);
-    const GROUPS=[['Line bets',['pass','dontPass','passOdds','dontPassOdds'],true],['Come bets',['come','dontCome','comeOdds','dontComeOdds'],true],['Numbers',['place','hardway','bigSix','bigEight'],false],['One roll',['field','anySeven','anyCraps','two','three','eleven','twelve','horn'],false]];
-    for(const [gname,kinds,open0] of GROUPS){ const rows=sug.filter(r=>kinds.includes(r.kind)); if(!rows.length) continue;
-      const det=gel('details',{className:'bgroup',open:cbet.open[gname]??open0,ontoggle:()=>{ cbet.open[gname]=det.open; }}), box=gel('div',{className:'sugs'});
-      det.append(gel('summary',{textContent:gname+(rows.some(r=>r.available&&!betsLocked())?'':' (none open)')}));
-      for(const r of rows) box.append(gel('button',{type:'button',textContent:r.label.replace("Don't come odds (lay)","Lay odds").replace("Don't pass odds (lay)","Lay odds"),disabled:!r.available||betsLocked(),title:(r.note?r.note+'. ':'')+r.help,onclick:()=>gameBet(r.kind,r.number??undefined,r.on??undefined)}));
-      det.append(box); GP.append(det); }
+    const R=(kind,number,on)=>sug.find(r=>r.kind===kind&&(number==null||r.number===number)&&(on==null||r.on===on));
+    const spot=(r,label,pred,cls='',puck=false)=>{ const d=gel('div',{className:'spot '+cls}), sub=r?(r.pays?r.pays:''):'';
+      d.append(gel('button',{type:'button',className:'sp',disabled:!r||!r.available||betsLocked(),ariaLabel:label+(r&&r.unit>1?' (units of '+r.unit+')':''),title:r?(r.note?r.note+'. ':'')+(r.pays?'Pays '+r.pays+'. ':'')+(r.unit>1?'Bet in units of '+r.unit+'. ':'')+r.help:'',onclick:()=>gameBet(r,cbet.chip)},label,gel('small',{textContent:sub})));
+      const bs=st.bets.filter(pred); if(bs.length){ const k=gel('div',{className:'stks'}); for(const b of bs) k.append(chipStack(b,st,who)); d.append(k); }
+      if(puck){ d.append(gel('span',{className:'puck',textContent:'ON'})); } return d; };
+    const tbl=gel('div',{className:'ctab'}), grid=(n,...kids)=>{ const g=gel('div',{className:'g'+n}); g.append(...kids); return g; };
+    const NUMS=[4,5,6,8,9,10], isNum=(b,n)=>b.number===n;
+    tbl.append(grid(6,...NUMS.map(n=>spot(R('place',n),String(n),b=>(b.kind==='place'&&isNum(b,n))||((b.kind==='come'||b.kind==='dontCome')&&isNum(b,n)),'num',st.stage==='point'&&st.point===n))));
+    tbl.append(grid(6,...[4,6,8,10].map(n=>spot(R('hardway',n),'H'+n,b=>b.kind==='hardway'&&isNum(b,n))),spot(R('bigSix'),'B6',b=>b.kind==='bigSix'),spot(R('bigEight'),'B8',b=>b.kind==='bigEight')));
+    const cb=S.bets.filter(b=>b.player===who&&(b.kind==='come'||b.kind==='dontCome')&&b.number!=null), orows=sug.filter(r=>(r.kind==='comeOdds'||r.kind==='dontComeOdds')&&r.on!=null);
+    if(orows.length) tbl.append(grid(Math.min(4,orows.length)||1,...orows.map(r=>spot(r,(r.kind==='comeOdds'?'Odds ':'Lay ')+r.number,b=>(b.kind==='comeOdds'||b.kind==='dontComeOdds')&&b.on===r.on))));
+    tbl.append(grid(3,spot(R('come'),'Come',b=>b.kind==='come'&&b.number==null),spot(R('dontCome'),"Don't come",b=>b.kind==='dontCome'&&b.number==null),spot(R('field'),'Field',b=>b.kind==='field')));
+    tbl.append(grid(2,spot(R('pass'),'Pass line',b=>b.kind==='pass'),spot(R('passOdds'),'Pass odds',b=>b.kind==='passOdds'),spot(R('dontPass'),"Don't pass",b=>b.kind==='dontPass'),spot(R('dontPassOdds'),'Lay odds',b=>b.kind==='dontPassOdds')));
+    tbl.append(grid(4,...[['anySeven','Any 7'],['anyCraps','Any craps'],['two','2'],['three','3'],['eleven','11'],['twelve','12'],['horn','Horn']].map(([k,l])=>spot(R(k),l,b=>b.kind===k))));
+    tbl.append(gel('div',{className:'ptxt'},gel('span',{className:'puck '+(st.stage==='point'?'on':'off'),textContent:st.stage==='point'?'ON':'OFF'}),st.stage==='point'?' puck on '+st.point:' puck off: come-out roll'));
+    GP.append(tbl);
     GP.append(gel('button',{type:'button',textContent:cbet.rules?'Hide rules':'Rules',onclick:()=>{ cbet.rules=!cbet.rules; renderGame(); }}));
-    if(cbet.rules){ const seen=new Set(), d=gel('div',{className:'rules'}); for(const r of sug){ if(seen.has(r.kind)) continue; seen.add(r.kind); d.append(gel('p',{},gel('b',{textContent:(['place','hardway'].includes(r.kind)?r.label.replace(/ \d+$/,'')+' bets':r.label)+': '}),r.help)); } GP.append(d); }
-    const mine=st.bets.filter(b=>b.player===who); if(mine.length){ const bl=gel('div',{className:'sugs'}); for(const b of mine) bl.append(gel('button',{type:'button',className:'bet',textContent:(()=>{ let l=(sug.find(x=>x.kind===b.kind&&(x.number==null||x.number===b.number))||sug.find(x=>x.kind===b.kind)||{label:b.kind}).label; if(b.number&&!l.includes(String(b.number))) l+=' '+b.number; return l; })()+' '+b.amount+' ✕',disabled:betsLocked(),title:'Take this bet down (not allowed for pass line and field)',onclick:()=>gameRemoveBet(b.id)})); GP.append(bl); } }
+    if(cbet.rules){ const seen=new Set(), d=gel('div',{className:'rules'}); for(const r of sug){ if(seen.has(r.kind)) continue; seen.add(r.kind); d.append(gel('p',{},gel('b',{textContent:(['place','hardway'].includes(r.kind)?r.label.replace(/ \d+$/,'')+' bets':r.label)+(r.unit>1?' (units of '+r.unit+')':'')+': '}),r.help)); } GP.append(d); } }
   const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Bankroll'}),gel('th',{textContent:'On the table'}))));
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'), on=st.bets.filter(b=>b.player===p).reduce((a,b)=>a+b.amount,0); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.bankrolls[p]),className:cur?'cur':''}),gel('td',{textContent:on?String(on):'',className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
