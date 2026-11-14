@@ -109,9 +109,10 @@ test.describe('desktop', () => {
   test('layout toggle: full view enlarges the stage, split view restores it', async ({ app, page }) => {
     const m = () => app.run(() => ({ w: document.getElementById('stage').clientWidth, h: document.getElementById('stage').clientHeight, scroll: document.getElementById('app').scrollTop }));
     const split = await m();
-    await app.nav.layout(); await expect.poll(async () => (await m()).w).toBeGreaterThan(split.w);
+    await app.nav.fullView(true); await expect.poll(async () => (await m()).w).toBeGreaterThan(split.w);
+    await app.nav.fullView(false); await expect.poll(m).toEqual(split);
+    await app.nav.layout(); await expect.poll(async () => (await m()).w).toBeGreaterThan(split.w);   // the drawer's Full view item
     await app.nav.layout(); await expect.poll(m).toEqual(split);
-    await app.nav.layout(); await app.nav.layout(); await expect.poll(m).toEqual(split);
   });
 
   test('roll and showcase cameras keep their own angle and zoom', async ({ app }) => {
@@ -207,14 +208,14 @@ test.describe('touch devices', () => {
 });
 
 // PD-97: sound button on the mat, and audio that survives iOS quirks.
-test('the sound button on the mat toggles sound and mirrors the settings checkbox', async ({ app }) => {
+test('the Sound item in the drawer toggles sound', async ({ app }) => {
   await app.open();
-  const read = () => app.run(pd => ({ on: pd.state.sound, checked: document.getElementById('sound').checked, off: document.getElementById('snd').classList.contains('off') }));
-  expect(await read(), 'sound is opt-in: off by default').toEqual({ on: false, checked: false, off: true });
+  const read = () => app.run(pd => ({ on: pd.state.sound, off: document.getElementById('snd').classList.contains('off') }));
+  expect(await read(), 'sound is opt-in: off by default').toEqual({ on: false, off: true });
   await app.nav.sound();
-  expect(await read()).toEqual({ on: true, checked: true, off: false });
+  expect(await read()).toEqual({ on: true, off: false });
   await app.nav.sound();
-  expect(await read()).toEqual({ on: false, checked: false, off: true });
+  expect(await read()).toEqual({ on: false, off: true });
 });
 
 test('a tap wakes an interrupted audio context and takes the playback audio session (iOS)', async ({ app }) => {
@@ -233,10 +234,10 @@ test('a tap wakes an interrupted audio context and takes the playback audio sess
 });
 
 // The play/pause toggle sits in the toolbar on the showcase mat; the speed slider is a plain option in the settings pane.
-test('spin pause button is on the showcase mat, speed slider is in settings, and the toggle hides while rolling', async ({ app }) => {
+test('spin pause item is in the drawer (Design room), speed slider is in settings, and the toggle hides while rolling', async ({ app }) => {
   await app.open();
   const spin = () => app.run(pd => pd.state.spin);
-  await expect(app.nav.btn('spin')).toBeVisible();
+  await app.nav.openDrawer(); await expect(app.nav.btn('spin')).toBeVisible(); await app.nav.closeDrawer();
   expect(await app.page.locator('aside #spin').count(), 'speed slider lives in the settings pane').toBe(1);
   const s0 = await spin(); expect(s0).toBeGreaterThan(0);
   await app.nav.pauseSpin(); expect(await spin(), 'paused').toBe(0);
@@ -301,18 +302,14 @@ test.describe('distraction-free and top-down hide the controls', () => {
   test.beforeEach(async ({ app }) => { await app.open(); });
   const shown = (page, sel) => page.locator(sel).evaluate(e => getComputedStyle(e).display !== 'none' && getComputedStyle(e).opacity !== '0');
 
-  test('h and long-press on the layout button leave one button; a tap brings the controls back', async ({ app, page }) => {
+  test('h hides the side pane and keeps the mat controls; the edge handle or h brings the pane back', async ({ app, page }) => {
     await page.keyboard.press('h');
-    for (const n of ['panel', 'shelf', 'mode', 'info', 'sound', 'bag']) expect(await app.nav.shown(n), n).toBe(false);
-    expect(await app.nav.shown('layout')).toBe(true);
-    expect(await app.nav.btn('layout').getAttribute('aria-label')).toBe('Show controls');
-    await app.nav.layout();
-    expect(await app.nav.shown('panel')).toBe(true); expect(await app.nav.shown('mode')).toBe(true);
-    const b = await app.nav.btn('layout').boundingBox();
-    await page.mouse.move(b.x + 20, b.y + 20); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up();
-    expect(await app.nav.shown('mode'), 'long press').toBe(false);
-    await page.keyboard.press('h');
-    expect(await app.nav.shown('mode')).toBe(true);
+    expect(await app.nav.shown('panel')).toBe(false);
+    for (const n of ['shelf', 'mode', 'drawer']) expect(await app.nav.shown(n), n).toBe(true);
+    await page.locator('#paneopen').click();
+    expect(await app.nav.shown('panel')).toBe(true);
+    await page.keyboard.press('h'); expect(await app.nav.shown('panel')).toBe(false);
+    await page.keyboard.press('h'); expect(await app.nav.shown('panel')).toBe(true);
   });
 
   test('holding the total hides the roll-area controls (settings stay), release brings them back', async ({ app, page }) => {

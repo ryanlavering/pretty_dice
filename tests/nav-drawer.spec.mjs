@@ -1,0 +1,76 @@
+// Navigation slice 1 (PD-142.38): utility drawer, Reset view, Full view.
+import { test, expect } from './helpers/app.mjs';
+
+const SIZES = { desktop: { width: 1280, height: 800 }, phone: { width: 390, height: 844 } };
+
+const items = page => page.evaluate(() => [...document.querySelectorAll('#dmenu .di')].filter(b => getComputedStyle(b).display !== 'none').map(b => b.id));
+
+for (const [name, vp] of Object.entries(SIZES)) {
+  test.describe(name, () => {
+    test.use({ viewport: vp });
+
+    test('the drawer is a closed button until tapped, holds Sound, Reset view, Full view and Hints, never one item', async ({ app, page }) => {
+      await app.open();
+      expect(await page.locator('#drawer.open').count(), 'closed by default under test').toBe(0);
+      expect(await app.nav.shown('sound'), 'items are hidden while closed').toBe(false);
+      await page.locator('#drawerbtn').click();
+      await expect(page.locator('#drawer.open')).toHaveCount(1);
+      const design = await items(page);
+      expect(design).toEqual(expect.arrayContaining(['snd', 'resetview', 'layout', 'info', 'spinbtn']));
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#drawer.open')).toHaveCount(0);
+      await app.nav.toPlay();
+      await app.nav.openDrawer();
+      const roll = await items(page);
+      expect(roll, 'Pause spin is a Design-room item').not.toContain('spinbtn');
+      expect(roll).toEqual(expect.arrayContaining(['snd', 'resetview', 'layout', 'info']));
+      expect(roll.length, 'never a single item').toBeGreaterThan(1);
+    });
+
+    test('an outside tap closes the drawer; an item pick closes it too', async ({ app, page }) => {
+      await app.open();
+      await app.nav.openDrawer();
+      await page.mouse.click(vp.width / 2, vp.height / 3);
+      await expect(page.locator('#drawer.open')).toHaveCount(0);
+      await app.nav.sound();
+      await expect(page.locator('#drawer.open')).toHaveCount(0);
+      expect(await app.run(pd => pd.state.sound)).toBe(true);
+    });
+
+    test('Reset view restores angle and zoom', async ({ app }) => {
+      await app.open();
+      await app.run(pd => { pd.orbit.az = 1.2; pd.orbit.el = 0.7; });
+      expect(await app.run(pd => pd.orbit.az)).toBeCloseTo(1.2, 3);
+      await app.nav.resetView();
+      expect(await app.run(pd => [pd.orbit.az, pd.orbit.el])).toEqual([0, 0]);
+    });
+
+    test('Full view hides the pane and either handle, the drawer item or H brings it back; the drawer stays reachable', async ({ app, page }) => {
+      await app.open();
+      expect(await app.nav.shown('panel')).toBe(true);
+      await app.nav.fullView(true);
+      expect(await app.nav.shown('panel')).toBe(false);
+      expect(await app.nav.shown('drawer'), 'drawer still on screen').toBe(true);
+      await app.nav.openDrawer();
+      expect(await page.locator('#layout').textContent()).toContain('Show pane');
+      await app.nav.layout();                       // the drawer item restores it
+      expect(await app.nav.shown('panel')).toBe(true);
+      await app.nav.fullView(true);
+      await page.locator('#paneopen').click();      // the edge handle restores it
+      expect(await app.nav.shown('panel')).toBe(true);
+      await page.keyboard.press('h'); expect(await app.nav.shown('panel')).toBe(false);
+      await page.keyboard.press('h'); expect(await app.nav.shown('panel')).toBe(true);
+    });
+  });
+}
+
+test('the Sound effects checkbox is gone from the panel (the drawer item is the switch)', async ({ app, page }) => {
+  await app.open();
+  expect(await page.locator('#sound').count()).toBe(0);
+});
+
+test('the drawer opens as a pill once when a session starts, then slides shut', async ({ app, page }) => {
+  await app.open({ query: 'pill=1' });
+  await expect(page.locator('#drawer.open')).toHaveCount(1, { timeout: 5000 });
+  await expect(page.locator('#drawer.open')).toHaveCount(0, { timeout: 8000 });
+});

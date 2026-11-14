@@ -5,19 +5,19 @@
 //  toggleMode()         a plain tap of that button, for tests of the toggle itself
 //  openBag() openGames() openLog()   open the bag sheet / games panel / roll log
 //  roll()               the roll button of the current game panel (setup "Start game" or in-game Roll)
-//  sound() pauseSpin() layout()      the utility controls (move into the drawer in slice 1)
-//  openDrawer()         no-op until slice 1 builds the drawer
-//  fullView(on)         hide (on=true) or restore the panes: today H, the layout button restores
+//  sound() pauseSpin() layout() resetView()   the utility items: each opens the drawer first (slice 1); layout() = the Full view item
+//  openDrawer() closeDrawer()   the utility drawer (paired-circles button, #drawerbtn)
+//  fullView(on)         hide (on=true) or restore the side pane with the two handles (#paneclose / #paneopen); H also toggles it
 export const navFor = page => {
   const inRoll = () => page.evaluate(() => document.body.classList.contains('inroll'));
   const click = sel => page.locator(sel).click();
-  const BTN = { mode: '#mode', games: '#gamesbtn', bag: '#bagbtn', log: '#logbtn', sound: '#snd', spin: '#spinbtn', layout: '#layout', info: '#info', shelf: '#shelf', panel: 'aside' };
+  const BTN = { mode: '#mode', games: '#gamesbtn', bag: '#bagbtn', log: '#logbtn', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
   return {
     page,
     /** locator for a chrome control by name: mode games bag log sound spin layout info shelf panel */
     btn: name => page.locator(BTN[name]),
-    /** true when the control is displayed and not faded out */
-    shown: name => page.locator(BTN[name]).evaluate(e => getComputedStyle(e).display !== 'none' && getComputedStyle(e).opacity !== '0'),
+    /** true when the control is displayed, visible (drawer items are hidden while the drawer is closed) and not faded out */
+    shown: name => page.locator(BTN[name]).evaluate(e => getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).opacity !== '0'),
     toggleMode: () => click('#mode'),
     async toPlay() { if (!(await inRoll())) await click('#mode'); },
     async toDesign() { if (await inRoll()) await click('#mode'); },
@@ -25,10 +25,12 @@ export const navFor = page => {
     openGames: () => click('#gamesbtn'),
     openLog: () => click('#logbtn'),
     roll: () => page.locator('#gamepanel button.big:visible, #scorepane button.big:visible').first().click(),
-    sound: () => click('#snd'),
-    pauseSpin: () => click('#spinbtn'),
-    layout: () => click('#layout'),
-    async openDrawer() {},
-    async fullView(on = true) { const hidden = await page.evaluate(() => document.body.classList.contains('calm') || document.body.classList.contains('full')); if (on !== hidden) { if (on) await page.keyboard.press('h'); else await click('#layout'); } },
+    async sound() { await this.openDrawer(); await click('#snd'); },
+    async pauseSpin() { await this.openDrawer(); await click('#spinbtn'); },
+    async layout() { await this.openDrawer(); await click('#layout'); },
+    async resetView() { await this.openDrawer(); await click('#resetview'); },
+    async openDrawer() { if (!(await page.locator('#drawer.open').count())) await click('#drawerbtn'); await page.locator('#drawer.open').waitFor(); await page.waitForTimeout(260); },
+    async closeDrawer() { if (await page.locator('#drawer.open').count()) await click('#drawerbtn'); },
+    async fullView(on = true) { const hidden = await page.evaluate(() => document.body.classList.contains('full')); if (on !== hidden) await click(on ? '#paneclose' : '#paneopen'); },
   };
 };

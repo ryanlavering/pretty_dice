@@ -151,7 +151,7 @@ test('the ring layer sits on top of every sound set, not just the sample ones', 
 test('switching sound on makes no noise; the Test sound button still blips', async ({ app, page }) => {
   await app.open();
   await app.run(pd => { pd.state.sound = false; });
-  await page.evaluate(() => { const c = document.getElementById('sound'); c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); });
+  await app.nav.sound();
   expect(await app.run(pd => pd.sfx.lastBlip), 'enable: silent unlock tick').toEqual({ quiet: true });
   await page.evaluate(() => document.getElementById('soundtest').click());
   expect(await app.run(pd => pd.sfx.lastBlip), 'Test sound: audible').toEqual({ quiet: false });
