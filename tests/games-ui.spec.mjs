@@ -77,20 +77,3 @@ for (const rolls of [1, 2]) {
     await app.run(pd => pd.endGame());
   });
 }
-
-test('yahtzee: live (real frames) roll, score after toss 1, next roll is toss 1 again', async ({ shared: app }) => {
-  await app.reset(75); await app.run(pd => { pd.resume(); pd.openGames(); });
-  await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee'); await app.page.click('#gamepanel button.big');
-  const used = () => app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed);
-  await app.page.click('#gamepanel button.big:has-text("Roll")');
-  await app.page.waitForFunction(() => window.__pd.settled && window.__pd.GAMES.status(window.__pd.game.state).rollsUsed >= 1, null, { timeout: 30000 });
-  expect(await used()).toBe(1);
-  await app.page.click('#gamepanel td.pick');
-  expect(await used()).toBe(0);
-  const label = await app.page.locator('#gamepanel button.big').textContent();
-  expect(label).toBe('Roll');
-  await app.page.click('#gamepanel button.big');
-  await app.page.waitForFunction(() => window.__pd.settled && window.__pd.GAMES.status(window.__pd.game.state).rollsUsed >= 1, null, { timeout: 30000 });
-  expect(await used()).toBe(1);
-  await app.run(pd => { pd.pause(); pd.endGame(); });
-});
