@@ -15,7 +15,7 @@ Status: v1 contract, 2026-11-13, lane games-core. Consumers: games-ui (PD-142.4,
 import { listGames, newGame, status, rollSpec, act, suggest, result } from 'pd-games';
 ```
 
-`pd-games` is an import-map entry. Dev: `/games/index.js`. Offline and artifact builds: `scripts/build-static.py` bundles `games/*.js` into one `data:` URL (modules inside `games/` import each other with relative paths; the bundler flattens them). Do not import `games/` files by path from `index.html`.
+`pd-games` is an import-map entry. Dev: `/games/index.js`. Offline build (`file://`): `scripts/build-static.py` turns `games/*.js` into `data:` URLs on the import map. Artifact build (`--artifact`): the claude.ai artifact CSP blocks `data:` scripts, so the same script instead inlines the engine into the page's single module in place of `index.html`'s exact line `import * as GAMES from 'pd-games';` (see `games_bundle()`; it rewrites the relative imports/exports of the files in `games/`, so keep them to the plain forms `import * as X from './f.js'`, `import { a } from './f.js'`, `export const/function`, and `export { a } from './f.js'`). Do not import `games/` files by path from `index.html`; `tests/artifact-csp.spec.mjs` guards the artifact build.
 
 ## API
 
