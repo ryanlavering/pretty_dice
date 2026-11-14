@@ -20,4 +20,4 @@ On small screens the long breakdown line wraps instead of running off the edge, 
 
 ![The bag sheet on a phone](img/17-phone-bag.png)
 
-![A Yahtzee game on a phone, with the Settings and Scorecard tabs](img/20-phone-game.png)
+![A Yacht game on a phone, with the Settings and Scorecard tabs](img/20-phone-game.png)

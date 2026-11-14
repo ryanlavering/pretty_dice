@@ -13,7 +13,7 @@ Read the pages in order the first time; later they work as reference.
 7. [Saving and loading](07-save-load.md): designs, bags, images
 8. [Phone versus desktop](08-phone-vs-desktop.md)
 9. [Sound](09-sound.md)
-10. [Games](10-games.md): Yahtzee, Farkle, Pig, Craps, Shut the Box, Ship Captain and Crew, Bunco, Liar's Dice
+10. [Games](10-games.md): Yacht, Ten Thousand, Pig, Craps, Liar's Dice
 
 ## Which pages depend on today's layout
 

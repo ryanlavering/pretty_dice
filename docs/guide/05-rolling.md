@@ -21,7 +21,7 @@ A group roll shows its results side by side with a breakdown per roll, and a nat
 
 ## Holding dice
 
-Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yahtzee-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip says **⚠ N leaning · Re-roll**; a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
+Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yacht-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip says **⚠ N leaning · Re-roll**; a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
 
 ## Roll feel
 
