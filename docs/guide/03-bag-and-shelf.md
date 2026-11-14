@@ -29,7 +29,7 @@ The bag sheet covers the table while it is open; **Close** brings the table back
 The **Sets** tab has a **Save the current dice as a set** button at the top (it saves whatever dice are in the editor, under the name in the set-name box) and lists saved sets (name and dice, for example "Thorn axe: 2d6 +3"). Each set card has:
 
 - **⚡** quick roll: throws that set straight away.
-- **✎** edit: loads the set into the editor. Sets are edited in Showcase.
+- **✎** edit: opens the set's editor inside the sheet (presets, formula, modifier and an optional result table).
 - **⋯** menu: the other per-set actions.
 
 See [Sets and the editor](04-sets-and-editor.md) for building and saving sets.

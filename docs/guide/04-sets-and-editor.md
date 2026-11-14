@@ -6,7 +6,7 @@ A **set** is a group of dice you roll together, for example 2d6 + 3 for an axe. 
 
 ![The Custom set editor](img/10-custom-set.png)
 
-Choose **Custom** under Shape (in Showcase). The **Custom set** section has:
+Choose **Custom** under Shape. The **Custom set** section has:
 
 - A **notation** box: type a roll and press **Set** (or Enter). Errors show in red under the box. The small button beside it resets to a single d20.
 - **Adv** and **Dis** buttons: apply advantage (2d20, keep the highest) or disadvantage (2d20, keep the lowest) to the d20.
@@ -29,8 +29,29 @@ Dice are written `<count>d<sides>`; the count may be left off. Letters can be up
 | `d20 adv` | `2d20kh1` | advantage; `dis` gives `2d20kl1` |
 | `4d6kh` | `4d6kh1` | a keep with no number keeps one |
 
-Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), `x` repeats, and the words "advantage" and "disadvantage" spelled out (use `adv` or `dis`, or the buttons). A bad entry shows a message such as `d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)` or `Too many dice (101); max 24`.
+### Several rolls at once: group roll
+
+Put a count and `x` in front to make separate rolls: `4x d20+2` throws four d20s, adds the +2 to **each**, and shows the results side by side (for example `22 · 7 · 16 · 17`) with a breakdown per roll (`#1: 20 + 2 = 22`). Use it for a pack of goblins attacking or everyone rolling initiative. It works in the notation box here and in the quick roll bar at the table ([Rolling](05-rolling.md)). Each group member can be added to the initiative list: see [The roll log](06-roll-log.md).
+
+Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "advantage" and "disadvantage" spelled out (use `adv` or `dis`, or the buttons). A bad entry shows a message such as `d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)` or `Too many dice (101); max 24`.
 
 ## Save it as a set
 
-Type a name in **Name this set** (under the Modifier row) and press **Save as set**. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab; open the bag, choose **Sets**, and use ⚡ to roll one or ✎ to edit it. See [The bag and shelf](03-bag-and-shelf.md).
+Type a name in **Name this set** (under the Modifier row) and press **Save as set**. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab and also appear as chips in the quick roll bar at the table. Open the bag, choose **Sets**, and use ⚡ to roll one or ✎ to edit it. See [The bag and shelf](03-bag-and-shelf.md).
+
+## Give a set a result table
+
+A set can carry a table of outcomes, for a random encounter or a loot roll. Open the bag, go to **Sets**, tap ✎ on the set, and fill in the **Result table** box at the bottom with one line per result:
+
+```
+1-2 Locked door
+3 Empty room
+4-8 Goblins
+9+ Boss
+```
+
+Press **Save**. Each line starts with a number, a range (`4-8`) or an open range (`9+`) followed by the text. Numbers only. A `d%` set covers 1 to 100.
+
+![A set with a result table, rolled: the matching line shows under the total and in the log](img/22-result-table-log.png)
+
+When that set rolls, the matching line (for example **→ Locked door**) appears under the total, in the roll log entry, and in the text you copy or save from the log.

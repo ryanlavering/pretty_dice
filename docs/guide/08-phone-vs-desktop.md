@@ -12,6 +12,8 @@ The same page adapts to the screen.
 
 On a phone the settings are a half-height strip below the table that scrolls with the wheel or by dragging. While a game is running the strip becomes two tabs, **Settings** and **Scorecard**, and the game's status line and **Roll** button sit at the top of the table.
 
+On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips.
+
 ![Showcase on a phone screen](img/15-phone-showcase.png)
 
 ![Rolling on a phone screen](img/16-phone-roll.png)

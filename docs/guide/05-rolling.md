@@ -15,11 +15,13 @@ Switch to **Roll** (or tap the round Roll button). The dice are thrown, tumble a
 
 ![The quick roll bar along the bottom of the table](img/11-roll-settled.png)
 
-In Roll mode a bar at the bottom of the table lets you throw without opening the editor: type a roll (for example `3d6+2` or `4d6kh3`) and press **Roll**, or tap **d4, d6, d8, d10, d12, d20 or d%** to throw one of that die. What you can type is listed in [Sets and the editor](04-sets-and-editor.md).
+In Roll mode a bar at the bottom of the table lets you throw without opening the editor: type a roll (for example `3d6+2` or `4d6kh3`) and press **Roll**, or tap **d4, d6, d8, d10, d12, d20 or d%** to throw one of that die. What you can type, including group rolls such as `4x d20+2`, is listed in [Sets and the editor](04-sets-and-editor.md). Press Enter or **Roll**. Every saved set also gets a chip in the bar that throws it. On a phone the bar wraps into rows (formula and Roll, then sets, then plain dice) so nothing is cut off.
+
+A group roll shows its results side by side with a breakdown per roll, and a natural 20 on a single d20 gets a banner.
 
 ## Holding dice
 
-Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yahtzee-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A red-magenta ring marks a die that is leaning (cocked); a leaning die cannot be held until it settles flat.
+Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yahtzee-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip says **⚠ N leaning · Re-roll**; a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
 
 ## Roll feel
 

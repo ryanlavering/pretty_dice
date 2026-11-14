@@ -67,6 +67,20 @@ const SHOTS = [
     await p.click('#gamepanel button:has-text("Roll")'); await settle(p); await p.waitForTimeout(1000);
     await p.mouse.click(865, 570); await p.waitForTimeout(900); await p.mouse.click(660, 310); await p.waitForTimeout(1200); }],
   ['20-phone-game', { vp: PHONE }, async p => { await p.click('#gamesbtn'); await p.waitForTimeout(600); await p.click('text=Start game'); await p.waitForTimeout(1500); }],
+  ['21-group-roll-initiative', {}, async p => {   // 4x d20+2 as four separate rolls, then add them to the initiative list
+    await rollNow(p); await p.fill('input[placeholder="3d6+2"]', '4x d20+2'); await p.keyboard.press('Enter'); await p.waitForTimeout(1000); await settle(p);
+    await p.click('#logbtn'); await p.waitForTimeout(500); await p.click('#logpanel >> text=+ init >> nth=0'); await p.waitForTimeout(600); }],
+  ['22-result-table-log', { query: 'shape=custom' }, async p => {   // a set with a result table, rolled with its lightning button
+    await p.fill('#notation', 'd10'); await p.click('#notapply'); await p.waitForTimeout(600);
+    await p.fill('#setname', 'Dungeon room'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600);
+    await p.click('#mode'); await p.waitForTimeout(20000);
+    await p.click('#bagopen'); await p.click('#sheettabs >> text=Sets'); await p.waitForTimeout(600);
+    await p.click('button:text-is("✎")'); await p.waitForTimeout(900);
+    await p.locator('textarea').first().fill('1-2 Locked door\n3 Empty room\n4-8 Goblins\n9+ Boss');
+    await p.click('#bagsheet button:text-is("Save")'); await p.waitForTimeout(800);
+    await p.click('#bagsheet button:text-is("Close")'); await p.waitForTimeout(1000);
+    await p.click('#qbar >> text=Dungeon room'); await p.waitForTimeout(1500); await settle(p);
+    await p.click('#logbtn'); await p.waitForTimeout(600); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await p.click('#bagopen'); await p.waitForTimeout(700); }],
 ];
 
