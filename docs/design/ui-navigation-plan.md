@@ -134,9 +134,10 @@ Add to `tests/helpers/app.mjs`: `nav.toPlay()`, `nav.toDesign()`, `nav.openBag()
 - In the Play room, pressing a settled die for about 0.5 s opens a small menu anchored to it: the bag's designs as thumbnails with names (the current one marked), then "Edit this set..." which opens the set in the Sets tab. Picking a design re-skins that one die in place; its face value and position do not change and nothing is thrown.
 - The change edits the current dice (the loaded set), so it is undoable, marks the set as modified, and is kept by "Save as set". Only designs of the same die type are offered; if the bag has no other design of that type the menu says so and offers "Edit this set...".
 - Gestures stay distinct: a short tap still holds or releases, a flick still throws, and the top-down hold is on the strip, not on dice. Movement beyond 8 px or a second finger cancels the press. Right-click opens the same menu on desktop. The menu uses the same component as the shelf card menu.
-- Allowed during a game because it changes looks only. Not offered on dice hidden under the cup in Liar's Dice.
+- Allowed during a game because it is cosmetic (owner confirmed). A game can turn it off: the menu checks a per-game rule flag (suggested `allowDesignSwap`, default true, in the game's rule definition; games-ui to agree the name with games-core and note it in `docs/design/games-engine.md`). No current game sets it to false. Not offered on dice hidden under the cup in Liar's Dice.
+- The die type never changes: only the design skin (owner confirmed).
 - It is an extra, per [ui-notes.md](ui-notes.md) rule 4: every result is also reachable from the Sets tab. The hints text mentions it.
-- Tests: new `die-design-menu.spec.mjs` (long-press opens the menu and does not toggle hold; pick changes that die's design only and not `rollT` or the total; undo restores; tap still holds; no menu on hidden dice).
+- Tests: new `die-design-menu.spec.mjs` (long-press opens the menu and does not toggle hold; pick changes that die's design only and not `rollT` or the total; undo restores; tap still holds; no menu on hidden dice; no menu when the game's flag is false).
 
 ## Acceptance for PD-142.38 AC #4
 
