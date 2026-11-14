@@ -30,7 +30,9 @@ Option types: `bool`, `choice` (`choices: [{id,label}]`), `int` (`min`, `max`). 
 ### `newGame(id, { players, options?, seed? })` -> `state`
 `players` is an array of names (1 to `maxPlayers`). Unknown options fall back to defaults. `seed` is not used for dice (the app rolls); it only seeds any engine-side choice (none in v1), so tests can pass it freely.
 
-### `status(state)` -> view of the turn
+### `status(state, viewer?)` -> view of the turn
+`viewer` is optional (a player index, `null` for the public view, omitted = sees everything). Only hidden-information games use it; see [games-hidden-info.md](games-hidden-info.md). The UI of such a game must draw from `status(state, viewer)`, never from the raw state. `redact(state, viewer)` returns a copy safe to show that viewer; `act` refuses a redacted copy.
+
 ```js
 { phase: 'roll' | 'score' | 'over',   // 'roll': a roll is expected; 'score': must choose a category (or may keep rolling, see canRoll)
   player: 0,                           // index into state.players
@@ -109,6 +111,8 @@ A game module exports a rule object; the engine core (`games/core.js`) supplies 
 - **Shut the Box** (`shutbox`): options `tiles` (9), `oneDie` (true: one die once every tile above 6 is shut), `rounds` (1). `roll` then `{type:'score', tiles:[...]}` closing open tiles that add up to the roll; a roll with no match ends the turn and scores the open tiles (lower is better, 0 = shut the box, `status.lowWins` is true; `result` ranks ascending). `suggest` lists valid tile sets `[{tiles, label, best}]`. `status` adds `tiles` (open flags), `openTiles`, `openSum`, `scores`.
 - **Ship, Captain and Crew** (`shipcaptain`): option `rounds` (3). 5 dice, 3 rolls. After each roll the engine locks a 6 (ship), then a 5 (captain), then a 4 (crew) automatically (events `ship`, `captain`, `crew`; locked slots show in `held`). With a crew, the other two dice are the cargo: `status.cargo`; `{type:'bank'}` keeps it early, otherwise the third roll ends the turn. Score is the cargo, or 0 without a crew (event `turnScore`). `status.lock` = slot of each role or null.
 - **Bunco** (`bunco`, one-table individual version): option `rounds` (6). 3 dice; round n's target number is n (`status.targetNumber`). Each roll scores 1 per target die, 21 for three targets (Bunco), 5 for three of anything else; keep rolling while a roll scores, a roll with no points ends the turn. A round is one turn per player. Tables, teams and "round ends at 21" are not modelled (see games-engine-gaps.md).
+
+- **Liar's Dice** (`liarsdice`, PD-142.17): 2-6 players, options `dice` (5) and `wild` (ones wild, bid 2-6 only). Hidden information: each cup is private until a challenge. Phases `roll` (each player rolls their own cup in seat order; `rollSpec` has `private: true` and `player`), `bid` (`{type:'bid', quantity, face}` or `{type:'challenge'}`), `reveal` (`{type:'next'}`), `over`. `status.handoff` is the player who must hold the device; `status.cups[i].dice` is `null` unless the viewer may see it. `suggest(state, viewer)` returns the legal bids with `chance` (probability the bid is true given the viewer's own dice) and a leading `challenge` row. Full rules, phases and the privacy contract: [games-hidden-info.md](games-hidden-info.md).
 
 ## Testing
 

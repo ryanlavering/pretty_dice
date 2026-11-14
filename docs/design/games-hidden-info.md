@@ -1,6 +1,6 @@
 # Hidden information and bidding: design note (PD-142.17)
 
-Status: proposal 2026-11-13, lane games-core, for review before the UI contract is built. First game: Liar's Dice. Extends [games-engine.md](games-engine.md); everything there still holds. Context for later: [games-engine-gaps.md](games-engine-gaps.md) gap 1 (also the basis for Mexico/Meyer and, eventually, networked play).
+Status: 2026-11-13, lane games-core; engine built to this note (games/liarsdice.js, tests/games-liarsdice.spec.mjs), UI contract open to change on review. First game: Liar's Dice. Extends [games-engine.md](games-engine.md); everything there still holds. Context for later: [games-engine-gaps.md](games-engine-gaps.md) gap 1 (also the basis for Mexico/Meyer and, eventually, networked play).
 
 ## What changes
 

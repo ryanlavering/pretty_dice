@@ -6,9 +6,11 @@ import * as Craps from './craps.js';
 import * as ShutBox from './shutbox.js';
 import * as ShipCaptain from './shipcaptain.js';
 import * as Bunco from './bunco.js';
+import * as Liars from './liarsdice.js';
 
 const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine },
-  shutbox: { info: ShutBox.info, mod: ShutBox.engine }, shipcaptain: { info: ShipCaptain.info, mod: ShipCaptain.engine }, bunco: { info: Bunco.info, mod: Bunco.engine } };
+  shutbox: { info: ShutBox.info, mod: ShutBox.engine }, shipcaptain: { info: ShipCaptain.info, mod: ShipCaptain.engine }, bunco: { info: Bunco.info, mod: Bunco.engine },
+  liarsdice: { info: Liars.info, mod: Liars.engine } };
 
 export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.stringify(g.info)));
 const eng = s => { const g = GAMES[s.game]; if (!g) throw new Error('unknown game ' + s.game); return g.mod; };
@@ -21,12 +23,15 @@ export function newGame(id, { players = ['Player 1'], options = {} } = {}) {
   const opts = {}; g.info.options.forEach(o => { opts[o.id] = options[o.id] ?? o.default; });
   return g.mod.init({ game: id, players: players.map(String), options: opts });
 }
-export const status = s => eng(s).status(s);
+export const status = (s, viewer) => eng(s).status(s, viewer);
 export const rollSpec = s => eng(s).rollSpec(s);
-export const suggest = (s, player) => eng(s).suggest(s, player);
+export const suggest = (s, viewer) => eng(s).suggest(s, viewer);
+// A copy of the state that is safe to show `viewer` (a player index, null for the public, or omitted for everything); hidden-information games blank other players' secrets.
+export const redact = (s, viewer) => eng(s).redact ? eng(s).redact(s, viewer) : clone(s);
 export const result = s => eng(s).result(s);
 export const scorecard = (s, p) => eng(s).scorecard(s, p);
 export function act(state, action) {
+  if (state.redacted) return { ok: false, state, events: [], error: 'This is a redacted view; act on the full state' };
   const s = clone(state), ev = [];
   const err = eng(s).act(s, action || {}, ev);
   return err ? { ok: false, state, events: [], error: err } : { ok: true, state: s, events: ev };
