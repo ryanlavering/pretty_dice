@@ -43,7 +43,7 @@ test('desktop keeps the side panel and no tab strip', async ({ shared: app }) =>
   await app.page.click('#gamesbtn');
   await expect(app.page.locator('#gamepanel')).toBeVisible(); await expect(app.page.locator('#paneltabs')).toBeHidden(); await expect(app.page.locator('#scorepane')).toBeHidden();
   await app.page.click('#gamepanel button.big');
-  await expect(app.page.locator('#gamepanel .gh h2')).toHaveText('Yahtzee');
+  await expect(app.page.locator('#gamepanel .gh h2')).toHaveText(await app.page.evaluate(() => window.__pd.GAMES.listGames().find(g => g.id === 'yahtzee').name));   // display name comes from the registry (Yacht after PD-142.41)
   await app.run(pd => pd.endGame());
 });
 
@@ -57,7 +57,7 @@ test('overhead view (PD-142.34): non-game keeps the big total as the handle; in 
   await app.page.mouse.up();
   expect(await app.page.evaluate(() => document.body.classList.contains('peek'))).toBe(false);
   // in a game (desktop side panel): total hidden, status line is the handle, t still works
-  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'shutbox'); await app.page.click('#gamepanel button.big');
+  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'craps'); await app.page.click('#gamepanel button.big');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   await expect(app.page.locator('body.game')).toHaveCount(1);
   await expect(app.page.locator('#result .tot')).toBeHidden();
