@@ -86,6 +86,8 @@
   .ctab .stks{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;padding:0 2px 4px} .ctab .stk{background:none;border:0;padding:2px;display:flex;align-items:flex-end;gap:2px;color:#fff;font:700 10px system-ui;cursor:pointer;min-height:24px} .ctab .stk:disabled{opacity:.7;cursor:default} .ctab .discs{position:relative;display:block;width:16px;height:calc(11px + var(--n)*3px)} .ctab .disc{position:absolute;left:0;bottom:calc(var(--i)*3px);width:16px;height:10px;border-radius:50%;background:var(--pc);border:2px dashed rgba(255,255,255,.75);box-sizing:border-box}
   .ctab .puck{position:absolute;top:-6px;right:-3px;width:16px;height:16px;border-radius:50%;background:#fff;color:#111;font:700 8px system-ui;display:grid;place-items:center;pointer-events:none} .ctab .ptxt{font-size:11px;color:#9fc7b2;display:flex;align-items:center;gap:6px} .ctab .ptxt .puck{position:static} .ctab .ptxt .puck.off{background:#111;color:#fff;border:1px solid #888}
   :is(#gamepanel,#scorepane) .row.chips{flex-wrap:wrap;gap:4px} :is(#gamepanel,#scorepane) .chipsel{padding:4px 5px;min-width:0;flex:1} :is(#gamepanel,#scorepane) .chipsel.on{border-color:var(--accent);color:var(--accent);background:#2a2619}
+  :is(#gamepanel,#scorepane) .cups{display:flex;flex-direction:column;gap:3px;margin:6px 0} :is(#gamepanel,#scorepane) .cup{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px} :is(#gamepanel,#scorepane) .cup.cur{border-color:var(--accent)} :is(#gamepanel,#scorepane) .cup.out{opacity:.4} :is(#gamepanel,#scorepane) .cup .pips{font-size:18px;letter-spacing:2px;line-height:1.1}
+  :is(#gamepanel,#scorepane) .qty{min-width:28px;text-align:center;font-weight:700;font-size:16px} :is(#gamepanel,#scorepane) button.face{padding:6px 8px} :is(#gamepanel,#scorepane) button.face.on{border-color:var(--accent);color:var(--accent);background:#2a2619} :is(#gamepanel,#scorepane) .botlbl{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)}
   :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
@@ -2541,47 +2543,95 @@ addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
 function closeGamesUI(){ document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; document.body.classList.remove('gstrip'); GP=GPstage; }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
-let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{}};
+let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
 const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
 let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
-function gameHold(i){ const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
+function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
   if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
     if(st.held[i]){ gameMsg='That die is already set aside'; renderGame(); return false; }
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
   if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
 function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
-  gsel.clear(); if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
+  gsel.clear(); if(game.info.hidden) hideDice(false);
+  if(game.id==='craps'){ for(let k=0;k<12;k++){ const a=GAMES.botMove(game.state,{seed:++botN}); if(!a||a.type!=='bet') break; const b=GAMES.act(game.state,a); if(!b.ok) break; game.state=b.state; } }   // bots place their bets before the dice go
+  if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
   gameAwaiting=true; gameMsg=''; renderGame(); return true; }
 function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
-  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
+  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; if(spec.private){ hideDice(true); gameMsg=''; }
   if(game.id==='craps'){ const ev=r.events, tot=ev.find(e=>e.type==='rolled')?.total, pay=ev.filter(e=>e.type==='payout'&&e.amount);
     gameMsg='Rolled '+tot+(ev.some(e=>e.type==='sevenOut')?' · seven out':'')+(ev.some(e=>e.type==='pointMade')?' · point made':'')+pay.map(e=>' · '+game.state.players[e.player]+' '+(e.amount>0?'+':'')+e.amount).join(''); }
   if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); const pts=r.events.find(e=>e.type==='turnScore'||e.type==='scored'); gameMsg=bust?'Bust! Turn total lost':(pts?(game.id==='bunco'&&pts.kind==='bunco'?'BUNCO! ':'')+'+'+pts.points:''); gameSync(); gtiles.clear(); }
   renderGame(); }
-function gameSetAside(slots){ const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameSetAside(slots){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
-function gameBank(){ const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
-function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameScore(cat){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
-async function startGame(id,players,options){
+async function startGame(id,players,options,botSeats=[]){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
-  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
+  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
+  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); syncUI(); paneAuto=true; renderGame(); }
+function endGame(){ if(!game) return; clearTimeout(botTimer); hideDice(false); game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
+// ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
+const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
+const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
+function gviewer(){ if(!game||!game.info.hidden) return undefined; const hum=humanSeats(); if(hum.length===1) return hum[0];   // a lone human always sees their own cup
+  const h=GAMES.status(game.state,null).handoff; if(h==null){ game.ack=null; return null; } return game.ack===h?h:null; }   // several humans: only after the device was handed over
+function needPass(){ if(!game||!game.info.hidden||humanSeats().length<2) return false; const h=GAMES.status(game.state,null).handoff; return h!=null&&!(game.state.bots||[]).includes(h)&&game.ack!==h; }
+function hideDice(on){ for(const d of dice) d.mesh.visible=!on; }   // a private roll is "under the cup": the settled dice vanish from the mat; the owner's dice are drawn in the panel
+let botTimer=null, botN=0, lbid=null;
+const BOT_MS=+new URLSearchParams(location.search).get('botms')||750;
+function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
+  const st=GAMES.status(game.state); if(st.phase==='over'||!st.botTurn) return; botTimer=setTimeout(botStep,BOT_MS); }
+function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
+  const S=game.state, st=GAMES.status(S); if(st.phase==='over'||!st.botTurn) return;
+  const a=GAMES.botMove(S,{seed:++botN}); if(!a) return; const nm=S.players[a.player??st.player];
+  if(a.type==='roll'){ const spec=GAMES.rollSpec(S);
+    if(spec.private){ const r=GAMES.act(S,{type:'roll',values:spec.slots.map(()=>1+Math.floor(rng()*6))}); if(r.ok){ game.state=r.state; hideDice(true); gameMsg=nm+' rolled under the cup'; } renderGame(); return; }   // a bot's secret dice are never thrown where the humans can see
+    startRoll(rolling); return; }
+  const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
+  gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
+const DIEFACE=['⚀','⚁','⚂','⚃','⚄','⚅'];
+function renderLiars(S,st,over){
+  const nm=i=>S.players[i], h=GAMES.status(S,null).handoff;
+  if(!over&&needPass()){ GP.append(gel('div',{className:'gstat'},'Pass the device to '+nm(h),gel('small',{textContent:'Nobody else looks: their dice stay hidden until they tap'})),
+    gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:"I'm "+nm(h),onclick:()=>{ game.ack=h; renderGame(); }}))); return; }
+  const res=over?GAMES.result(S):null, bid=st.bid;
+  GP.append(gel('div',{className:'gstat'},over?'Game over: '+res.winners.map(nm).join(' & ')+' win'+(res.winners.length>1?'':'s'):(gameMsg||st.message),gel('small',{textContent:'Round '+st.round+' · '+st.totalDice+' dice in play'+(st.wild?' · ones are wild':'')+(bid&&!over?' · bid: '+bid.quantity+' × '+bid.face+'s by '+nm(bid.player):'')})));
+  const cups=gel('div',{className:'cups'}); for(const c of st.cups){ const out=c.count===0, mine=c.player===st.viewer;
+    cups.append(gel('div',{className:'cup'+(c.player===st.player&&!over?' cur':'')+(out?' out':''),ariaLabel:c.name+(out?' is out':' has '+c.count+' dice')},gel('b',{textContent:c.name+(mine?' (you)':'')}),gel('span',{className:'pips',textContent:out?'out':c.dice?c.dice.map(v=>DIEFACE[v-1]).join(' '):'●'.repeat(c.count)}))); }
+  GP.append(cups);
+  if(over) return;
+  if(st.phase==='reveal'){ const rv=st.reveal; if(rv) GP.append(gel('div',{className:'gstat'},'Count of '+rv.face+'s'+(st.wild?' (ones wild)':'')+': '+rv.count+' vs bid '+rv.quantity,gel('small',{textContent:'The bid was '+(rv.bidTrue?'true':'false')+': '+nm(rv.loser)+' loses a die'})));
+    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Next round',disabled:!st.canNext,onclick:()=>{ const r=GAMES.act(S,{type:'next'}); if(r.ok){ game.state=r.state; gameMsg=''; lbid=null; } else gameMsg=r.error; renderGame(); }}))); return; }
+  if(st.botTurn){ GP.append(gel('div',{className:'gstat'},nm(st.player)+' is thinking…')); return; }
+  if(st.phase==='roll'){ const n=GAMES.rollSpec(S).slots.length; GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Roll '+n+(n>1?' dice':' die')+' under the cup',disabled:gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}))); return; }
+  // bidding: a quantity and a face, then Bid; Challenge once there is a bid to challenge
+  const me=st.viewer, rows=gprefs.suggest&&me!=null&&me!=='all'?GAMES.suggest(S,me):[], faces=st.wild?[2,3,4,5,6]:[1,2,3,4,5,6];
+  const first=rows.find(r=>r.kind==='raise'); if(!lbid||lbid.round!==st.round||lbid.stand!==(bid?bid.quantity+'x'+bid.face:'')) lbid={round:st.round,stand:bid?bid.quantity+'x'+bid.face:'',q:first?first.quantity:(bid?bid.quantity:1),f:first?first.face:(bid&&bid.face<faces[faces.length-1]?bid.face+1:faces[0])};
+  const q=gel('span',{className:'qty',textContent:String(lbid.q)});
+  GP.append(gel('div',{className:'row'},gel('span',{textContent:'Quantity'}),gel('button',{type:'button',ariaLabel:'Fewer',textContent:'−',onclick:()=>{ lbid.q=Math.max(1,lbid.q-1); renderGame(); }}),q,gel('button',{type:'button',ariaLabel:'More',textContent:'+',onclick:()=>{ lbid.q=Math.min(st.totalDice,lbid.q+1); renderGame(); }})));
+  const fr=gel('div',{className:'sugs'}); for(const f of faces) fr.append(gel('button',{type:'button',className:'face'+(lbid.f===f?' on':''),ariaLabel:'Face '+f,ariaPressed:String(lbid.f===f),textContent:DIEFACE[f-1]+' '+f,onclick:()=>{ lbid.f=f; renderGame(); }})); GP.append(fr);
+  const hint=rows.find(r=>r.kind==='raise'&&r.quantity===lbid.q&&r.face===lbid.f), ch=rows.find(r=>r.kind==='challenge');
+  if(gprefs.suggest&&(hint||ch)) GP.append(gel('div',{className:'gstat'},gel('small',{textContent:(hint?'This bid: '+Math.round(hint.chance*100)+'% likely true':'')+(hint&&ch?' · ':'')+(ch?'challenge wins '+Math.round(ch.chance*100)+'%':'')})));
+  const act=(a)=>{ const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=a.type==='bid'?nm(st.player)+' bid '+a.quantity+' × '+a.face+'s':''; lbid=null; renderGame(); };
+  GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Bid '+lbid.q+' × '+lbid.f+'s',disabled:!st.canBid,onclick:()=>act({type:'bid',quantity:lbid.q,face:lbid.f})}),gel('button',{type:'button',textContent:'Challenge',disabled:!st.canChallenge,onclick:()=>act({type:'challenge'})})));
+}
 function renderGame(){
   const phone=phoneUI(); GP=phone?SP:GPstage; if(!phone){ SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); }
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   if(phone){ PT.hidden=false; $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
+  botPump();
 }
 phoneMq.addEventListener?.('change',()=>{ if(game||!GPstage.hidden||!SP.hidden){ paneAuto=phoneUI(); renderGame(); } });
 function renderStrip(){   // the mat keeps one line: status, Roll, and Bank / Set aside only while they apply
@@ -2591,33 +2641,34 @@ function renderStrip(){   // the mat keeps one line: status, Roll, and Bank / Se
   const who=S.players.length>1&&!over?S.players[st.player]+': ':'', msg=over?'Game over':(gameMsg||(st.message||'').replace(S.players[st.player]+': ',''));
   { const sm=rollSum(st), sp=gel('span',{className:'st',textContent:who+msg+(sm!=null?' · total '+sm:'')}); peekHandle(sp); GPstage.append(sp); }
   if(!over){ const live=GAMES.rollSpec(S).slots.length;
-    GPstage.append(gel('button',{className:'big',type:'button',style:'width:auto;margin:0',textContent:'Roll'+(game.id==='yahtzee'&&st.rollsUsed?' '+live:''),disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
+    GPstage.append(gel('button',{className:'big',type:'button',style:'width:auto;margin:0',textContent:'Roll'+(game.id==='yahtzee'&&st.rollsUsed?' '+live:''),disabled:!st.canRoll||st.botTurn||needPass()||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
     if(['farkle','pig','shipcaptain'].includes(game.id)&&st.canBank) GPstage.append(gel('button',{type:'button',textContent:'Bank',disabled:gameAwaiting,onclick:gameBank}));
     if(farkle&&st.canScore&&gsel.size) GPstage.append(gel('button',{type:'button',textContent:'Set aside '+gsel.size,onclick:()=>gameSetAside(gsel)})); } }
 function renderGameBody(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
-    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco','liarsdice'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
-    const n=Math.min(gprefs.count,g.maxPlayers), nameIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}); nameIn.push(inp); GP.append(gel('div',{className:'row'},inp)); }
+    const n=Math.min(gprefs.count,g.maxPlayers), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
     const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
       if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); }
       else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); } }
     const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'})));
-    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else startGame(g.id,nameIn.map((x,i)=>x.value.trim()||('Player '+(i+1))),opts); }})));
+    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
-  const S=game.state, st=GAMES.status(S), sug=GAMES.suggest(S), over=st.phase==='over';
-  hd(game.info.name,()=>endGame(),'End game'); if(!phoneUI()) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  const S=game.state, st=GAMES.status(S,gviewer()), sug=game.info.hidden?[]:GAMES.suggest(S), over=st.phase==='over';
+  hd(game.info.name,()=>endGame(),'End game'); if(!phoneUI()&&game.id!=='liarsdice') GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  if(game.id==='liarsdice'){ renderLiars(S,st,over); return; }
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
-  if(!over){ const n=GAMES.rollSpec(S).slots.length, rb=gel('button',{className:'big',type:'button',textContent:st.canRoll?(st.rollsUsed?'Roll '+n+(n>1?' dice':' die'):'Roll'):'Roll (pick a box)',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}); GP.append(gel('div',{className:'row'},rb)); }
+  if(!over){ const n=GAMES.rollSpec(S).slots.length, rb=gel('button',{className:'big',type:'button',textContent:st.canRoll?(st.rollsUsed?'Roll '+n+(n>1?' dice':' die'):'Roll'):'Roll (pick a box)',disabled:!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}); GP.append(gel('div',{className:'row'},rb)); }
   if(gcollapsed){ GP.append(gel('div',{className:'gstat'},S.players.map((n,p)=>n+' '+GAMES.scorecard(S,p).total).join(' · '))); return; }
   const cards=S.players.map((_,p)=>GAMES.scorecard(S,p)), tb=gel('table'), hr=gel('tr'); hr.append(gel('th'));
   S.players.forEach((nm,p)=>hr.append(gel('th',{textContent:nm,className:p===st.player&&!over?'cur':'',title:nm}))); tb.append(gel('thead',{},hr));
@@ -2653,7 +2704,7 @@ function renderCraps(S,st,over){
   const who=cbet.who!=null&&cbet.who<S.players.length?cbet.who:st.player, sug=over?[]:GAMES.suggest(S,who), res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Table closed: '+res.winners.map(i=>S.players[i]).join(' & ')+' finish'+(res.winners.length>1?'':'es')+' on top',gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else { GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+' shoots: ':'')+(st.stage==='point'?'point is '+st.point:'come-out roll'),gel('small',{textContent:(gameMsg||st.message||'')+(rollSum(st)!=null?' · total '+rollSum(st):'')})));
-    const row=gel('div',{className:'row'}); row.append(gel('button',{className:'big',type:'button',textContent:'Roll',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}),gel('button',{type:'button',textContent:'Cash out',disabled:betsLocked(),onclick:gameCashOut})); GP.append(row);
+    const row=gel('div',{className:'row'}); row.append(gel('button',{className:'big',type:'button',textContent:'Roll',disabled:!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}),gel('button',{type:'button',textContent:'Cash out',disabled:betsLocked(),onclick:gameCashOut})); GP.append(row);
     const ar=gel('div',{className:'row chips'}); ar.append(gel('span',{textContent:'Chip'}));
     for(const c of [null,...st.chips]) ar.append(gel('button',{type:'button',className:'chipsel'+((cbet.chip||null)===c?' on':''),textContent:c==null?'Unit':String(c),ariaLabel:c==null?'Add one unit per tap':'Add chips worth '+c,ariaPressed:String((cbet.chip||null)===c),disabled:betsLocked(),onclick:()=>{ cbet.chip=c; renderGame(); }}));
     if(S.players.length>1){ const ws=gel('select',{ariaLabel:'Betting as',onchange:()=>{ cbet.who=+ws.value; renderGame(); }}); S.players.forEach((n,i)=>ws.append(gel('option',{value:i,textContent:n,selected:i===who}))); ar.append(ws); }
@@ -2690,7 +2741,7 @@ function renderTurn(S,st,over){
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.message||'').replace(S.players[st.player]+': ',''),gel('small',{textContent:turnInfo(S,st)+(gameMsg?' · '+gameMsg:'')})));
   if(!over){ const live=GAMES.rollSpec(S).slots.length, row=gel('div',{className:'row'});
-    row.append(gel('button',{className:'big',type:'button',textContent:st.canRoll?(farkle&&st.turnTotal?'Roll '+live+(live>1?' dice':' die'):'Roll'):'Roll (set aside first)',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
+    row.append(gel('button',{className:'big',type:'button',textContent:st.canRoll?(farkle&&st.turnTotal?'Roll '+live+(live>1?' dice':' die'):'Roll'):'Roll (set aside first)',disabled:!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
     if(['farkle','pig','shipcaptain'].includes(game.id)) row.append(gel('button',{type:'button',textContent:'Bank '+(game.id==='shipcaptain'?st.cargo:st.turnTotal),disabled:!st.canBank||gameAwaiting,onclick:gameBank})); GP.append(row);
     if(game.id==='shutbox'){ const tg=gel('div',{className:'tiles'}); st.tiles.forEach((open,k)=>{ const n=k+1; tg.append(gel('button',{type:'button',className:'tile'+(open?'':' shut')+(gtiles.has(n)?' sel':''),textContent:String(n),disabled:!open||!st.canScore,ariaPressed:String(gtiles.has(n)),onclick:()=>{ if(gtiles.has(n)) gtiles.delete(n); else gtiles.add(n); renderGame(); }})); }); GP.append(tg);
       if(st.canScore){ const sum=[...gtiles].reduce((a,b)=>a+b,0), tot=st.dice?st.dice.reduce((a,b)=>a+b,0):0; GP.append(gel('div',{className:'row'},gel('button',{type:'button',textContent:gtiles.size?'Close '+[...gtiles].sort((a,b)=>a-b).join('+')+' = '+sum+' (need '+tot+')':'Pick tiles that add to '+tot,disabled:!gtiles.size,onclick:()=>gameCloseTiles(gtiles)})));
@@ -2702,7 +2753,7 @@ function renderTurn(S,st,over){
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } paneAuto=true; renderGame(); });
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  keepSum,fmtNotation,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  keepSum,fmtNotation,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
