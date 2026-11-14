@@ -195,20 +195,16 @@
 </head>
 <body>
 <div id="boot" style="position:fixed;inset:0;display:grid;place-items:center;background:#0e1015;color:#8b90a0;font:14px Inter,sans-serif;z-index:50;text-align:center;padding:24px"><div id="bootbox" style="width:min(360px,86vw)">
-  <div style="color:#e8ecf4;font-size:16px;letter-spacing:.14em;margin-bottom:14px">PRETTY DICE</div>
-  <div style="height:6px;border-radius:3px;background:#1b1f2a;overflow:hidden"><div id="bootbar" style="height:100%;width:2%;background:#e2b85c;transition:width .25s"></div></div>
-  <div id="bootmsg" style="margin-top:12px;min-height:20px">Loading Pretty Dice…</div>
-  <div id="bootlog" style="margin-top:8px;font:11px ui-monospace,monospace;color:#5d6375;min-height:15px"></div>
   <style>
   /* CSS-only tumbling d6: transform/opacity animations run on the compositor, so it keeps moving while the main thread is busy compiling shaders (and costs no JS). If it stops, the page is frozen. */
-  #bootdice{height:96px;margin:6px auto 0;perspective:420px;position:relative}
-  #bootdice .hop{width:44px;height:44px;margin:0 auto;position:relative;animation:pdhop 1.5s cubic-bezier(.3,.1,.5,1) infinite}
+  #bootdice{height:132px;margin:0 auto;perspective:420px;position:relative}   /* 20px for the cube's corners above the hop, 46px hop, 44px cube, 22px below: nothing of the tumble reaches the text */
+  #bootdice .hop{width:44px;height:44px;margin:20px auto 0;position:relative;animation:pdhop 1.5s cubic-bezier(.3,.1,.5,1) infinite}
   #bootdice .cube{width:44px;height:44px;position:absolute;inset:0;transform-style:preserve-3d;animation:pdtumble 4.5s cubic-bezier(.35,.1,.25,1) infinite}
   #bootdice .f{position:absolute;inset:0;border-radius:9px;background:#e8e2d0;border:1px solid #bdb59c;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:6px;box-sizing:border-box;backface-visibility:hidden}
   #bootdice .f i{width:6px;height:6px;border-radius:50%;background:#1b1f2a;place-self:center}
   #bootdice .f1{transform:translateZ(22px)} #bootdice .f2{transform:rotateY(90deg) translateZ(22px)} #bootdice .f3{transform:rotateY(180deg) translateZ(22px)}
   #bootdice .f4{transform:rotateY(-90deg) translateZ(22px)} #bootdice .f5{transform:rotateX(90deg) translateZ(22px)} #bootdice .f6{transform:rotateX(-90deg) translateZ(22px)}
-  #bootdice .sh{position:absolute;left:50%;bottom:2px;width:40px;height:8px;margin-left:-20px;border-radius:50%;background:#000;opacity:.5;animation:pdshadow 1.5s cubic-bezier(.3,.1,.5,1) infinite}
+  #bootdice .sh{position:absolute;left:50%;bottom:18px;width:40px;height:8px;margin-left:-20px;border-radius:50%;background:#000;opacity:.5;animation:pdshadow 1.5s cubic-bezier(.3,.1,.5,1) infinite}
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
@@ -218,18 +214,24 @@
     <div class="f f1"><i style="grid-area:2/2"></i></div><div class="f f2"><i style="grid-area:1/1"></i><i style="grid-area:3/3"></i></div><div class="f f3"><i style="grid-area:1/1"></i><i style="grid-area:2/2"></i><i style="grid-area:3/3"></i></div>
     <div class="f f4"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div><div class="f f5"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/2"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div><div class="f f6"><i style="grid-area:1/1"></i><i style="grid-area:1/3"></i><i style="grid-area:2/1"></i><i style="grid-area:2/3"></i><i style="grid-area:3/1"></i><i style="grid-area:3/3"></i></div>
   </div></div></div>
+  <div style="color:#e8ecf4;font-size:16px;letter-spacing:.14em;margin:4px 0 14px">PRETTY DICE</div>
+  <div style="height:6px;border-radius:3px;background:#1b1f2a;overflow:hidden"><div id="bootbar" style="height:100%;width:2%;background:#e2b85c;transition:width .25s"></div></div>
+  <div id="bootmsg" style="margin-top:12px;min-height:20px">Loading Pretty Dice…</div>
+  <div id="bootlog" style="margin-top:8px;font:11px ui-monospace,monospace;color:#5d6375;min-height:15px"></div>
 </div></div>
 <script>
 (function(){ var b=document.getElementById('boot'), shown=false, bar=document.getElementById('bootbar'), msg=document.getElementById('bootmsg'), lg=document.getElementById('bootlog'), t0=performance.now(), stages=[];
   /* Staged progress: boot code calls __bootStage(label, fraction 0..1). The log line shows the elapsed time per finished stage, the spinner is pure CSS so a frozen page stops it. */
   window.__bootStages=stages;
+  var STEPS=8;   /* the number of boot stages of a normal start: Starting plus the seven __bs() steps in the main script; tests/boot-screen.spec.mjs fails if this drifts */
+  function line(){ if(!lg||!stages.length) return; lg.textContent='step '+stages.length+' of '+Math.max(STEPS,stages.length)+' · '+((performance.now()-t0)/1000).toFixed(1)+' s'; }
   window.__bootStage=function(label,frac){ var now=performance.now(); if(stages.length) stages[stages.length-1].ms=Math.round(now-stages[stages.length-1].t); stages.push({label:label,t:now,ms:null});
     if(shown) return; if(msg) msg.textContent=label; if(bar&&frac!=null) bar.style.width=Math.max(2,Math.min(100,frac*100))+'%';
-    if(lg) lg.textContent=((now-t0)/1000).toFixed(1)+' s'+(stages.length>1?' · '+stages[stages.length-2].label+' '+stages[stages.length-2].ms+' ms':''); };
+    line(); };
   /* resolves after the browser has had a chance to paint, so the new label is visible before the next heavy step starts */
   window.__bootYield=function(){ return new Promise(function(r){ var d=false, f=function(){ if(!d){ d=true; r(); } }; requestAnimationFrame(function(){ setTimeout(f,0); }); setTimeout(f,60); }); };
   window.__bootStage('Starting',0.02);
-  var tick=setInterval(function(){ if(window.__bootMs){ clearInterval(tick); return; } if(!shown&&lg&&stages.length) lg.textContent=((performance.now()-t0)/1000).toFixed(1)+' s · step '+((performance.now()-stages[stages.length-1].t)/1000).toFixed(1)+' s'+(stages.length>1?' · last: '+stages[stages.length-2].label+' '+stages[stages.length-2].ms+' ms':''); },250);   // a live clock: while the page is frozen it stops, like the dice would not
+  var tick=setInterval(function(){ if(window.__bootMs){ clearInterval(tick); return; } if(!shown) line(); },250);   // a live clock: while the page is frozen it stops, like the dice would not
   function show(msg){ shown=true; b.style.display='grid'; b.innerHTML='<div><div style="color:#e2b85c;font-size:18px;margin-bottom:10px">Pretty Dice could not start</div><div style="max-width:560px">'+msg+'</div><p><a style="color:#e2b85c" href="?reset=1">Reset saved settings and reload</a></p></div>'; }
   window.__bootDone=function(){ if(stages.length) stages[stages.length-1].ms=Math.round(performance.now()-stages[stages.length-1].t); window.__bootMs=Math.round(performance.now()-t0); b.style.display='none'; };
   window.addEventListener('error',function(e){ if(!window.__ready) show('Error: '+(e.message||'unknown')+(e.lineno?' (line '+e.lineno+')':'')); });
