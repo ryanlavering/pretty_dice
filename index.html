@@ -143,6 +143,11 @@
   #labpanel textarea{width:100%;box-sizing:border-box;font:11px/1.3 ui-monospace,Menlo,monospace;background:#12151c;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px}
   @media (max-width:719px){ #labpanel{top:auto;bottom:8px;left:8px;right:8px;width:auto;height:46%} #labpanel.shut{height:auto} }
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
+  /* PD-142.14.1.6: the quick roll bar takes the shelf's place at the table: a formula box, saved sets and plain dice, so the dice change without Showcase or the bag */
+  #qbar{position:absolute;left:64px;right:64px;bottom:8px;z-index:7;display:none;gap:6px;align-items:center;overflow-x:auto;padding:5px 8px;background:rgba(20,23,31,.82);border:1px solid var(--line);border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);scrollbar-width:none}
+  body.inroll:not(.game):not(.lab) #qbar:not([hidden]){display:flex} body.throwing #qbar{opacity:.35}
+  #qbar input{flex:0 0 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a}
+  #qbar button{flex:none;display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar button:hover{border-color:var(--accent);color:var(--accent)} #qbar .qsep{flex:none;width:1px;height:20px;background:var(--line)}
   #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.1;pointer-events:none}   /* PD-142.14.1.12: the log never hides dice that are still moving */
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
@@ -151,17 +156,17 @@
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
   @media (max-width:760px){
-    #tools .col,#shelf{bottom:6px} #shelf{left:60px;right:60px} #hint{bottom:104px}
-    body.full #tools .col,body.full #shelf{bottom:calc(16px + env(safe-area-inset-bottom,0px))} body.full #hint{bottom:calc(114px + env(safe-area-inset-bottom,0px))}   /* full view only: the stage then reaches the screen edge, where round phone corners cut off the bottom and edge touches are hard */
+    #tools .col,#shelf,#qbar{bottom:6px} #shelf,#qbar{left:60px;right:60px} #hint{bottom:104px}
+    body.full #tools .col,body.full #shelf,body.full #qbar{bottom:calc(16px + env(safe-area-inset-bottom,0px))} body.full #hint{bottom:calc(114px + env(safe-area-inset-bottom,0px))}   /* full view only: the stage then reaches the screen edge, where round phone corners cut off the bottom and edge touches are hard */
     #cards{gap:8px;padding:4px calc(50% - 34px)} .card{width:68px} .card .th{width:60px;height:60px} .card .nm{max-width:68px}   /* about 3.5 cards across: a partial card shows there is more to scroll to */
     #app{flex-direction:column-reverse}
     aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
   }
   /* phone held sideways: the round corners are at the sides, so push the controls in from the sides instead of lifting them from the bottom */
   @media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
-    #tools .col,#shelf,body.full #tools .col,body.full #shelf{bottom:8px} #hint,body.full #hint{bottom:104px}
+    #tools .col,#shelf,#qbar,body.full #tools .col,body.full #shelf,body.full #qbar{bottom:8px} #hint,body.full #hint{bottom:104px}
     #tr{right:calc(16px + env(safe-area-inset-right,0px))} body.full #tl{left:calc(16px + env(safe-area-inset-left,0px))}
-    #shelf{left:64px;right:calc(80px + env(safe-area-inset-right,0px))} body.full #shelf{left:calc(80px + env(safe-area-inset-left,0px))}
+    #shelf,#qbar{left:64px;right:calc(80px + env(safe-area-inset-right,0px))} body.full #shelf,body.full #qbar{left:calc(80px + env(safe-area-inset-left,0px))}
   }
 </style>
 <!--BOOTSTRAP-->
@@ -409,7 +414,7 @@
     </div>
     <div id="scorepane" hidden></div>
   </aside>
-  <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button><button id="gamesbtn" type="button" aria-label="Games" title="Games"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
+  <div id="stage"><div id="qbar" role="toolbar" aria-label="Quick roll" hidden></div><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button><button id="gamesbtn" type="button" aria-label="Games" title="Games"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span></span><span id="sheetact"><button id="sheetsave" type="button" class="sico" title="Save bag to a file" aria-label="Save bag to a file"><svg viewBox="0 0 24 24"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg></button><button id="sheetload" type="button" class="sico" title="Load a bag file (replaces this bag)" aria-label="Load a bag file"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 8.5l4-4 4 4M5 19h14"/></svg></button><button id="sheetcopy" type="button" class="sico" title="Copy the bag JSON to the clipboard" aria-label="Copy bag JSON"><svg viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="10.5" height="11.5" rx="2"/><path d="M15.5 8.5V6A2 2 0 0 0 13.5 4H7A2 2 0 0 0 5 6v9.5A2 2 0 0 0 7 17.5h1.5"/></svg></button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
@@ -1625,7 +1630,7 @@ function slots(){   // what the shelf and sheet show, in order: designs, then th
   return out; }
 let lastSig='', lastCenter=null;
 function renderBag(){
-  if(!bag) return; const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
+  if(!bag) return; renderQBar(); const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
   $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
   $('bagth').style.backgroundImage=thumbStyle(liveJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
   { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('sheetsave').classList.toggle('dirty',dirty); $('savebag').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
@@ -1741,6 +1746,17 @@ const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.
 function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
   for(const it of items){ const sp=el('span','rt'); if(it.sides){ const c=chipEl(it.sides,designChipJ(it.design),{label:null}), e=it.design&&entryOf(it.design); if(e) c.title=e.name; sp.append(c); } sp.append(it.text); f.append(sp); }
   if(modText) f.append(el('span','rt',modText)); return f; }
+/* the quick roll bar (PD-142.14.1.6): rolls a formula, a saved set or one plain die right at the table */
+function tableRoll(notation){ const p=parseNotation(notation,true); if(p.error) return p.error; checkpoint(); bag.active.set=null; rollSetId=null; state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; closeSheet&&closeSheet(); buildDice(); startRoll(false,false); syncUI(); save(); return null; }
+let qbarSig='';
+function renderQBar(){ const bar=$('qbar'); if(!bag||!bar) return; const sig=bag.sets.map(s=>s.id+'|'+s.name).join('\n'); if(sig===qbarSig&&bar.firstChild){ bar.hidden=false; return; } qbarSig=sig;
+  const inp=el('input'); inp.type='text'; inp.spellcheck=false; inp.placeholder='3d6+2'; inp.setAttribute('aria-label','Roll a formula'); inp.title='Type dice, e.g. 4d6kh3+2, then Enter';
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter'){ const err=tableRoll(inp.value||state.notation); inp.classList.toggle('bad',!!err); inp.title=err||'Type dice, e.g. 4d6kh3+2, then Enter'; if(!err) inp.value=''; } }; inp.oninput=()=>inp.classList.remove('bad');
+  const go=el('button','','Roll'); go.type='button'; go.onclick=()=>{ const err=tableRoll(inp.value||state.notation); inp.classList.toggle('bad',!!err); inp.title=err||''; if(!err) inp.value=''; };
+  const kids=[inp,go];
+  if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Roll '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ setOps.open(st.id,{roll:true}); }; kids.push(b); } }
+  kids.push(el('span','qsep')); for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Roll one '+dieName(n); b.dataset.die=n; b.onclick=()=>{ tableRoll('1d'+(n===100?'%':n)); }; kids.push(b); }
+  bar.replaceChildren(...kids); bar.hidden=false; }
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }

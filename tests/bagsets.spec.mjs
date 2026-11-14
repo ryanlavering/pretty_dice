@@ -427,3 +427,21 @@ test('a double-click on quick roll is one logged roll, a later click is another 
   await page.waitForTimeout(450); await page.evaluate(sel => document.querySelector(sel).click(), q);
   expect(await app.run(pd => pd.bag.log.length)).toBe(n0 + 2);
 });
+
+test('the quick roll bar at the table rolls a die, a typed formula and a saved set without leaving roll view (PD-142.14.1.6)', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await expect(page.locator('#qbar')).toBeHidden();   // showcase: the shelf is there instead
+  await page.locator('#roll').click();
+  await expect(page.locator('#qbar')).toBeVisible();
+  const st = () => app.run(pd => ({ n: pd.state.notation, dice: pd.dice.length, rolling: pd.rolling, set: pd.bag.active.set }));
+  await page.locator('#qbar button[data-die="8"]').click();
+  expect(await st()).toMatchObject({ n: '1d8', dice: 1, rolling: true });
+  await page.locator('#qbar input').fill('3d6+2'); await page.locator('#qbar input').press('Enter');
+  expect(await st()).toMatchObject({ n: '3d6+2', dice: 3, rolling: true });
+  await page.locator('#qbar input').fill('banana'); await page.locator('#qbar input').press('Enter');
+  await expect(page.locator('#qbar input')).toHaveClass(/bad/);
+  expect((await st()).n).toBe('3d6+2');
+  await page.locator('#qbar button[data-set="dmg"]').click();
+  expect(await st()).toMatchObject({ n: '2d6@bone+1d8+3', dice: 3, set: 'dmg' });
+});
