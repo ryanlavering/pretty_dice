@@ -52,6 +52,9 @@
   aside,#tools,#shelf,#name,#hint{transition:opacity .15s}
   body.peek #tools,body.peek #shelf,body.peek #name,body.peek #hint,body.peek #result .relean{opacity:0;pointer-events:none}   /* top-down check held: every control gets out of the way (no reflow); the settings pane stays */
   body.calm aside,body.calm #shelf,body.calm #name,body.calm #hint,body.calm #tr,body.calm #tools button:not(#layout){display:none}   /* distraction-free: only the 'show controls' button is left */
+  body.game #result .tot,body.game #result .brk{display:none}   /* PD-142.34: in a game the big total goes; the status line is the hold-to-look-from-above handle */
+  .peekh{cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:none} .peekh::before{content:'';display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-2px;background:currentColor;opacity:.7;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center/contain no-repeat}
+  body.peek #gamepanel{opacity:.18}
   #result.peek{opacity:.18}   /* while the top-down check is held the total fades so the dice can be read */
   #result .tot{display:table;margin:0 auto;pointer-events:auto;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}   /* press and hold the total for a top-down look at the dice (PD-67) */
   #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
@@ -2478,7 +2481,12 @@ let GP=GPstage, paneAuto=false;   // GP is where the full panel is drawn: the st
 const phoneMq=matchMedia('(max-width:760px)'), phoneUI=()=>phoneMq.matches;
 function setPane(name){ const g=name==='games'; $('settingspane').hidden=g; SP.hidden=!g; PT.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); $('gamestab').closest('aside').scrollTop=0; }
 PT.querySelectorAll('button').forEach(b=>b.onclick=()=>setPane(b.dataset.pane));
-function closeGamesUI(){ GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; document.body.classList.remove('gstrip'); GP=GPstage; }
+function peekHandle(el){ if(!el) return; el.classList.add('peekh'); el.title='Hold to look from above'; el.setAttribute('aria-label','Hold to look from above');
+  for(const ev of ['pointerup','pointercancel','lostpointercapture']) el.addEventListener(ev,()=>holdTop(false));
+  el.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; try{el.setPointerCapture(e.pointerId);}catch{} holdTop(true); }); el.addEventListener('contextmenu',e=>e.preventDefault()); }
+addEventListener('blur',()=>holdTop(false));
+const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
+function closeGamesUI(){ document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; document.body.classList.remove('gstrip'); GP=GPstage; }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{}};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
@@ -2519,7 +2527,7 @@ async function startGame(id,players,options){
 function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
 function renderGame(){
   const phone=phoneUI(); GP=phone?SP:GPstage; if(!phone){ SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); }
-  renderGameBody();
+  renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   if(phone){ PT.hidden=false; $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
 }
 phoneMq.addEventListener?.('change',()=>{ if(game||!GPstage.hidden||!SP.hidden){ paneAuto=phoneUI(); renderGame(); } });
@@ -2528,7 +2536,7 @@ function renderStrip(){   // the mat keeps one line: status, Roll, and Bank / Se
   const S=game.state, st=GAMES.status(S), over=st.phase==='over', farkle=game.id==='farkle';
   GPstage.textContent=''; GPstage.hidden=false; GPstage.classList.add('strip'); document.body.classList.add('gstrip');
   const who=S.players.length>1&&!over?S.players[st.player]+': ':'', msg=over?'Game over':(gameMsg||(st.message||'').replace(S.players[st.player]+': ',''));
-  GPstage.append(gel('span',{className:'st',textContent:who+msg}));
+  { const sm=rollSum(st), sp=gel('span',{className:'st',textContent:who+msg+(sm!=null?' · total '+sm:'')}); peekHandle(sp); GPstage.append(sp); }
   if(!over){ const live=GAMES.rollSpec(S).slots.length;
     GPstage.append(gel('button',{className:'big',type:'button',style:'width:auto;margin:0',textContent:'Roll'+(game.id==='yahtzee'&&st.rollsUsed?' '+live:''),disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
     if(['farkle','pig','shipcaptain'].includes(game.id)&&st.canBank) GPstage.append(gel('button',{type:'button',textContent:'Bank',disabled:gameAwaiting,onclick:gameBank}));
@@ -2579,7 +2587,7 @@ function gameCashOut(){ if(betsLocked()){ gameMsg='Wait for the dice to stop'; r
 function renderCraps(S,st,over){
   const sug=GAMES.suggest(S), res=over?GAMES.result(S):null, minBet=sug.length?sug[0].minBet:5, who=cbet.who!=null&&cbet.who<S.players.length?cbet.who:st.player;
   if(over) GP.append(gel('div',{className:'gstat'},'Table closed: '+res.winners.map(i=>S.players[i]).join(' & ')+' finish'+(res.winners.length>1?'':'es')+' on top',gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
-  else { GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+' shoots: ':'')+(st.stage==='point'?'point is '+st.point:'come-out roll'),gel('small',{textContent:(gameMsg||st.message||'')})));
+  else { GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+' shoots: ':'')+(st.stage==='point'?'point is '+st.point:'come-out roll'),gel('small',{textContent:(gameMsg||st.message||'')+(rollSum(st)!=null?' · total '+rollSum(st):'')})));
     const row=gel('div',{className:'row'}); row.append(gel('button',{className:'big',type:'button',textContent:'Roll',disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}),gel('button',{type:'button',textContent:'Cash out',disabled:betsLocked(),onclick:gameCashOut})); GP.append(row);
     const amt=gel('input',{type:'number',disabled:betsLocked(),min:minBet,step:minBet,value:cbet.amount||minBet,ariaLabel:'Bet amount',onchange:()=>{ cbet.amount=Math.max(minBet,Math.round(+amt.value)||minBet); amt.value=cbet.amount; }}), ar=gel('div',{className:'row'},gel('span',{textContent:'Bet'}),amt);
     if(S.players.length>1){ const ws=gel('select',{ariaLabel:'Betting as',onchange:()=>{ cbet.who=+ws.value; renderGame(); }}); S.players.forEach((n,i)=>ws.append(gel('option',{value:i,textContent:n,selected:i===who}))); ar.append(ws); }
@@ -2596,7 +2604,7 @@ function renderCraps(S,st,over){
   const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:'Bankroll'}),gel('th',{textContent:'On the table'}))));
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'), on=st.bets.filter(b=>b.player===p).reduce((a,b)=>a+b.amount,0); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.bankrolls[p]),className:cur?'cur':''}),gel('td',{textContent:on?String(on):'',className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
-function turnInfo(S,st){ const id=game.id, rd=st.rounds?'Round '+st.round+' of '+st.rounds+' · ':'';
+function turnInfo(S,st){ const sm=rollSum(st), id=game.id, rd=(sm!=null?'Total '+sm+' · ':'')+(st.rounds?'Round '+st.round+' of '+st.rounds+' · ':'');
   if(id==='shutbox') return rd+'open tiles add up to '+st.openSum+' · lower wins';
   if(id==='shipcaptain') return rd+'roll '+Math.max(st.rollsUsed,0)+' of 3 · cargo '+st.cargo+(st.lock?' · '+['ship','captain','crew'].filter(k=>st.lock[k]!=null).join(', '):'');
   if(id==='bunco') return rd+'this turn '+(st.turnTotal||0);
