@@ -110,3 +110,22 @@ test('farkle: banking passes the turn with holds and rings cleared (turn handoff
   expect(end.held).toEqual([]); expect(end.rings).toBe(0);
   await app.run(pd => pd.endGame());
 });
+
+test('craps: no betting while the dice are rolling; bets open again once the roll is reported', async ({ shared: app }) => {
+  await app.reset(54); await app.run(pd => pd.openGames());
+  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.click('#gamepanel button.big');
+  await app.page.click('#gamepanel button:has-text("Pass line")');
+  await expect(app.page.locator('#gamepanel button:has-text("Field")')).toBeEnabled();
+  await app.page.click('#gamepanel button.big');   // start the roll (dice in the air)
+  expect(await app.run(pd => pd.rolling && !pd.settled)).toBe(true);
+  await expect(app.page.locator('#gamepanel button:has-text("Field")')).toBeDisabled();
+  await expect(app.page.locator('#gamepanel button:has-text("Cash out")')).toBeDisabled();
+  await expect(app.page.locator('#gamepanel input[type=number]')).toBeDisabled();
+  expect(await app.run(() => document.querySelectorAll('#gamepanel .sugs button:not(:disabled)').length), 'every bet button is locked').toBe(0);
+  const before = await app.run(pd => pd.GAMES.status(pd.game.state).bets.length);
+  await app.run(pd => { pd.simRoll({ rerolls: 6 }); });
+  await expect(app.page.locator('#gamepanel button:has-text("Field")')).toBeEnabled();
+  expect(before).toBe(1);
+  await app.run(pd => pd.endGame());
+});
