@@ -24,7 +24,7 @@ test('liar\'s dice hot-seat: pass screens hide dice, each player sees only their
   await app.page.click('#gamepanel button:has-text("I\'m Player 1")');
   await expect(panel(app).locator('button.big')).toContainText('under the cup');
   await rollUnderCup(app);
-  expect(await app.run(pd => pd.dice.every(d => !d.mesh.visible))).toBe(true);          // the settled dice leave the mat
+  await expect.poll(() => app.run(pd => pd.rolling), { timeout: 5000 }).toBe(false);   // the set goes back to the showcase: no values on the mat
   await expect(panel(app)).toContainText('Pass the device to Player 2');
   expect(await text(app)).not.toMatch(PIP);                                              // nothing of Player 1's dice on screen
   await app.page.click('#gamepanel button:has-text("I\'m Player 2")');
@@ -32,10 +32,14 @@ test('liar\'s dice hot-seat: pass screens hide dice, each player sees only their
   // bidding starts with the starter: pass screen again, then only their own five dice are drawn
   const who = await app.run(pd => pd.GAMES.status(pd.game.state, null).handoff);
   await app.page.click(`#gamepanel button:has-text("I'm Player ${who + 1}")`);
-  const mine = (await cupText(app)).match(PIP) || [];
-  expect(mine).toHaveLength(5);
+  expect((await cupText(app)).match(PIP) || []).toHaveLength(0);                          // the rows show dots, never your dice
   const full = await app.run(pd => pd.game.state.hands);
-  expect(mine.join('')).toBe(full[who].map(v => '⚀⚁⚂⚃⚄⚅'[v - 1]).join(''));
+  await expect(app.page.locator('#cuppeek')).toBeHidden();
+  const box = await app.page.locator('#gamepanel .cup.peekme').boundingBox();
+  await app.page.mouse.move(box.x + 20, box.y + box.height / 2); await app.page.mouse.down();   // press and hold: big dice
+  await expect(app.page.locator('#cuppeek .bigdie')).toHaveText(full[who].map(String));
+  await app.page.mouse.up();
+  await expect(app.page.locator('#cuppeek')).toBeHidden();                                  // released: hidden again
   await app.page.click('#gamepanel button:has-text("Bid")');                              // minimal first bid
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bid !== null)).toBe(true);
   await expect(panel(app)).toContainText(`Pass the device to Player ${2 - who}`);
@@ -53,9 +57,12 @@ test('liar\'s dice with a bot seat: the human sees their own cup, the bot rolls 
   expect(await app.run(pd => pd.gviewer())).toBe(0);                                      // a lone human never gets a pass screen
   await rollUnderCup(app);
   await expect.poll(() => app.run(pd => pd.GAMES.status(pd.game.state).phase), { timeout: 20000 }).toBe('bid');   // the bot rolled itself (simulated, not thrown)
-  const t = await cupText(app);
-  expect(t.match(PIP) || []).toHaveLength(5);                                             // only the human's five dice are drawn
-  expect(await app.run(pd => pd.dice.every(d => !d.mesh.visible))).toBe(true);
+  expect((await cupText(app)).match(PIP) || []).toHaveLength(0);                          // nobody's dice are on screen until you hold your row
+  const box = await app.page.locator('#gamepanel .cup.peekme').boundingBox();
+  await app.page.mouse.move(box.x + 20, box.y + box.height / 2); await app.page.mouse.down();
+  await expect(app.page.locator('#cuppeek .bigdie')).toHaveCount(5);
+  await app.page.mouse.up();
+  expect(await app.run(pd => pd.rolling)).toBe(false);
   await app.run(pd => pd.endGame());
 });
 

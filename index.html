@@ -90,6 +90,8 @@
   :is(#gamepanel,#scorepane) .qty{min-width:28px;text-align:center;font-weight:700;font-size:16px} :is(#gamepanel,#scorepane) button.face{padding:6px 8px} :is(#gamepanel,#scorepane) button.face.on{border-color:var(--accent);color:var(--accent);background:#2a2619} :is(#gamepanel,#scorepane) .botlbl{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)}
   @keyframes fxbust{0%,100%{transform:none;color:inherit}15%{transform:translateX(-5px);color:#ff5a6e}35%{transform:translateX(5px);color:#ff5a6e}55%{transform:translateX(-3px)}75%{transform:translateX(3px)}} @keyframes fxhot{0%{text-shadow:0 0 0 #f2c14e}40%{text-shadow:0 0 14px #f2c14e;color:#f2c14e}100%{text-shadow:none}} @keyframes fxbank{0%{color:inherit}35%{color:#6fcf97;transform:scale(1.06)}100%{color:inherit;transform:none}}
   .fx-bust{animation:fxbust .5s} .fx-hot{animation:fxhot .9s} .fx-bank{animation:fxbank .7s} @media (prefers-reduced-motion:reduce){ .fx-bust,.fx-hot,.fx-bank{animation:none} }
+  #cuppeek{position:absolute;left:0;right:0;top:78px;z-index:30;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:0 16px;pointer-events:none} #cuppeek[hidden]{display:none} #cuppeek .bigdie{min-width:64px;height:64px;display:grid;place-items:center;background:#f4ecd8;color:#15171d;border-radius:12px;font:800 44px/1 system-ui;box-shadow:0 4px 18px #000a}
+  :is(#gamepanel,#scorepane) .cup{align-items:center;gap:8px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none} :is(#gamepanel,#scorepane) .cup small{flex:1;color:var(--dim);font-size:11px} :is(#gamepanel,#scorepane) .cup.peekme{border-color:var(--cup);cursor:pointer} :is(#gamepanel,#scorepane) .cup .pips{color:var(--cup)}
   :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
@@ -1947,7 +1949,7 @@ const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° 
 let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
-const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f};
+const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff};   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
 let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
@@ -1956,7 +1958,7 @@ function faceLabel(i,q){ const d=dice[i], four=d.faces.length===4; let best=0, b
 function recordHolds(){ for(const k of Object.keys(heldPose)) if(!held.has(+k)) delete heldPose[k];   // face of record is taken when a die is first held
   if(!settled||restoring) return; for(const i of held){ if(heldPose[i]||!bodies[i]) continue; const b=bodies[i], q=new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w); heldPose[i]={q,y:b.position.y,label:faceLabel(i,q)}; } }
 function syncHoldRings(){ dropHoldRings(); recordHolds(); if(!rolling) return;
-  for(const i of held){ if(!bodies[i]) continue; const r=(dice[i].r||1)*1.25, m=new THREE.Mesh(new THREE.RingGeometry(r*.8,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.hold,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+  for(const i of held){ if(!bodies[i]||!dice[i].mesh.visible) continue; const r=(dice[i].r||1)*1.25, m=new THREE.Mesh(new THREE.RingGeometry(r*.8,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.hold,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
     m.renderOrder=11; m.rotation.x=-Math.PI/2; m.userData={i}; m.position.set(bodies[i].position.x,TABLE_Y+.05,bodies[i].position.z); rig.add(m); holdRings.push(m); }
   updateHoldUI(); }
 function updateHoldUI(){ for(const m of holdRings) m.visible=!leanDice[m.userData.i];   // a die that is both held and cocked shows the cocked ring only
@@ -2559,7 +2561,7 @@ function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.sta
   if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
 function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
-  gsel.clear(); if(game.info.hidden) hideDice(false);
+  gsel.clear(); if(game.info.hidden) liveDiceOnly();
   if(game.id==='craps'){ for(let k=0;k<12;k++){ const a=GAMES.botMove(game.state,{seed:++botN}); if(!a||a.type!=='bet') break; const b=GAMES.act(game.state,a); if(!b.ok) break; game.state=b.state; } }   // bots place their bets before the dice go
   if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
@@ -2567,7 +2569,7 @@ function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st
 function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
-  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; if(spec.private){ hideDice(true); gameMsg=''; }
+  if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; if(spec.private){ gameMsg=''; setTimeout(()=>{ if(game&&game.info.hidden&&!gameAwaiting) hideDice(true); },700); }   // the throw stays in view a moment, then the set goes back to the showcase
   if(game.id==='craps'){ const ev=r.events, tot=ev.find(e=>e.type==='rolled')?.total, pay=ev.filter(e=>e.type==='payout'&&e.amount);
     gameMsg='Rolled '+tot+(ev.some(e=>e.type==='sevenOut')?' · seven out':'')+(ev.some(e=>e.type==='pointMade')?' · point made':'')+pay.map(e=>' · '+game.state.players[e.player]+' '+(e.amount>0?'+':'')+e.amount).join(''); }
   if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); const pts=r.events.find(e=>e.type==='turnScore'||e.type==='scored'); if(bust) gflash='bust'; gameMsg=bust?'Bust! Turn total lost':(pts?(game.id==='bunco'&&pts.kind==='bunco'?'BUNCO! ':'')+'+'+pts.points:''); gameSync(); gtiles.clear(); }
@@ -2586,14 +2588,15 @@ async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
   gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); hideDice(false); game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
+function endGame(){ if(!game) return; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
 function gviewer(){ if(!game||!game.info.hidden) return undefined; const hum=humanSeats(); if(hum.length===1) return hum[0];   // a lone human always sees their own cup
   const h=GAMES.status(game.state,null).handoff; if(h==null){ game.ack=null; return null; } return game.ack===h?h:null; }   // several humans: only after the device was handed over
 function needPass(){ if(!game||!game.info.hidden||humanSeats().length<2) return false; const h=GAMES.status(game.state,null).handoff; return h!=null&&!(game.state.bots||[]).includes(h)&&game.ack!==h; }
-function hideDice(on){ for(const d of dice) d.mesh.visible=!on; }   // a private roll is "under the cup": the settled dice vanish from the mat; the owner's dice are drawn in the panel
+function hideDice(on){ if(on){ for(const d of dice) d.mesh.visible=true; if(rolling) exitRoll(true); } }   // 'under the cup': leave the roll view for the showcase of the set (no values on the mat); unused dice come back with it
+function liveDiceOnly(){ const live=new Set(GAMES.rollSpec(game.state).slots); dice.forEach((d,i)=>{ d.mesh.visible=live.has(i); }); }   // while throwing, only the dice the engine rolls are drawn: no rings on spares
 let botTimer=null, botN=0, lbid=null, gflash=null;   // gflash: 'bust' | 'hot' | 'bank' plays once on the next render (a short colour pulse on the status line)
 const BOT_MS=+new URLSearchParams(location.search).get('botms')||750;
 function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
@@ -2606,6 +2609,10 @@ function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&
     startRoll(rolling); return; }
   const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
   gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
+const cupPeek=(()=>{ const e=document.createElement('div'); e.id='cuppeek'; e.hidden=true; e.setAttribute('role','status'); $('stage').append(e); return e; })();   // big dice for old eyes: shown only while a finger is down on your own row
+function peekDice(vals){ cupPeek.textContent=''; for(const v of vals) cupPeek.append(gel('span',{className:'bigdie',textContent:String(v)})); cupPeek.hidden=false; }
+addEventListener('pointerup',()=>{ cupPeek.hidden=true; }); addEventListener('pointercancel',()=>{ cupPeek.hidden=true; }); addEventListener('blur',()=>{ cupPeek.hidden=true; });
+document.documentElement.style.setProperty('--cup','#'+RING_COLORS.cup.toString(16).padStart(6,'0'));
 const DIEFACE=['⚀','⚁','⚂','⚃','⚄','⚅'];
 function renderLiars(S,st,over){
   const nm=i=>S.players[i], h=GAMES.status(S,null).handoff;
@@ -2613,8 +2620,12 @@ function renderLiars(S,st,over){
     gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:"I'm "+nm(h),onclick:()=>{ game.ack=h; renderGame(); }}))); return; }
   const res=over?GAMES.result(S):null, bid=st.bid;
   GP.append(gel('div',{className:'gstat'},over?'Game over: '+res.winners.map(nm).join(' & ')+' win'+(res.winners.length>1?'':'s'):(gameMsg||st.message),gel('small',{textContent:'Round '+st.round+' · '+st.totalDice+' dice in play'+(st.wild?' · ones are wild':'')+(bid&&!over?' · bid: '+bid.quantity+' × '+bid.face+'s by '+nm(bid.player):'')})));
-  const cups=gel('div',{className:'cups'}); for(const c of st.cups){ const out=c.count===0, mine=c.player===st.viewer;
-    cups.append(gel('div',{className:'cup'+(c.player===st.player&&!over?' cur':'')+(out?' out':''),ariaLabel:c.name+(out?' is out':' has '+c.count+' dice')},gel('b',{textContent:c.name+(mine?' (you)':'')}),gel('span',{className:'pips',textContent:out?'out':c.dice?c.dice.map(v=>DIEFACE[v-1]).join(' '):'●'.repeat(c.count)}))); }
+  const cups=gel('div',{className:'cups'}); for(const c of st.cups){ const out=c.count===0, mine=c.player===st.viewer, open=st.phase==='reveal'||over, canPeek=mine&&c.dice&&!open;
+    const row=gel('div',{className:'cup'+(c.player===st.player&&!over?' cur':'')+(out?' out':'')+(canPeek?' peekme':''),ariaLabel:c.name+(out?' is out':' has '+c.count+' of '+S.options.dice+' dice')+(canPeek?'. Press and hold to look at your dice':'')},
+      gel('b',{textContent:c.name+(mine?' (you)':'')}),gel('small',{textContent:out?'':c.count+' of '+S.options.dice+(canPeek?' · hold to peek':'')}),
+      gel('span',{className:'pips',textContent:out?'out':open&&c.dice?c.dice.map(v=>DIEFACE[v-1]).join(' '):'●'.repeat(c.count)}));
+    if(canPeek){ row.tabIndex=0; row.onpointerdown=e=>{ e.preventDefault(); peekDice(c.dice); }; row.oncontextmenu=e=>e.preventDefault(); }
+    cups.append(row); }
   GP.append(cups);
   if(over) return;
   if(st.phase==='reveal'){ const rv=st.reveal; if(rv) GP.append(gel('div',{className:'gstat'},'Count of '+rv.face+'s'+(st.wild?' (ones wild)':'')+': '+rv.count+' vs bid '+rv.quantity,gel('small',{textContent:'The bid was '+(rv.bidTrue?'true':'false')+': '+nm(rv.loser)+' loses a die'})));
