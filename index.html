@@ -62,7 +62,7 @@
   #result .relean{pointer-events:auto;margin-top:10px;font:600 13px Inter,sans-serif;letter-spacing:0;padding:7px 16px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
   #result .relean:hover{background:rgba(60,34,24,.9)}
   #result .brk.lean{color:#ffb48a}
-  #result .brk{font:500 14px Inter,sans-serif;color:var(--dim);letter-spacing:0;margin:4px auto 0;max-width:80%;text-shadow:0 1px 8px #000}
+  #result .brk{font:500 14px Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:4px auto 0;max-width:80%;width:fit-content;padding:3px 12px;border-radius:999px;background:rgba(14,16,22,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);text-shadow:0 1px 8px #000}   /* PD-142.14.1.13: backing pill so the line reads over dice that land under it */
   #tools{position:absolute;inset:0;z-index:8;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
   #tools .col{position:absolute;bottom:8px;display:flex;flex-direction:column-reverse;gap:8px} #tl{left:max(10px,env(safe-area-inset-left,0px))} #tr{right:max(10px,env(safe-area-inset-right,0px))}
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
@@ -1682,7 +1682,7 @@ function editBagName(span){ const cur=bag.name, inp=el('input','nmedit bnedit');
   const fin=ok=>{ if(done) return; done=true; inp.onblur=null; $('sheethead').classList.remove('renaming'); const v=inp.value.trim().slice(0,80); if(ok&&v&&v!==cur){ bag.name=v; save(); } lastSig=''; renderBag(); renderSheet(); };
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') fin(true); else if(e.key==='Escape') fin(false); }; inp.onblur=()=>fin(true); }
 function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
-  const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}`);
+  const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}${sl.some(x=>x.draft)?' + draft':''}`);
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),

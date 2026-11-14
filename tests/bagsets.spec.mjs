@@ -386,3 +386,15 @@ test('the table title names the custom dice, and the reset button is a reset, no
   await expect(page.locator('#name')).not.toContainText('CUSTOM');
   await expect(page.locator('#notclear')).toHaveAttribute('aria-label', /Reset/);
 });
+
+test('the bag sheet header counts the unsaved draft too (PD-142.14.1.20)', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.click('#bagbtn');
+  await expect(page.locator('#sheettitle')).toContainText('2 designs');
+  await expect(page.locator('#sheettitle')).not.toContainText('draft');
+  await page.keyboard.press('Escape');
+  await app.run(pd => { pd.randomize(true); });
+  await page.click('#bagbtn');
+  await expect(page.locator('#sheettitle')).toContainText('2 designs + draft');
+});
