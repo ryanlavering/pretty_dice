@@ -3,14 +3,11 @@ import * as Y from './yahtzee.js';
 import * as Farkle from './farkle.js';
 import * as Pig from './pig.js';
 import * as Craps from './craps.js';
-import * as ShutBox from './shutbox.js';
-import * as ShipCaptain from './shipcaptain.js';
-import * as Bunco from './bunco.js';
 import * as Liars from './liarsdice.js';
 import * as Bots from './bots.js';
 
 const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine },
-  shutbox: { info: ShutBox.info, mod: ShutBox.engine }, shipcaptain: { info: ShipCaptain.info, mod: ShipCaptain.engine }, bunco: { info: Bunco.info, mod: Bunco.engine },
+  // Parked for v4.0 (PD-142.41): shutbox.js, shipcaptain.js, bunco.js stay in games/ but are not registered; re-add the import and a line here to bring one back.
   liarsdice: { info: Liars.info, mod: Liars.engine } };
 
 export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.stringify(g.info)));
@@ -75,7 +72,7 @@ function yahtzeeEngine() {
         const card = cur(s), ok = Y.allowed(card, t.dice, s.options);
         if (!ok.ids.includes(a.category)) return card[a.category] != null ? 'Category already used' : ok.joker ? 'Joker rule: pick the matching upper box' : 'Unknown category';
         const bonusYahtzee = Y.isYahtzee(t.dice) && card.yahtzee != null && card.yahtzee > 0;
-        if (bonusYahtzee) { card.yahtzeeBonus = (card.yahtzeeBonus || 0) + 1; ev.push({ type: 'bonus', player: t.player, name: 'Yahtzee bonus', points: 100 }); }
+        if (bonusYahtzee) { card.yahtzeeBonus = (card.yahtzeeBonus || 0) + 1; ev.push({ type: 'bonus', player: t.player, name: 'Yacht bonus', points: 100 }); }
         const pts = Y.points(a.category, t.dice, ok.joker);
         card[a.category] = pts; ev.push({ type: 'scored', player: t.player, category: a.category, points: pts });
         const before = Y.upperSubtotal(card) - pts;

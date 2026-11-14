@@ -91,7 +91,7 @@ test('Yahtzee bonus and forced Joker rule @quick', () => {
   expect(act(s, { type: 'score', category: 'chance' }).ok).toBe(false);
   expect(suggest(s).filter(r => r.open && r.points != null).map(r => r.category)).toContain('threes');
   const r = ok(s, { type: 'score', category: 'threes' });
-  expect(r.events).toContainEqual({ type: 'bonus', player: 0, name: 'Yahtzee bonus', points: 100 });
+  expect(r.events).toContainEqual({ type: 'bonus', player: 0, name: 'Yacht bonus', points: 100 });
   expect(scorecard(r.state, 0).total).toBe(50 + 15 + 100);
   // upper box taken: lower boxes open with full value
   let t = take(roll(start(), [3, 3, 3, 3, 3]), 'threes');
@@ -104,7 +104,7 @@ test('Yahtzee bonus and forced Joker rule @quick', () => {
   // a zeroed Yahtzee box earns no bonus
   let z = take(roll(newGame('yahtzee', { players: ['A'] }), [1, 2, 3, 4, 6]), 'yahtzee');
   z = ok(roll(z, [2, 2, 2, 2, 2]), { type: 'score', category: 'twos' });
-  expect(z.events.some(e => e.name === 'Yahtzee bonus')).toBe(false);
+  expect(z.events.some(e => e.name === 'Yacht bonus')).toBe(false);
 });
 
 test('state round-trips through JSON and act never mutates its input @quick', () => {

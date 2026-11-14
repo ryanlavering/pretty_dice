@@ -2,7 +2,7 @@
 // Scoring: 1 = 100, 5 = 50; three of a kind = face*100 (1s = 1000), each extra die doubles it; 1-2-3-4-5-6 = 1500; three pairs = 1500.
 import { range, rank } from './util.js';
 
-export const info = { id: 'farkle', name: 'Farkle', minPlayers: 1, maxPlayers: 6, dice: { count: 6, sides: 6 },
+export const info = { id: 'farkle', name: 'Ten Thousand', minPlayers: 1, maxPlayers: 6, dice: { count: 6, sides: 6 },
   options: [{ id: 'target', label: 'Target score', type: 'int', min: 1000, max: 20000, default: 10000 },
             { id: 'opening', label: 'Minimum to get on the board', type: 'int', min: 0, max: 1000, default: 500 }] };
 

@@ -28,7 +28,7 @@ export const CATEGORIES = [
   { id: 'fullHouse', label: 'Full House', section: 'lower' },
   { id: 'smallStraight', label: 'Small Straight', section: 'lower' },
   { id: 'largeStraight', label: 'Large Straight', section: 'lower' },
-  { id: 'yahtzee', label: 'Yahtzee', section: 'lower' },
+  { id: 'yahtzee', label: 'Yacht', section: 'lower' },
   { id: 'chance', label: 'Chance', section: 'lower' },
 ];
 
@@ -48,5 +48,5 @@ export const upperSubtotal = card => UP.reduce((a, id) => a + (card[id] || 0), 0
 export const upperBonus = card => upperSubtotal(card) >= 63 ? 35 : 0;
 export const total = card => CATEGORIES.reduce((a, c) => a + (card[c.id] || 0), 0) + upperBonus(card) + 100 * (card.yahtzeeBonus || 0);
 
-export const info = { id: 'yahtzee', name: 'Yahtzee', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 6 },
+export const info = { id: 'yahtzee', name: 'Yacht', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 6 },
   options: [{ id: 'joker', label: 'Joker rules', type: 'bool', default: true }] };

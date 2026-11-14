@@ -30,8 +30,7 @@ test('same state and seed give the same move and the same game; other seeds diff
 });
 
 test('every game plays through bot against bot with legal moves only @quick', () => {
-  const setups = [['yahtzee', ['A', 'B'], [0, 1]], ['farkle', ['A', 'B', 'C'], [0, 1, 2]], ['pig', ['A', 'B'], [0, 1]], ['shutbox', ['A', 'B'], [0, 1]],
-    ['shipcaptain', ['A', 'B'], [0, 1]], ['bunco', ['A', 'B'], [0, 1]], ['liarsdice', ['A', 'B', 'C', 'D'], [0, 1, 2, 3]]];
+  const setups = [['yahtzee', ['A', 'B'], [0, 1]], ['farkle', ['A', 'B', 'C'], [0, 1, 2]], ['pig', ['A', 'B'], [0, 1]], ['liarsdice', ['A', 'B', 'C', 'D'], [0, 1, 2, 3]]];
   for (const [id, players, bots] of setups) {
     for (const seed of [1, 2, 3]) {
       const r = runBots(newGame(id, { players, bots }), { seed });          // throws on an illegal move
@@ -67,7 +66,7 @@ test('Pig and Farkle bots bank at their thresholds and take the most points @qui
   expect(botMove(g)).toEqual({ type: 'roll' });                       // 100 with 5 dice left: keep rolling
 });
 
-test('Shut the Box, Ship Captain and Crew and Bunco bots @quick', () => {
+test.skip('Shut the Box, Ship Captain and Crew and Bunco bots @quick' /* parked for v4.0 (PD-142.41): games not registered */, () => {
   const sb = roll(newGame('shutbox', { players: ['Bot'], bots: [0] }), [3, 4]);
   expect(botMove(sb)).toEqual({ type: 'score', tiles: [7] });         // the highest tile
   const ship = n => roll(newGame('shipcaptain', { players: ['Bot'], bots: [0] }), n);

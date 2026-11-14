@@ -1,5 +1,7 @@
 // Extra games: Shut the Box, Ship Captain and Crew, Bunco (pure node, fixed dice).
-import { test, expect } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
+// Parked for v4.0 (PD-142.41): these games are out of the registry, so every test here is skipped. Re-register the games in games/core.js to run them again.
+const test = (title, fn) => base.skip(title, fn);
 import { newGame, status, rollSpec, act, suggest, result, scorecard, listGames } from '../games/index.js';
 import { scoreRoll } from '../games/bunco.js';
 
