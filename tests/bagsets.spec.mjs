@@ -398,3 +398,20 @@ test('the bag sheet header counts the unsaved draft too (PD-142.14.1.20)', async
   await page.click('#bagbtn');
   await expect(page.locator('#sheettitle')).toContainText('2 designs + draft');
 });
+
+test('the quick roll result shows above the open bag sheet, and the roll log fades while dice move (PD-142.14.1.11, .12)', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.click('#bagbtn');
+  await app.run(pd => pd.setOps.quick('dmg'));
+  await expect(page.locator('#quickres')).toHaveClass(/on/);
+  const z = await page.evaluate(() => [getComputedStyle(document.getElementById('quickres')).zIndex, getComputedStyle(document.getElementById('bagsheet')).zIndex].map(Number));
+  expect(z[0]).toBeGreaterThan(z[1]);
+  await page.keyboard.press('Escape');
+  await page.locator('#mode').click();
+  await page.locator('#logbtn').click();
+  await app.run(pd => { document.body.classList.add('throwing'); });
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).toBe('none');
+  await app.run(pd => { document.body.classList.remove('throwing'); });
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).not.toBe('none');
+});

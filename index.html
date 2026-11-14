@@ -143,6 +143,7 @@
   #labpanel textarea{width:100%;box-sizing:border-box;font:11px/1.3 ui-monospace,Menlo,monospace;background:#12151c;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px}
   @media (max-width:719px){ #labpanel{top:auto;bottom:8px;left:8px;right:8px;width:auto;height:46%} #labpanel.shut{height:auto} }
   .setempty{color:var(--dim);font-size:13px;padding:6px 2px} #setsave{align-self:flex-start}
+  #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.1;pointer-events:none}   /* PD-142.14.1.12: the log never hides dice that are still moving */
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
   #logpanel .lt{display:flex;align-items:baseline;gap:8px;min-width:0} #logpanel .tm{color:var(--dim);flex:none} #logpanel .ttl.go{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px} #logpanel .ttl.go:hover{color:var(--gold,#e8c45a)} #logpanel .ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0} #logpanel .lr{color:var(--dim);margin-top:2px} #logpanel .lr .rt{display:flex;margin:2px 0}
@@ -1913,7 +1914,7 @@ function pickDie(cx,cy){ if(!rolling||!settled||!bodies.length) return -1; const
 function startRoll(launch=false,place=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(game&&!place&&!gameBeforeRoll()) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
+  placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); syncMode();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
@@ -2024,12 +2025,12 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
-  updateLeanUI(); syncHoldRings(); logRoll(main,sub,subItems,subMod); if(game) gameOnSettled(parts);
+  document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); logRoll(main,sub,subItems,subMod); if(game) gameOnSettled(parts);
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
-function syncMode(){ document.body.classList.toggle('inroll',rolling); resize(); $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
+function syncMode(){ document.body.classList.toggle('inroll',rolling); if(!rolling) document.body.classList.remove('throwing'); resize(); $('mode').innerHTML=rolling?ICON_SHOW:ICON_ROLL; $('mode').title=rolling?'Back to showcase':'Roll the dice'; $('back').classList.toggle('on',!rolling); $('roll').classList.toggle('on',rolling); $('back').setAttribute('aria-pressed',!rolling); $('roll').setAttribute('aria-pressed',rolling); }   // icon shows where a tap goes
 $('gamesbtn').onclick=()=>document.dispatchEvent(new CustomEvent('pd-open-games'));   // PD-142.29: a visible Games button beside the bag button
 $('mode').onclick=()=>{ if(rolling) exitRoll(); else startRoll(); };
 syncMode();
