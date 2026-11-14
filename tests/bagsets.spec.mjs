@@ -462,3 +462,19 @@ test('roll log: notation rolls are titled by their notation, entries take a labe
   const r = await app.run(pd => { const e = pd.bag.log.at(-1); const j = JSON.parse(JSON.stringify(pd.bagToJSON())); return { label: e.label, roller: e.roller, bagRoller: j.roller, kept: j.log.at(-1).label }; });
   expect(r).toEqual({ label: 'Fireball damage', roller: 'Mira', bagRoller: 'Mira', kept: 'Fireball damage' });
 });
+
+test('the roll log copies as plain text with time, roller, label, dice and total (PD-142.14.1.5)', async ({ app, page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await app.open();
+  await app.run(SETUP);
+  await app.run(pd => { pd.bag.roller = 'Thorn'; pd.setOps.quick('dmg'); const e = pd.bag.log.at(-1); e.label = 'Axe'; });
+  await page.locator('#roll').click(); await page.locator('#logbtn').click();
+  await app.run(pd => { pd.simRoll(); });   // let the roll that entering Roll view starts settle and log
+  const txt = await app.run(pd => pd.logText());
+  expect(txt.split('\n')[0]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d {2}Thorn: Axe — Damage = \d+ {2}\(.*2d6.*\)$/);
+  await expect(page.locator('#logpanel .lh button', { hasText: 'Copy' })).toBeEnabled();
+  await page.locator('#logpanel .lh button', { hasText: 'Copy' }).click();
+  await expect.poll(() => page.evaluate(() => window.__lastLogCopy)).toBe(txt);
+  const dl = page.waitForEvent('download'); await page.locator('#logpanel .lh button', { hasText: 'Save' }).click();
+  expect((await dl).suggestedFilename()).toMatch(/roll-log\.txt$/);
+});
