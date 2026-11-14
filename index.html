@@ -66,16 +66,19 @@
   #tools button:hover,#info.on{border-color:var(--accent);color:var(--accent)} #snd.off{color:var(--dim)}
   #tools svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round} #mode svg{width:24px;height:24px} #spinbtn svg{fill:currentColor;stroke:none}
   #gamepanel{position:absolute;z-index:12;top:8px;right:8px;width:min(250px,calc(100% - 16px));max-height:calc(100% - 140px);overflow:auto;background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:14px;padding:10px 12px;backdrop-filter:blur(8px);font-size:13px}
-  #gamepanel[hidden]{display:none} #gamepanel h2{font:700 15px Cinzel,serif;letter-spacing:.06em;margin:0;color:var(--accent);flex:1} #gamepanel .gh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  #gamepanel .row{display:flex;gap:8px;align-items:center;margin:6px 0} #gamepanel input[type=text]{flex:1;min-width:0;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px}
-  #gamepanel .gstat{font-weight:600;margin:4px 0 8px} #gamepanel .gstat small{display:block;color:var(--dim);font-weight:400}
-  #gamepanel table{border-collapse:collapse;width:100%} #gamepanel td,#gamepanel th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center} #gamepanel td:first-child,#gamepanel th:first-child{text-align:left}
-  #gamepanel th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} #gamepanel th.cur{color:var(--accent)} #gamepanel td.cur{background:#2a2619}
-  #gamepanel td.sug{color:var(--dim);font-style:italic} #gamepanel td.best{color:var(--accent);font-weight:700;font-style:normal} #gamepanel td.pick{cursor:pointer} #gamepanel td.pick:hover{outline:1px solid var(--accent)}
-  #gamepanel .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} #gamepanel .sugs button.best{color:var(--accent);font-weight:700}
-  #gamepanel details.bgroup{margin:4px 0} #gamepanel details.bgroup summary{cursor:pointer;color:var(--dim);font-size:12px;padding:2px 0} #gamepanel .rules p{margin:4px 0;font-size:12px;color:var(--dim)} #gamepanel .rules b{color:var(--ink)} #gamepanel input[type=number]{width:80px;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px}
-  #gamepanel .tiles{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0} #gamepanel .tile{min-width:30px;padding:6px 0;font-weight:700} #gamepanel .tile.shut{opacity:.3;text-decoration:line-through} #gamepanel .tile.sel{outline:2px solid var(--accent);color:var(--accent)}
-  #gamepanel tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} #gamepanel tr.tot td{font-weight:700}
+  /* phones (PD-142.30): the settings slot holds [Settings | Scorecard] tabs; the mat only keeps a one-line status + Roll strip */
+  #paneltabs{display:flex;gap:6px;position:sticky;top:-20px;z-index:3;background:var(--panel);margin:-20px -18px 12px;padding:10px 18px 8px;border-bottom:1px solid var(--line)} #paneltabs[hidden],#scorepane[hidden],#settingspane[hidden]{display:none} #paneltabs button{flex:1;font-weight:600} #paneltabs button[aria-selected=true]{border-color:var(--accent);background:#2a2619;color:var(--accent)}
+  #gamepanel.strip{top:6px;bottom:auto;left:8px;right:8px;width:auto;max-height:none;padding:6px 8px;display:flex;gap:6px;align-items:center;overflow:hidden} #gamepanel.strip .st{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600} #gamepanel.strip button{padding:8px 12px;font-weight:600;white-space:nowrap} body.gstrip #name{display:none}
+  #gamepanel[hidden]{display:none} :is(#gamepanel,#scorepane) h2{font:700 15px Cinzel,serif;letter-spacing:.06em;margin:0;color:var(--accent);flex:1} :is(#gamepanel,#scorepane) .gh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  :is(#gamepanel,#scorepane) .row{display:flex;gap:8px;align-items:center;margin:6px 0} :is(#gamepanel,#scorepane) input[type=text]{flex:1;min-width:0;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px}
+  :is(#gamepanel,#scorepane) .gstat{font-weight:600;margin:4px 0 8px} :is(#gamepanel,#scorepane) .gstat small{display:block;color:var(--dim);font-weight:400}
+  :is(#gamepanel,#scorepane) table{border-collapse:collapse;width:100%} :is(#gamepanel,#scorepane) td,:is(#gamepanel,#scorepane) th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center} :is(#gamepanel,#scorepane) td:first-child,:is(#gamepanel,#scorepane) th:first-child{text-align:left}
+  :is(#gamepanel,#scorepane) th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} :is(#gamepanel,#scorepane) th.cur{color:var(--accent)} :is(#gamepanel,#scorepane) td.cur{background:#2a2619}
+  :is(#gamepanel,#scorepane) td.sug{color:var(--dim);font-style:italic} :is(#gamepanel,#scorepane) td.best{color:var(--accent);font-weight:700;font-style:normal} :is(#gamepanel,#scorepane) td.pick{cursor:pointer} :is(#gamepanel,#scorepane) td.pick:hover{outline:1px solid var(--accent)}
+  :is(#gamepanel,#scorepane) .sugs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0} :is(#gamepanel,#scorepane) .sugs button.best{color:var(--accent);font-weight:700}
+  :is(#gamepanel,#scorepane) details.bgroup{margin:4px 0} :is(#gamepanel,#scorepane) details.bgroup summary{cursor:pointer;color:var(--dim);font-size:12px;padding:2px 0} :is(#gamepanel,#scorepane) .rules p{margin:4px 0;font-size:12px;color:var(--dim)} :is(#gamepanel,#scorepane) .rules b{color:var(--ink)} :is(#gamepanel,#scorepane) input[type=number]{width:80px;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 6px}
+  :is(#gamepanel,#scorepane) .tiles{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0} :is(#gamepanel,#scorepane) .tile{min-width:30px;padding:6px 0;font-weight:700} :is(#gamepanel,#scorepane) .tile.shut{opacity:.3;text-decoration:line-through} :is(#gamepanel,#scorepane) .tile.sel{outline:2px solid var(--accent);color:var(--accent)}
+  :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
   #hint{white-space:pre-line;display:none} #hint.show{display:block}
@@ -285,6 +288,8 @@
 </script>
 <div id="app">
   <aside>
+    <div id="paneltabs" role="tablist" aria-label="Panel" hidden><button type="button" role="tab" data-pane="settings">Settings</button><button type="button" role="tab" data-pane="games" id="gamestab">Scorecard</button></div>
+    <div id="settingspane">
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
     <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view (tap again to re-roll)">Roll</button></div>
@@ -397,6 +402,8 @@
     <h2>Settings</h2>
     <button id="reset" style="width:100%">Reset to defaults</button>
   </div>
+    </div>
+    <div id="scorepane" hidden></div>
   </aside>
   <div id="stage"><div id="shelf"><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="layout"></button><button id="snd" type="button" aria-label="Sound on or off" title="Sound"></button><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button><button id="gamesbtn" type="button" aria-label="Games" title="Games"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></button></div><div class="col" id="tr"><button id="mode" aria-label="Switch between showcase and roll view"></button><button id="info" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button id="spinbtn" type="button"></button><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
 </div>
@@ -2466,8 +2473,13 @@ if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) 
 const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; tickRestore(1/60); if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 
 /* ---------- games (PD-142.4/.5): panel, setup, scorecard; the engine is 'pd-games' ---------- */
-const GP=$('gamepanel'), GKEY='prettydice.games';
-let gcollapsed=matchMedia('(max-width:700px)').matches;   // phones start with the scorecard folded away so the dice stay visible
+const GPstage=$('gamepanel'), SP=$('scorepane'), PT=$('paneltabs'), GKEY='prettydice.games';
+let GP=GPstage, paneAuto=false;   // GP is where the full panel is drawn: the stage on desktop and landscape, the scorecard pane in the settings slot on phones
+const phoneMq=matchMedia('(max-width:760px)'), phoneUI=()=>phoneMq.matches;
+function setPane(name){ const g=name==='games'; $('settingspane').hidden=g; SP.hidden=!g; PT.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); $('gamestab').closest('aside').scrollTop=0; }
+PT.querySelectorAll('button').forEach(b=>b.onclick=()=>setPane(b.dataset.pane));
+function closeGamesUI(){ GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; document.body.classList.remove('gstrip'); GP=GPstage; }
+let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{}};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
 const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
@@ -2502,13 +2514,29 @@ function gameScore(cat){ const r=GAMES.act(game.state,{type:'score',category:cat
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 async function startGame(id,players,options){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=matchMedia('(max-width:700px)').matches; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.amount=null; cbet.who=null;
-  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); renderGame(); }
-function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } GP.hidden=true; }
+  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options}),setup:false}; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.amount=null; cbet.who=null;
+  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); syncUI(); paneAuto=true; renderGame(); }
+function endGame(){ if(!game) return; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
 function renderGame(){
+  const phone=phoneUI(); GP=phone?SP:GPstage; if(!phone){ SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); }
+  renderGameBody();
+  if(phone){ PT.hidden=false; $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
+}
+phoneMq.addEventListener?.('change',()=>{ if(game||!GPstage.hidden||!SP.hidden){ paneAuto=phoneUI(); renderGame(); } });
+function renderStrip(){   // the mat keeps one line: status, Roll, and Bank / Set aside only while they apply
+  if(!game||game.setup){ GPstage.hidden=true; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); return; }
+  const S=game.state, st=GAMES.status(S), over=st.phase==='over', farkle=game.id==='farkle';
+  GPstage.textContent=''; GPstage.hidden=false; GPstage.classList.add('strip'); document.body.classList.add('gstrip');
+  const who=S.players.length>1&&!over?S.players[st.player]+': ':'', msg=over?'Game over':(gameMsg||(st.message||'').replace(S.players[st.player]+': ',''));
+  GPstage.append(gel('span',{className:'st',textContent:who+msg}));
+  if(!over){ const live=GAMES.rollSpec(S).slots.length;
+    GPstage.append(gel('button',{className:'big',type:'button',style:'width:auto;margin:0',textContent:'Roll'+(game.id==='yahtzee'&&st.rollsUsed?' '+live:''),disabled:!st.canRoll||gameAwaiting||(rolling&&!settled),onclick:()=>startRoll(rolling)}));
+    if(['farkle','pig','shipcaptain'].includes(game.id)&&st.canBank) GPstage.append(gel('button',{type:'button',textContent:'Bank',disabled:gameAwaiting,onclick:gameBank}));
+    if(farkle&&st.canScore&&gsel.size) GPstage.append(gel('button',{type:'button',textContent:'Set aside '+gsel.size,onclick:()=>gameSetAside(gsel)})); } }
+function renderGameBody(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
-  if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else GP.hidden=true; });
+  if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
     const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
@@ -2522,7 +2550,7 @@ function renderGame(){
     GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else startGame(g.id,nameIn.map((x,i)=>x.value.trim()||('Player '+(i+1))),opts); }})));
     return; }
   const S=game.state, st=GAMES.status(S), sug=GAMES.suggest(S), over=st.phase==='over';
-  hd(game.info.name,()=>endGame(),'End game'); GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  hd(game.info.name,()=>endGame(),'End game'); if(!phoneUI()) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }
   const res=over?GAMES.result(S):null;
@@ -2589,7 +2617,7 @@ function renderTurn(S,st,over){
   const tb=gel('table'), body=gel('tbody'); tb.append(gel('thead',{},gel('tr',{},gel('th',{textContent:'Player'}),gel('th',{textContent:game.id==='farkle'||game.id==='pig'?'Banked':'Score'}))));
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.scores[p]),className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
-document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } renderGame(); });
+document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } paneAuto=true; renderGame(); });
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
