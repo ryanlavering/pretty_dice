@@ -148,6 +148,7 @@
   body.inroll:not(.game):not(.lab) #qbar:not([hidden]){display:flex} body.throwing #qbar{opacity:.35}
   #qbar input{flex:0 0 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a}
   #qbar button{flex:none;display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar button:hover{border-color:var(--accent);color:var(--accent)} #qbar .qsep{flex:none;width:1px;height:20px;background:var(--line)}
+  #logpanel .lwho input{width:100%;box-sizing:border-box;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin-bottom:6px} #logpanel .lbl{font:600 11px Inter,sans-serif;color:var(--accent);background:none;border:0;padding:0;cursor:pointer} #logpanel .lbl.empty{color:var(--dim);font-weight:500;opacity:.7} #logpanel .lbi{width:90px;font:inherit;font-size:11px;color:var(--ink);background:#1d212c;border:1px solid var(--accent);border-radius:4px;padding:1px 4px} #logpanel .who{color:var(--dim);margin-left:auto}   /* PD-142.14.1.3 */
   #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.1;pointer-events:none}   /* PD-142.14.1.12: the log never hides dice that are still moving */
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
@@ -1429,7 +1430,7 @@ function parseBag(obj){
   for(const [k,v] of Object.entries(obj.pending&&typeof obj.pending==='object'?obj.pending:{})){ if(ref(k)&&designOK(v)) out.pending[ref(k)]=structuredClone(v); else dropped.push(`pending edits for "${k}": design missing or invalid`); }
   if(obj.draft!=null){ if(designOK(obj.draft)) out.draft=structuredClone(obj.draft); else dropped.push('the random draft was not a valid design'); }
   const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null, draft:!!(a.draft&&out.draft)};
-  out.log=(Array.isArray(obj.log)?obj.log:[]).slice(-LOG_MAX);
+  out.log=(Array.isArray(obj.log)?obj.log:[]).slice(-LOG_MAX); out.roller=typeof obj.roller==='string'?obj.roller.slice(0,24):'';
   return {bag:out, dropped};
 }
 /* ---- live design vs saved design (phase 2) ----
@@ -1759,15 +1760,19 @@ function renderQBar(){ const bar=$('qbar'); if(!bag||!bar) return; const sig=bag
   bar.replaceChildren(...kids); bar.hidden=false; }
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
-function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
+function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...(bag.roller?{roller:bag.roller}:{}),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
 function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
   if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
   addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{})}); }
 function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replaceChildren();
   const h=el('div','lh'); h.append(el('span','',`Roll log · ${bag.log.length}`)); const c=el('button','linkbtn','Clear'); c.type='button'; c.disabled=!bag.log.length; c.onclick=()=>{ bag.log=[]; save(); renderLog(); }; const x=el('button','linkbtn','✕'); x.type='button'; x.setAttribute('aria-label','Close the roll log'); x.onclick=()=>{ p.hidden=true; }; const rt=el('span','lhr'); rt.append(c,x); h.append(rt); p.append(h);
+  { const who=el('div','lwho'), li=el('input'); li.type='text'; li.maxLength=24; li.placeholder='Who is rolling? (optional)'; li.value=bag.roller||''; li.setAttribute('aria-label','Roller name'); li.onkeydown=ev=>ev.stopPropagation(); li.onchange=()=>{ bag.roller=li.value.trim().slice(0,24); save(); }; who.append(li); p.append(who); }
   if(!bag.log.length) p.append(el('div','setempty','No rolls yet.'));
   for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts), body=el('div','lb'), head=el('div','lt');
-    head.append(el('small','tm',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`),el('span','ttl',`${e.set||(e.items?'Custom':e.notation)}${e.quick?' ⚡':''}`));
+    head.append(el('small','tm',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`),el('span','ttl',`${e.set||e.notation}${e.quick?' ⚡':''}`));
+    { const lb=el('button','lbl',e.label||'+ label'); lb.type='button'; lb.title='Name this roll (attack, damage, check...)'; if(!e.label) lb.classList.add('empty');
+      lb.onclick=()=>{ const i=el('input','lbi'); i.type='text'; i.maxLength=30; i.value=e.label||''; i.setAttribute('aria-label','Roll label'); let done=false; const fin=ok=>{ if(done) return; done=true; if(ok){ const v=i.value.trim().slice(0,30); if(v) e.label=v; else delete e.label; save(); } renderLog(); }; i.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') fin(true); else if(ev.key==='Escape') fin(false); }; i.onblur=()=>fin(true); lb.replaceWith(i); i.focus(); i.select(); };
+      head.append(lb); if(e.roller) head.append(el('small','who',e.roller)); }
     { const sid=e.set&&((e.setId&&setOps.find(e.setId))||bag.sets.find(x=>x.name===e.set)||{}).id; if(sid){ const tt=head.querySelector('.ttl'); tt.classList.add('go'); tt.title='Bring this set to the mat'; tt.setAttribute('role','button'); tt.tabIndex=0; const go=()=>{ p.hidden=true; setOps.open(sid); }; tt.onclick=go; tt.onkeydown=ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; } }
     const rows=el('div','lr'); if(e.items) rows.append(rollItemsEl(e.items,e.modText)); else if(e.detail) rows.append(e.detail);
     body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }

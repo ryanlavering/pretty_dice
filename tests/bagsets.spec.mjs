@@ -445,3 +445,20 @@ test('the quick roll bar at the table rolls a die, a typed formula and a saved s
   await page.locator('#qbar button[data-set="dmg"]').click();
   expect(await st()).toMatchObject({ n: '2d6@bone+1d8+3', dice: 3, set: 'dmg' });
 });
+
+test('roll log: notation rolls are titled by their notation, entries take a label and the roller name (PD-142.14.1.3)', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#roll').click();
+  await page.locator('#logbtn').click();
+  await page.locator('#logpanel .lwho input').fill('Mira'); await page.locator('#logpanel .lwho input').press('Tab');
+  await page.locator('#qbar input').fill('3d6+2'); await page.locator('#qbar input').press('Enter');
+  await app.run(pd => { pd.simRoll(); });
+  const first = page.locator('#logpanel .le').first();
+  await expect(first.locator('.ttl')).toHaveText('3d6+2');   // not "Custom"
+  await expect(first.locator('.who')).toHaveText('Mira');
+  await first.locator('.lbl').click(); await first.locator('.lbi').fill('Fireball damage'); await first.locator('.lbi').press('Enter');
+  await expect(page.locator('#logpanel .le').first().locator('.lbl')).toHaveText('Fireball damage');
+  const r = await app.run(pd => { const e = pd.bag.log.at(-1); const j = JSON.parse(JSON.stringify(pd.bagToJSON())); return { label: e.label, roller: e.roller, bagRoller: j.roller, kept: j.log.at(-1).label }; });
+  expect(r).toEqual({ label: 'Fireball damage', roller: 'Mira', bagRoller: 'Mira', kept: 'Fireball damage' });
+});
