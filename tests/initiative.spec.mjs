@@ -22,7 +22,7 @@ test('the roll log shows a + init button per roll and the tracker rows, names ed
   await app.run(pd => { pd.state.notation = '3x d20+1'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); });
   await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
   await app.run(pd => pd.renderLog());
-  await page.locator('#logpanel .lbl', { hasText: '+ init' }).first().click();
+  await page.locator('#logpanel .ini').first().click();
   await expect(page.locator('#logpanel .lir')).toHaveCount(3);
   await page.locator('#logpanel .lir input').first().fill('Goblin A'); await page.locator('#logpanel .lir input').first().blur();
   expect(await app.run(pd => pd.bag.init.rows.some(r => r.name === 'Goblin A'))).toBe(true);
