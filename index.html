@@ -2577,11 +2577,14 @@ function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'b
 function gameScore(cat){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
-async function startGame(id,players,options,botSeats=[]){
+const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
+const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&GAMES.listGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
+function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!=='over') localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:game.state})); else if(game&&!game.setup) localStorage.removeItem(GSAVE); }catch{} }
+async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=false; game={id,info,state:GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
-  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; clearTimeout(botTimer); hideDice(false); game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
+  gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
+  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
+function endGame(){ if(!game) return; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); hideDice(false); game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2631,7 +2634,7 @@ function renderGame(){
   const phone=phoneUI(); GP=phone?SP:GPstage; if(!phone){ SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); }
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   if(phone){ PT.hidden=false; $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
-  botPump();
+  gsaveGame(); botPump();
 }
 phoneMq.addEventListener?.('change',()=>{ if(game||!GPstage.hidden||!SP.hidden){ paneAuto=phoneUI(); renderGame(); } });
 function renderStrip(){   // the mat keeps one line: status, Roll, and Bank / Set aside only while they apply
@@ -2648,6 +2651,7 @@ function renderGameBody(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
+    if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+GAMES.listGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
     const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco','liarsdice'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
