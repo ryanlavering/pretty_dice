@@ -312,7 +312,7 @@
 
     <div id="customctl">
       <h2>Custom set</h2>
-      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notclear" class="ico" type="button" title="Reset the set to a single d20" aria-label="Reset the set to a single d20"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></svg></button></div>
+      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notadv" type="button" title="Roll the d20 with advantage (2d20, keep the highest)" style="padding:7px 8px;flex:none">Adv</button><button id="notdis" type="button" title="Roll the d20 with disadvantage (2d20, keep the lowest)" style="padding:7px 8px;flex:none">Dis</button><button id="notclear" class="ico" type="button" title="Reset the set to a single d20" aria-label="Reset the set to a single d20"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></svg></button></div>
       <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
       <div class="row" id="dicedesignrow"><label for="stepdesign">Dice use</label><select id="stepdesign" title="Which design the + and − buttons add dice of"></select></div>
       <div id="termchips" aria-label="Dice in this set"></div>
@@ -943,10 +943,14 @@ function parseNotation(str,strict=false){
   if(!toks.length) return {error:'Enter some dice, e.g. 4d6+2d10+3'};
   for(const t of toks){
     let m;
-    if((m=t.match(/^(\d*)d(\d+|%)(?:@([a-z0-9_]+))?$/))){ const count=m[1]===''?1:+m[1], sides=m[2]==='%'?100:+m[2]; let design=null;
-      if(m[3]){ const e=designByRef(m[3]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[3]}" in the bag`}; }
+    if((m=t.match(/^(\d*)d(\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const sides=m[2]==='%'?100:+m[2]; let design=null, keep=null;
+      if(m[5]){ if(count>1||sides!==20) return {error:`"${m[5]}" goes on a single d20, e.g. d20${m[5]}`}; count=2; keep={mode:m[5]==='adv'?'h':'l',n:1}; }   /* PD-142.2: d20adv = 2d20kh1, d20dis = 2d20kl1 */
+      else if(m[3]){ const q=m[4]===''?1:+m[4], dropping=m[3][0]==='d', n=dropping?count-q:q;
+        if(q<1||n<1||n>count) return {error:dropping?`Can't drop ${q} of ${count} dice`:`Can't keep ${q} of ${count} dice`};
+        keep=n===count?null:{mode:(m[3][1]==='h')===!dropping?'h':'l',n}; }   // kh3 keeps the highest 3; dl1 drops the lowest 1 = keeps the highest count-1
+      if(m[6]){ const e=designByRef(m[6]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[6]}" in the bag`}; }
       if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
-      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push(design?{count,sides,design}:{count,sides}); }
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(keep?{keep}:{})}); }
     else if(/^-?\d+$/.test(t)) mod+=+t;
     else return {error:`Can't read "${t}"`};
   }
@@ -954,7 +958,12 @@ function parseNotation(str,strict=false){
   if(n>MAXDICE) return {error:`Too many dice (${n}); max ${MAXDICE}`};
   return {terms,mod};
 }
-const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const keepTxt=t=>t.keep?`k${t.keep.mode}${t.keep.n}`:'';
+const fmtNotation=(terms,mod)=>terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+/* keep-highest / keep-lowest (PD-142.2): the dice that count and the ones set aside; ties keep the earlier die */
+function keepSum(vals,keep){ const idx=vals.map((_,i)=>i); if(keep&&keep.n<vals.length) idx.sort((a,b)=>keep.mode==='h'?vals[b]-vals[a]||a-b:vals[a]-vals[b]||a-b);
+  const kept=new Set(keep&&keep.n<vals.length?idx.slice(0,keep.n):idx); return {sum:vals.reduce((a,v,i)=>a+(kept.has(i)?v:0),0),kept}; }
+const keepLine=(t,vals,ks)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>ks.kept.has(i)?v:`(${v})`).join('+')}${vals.length>1?' = '+ks.sum:''}`;
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -1231,7 +1240,8 @@ let stepDesign=null;   // the design the + / − buttons add dice of (null = the
 const sameDesign=(a,b)=>(a||null)===(b||null);
 function counts(){ const p=parseNotation(state.notation), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.filter(t=>sameDesign(t.design,stepDesign)).forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
 function setCounts(c,mod){ checkpoint(); const p=parseNotation(state.notation), others=p.error?[]:p.terms.filter(t=>!sameDesign(t.design,stepDesign));
-  const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign}:{count:c[t],sides:t}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
+  const oldKeep=t=>{ const o=p.error?null:p.terms.find(x=>x.sides===t&&sameDesign(x.design,stepDesign)&&x.keep); return o&&o.keep.n<c[t]?{keep:o.keep}:{}; };   // the + / − buttons keep an existing keep-highest/lowest while it still makes sense
+  const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign,...oldKeep(t)}:{count:c[t],sides:t,...oldKeep(t)}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
   const n=fmtNotation(terms,mod); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   state.notation=n; state.shape='custom'; rebuildKeepMode(); }
 STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step';
@@ -1241,6 +1251,11 @@ STEP_TYPES.forEach(t=>{ const d=document.createElement('div'); d.className='step
 $('stepdesign').onchange=e=>{ stepDesign=e.target.value||null; syncUI(); };
 $('modm').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod-1); }; $('modp').onclick=()=>{ const {c,mod}=counts(); setCounts(c,mod+1); };
 const applyNotation=()=>{ checkpoint(); const p=parseNotation($('notation').value,true); if(p.error){ $('noterr').textContent=p.error; return; } state.notation=fmtNotation(p.terms,p.mod); state.shape='custom'; rebuildKeepMode(); };
+const advDis=mode=>{ const p=parseNotation($('notation').value,true); if(p.error){ $('noterr').textContent=p.error; return; }
+  const i=p.terms.findIndex(t=>t.sides===20), one={count:2,sides:20,keep:{mode,n:1}};   /* PD-142.2: the first d20 becomes 2d20 keep highest/lowest; no d20 yet adds one */
+  if(i<0) p.terms.unshift(one); else p.terms[i]={...p.terms[i],...one};
+  $('notation').value=fmtNotation(p.terms,p.mod); applyNotation(); };
+$('notadv').onclick=()=>advDis('h'); $('notdis').onclick=()=>advDis('l');
 $('notapply').onclick=applyNotation; $('notclear').onclick=()=>{ $('notation').value='d20'; $('noterr').textContent=''; applyNotation(); };   // quick reset: one d20, no modifier
  $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
 for(const [id,s] of Object.entries(SUBSTRATES)){ const b=document.createElement('button'); b.textContent=s.label; b.dataset.id=id;
@@ -1717,7 +1732,7 @@ const setOps={
   open(id,{roll=false}={}){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
   quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
-    const items=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const sum=r.reduce((a,b)=>a+b,0); total+=sum; return {sides:t.sides,design:t.design,text:`${t.count}${dieName(t.sides)}: ${r.join('+')}${r.length>1?' = '+sum:''}`}; });
+    const items=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
     addLog({set:st.name,notation:setNotation(st),total:String(total),detail,items,modText,quick:true}); showQuick(st.name,total,items,modText); return total; }
 };
@@ -2012,9 +2027,9 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), groups=P.terms.map(()=>[]);
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
-    const sums=groups.map(g=>g.reduce((a,b)=>a+b,0)), total=sums.reduce((a,b)=>a+b,0)+P.mod;
+    const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     main=String(total);
-    if(P.terms.length>1||P.terms[0].count>1||P.mod){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:`${t.count}d${t.sides===100?'%':t.sides}: ${groups[i].join('+')}${groups[i].length>1?' = '+sums[i]:''}`})); subMod=P.mod?`${P.mod>0?'+':''}${P.mod}`:'';
+    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i])})); subMod=P.mod?`${P.mod>0?'+':''}${P.mod}`:'';
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
   }
   else if(state.shape==='set7'){ main=parts.map((p,i)=>fmt(dice[i],p)).join(' · '); sub=dice.map(d=>d.name).join('  ·  '); }   // sub line labels each value
@@ -2628,7 +2643,7 @@ function renderTurn(S,st,over){
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } paneAuto=true; renderGame(); });
 window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
+  keepSum,fmtNotation,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setCalm,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
