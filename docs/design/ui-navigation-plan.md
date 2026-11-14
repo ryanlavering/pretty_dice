@@ -11,6 +11,7 @@ Status: 2026-11-14. The owner chose proposal A from [ui-navigation-proposals.md]
 5. **Randomize is not a mat action.** It stays in the Look tab with its substrate/shape checkboxes.
 6. **Undo and Redo sit on the mat in the Design room**, always available there (full view included), on one row with the shelf. Not shown in the Play room; Ctrl+Z works everywhere.
 7. **The shelf keeps its [+] slot** at the end. "Blank" and "Random" both open the same draft, differing only in the starting look.
+8. **Long-press a die on the play mat to change its design** (added 2026-11-14). A menu lists the bag's designs; picking one re-skins that die. It is a shortcut for set building; the Sets tab editor stays the main path.
 
 ## Target layout
 
@@ -58,6 +59,7 @@ Keys: R and Enter = press the dock button. Space = Randomize in the Design room 
 | 5 | Panel sorted into room tabs | settings | 1, 4 |
 | 6 | Scorecard, log and bag into tabs; last round buttons go | games-ui, then settings | 3, 5 |
 | 7 | Duplicate cleanup, guide refresh | settings, guide | 6 |
+| 8 | Long-press a die to change its design | games-ui | 4 |
 
 Slices 1 and 2 can run in parallel (different lanes, different regions). 3 and 4 are both games-ui and run in that order.
 
@@ -126,6 +128,15 @@ Add to `tests/helpers/app.mjs`: `nav.toPlay()`, `nav.toDesign()`, `nav.openBag()
 - guide: redo pages 01, 03, 05, 06, 08, 10 and regenerate shots; update the playtest brief's "where things are".
 - design: rerun `scripts/ui-audit.mjs` (update its state paths) and add an "after" table to the audit: round buttons 7 to 0, roll buttons on screen 9 to 1, switches 3 to 1.
 - Integrator: full regression checkpoint, then owner review on phone.
+
+### 8. Long-press a die to change its design
+
+- In the Play room, pressing a settled die for about 0.5 s opens a small menu anchored to it: the bag's designs as thumbnails with names (the current one marked), then "Edit this set..." which opens the set in the Sets tab. Picking a design re-skins that one die in place; its face value and position do not change and nothing is thrown.
+- The change edits the current dice (the loaded set), so it is undoable, marks the set as modified, and is kept by "Save as set". Only designs of the same die type are offered; if the bag has no other design of that type the menu says so and offers "Edit this set...".
+- Gestures stay distinct: a short tap still holds or releases, a flick still throws, and the top-down hold is on the strip, not on dice. Movement beyond 8 px or a second finger cancels the press. Right-click opens the same menu on desktop. The menu uses the same component as the shelf card menu.
+- Allowed during a game because it changes looks only. Not offered on dice hidden under the cup in Liar's Dice.
+- It is an extra, per [ui-notes.md](ui-notes.md) rule 4: every result is also reachable from the Sets tab. The hints text mentions it.
+- Tests: new `die-design-menu.spec.mjs` (long-press opens the menu and does not toggle hold; pick changes that die's design only and not `rollT` or the total; undo restores; tap still holds; no menu on hidden dice).
 
 ## Acceptance for PD-142.38 AC #4
 
