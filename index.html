@@ -311,13 +311,13 @@
 
     <div id="customctl">
       <h2>Custom set</h2>
-      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notclear" class="ico" type="button" title="Clear the set (a single d20)" aria-label="Clear the set (a single d20)"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notclear" class="ico" type="button" title="Reset the set to a single d20" aria-label="Reset the set to a single d20"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></svg></button></div>
       <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
       <div class="row" id="dicedesignrow"><label for="stepdesign">Dice use</label><select id="stepdesign" title="Which design the + and − buttons add dice of"></select></div>
       <div id="termchips" aria-label="Dice in this set"></div>
       <div class="grid" id="steppers" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
       <div class="row"><label>Modifier</label><button id="modm" style="padding:4px 10px">−</button><b id="modv" style="min-width:26px;text-align:center">0</b><button id="modp" style="padding:4px 10px">+</button></div>
-      <div class="row" id="savesetrow"><input id="setname" type="text" maxlength="80" placeholder="Name this set" aria-label="Set name" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"><button id="setsavebtn" type="button" title="Save these dice as a new set in the bag">Save</button></div>
+      <div class="row" id="savesetrow"><input id="setname" type="text" maxlength="80" placeholder="Name this set" aria-label="Set name" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"><button id="setsavebtn" type="button" title="Save these dice as a new set in the bag (find it under Bag, Sets)">Save as set</button></div>
     </div>
 
     <h2>Substrate</h2>
@@ -1133,7 +1133,7 @@ function applyLook(){
   const S=SUBSTRATES[state.substrate];
   paintLook(state,U,dice.filter(d=>!d.look).map(d=>d.mat));
   for(const f of foreign.values()) paintLook(f.look,f.uni,dice.filter(d=>d.look===f.look).map(d=>d.mat));
-  $('name').textContent = SHAPES[state.shape].label.toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
+  $('name').textContent = (state.shape==='custom'?currentDice().name:SHAPES[state.shape].label).toUpperCase()+' · '+(state.substrate==='marble'?STONES[state.stone].label:S.label).toUpperCase();
   setVolume(); updateInclusions(); syncUI(); save(); scheduleCheckpoint();
 }
 const repaint=r=>{ if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
@@ -1526,7 +1526,7 @@ async function copyBagJSON(){ const txt=JSON.stringify(bagFileJSON(),null,2), b=
 $('copybag').onclick=copyBagJSON;
 $('sheetload').onclick=()=>$('loadbag').onclick(); $('sheetcopy').onclick=async()=>{ const b=$('sheetcopy'), ok=await copyBagJSON(); b.classList.toggle('ok',ok); setTimeout(()=>b.classList.remove('ok'),1500); };
 { const inp=$('setname'), btn=$('setsavebtn'); inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') btn.click(); };
-  btn.onclick=()=>{ if(!bag) return; setOps.saveCurrent(inp.value); inp.value=''; btn.textContent='Saved'; setTimeout(()=>{ btn.textContent='Save'; },1500); if(!$('bagsheet').hidden) renderSheet(); }; }   // always a new set (a copy); editing a set happens in the Sets list
+  btn.onclick=()=>{ if(!bag) return; setOps.saveCurrent(inp.value); inp.value=''; btn.textContent='Saved to Sets'; clearTimeout(btn._t); btn._t=setTimeout(()=>{ btn.textContent='Save as set'; },3000); if(!$('bagsheet').hidden) renderSheet(); }; }   // always a new set (a copy); editing a set happens in the Sets list
 $('savebag').onclick=saveBagFile; $('bagsave').onclick=saveBagFile; $('sheetsave').onclick=saveBagFile;
 let bagReplace=false;
 const pickBag=replace=>{ bagReplace=replace; $('bagfile').click(); };

@@ -170,7 +170,8 @@ test('Save under the Custom controls adds a new set (a copy) from the current di
   await page.locator('#setname').fill('Sneak attack'); await page.keyboard.press('Enter');
   const r = await app.run(pd => pd.bag.sets.slice(2).map(s => ({ name: s.name, mod: s.mod, terms: s.terms })));
   expect(r).toEqual([{ name: '3d6+2', mod: 2, terms: [{ count: 3, sides: 6 }] }, { name: 'Sneak attack', mod: 2, terms: [{ count: 3, sides: 6 }] }]);
-  await expect(page.locator('#setsavebtn')).toHaveText('Saved');
+  await expect(page.locator('#setsavebtn')).toHaveText('Saved to Sets');   // PD-142.14.1.9: the label no longer matches the design Save button
+  await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);   // no bare 'Save' next to the set box (the design card's Save only shows when a design is modified)
 });
 
 test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({ app, page }) => {
@@ -374,4 +375,14 @@ test('a dirty set editor shows a corner dot and a yellow Save, and opening anoth
   });
   expect(r.cleanDot).toBe(false); expect(r.dirty).toBe(true); expect(r.save).not.toBe('rgba(0, 0, 0, 0)'); expect(r.dot).not.toBe('none');
   expect(r.asked).toBe(true); expect(r.kept).toBe(true); expect(r.moved).toBe(true); expect(r.cleanSwitch).toBe(true);
+});
+
+test('the table title names the custom dice, and the reset button is a reset, not a close X (PD-142.14.1.15, .19)', async ({ app, page }) => {
+  await app.open();
+  await app.run(SETUP);
+  await page.locator('#shapes button[data-id="custom"]').click();
+  await page.locator('#notation').fill('d20+3'); await page.locator('#notapply').click();
+  await expect(page.locator('#name')).toContainText('1D20+3');
+  await expect(page.locator('#name')).not.toContainText('CUSTOM');
+  await expect(page.locator('#notclear')).toHaveAttribute('aria-label', /Reset/);
 });
