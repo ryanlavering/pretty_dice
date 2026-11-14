@@ -59,10 +59,10 @@
   #result .tot{display:table;margin:0 auto;pointer-events:auto;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}   /* press and hold the total for a top-down look at the dice (PD-67) */
   #result.crit{color:#ffd24a;text-shadow:0 0 22px #ff9d1a,0 0 60px #ff7a00,0 2px 18px #000}
   #result.fumble{color:#8c919e;text-shadow:0 2px 18px #000}
-  #result .relean{pointer-events:auto;margin-top:10px;font:600 13px Inter,sans-serif;letter-spacing:0;padding:7px 16px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
+  #result .relean{pointer-events:auto;margin:6px 3px 0;font:600 12px Inter,sans-serif;letter-spacing:0;padding:4px 11px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
   #result .relean:hover{background:rgba(60,34,24,.9)}
-  #result .brk.lean{color:#ffb48a}
-  #result .brk{font:500 14px Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:4px auto 0;max-width:80%;width:fit-content;padding:3px 12px;border-radius:999px;background:rgba(14,16,22,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);text-shadow:0 1px 8px #000}   /* PD-142.14.1.13: backing pill so the line reads over dice that land under it */
+  #result .brk.lean{color:#ffb48a} #result .brk .rt{white-space:normal;overflow-wrap:anywhere;text-align:left;margin:0 6px;display:inline} #result .brk .rt .chip{display:inline-block;vertical-align:middle;margin-right:4px}   /* PD-142.40: a long breakdown wraps inside the screen */
+  #result .brk{font:500 14px Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:4px auto 0;max-width:min(92vw,560px);box-sizing:border-box;width:fit-content;padding:3px 12px;border-radius:999px;background:rgba(14,16,22,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);text-shadow:0 1px 8px #000}   /* PD-142.14.1.13: backing pill so the line reads over dice that land under it */
   #tools{position:absolute;inset:0;z-index:8;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
   #tools .col{position:absolute;bottom:8px;display:flex;flex-direction:column-reverse;gap:8px} #tl{left:max(10px,env(safe-area-inset-left,0px))} #tr{right:max(10px,env(safe-area-inset-right,0px))}
   #tools button{pointer-events:auto;width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:rgba(20,23,31,.72);border:1px solid var(--line);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
@@ -221,6 +221,7 @@
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
+  @media (max-width:520px){ body #qbar{flex-wrap:wrap;overflow:visible;border-radius:18px;justify-content:center;row-gap:5px} body #qbar input{flex:1 1 90px} body #qbar .qsep{flex:0 0 100%;height:0;width:auto} body #qbar button{height:28px;padding:0 8px} }   /* PD-142.40: the quick roll bar wraps to rows instead of clipping on a phone */
   @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
   </style>
   <div id="bootdice" title="Keeps rolling while the page loads; if it stops, the page is frozen"><div class="sh"></div><div class="hop"><div class="cube">
@@ -1999,7 +2000,7 @@ function syncHoldRings(){ dropHoldRings(); recordHolds(); if(!rolling) return;
   updateHoldUI(); }
 function updateHoldUI(){ for(const m of holdRings) m.visible=!leanDice[m.userData.i];   // a die that is both held and cocked shows the cocked ring only
   const R=$('result'); R.querySelectorAll('.heldnote').forEach(e=>e.remove()); if(!held.size||!settled||game) return;
-  const b=document.createElement('button'); b.className='relean heldnote'; b.textContent=held.size+(held.size>1?' dice held':' die held')+' \u00B7 release'; b.onclick=ev=>{ ev.stopPropagation(); clearHolds(); }; R.append(b); }
+  const b=document.createElement('button'); b.className='relean heldnote'; b.textContent=held.size+' held \u00B7 release'; b.onclick=ev=>{ ev.stopPropagation(); clearHolds(); }; R.append(b); }
 function toggleHold(i){ if(!rolling||!settled||!bodies[i]) return false; if(leanDice[i]&&!held.has(i)){ if(game){ gameMsg='That die is leaning: re-roll it first'; renderGame(); } return false; }   // lean trumps hold
  if(game){ if(!gameHold(i)) return false; } else if(held.has(i)) held.delete(i); else held.add(i); syncHoldRings(); return true; }   // in a game the engine decides what may be held
 const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2();
@@ -2349,8 +2350,7 @@ function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return
 function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
 function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!nl||!settled) return;
-  const d3=document.createElement('div'); d3.className='brk lean'; d3.textContent='\u26A0 '+nl+(nl>1?' dice are':' die is')+' leaning'; R.append(d3);
-  const bt=document.createElement('button'); bt.className='relean'; bt.textContent='Re-roll leaning'; bt.onclick=rerollLeans; R.append(bt); }
+  const bt=document.createElement('button'); bt.className='relean'; bt.textContent='\u26A0 '+nl+' leaning \u00B7 Re-roll'; bt.title=nl+(nl>1?' dice are':' die is')+' leaning: tap to re-roll '+(nl>1?'them':'it'); bt.onclick=rerollLeans; R.append(bt); }   /* PD-142.40: one chip, not a warning plus a button */
 function refreshLeans(){                        // a die that settles after the rings went up loses its ring; the note and button go when the last lean clears
   let changed=false; for(const m of leanRings.slice()){ const i=m.userData.i;
     const b=bodies[i], still=b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5;
