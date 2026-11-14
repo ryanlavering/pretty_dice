@@ -13,6 +13,11 @@ Read the pages in order the first time; later they work as reference.
 7. [Saving and loading](07-save-load.md): designs, bags, images
 8. [Phone versus desktop](08-phone-vs-desktop.md)
 9. [Sound](09-sound.md)
+10. [Games](10-games.md): Yahtzee, Farkle, Pig, Craps, Shut the Box, Ship Captain and Crew, Bunco, Liar's Dice
+
+## Which pages depend on today's layout
+
+The app's navigation is being redesigned (PD-142.38), so where buttons sit will change. These pages are written around tasks, not positions, but their screenshots and the sentences naming a button's place are tied to the current layout and will need a refresh: 01 First steps, 03 Bag and shelf, 05 Rolling, 06 Roll log, 08 Phone versus desktop, 10 Games. Pages 02, 04, 07 and 09 are mostly about controls that keep their names.
 
 ## About the pictures
 

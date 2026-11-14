@@ -53,7 +53,7 @@ const SHOTS = [
   ['06-relief-filigree', {}, async p => { await panelAt(p, 'Relief & patina'); return side; }],
   ['07-add-menu', {}, async p => { await p.click('#cards >> text=Add'); await p.waitForTimeout(500); }],
   ['08-bag-designs', {}, async p => { await p.click('#bagopen'); await p.waitForTimeout(700); }],
-  ['09-bag-sets-empty', {}, async p => { await p.click('#bagopen'); await p.click('#sheettabs >> text=Sets'); await p.waitForTimeout(500); }],
+  ['09-bag-sets', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagopen'); await p.click('#sheettabs >> text=Sets'); await p.waitForTimeout(600); }],
   ['10-custom-set', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+d20+3'); await p.click('#notapply'); await p.waitForTimeout(1200); await panelAt(p, 'Custom set'); return side; }],
   ['11-roll-settled', {}, async p => { await rollNow(p); }],
   ['12-roll-log', {}, async p => { await rollNow(p); await p.click('#logbtn'); await p.waitForTimeout(400); }],
@@ -61,6 +61,12 @@ const SHOTS = [
   ['14-save-export', {}, async p => { await panelAt(p, 'Save & export'); return side; }],
   ['15-phone-showcase', { vp: PHONE }, async () => undefined],
   ['16-phone-roll', { vp: PHONE }, async p => { await rollNow(p); }],
+  ['18-games-setup', {}, async p => { await p.click('#gamesbtn'); await p.waitForTimeout(800); }],
+  ['19-yahtzee-hold', { seed: 7 }, async p => {   // seed 7 + software GL lands the same dice every run; tap two settled dice
+    await p.click('#gamesbtn'); await p.click('text=Start game'); await p.waitForTimeout(1500);
+    await p.click('#gamepanel button:has-text("Roll")'); await settle(p); await p.waitForTimeout(1000);
+    await p.mouse.click(865, 570); await p.waitForTimeout(900); await p.mouse.click(660, 310); await p.waitForTimeout(1200); }],
+  ['20-phone-game', { vp: PHONE }, async p => { await p.click('#gamesbtn'); await p.waitForTimeout(600); await p.click('text=Start game'); await p.waitForTimeout(1500); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await p.click('#bagopen'); await p.waitForTimeout(700); }],
 ];
 

@@ -12,7 +12,7 @@ d4, d6, d8, d10, d%, d12, d20, d14 and d16, plus a rhombic d12. **Standard 7** a
 
 ![The substrate choices with solid metal selected](img/03-substrates.png)
 
-The material the die is made of: **Solid plastic**, **Swirled plastic**, **Metallic plastic**, **Solid metal**, **Clear epoxy** and **Stone** (marble, granite and so on). Choosing one changes which of the controls below apply.
+The material the die is made of (choosing **Stone** gives you a random stone; the **Type** list that appears in the Stone section, further down the panel, picks marble, granite, malachite, lapis lazuli, agate, onyx, jasper, obsidian, turquoise, amethyst, tiger's eye or opal, and there is an **Accent** colour too): **Solid plastic**, **Swirled plastic**, **Metallic plastic**, **Solid metal**, **Clear epoxy** and **Stone** (marble, granite and so on). Choosing one changes which of the controls below apply.
 
 ## Colours
 

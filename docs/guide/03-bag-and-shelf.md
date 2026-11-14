@@ -20,4 +20,16 @@ The bag button (bottom left) opens a full-screen sheet. **Designs** lists every 
 
 Changes to a design are held until you save them. The bag shows when the current design is modified and offers **Save**, **Save as copy** and **Revert**.
 
-See [Sets and the editor](04-sets-and-editor.md) for the **Sets** tab.
+The bag sheet covers the table while it is open; **Close** brings the table back.
+
+### Sets in the bag
+
+![The Sets tab with one saved set](img/09-bag-sets.png)
+
+The **Sets** tab has a **Save the current dice as a set** button at the top (it saves whatever dice are in the editor, under the name in the set-name box) and lists saved sets (name and dice, for example "Thorn axe: 2d6 +3"). Each set card has:
+
+- **⚡** quick roll: throws that set straight away.
+- **✎** edit: loads the set into the editor. Sets are edited in Showcase.
+- **⋯** menu: the other per-set actions.
+
+See [Sets and the editor](04-sets-and-editor.md) for building and saving sets.

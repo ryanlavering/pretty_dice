@@ -28,6 +28,8 @@ The round **Roll the dice** button at the bottom right is a shortcut: tap it to 
 | Pause | Stops the showcase spin. |
 | Hints (i) | Lists the gestures and shortcuts. |
 | Roll log | Opens the list of past rolls. See [the roll log](06-roll-log.md). |
+| Games (dice-face button above the bag) | Opens the Games panel: pick a game, players and options, and start. See [Games](10-games.md). |
+| Quick roll bar (bottom of the table in Roll mode) | Type a roll such as `3d6+2` and press **Roll**, or tap **d4 d6 d8 d10 d12 d20 d%** to throw one of that die. See [Rolling](05-rolling.md). |
 | Bag | Opens all your designs. See [the bag and shelf](03-bag-and-shelf.md). |
 
 ## Where next
