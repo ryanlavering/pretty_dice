@@ -1,4 +1,4 @@
-// PD-142.6 UI: Farkle and Pig panels drive the pd-games engine from real dice.
+// PD-142.6 UI: Ten Thousand (id farkle) and Pig panels drive the pd-games engine from real dice.
 import { test, expect } from './helpers/app.mjs';
 
 test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: app }) => {
@@ -56,6 +56,7 @@ async function start(app, id, seed) {
 }
 
 test('shut the box: roll, pick tiles from the panel, tiles shut', async ({ shared: app }) => {
+  test.skip(true, 'PD-142.41: game parked for 4.0, not offered in the picker');
   await start(app, 'shutbox', 61);
   expect(await app.run(pd => pd.state.notation)).toBe('2d6');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
@@ -73,6 +74,7 @@ test('shut the box: roll, pick tiles from the panel, tiles shut', async ({ share
 });
 
 test('ship captain and crew: locks show as held, panel shows cargo and bank', async ({ shared: app }) => {
+  test.skip(true, 'PD-142.41: game parked for 4.0, not offered in the picker');
   await start(app, 'shipcaptain', 62);
   expect(await app.run(pd => pd.state.notation)).toBe('5d6');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
@@ -84,6 +86,7 @@ test('ship captain and crew: locks show as held, panel shows cargo and bank', as
 });
 
 test('bunco: the round target shows and a roll is scored from the dice', async ({ shared: app }) => {
+  test.skip(true, 'PD-142.41: game parked for 4.0, not offered in the picker');
   await start(app, 'bunco', 63);
   expect(await app.run(pd => pd.state.notation)).toBe('3d6');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
@@ -189,4 +192,16 @@ test('turn animations: a bust or a bank pulses the status line once (PD-142 anim
     await expect(app.page.locator('#gamepanel .gstat.fx-bust')).toHaveCount(1);          // a rolled 1 busts the turn
   }
   await app.run(pd => pd.endGame());
+});
+
+test('games scope (PD-142.41): the picker offers the five kept games only; a saved game of a parked game is not offered', async ({ shared: app }) => {
+  await app.reset(64); await app.run(pd => { if (pd.game) pd.endGame(); });
+  await app.page.evaluate(() => localStorage.setItem('prettydice.games.game', JSON.stringify({ id: 'bunco', state: { players: ['A'], options: {} } })));
+  await app.run(pd => pd.openGames());
+  const opts = app.page.locator('#gamepanel select >> nth=0').locator('option');
+  expect(await opts.evaluateAll(os => os.map(o => o.value))).toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice']);
+  const reg = await app.page.evaluate(() => Object.fromEntries(window.__pd.GAMES.listGames().map(g => [g.id, g.name])));
+  expect(await opts.allTextContents(), 'names come from the engine registry').toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice'].map(id => reg[id]));
+  await expect(app.page.locator('#gamepanel button', { hasText: /^Resume/ })).toHaveCount(0);
+  await app.page.evaluate(() => localStorage.removeItem('prettydice.games.game'));
 });

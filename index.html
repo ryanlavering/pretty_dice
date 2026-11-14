@@ -2595,6 +2595,8 @@ const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
+const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
+const keptGames=()=>GAMES.listGames().filter(g=>KEPT_GAMES.includes(g.id)).sort((a,b)=>KEPT_GAMES.indexOf(a.id)-KEPT_GAMES.indexOf(b.id));
 let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
 function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
   if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
@@ -2624,7 +2626,7 @@ function gameScore(cat){ if(botLock()) return; const r=GAMES.act(game.state,{typ
   game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
 const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
-const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&GAMES.listGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
+const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
 function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!=='over') localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:game.state})); else if(game&&!game.setup) localStorage.removeItem(GSAVE); }catch{} }
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
@@ -2707,8 +2709,8 @@ function renderGameBody(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
-    if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+GAMES.listGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
-    const games=GAMES.listGames().filter(g=>['yahtzee','farkle','pig','craps','shutbox','shipcaptain','bunco','liarsdice'].includes(g.id)), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+keptGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
+    const games=keptGames(), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.min(gprefs.count,g.maxPlayers)}));
@@ -2738,7 +2740,7 @@ function renderGameBody(){
       S.players.forEach((_,p)=>{ const pt=cards[p].sections[si].rows[ri].points, cur=p===st.player&&!over; let txt=pt==null?'':String(pt), cls=cur?'cur':'', fn=null;
         if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; fn=()=>gameScore(row.category); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; fn=()=>gameScore(row.category); } }
         cell(tr,p,txt,cls.trim(),fn); }); body.append(tr); });
-    if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yahtzee bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
+    if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yacht bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
 }
 let cbet={chip:null,who:null,rules:false};
