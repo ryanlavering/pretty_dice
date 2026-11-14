@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Navigation Proposals</title>
+<style>
+:root{--bg:#0d1018;--ink:#e9e6dc;--mut:#8e93a3;--line:#2a3040;--panel:#161a26;--chip:#1e2433;--gold:#e2b85a;--goldink:#1b1503;--mat1:#3b5146;--mat2:#141a22;--show1:#262d3d;--hold:#f0d878;--note:#6ec6ff}
+:root[data-theme="light"]{--bg:#f4f1ea;--ink:#1d2030;--mut:#5d6272;--line:#cfc9bb;--panel:#fffdf7;--chip:#ece7da;--gold:#b98a1d;--goldink:#fff;--mat1:#6f8f7e;--mat2:#39473f;--show1:#59627a;--hold:#8a6a00;--note:#1668a8}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#f4f1ea;--ink:#1d2030;--mut:#5d6272;--line:#cfc9bb;--panel:#fffdf7;--chip:#ece7da;--gold:#b98a1d;--goldink:#fff;--mat1:#6f8f7e;--mat2:#39473f;--show1:#59627a;--hold:#8a6a00;--note:#1668a8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1180px;margin:0 auto;padding:24px 16px 64px}
+h1{font:600 26px/1.2 Georgia,serif;letter-spacing:.04em;color:var(--gold);margin:0 0 6px}
+h2{font:600 20px/1.25 Georgia,serif;margin:44px 0 4px;color:var(--gold)}h2 small{font:500 13px system-ui;color:var(--mut);margin-left:8px}
+p{max-width:72ch;margin:6px 0 12px}.lead{color:var(--mut)}
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin:14px 0}
+figure{margin:0;max-width:100%}figure.wide{width:560px}figcaption{font-size:12.5px;color:var(--mut);margin-top:6px;max-width:250px}figure.wide figcaption{max-width:560px}
+.ph{width:236px;height:470px;border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;background:var(--panel);font-size:10.5px;line-height:1.25}
+.dk{width:100%;height:330px;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;background:var(--panel);font-size:10.5px;line-height:1.25}
+.dk .side{width:170px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column}.dk .main{flex:1;display:flex;flex-direction:column;min-width:0}
+.rail{width:44px;flex:none;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0}
+.mat{flex:1;min-height:0;position:relative;background:radial-gradient(ellipse at 50% 45%,var(--mat1),var(--mat2) 78%);display:flex;flex-direction:column}
+.mat.show{background:radial-gradient(ellipse at 50% 40%,var(--show1),var(--mat2) 80%)}
+.strip{display:flex;align-items:center;gap:6px;padding:6px 7px;min-height:34px}
+.strip .mid{flex:1;text-align:center;color:#fff;opacity:.92;letter-spacing:.08em;font-size:9.5px;min-width:0}.strip .mid b{display:block;font:700 20px/1 Georgia,serif;color:var(--gold);letter-spacing:0}
+.seg{display:inline-flex;background:#0008;border:1px solid #fff2;border-radius:99px;padding:2px}.seg span{padding:3px 8px;border-radius:99px;color:#ddd}.seg .on{background:var(--gold);color:var(--goldink);font-weight:700}
+.side .seg,.panel .seg{background:var(--chip);border-color:var(--line)}.side .seg span,.panel .seg span{color:var(--mut)}.side .seg .on{color:var(--goldink)}
+.stack{position:relative;width:26px;height:26px;flex:none}.stack i{position:absolute;top:4px;width:18px;height:18px;border-radius:50%;border:1.5px solid #fff;background:#0009}.stack i:first-child{left:0}.stack i:last-child{left:8px;border-color:var(--gold)}
+.pill{display:inline-flex;max-width:100%;overflow:hidden;gap:3px;align-items:center;background:#000a;border:1px solid var(--gold);border-radius:99px;padding:3px 6px;color:#fff;font-size:9px;white-space:nowrap}.pill span{padding:2px 5px;border-radius:99px;background:#fff1}
+.space{flex:1;position:relative;min-height:0}
+.die{position:absolute;width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#bfeee2,#f1a8e6);box-shadow:5px 8px 10px #0007;display:grid;place-items:center;color:#7a2452;font:700 13px Georgia,serif}
+.die.big{width:92px;height:92px;border-radius:20px;font-size:34px;left:calc(50% - 46px);top:calc(50% - 56px)}
+.die.held{outline:2.5px solid var(--hold);outline-offset:3px}
+.shelf{display:flex;gap:5px;justify-content:center;padding:4px}.shelf span{width:26px;height:26px;border-radius:6px;border:1px solid #fff4;background:#0006}.shelf .on{border-color:var(--gold)}
+.chips{display:flex;gap:4px;justify-content:center;padding:3px;flex-wrap:wrap}.chips span{background:#000a;border:1px solid #e9a15c;color:#f3c79b;border-radius:99px;padding:2px 7px;font-size:9px}
+.dock{display:flex;gap:6px;align-items:center;padding:6px 7px}
+.fld{flex:1;min-width:0;background:#000a;border:1px solid #fff3;border-radius:99px;padding:7px 10px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.go{background:var(--gold);color:var(--goldink);font-weight:800;border-radius:99px;padding:8px 14px;letter-spacing:.03em;white-space:nowrap;box-shadow:0 0 0 3px #e2b85a33}
+.sec{background:#000a;border:1px solid #fff3;color:#eee;border-radius:99px;padding:7px 10px;white-space:nowrap}
+.tabs{display:flex;border-bottom:1px solid var(--line);background:var(--panel)}.tabs span{flex:1;text-align:center;padding:7px 2px;color:var(--mut)}.tabs .on{color:var(--gold);box-shadow:inset 0 -2px var(--gold);font-weight:700}
+.panel{flex:none;height:150px;padding:8px;overflow:hidden;color:var(--ink)}.side .panel{flex:1;height:auto}
+.panel h4{margin:0 0 4px;font:600 8.5px system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.g{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px}.g span{background:var(--chip);border:1px solid var(--line);border-radius:6px;padding:4px 7px}.g .on{border-color:var(--gold);color:var(--gold)}
+.sl{display:flex;justify-content:space-between;align-items:center;margin:4px 0;color:var(--mut)}.sl i{width:55%;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--gold) 45%,var(--line) 45%)}
+.sc{display:grid;grid-template-columns:1fr 34px;gap:1px 6px}.sc span:nth-child(even){text-align:right;color:var(--mut)}.sc .pk{color:var(--gold);font-weight:700}
+.bar{display:flex;border-top:1px solid var(--line);background:var(--panel);align-items:flex-end;padding:3px 2px 5px}.bar span{flex:1;text-align:center;color:var(--mut);font-size:9px}.bar span::before{content:"";display:block;width:14px;height:14px;margin:2px auto 2px;border-radius:4px;border:1.5px solid currentColor}.bar .on{color:var(--gold)}
+.bar .go{flex:none;margin:-16px 4px 0;padding:11px 12px;font-size:10.5px}.bar .go::before{display:none}
+.rail span{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);font-size:8px}.rail .on{border-color:var(--gold);color:var(--gold)}
+.tag{display:inline-block;font:700 10px system-ui;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--gold);color:var(--gold);border-radius:99px;padding:1px 8px;margin-left:8px;vertical-align:middle}
+.key{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:14px 0}.key div{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel);font-size:13px}.key b{color:var(--gold);display:block;margin-bottom:2px}
+.sheet{position:absolute;left:6px;right:6px;top:36px;background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;z-index:2;color:var(--ink)}.sheet span{background:var(--chip);border-radius:7px;padding:6px}
+</style></head><body><main>
+<h1>Pretty Dice: navigation proposals</h1>
+<p class="lead">PD-142.38. Three ways to arrange the same app. Each frame is a sketch of layout and wording, not final styling. The gold button is the only roll control in its frame. The paired circles mark the one utility drawer.</p>
+<div class="key">
+<div><b>Top strip</b>Where you are, the die name or total or game status, and the drawer. Hold the middle for the top-down look, as game mode does today.</div>
+<div><b>Dock</b>One gold primary action per screen. It names what it will do: "Roll 2d6+3", "Roll 3 dice", "Randomize".</div>
+<div><b>Drawer (paired circles)</b>Sound, pause spin, reset camera, full view, hints. Opens as a wide pill, then slides shut.</div>
+</div>
+<div id="out"></div>
+<script>
+const seg=(a,b,on)=>`<span class="seg"><span class="${on===0?'on':''}">${a}</span><span class="${on===1?'on':''}">${b}</span></span>`;
+const stack='<span class="stack"><i></i><i></i></span>';
+const tabs=(l,on)=>`<div class="tabs">${l.map((t,i)=>`<span class="${i===on?'on':''}">${t}</span>`).join('')}</div>`;
+const dice=(l)=>l.map(([x,y,n,h])=>`<span class="die${h?' held':''}" style="left:${x}%;top:${y}%">${n}</span>`).join('');
+const D5=[[14,18,4],[58,10,2],[70,52,6,1],[30,56,6,1],[46,30,3]], D2=[[28,30,5],[58,44,6]];
+const P={
+ look:`<h4>Shape</h4><div class="g"><span>d4</span><span>d6</span><span>d8</span><span>d10</span><span>d12</span><span class="on">d20</span><span>Set…</span></div><h4>Substrate</h4><div class="g"><span>Solid</span><span class="on">Swirled</span><span>Metal</span><span>Epoxy</span><span>Stone</span></div><h4>Colours</h4><div class="sl">Polish<i></i></div>`,
+ table:`<h4>Dice to roll</h4><div class="g"><span>d4</span><span>d6</span><span>d8</span><span>d10</span><span>d12</span><span>d20</span><span>d%</span><span>Adv</span><span>Dis</span></div><h4>Saved sets</h4><div class="g"><span class="on">Thorn axe 2d6+3</span><span>Fireball 8d6</span></div><h4>Roll feel</h4><div class="sl">Bounciness<i></i></div><div class="sl">Friction<i></i></div>`,
+ score:`<h4>Yahtzee · Ana's turn · roll 2 of 3</h4><div class="sc"><span>Ones</span><span>1</span><span>Threes</span><span>3</span><span>Sixes</span><span class="pk">12</span><span>Three of a kind</span><span>0</span><span>Full house</span><span>0</span><span>Chance</span><span class="pk">21</span><span>Total</span><span>34</span></div><div class="g" style="margin-top:6px"><span>End game</span></div>`,
+ bag:`<h4>My bag · 4 designs</h4><div class="g"><span class="on">Design 1</span><span>Jade d20</span><span>Brass set</span><span>+ Add</span></div><h4>Sets</h4><div class="g"><span>Thorn axe 2d6+3 ✎</span><span>Fireball 8d6 ✎</span><span>+ New set</span></div>`,
+ log:`<h4>Roll log · 3</h4><div class="sc"><span>Thorn: Axe 2d6+3</span><span>12</span><span>d20</span><span>17</span><span>Fireball 8d6</span><span>31</span></div><div class="g" style="margin-top:6px"><span>Copy</span><span>Save</span><span>Clear</span></div>`};
+const strip=(left,mid,right=stack)=>`<div class="strip">${left}<div class="mid">${mid}</div>${right}</div>`;
+const shelf='<div class="shelf"><span class="on"></span><span></span><span></span><span></span></div>';
+const mat=(cls,top,body,bottom)=>`<div class="mat ${cls}">${top}<div class="space">${body}</div>${bottom}</div>`;
+const fig=(cls,html,cap)=>`<figure class="${cls==='dk'?'wide':''}"><div class="${cls}">${html}</div><figcaption>${cap}</figcaption></figure>`;
+const dockRoll=`<div class="dock"><span class="fld">2d6+3 · Thorn axe</span><span class="go">ROLL</span></div>`;
+const dockGame=`<div class="dock"><span class="fld">2 held · tap dice to hold</span><span class="go">ROLL 3</span></div>`;
+const dockRand=`<div class="dock"><span class="sec">↶</span><span class="sec">↷</span><span style="flex:1"></span><span class="go">RANDOMIZE</span></div>`;
+const S=[];
+S.push(`<h2>A. Two rooms <span class="tag">recommended</span><small>Design | Play switch, tabs per room, one dock</small></h2>
+<p>The owner's split, completed into a full model. One switch picks the room. Each room has three tabs in the panel slot (the phone's Settings | Scorecard slot, generalised). The dock holds the room's one gold action. Every screen is one switch plus one tab away.</p><div class="row">`
++fig('ph',mat('show',strip(seg('Design','Play',0),'D20 · SWIRLED PLASTIC'),'<span class="die big">20</span>',shelf+dockRand)+tabs(['Look','Bag','Sets'],0)+`<div class="panel">${P.look}</div>`,'Design room. Randomize is the gold action here, so no Roll button shows. Shelf stays as the quick design switcher.')
++fig('ph',mat('',strip(seg('Design','Play',1),'<b>12</b>2D6+3'),dice(D2),'<div class="chips"><span>Re-roll leaning</span></div>'+dockRoll)+tabs(['Table','Games','Log'],0)+`<div class="panel">${P.table}</div>`,'Play room, free rolling. Die chips and saved sets load the dock; the one Roll button throws. Flick, shake, R and Enter stay as gestures.')
++fig('ph',mat('',strip(seg('Design','Play',1),'ANA · ROLL 2 OF 3'),dice(D5),dockGame)+tabs(['Table','Scorecard','Log'],1)+`<div class="panel">${P.score}</div>`,'In a game. The same dock button becomes the game\'s roll ("Roll 3"); Bank or Cash out sit to its left. The scorecard has no Roll button of its own.')
++fig('ph',mat('',strip(seg('Design','Play',1),'<b>12</b>2D6+3'),'<span class="pill" style="position:absolute;right:6px;top:2px;z-index:2"><span>Sound</span><span>Reset view</span><span>Full view</span><span>Hints</span></span>'+dice(D2),dockRoll)+tabs(['Table','Games','Log'],0)+`<div class="panel">${P.table}</div>`,'Drawer open: a wide pill from the paired circles. Pause spin joins it in the Design room. It slides shut by itself.')
++`</div><div class="row">`
++fig('dk',`<div class="side"><div style="padding:8px 8px 4px">${seg('Design','Play',1)}</div>${tabs(['Table','Games','Log'],0)}<div class="panel">${P.table}</div></div><div class="main">${mat('',strip('','<b>12</b>2D6+3'),dice(D2),'<div class="dock" style="justify-content:center"><span class="fld" style="flex:0 1 240px">2d6+3 · Thorn axe</span><span class="go">ROLL</span></div>')}</div>`,'Desktop. The switch and tabs head the side panel; the mat keeps only the strip, the dock and the drawer. The floating scorecard and floating log move into the tabs.')
++`</div>`);
+S.push(`<h2>B. Tab bar <small>five fixed destinations, Roll in the centre</small></h2>
+<p>No rooms. A bottom bar (a left rail on desktop) lists Design, Bag, Games and More, with the Roll button as the centre key. Every destination is one tap from anywhere. The price is a permanent bar on a screen that is already short of height, and Roll showing even while you design.</p><div class="row">`
++fig('ph',mat('show',strip('','D20 · SWIRLED PLASTIC',''),'<span class="die big">20</span>',shelf)+`<div class="panel">${P.look}</div><div class="bar"><span class="on">Design</span><span>Bag</span><span class="go">ROLL</span><span>Games</span><span>More</span></div>`,'Design. Tapping Roll from here moves to the table and throws.')
++fig('ph',mat('',strip('','<b>12</b>2D6+3',''),dice(D2),'<div class="chips"><span>Re-roll leaning</span></div>')+`<div class="panel">${P.table}</div><div class="bar"><span>Design</span><span>Bag</span><span class="go">ROLL</span><span>Games</span><span>More</span></div>`,'Rolling. The panel shows dice to roll, sets and the log link.')
++fig('ph',mat('',strip('','ANA · ROLL 2 OF 3',''),dice(D5),'')+`<div class="panel">${P.score}</div><div class="bar"><span>Design</span><span>Bag</span><span class="go">ROLL 3</span><span class="on">Games</span><span>More</span></div>`,'In a game the centre key takes the game\'s label.')
++fig('ph',mat('',strip('','<b>12</b>2D6+3',''),dice(D2),'')+`<div class="panel" style="height:150px"><h4>More</h4><div class="g"><span>Sound</span><span>Reset view</span><span>Full view</span><span>Hints</span><span>Roll log</span><span>Roll feel</span><span>Files</span></div></div><div class="bar"><span>Design</span><span>Bag</span><span class="go">ROLL</span><span>Games</span><span class="on">More</span></div>`,'More is the utility drawer, as a panel. The log has to live here or inside Roll.')
++`</div><div class="row">`
++fig('dk',`<div class="rail"><span>Des</span><span>Bag</span><span class="on">Roll</span><span>Gam</span><span style="margin-top:auto">More</span></div><div class="side" style="width:150px"><div class="panel">${P.table}</div></div><div class="main">${mat('',strip('','<b>12</b>2D6+3',''),dice(D2),'<div class="dock" style="justify-content:center"><span class="go">ROLL</span></div>')}</div>`,'Desktop: the bar becomes a rail beside the panel.')
++`</div>`);
+S.push(`<h2>C. Clear mat <small>one stack menu, one Roll button, panel on demand</small></h2>
+<p>The mat owns the screen. One stack button opens every destination and utility; the panel appears only as a sheet when asked for. The least clutter, and the best for the 20-dice crowding case, but every screen is two taps away and nothing tells a new user that the bag or games exist until the pill has slid shut.</p><div class="row">`
++fig('ph',mat('show',strip('<span class="pill"><span>Design</span><span>Bag</span><span>Games</span><span>Log</span><span>More</span></span>','',''),'<span class="die big">20</span>','<div class="dock" style="justify-content:center"><span class="go">ROLL</span></div>'),'First seconds: the stack shows as a wide pill, then slides to the paired circles.')
++fig('ph',mat('',strip(stack,'<b>48</b>20D4',''),dice([[10,12,3],[30,8,1],[52,14,4],[74,10,2],[16,34,4],[40,32,1],[64,36,3],[80,56,2],[24,58,4,1],[50,60,3,1],[8,78,1],[36,80,2],[66,78,4]]),'<div class="chips"><span>Re-roll leaning</span><span>2 held · release</span></div><div class="dock"><span class="fld">20d4</span><span class="go">ROLL</span></div>'),'Rolling 20d4: the whole screen is mat. Two controls and the result.')
++fig('ph',mat('',strip(stack,'<b>12</b>2D6+3',''),`<div class="sheet"><span>Design</span><span>Bag &amp; sets</span><span>Games</span><span>Roll log</span><span>Sound</span><span>Reset view</span><span>Hints</span><span>Settings</span></div>`+dice(D2),dockRoll),'Stack open: destinations and utilities in one grid.')
++fig('ph',mat('',strip(stack,'ANA · ROLL 2 OF 3',''),dice(D5),dockGame)+`<div class="panel" style="border-top:1px solid var(--line)">${P.score}</div>`,'A game brings its scorecard up as a half sheet; drag it down for the full mat.')
++`</div><div class="row">`
++fig('dk',`<div class="main">${mat('',strip(stack,'<b>12</b>2D6+3',''),dice(D2),'<div class="dock" style="justify-content:center"><span class="fld" style="flex:0 1 240px">2d6+3 · Thorn axe</span><span class="go">ROLL</span></div>')}</div><div class="side"><div class="panel">${P.table}</div></div>`,'Desktop: the chosen screen docks as a side sheet that can be closed.')
++`</div>`);
+document.getElementById('out').innerHTML=S.join('');
+</script>
+</main></body></html>
