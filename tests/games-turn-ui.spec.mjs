@@ -92,3 +92,21 @@ test('bunco: the round target shows and a roll is scored from the dice', async (
   expect(await app.page.locator('#gamepanel .gstat').textContent()).toMatch(/Round [12] of 6/);
   await app.run(pd => pd.endGame());
 });
+
+test('farkle: banking passes the turn with holds and rings cleared (turn handoff)', async ({ shared: app }) => {
+  await app.reset(81);
+  let tries = 0, st;
+  do {   // find a roll that scores, so there is something to set aside and bank
+    await app.run(async (pd, seed) => { if (pd.game) pd.endGame(); await pd.startGame('farkle', ['A', 'B'], { opening: 0, target: 10000 }); pd.reseed(seed); pd.simRoll({ rerolls: 6 }); }, 100 + tries);
+    st = await app.run(pd => pd.GAMES.status(pd.game.state));
+  } while (st.phase !== 'score' && ++tries < 12);
+  expect(st.phase).toBe('score');
+  await app.page.click('#gamepanel .sugs button.best');
+  const mid = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held }));
+  expect(mid.held.length).toBeGreaterThan(0);
+  await app.page.click('#gamepanel button:has-text("Bank")');
+  const end = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held, rings: pd.holdRings }));
+  expect(end.s.player).toBe(1); expect(end.s.turnTotal).toBe(0); expect(end.s.held.some(Boolean)).toBe(false);
+  expect(end.held).toEqual([]); expect(end.rings).toBe(0);
+  await app.run(pd => pd.endGame());
+});

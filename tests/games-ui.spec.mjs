@@ -52,3 +52,45 @@ test('yahtzee: the scorecard folds away so the dice stay visible', async ({ shar
   await app.page.click('text=Scorecard'); expect(await app.page.locator('#gamepanel table').count()).toBe(0);
   await app.run(pd => pd.endGame());
 });
+
+for (const rolls of [1, 2]) {
+  test(`yahtzee: scoring after toss ${rolls} ends the turn: next player starts at toss 1, holds cleared`, async ({ shared: app }) => {
+    await app.reset(70 + rolls); await app.run(pd => pd.openGames());
+    await app.page.selectOption('#gamepanel select >> nth=1', '2').catch(() => {});
+    await app.page.click('#gamepanel button.big');
+    if (await app.page.locator('#gamepanel td').count() === 0) await app.page.click('text=Scorecard');
+    const who0 = await app.run(pd => pd.GAMES.status(pd.game.state).player);
+    await app.run(pd => pd.simRoll({ rerolls: 6 }));
+    if (rolls === 2) { await app.run(pd => { pd.toggleHold(0); pd.toggleHold(1); pd.simRoll({ rerolls: 6 }); }); }
+    expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(rolls);
+    await app.page.click('#gamepanel td.pick');
+    const a = await app.run(pd => ({ st: pd.GAMES.status(pd.game.state), held: pd.held, rings: pd.holdRings }));
+    expect(a.st.rollsUsed, 'fresh toss 1').toBe(0); expect(a.st.canRoll).toBe(true); expect(a.held).toEqual([]); expect(a.rings).toBe(0);
+    expect(await app.page.locator('#gamepanel .gstat small').textContent()).not.toMatch(/roll \d of 3/);
+    // the next toss is toss 1 of the next turn, not toss 3 of the old one
+    await app.page.click('#gamepanel button.big');
+    await app.run(pd => pd.simRoll({ rerolls: 6 }));
+    const b = await app.run(pd => pd.GAMES.status(pd.game.state));
+    expect(b.rollsUsed).toBe(1);
+    expect(await app.page.locator('#gamepanel .gstat small').textContent()).toContain('roll 1 of 3');
+    await app.run(pd => pd.endGame());
+  });
+}
+
+test('yahtzee: live (real frames) roll, score after toss 1, next roll is toss 1 again', async ({ shared: app }) => {
+  await app.reset(75); await app.run(pd => { pd.resume(); pd.openGames(); });
+  await app.page.click('#gamepanel button.big');
+  if (await app.page.locator('#gamepanel td').count() === 0) await app.page.click('text=Scorecard');
+  const used = () => app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed);
+  await app.page.click('#gamepanel button.big:has-text("Roll")');
+  await app.page.waitForFunction(() => window.__pd.settled && window.__pd.GAMES.status(window.__pd.game.state).rollsUsed >= 1, null, { timeout: 30000 });
+  expect(await used()).toBe(1);
+  await app.page.click('#gamepanel td.pick');
+  expect(await used()).toBe(0);
+  const label = await app.page.locator('#gamepanel button.big').textContent();
+  expect(label).toBe('Roll');
+  await app.page.click('#gamepanel button.big');
+  await app.page.waitForFunction(() => window.__pd.settled && window.__pd.GAMES.status(window.__pd.game.state).rollsUsed >= 1, null, { timeout: 30000 });
+  expect(await used()).toBe(1);
+  await app.run(pd => { pd.pause(); pd.endGame(); });
+});
