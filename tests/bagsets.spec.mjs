@@ -415,3 +415,13 @@ test('the quick roll result shows above the open bag sheet, and the roll log fad
   await app.run(pd => { document.body.classList.remove('throwing'); });
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).not.toBe('none');
 });
+
+test('a double-click on quick roll is one logged roll, a later click is another (PD-142.14.1.16)', async ({ app }) => {
+  await app.open();
+  await app.run(SETUP);
+  const r = await app.run(async pd => {
+    const n0 = pd.bag.log.length; pd.setOps.quick('dmg'); pd.setOps.quick('dmg'); const n1 = pd.bag.log.length;
+    await new Promise(res => setTimeout(res, 450)); pd.setOps.quick('dmg'); return { added: n1 - n0, later: pd.bag.log.length - n1 };
+  });
+  expect(r.added).toBe(1); expect(r.later).toBe(1);
+});

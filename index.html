@@ -1716,7 +1716,8 @@ const setOps={
   /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
   open(id,{roll=false}={}){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
-  quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
+  quick(id){ const st=this.find(id); if(!st) return null; const now=Date.now(); if(this._qAt&&now-this._qAt<350) return null; this._qAt=now;   /* PD-142.14.1.16: a double-click or replayed click is one roll, so nothing is rolled and logged behind the one result on screen */
+    let total=st.mod||0;
     const items=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const sum=r.reduce((a,b)=>a+b,0); total+=sum; return {sides:t.sides,design:t.design,text:`${t.count}${dieName(t.sides)}: ${r.join('+')}${r.length>1?' = '+sum:''}`}; });
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
     addLog({set:st.name,notation:setNotation(st),total:String(total),detail,items,modText,quick:true}); showQuick(st.name,total,items,modText); return total; }
