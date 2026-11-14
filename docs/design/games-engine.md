@@ -77,6 +77,17 @@ One entry per category for the current player (all of them, including taken ones
 { sections: [{ id: 'upper', label: 'Upper', rows: [{ category: 'ones', label: 'Ones', points: 3 | null }], subtotal, bonus }, ...], total }
 ```
 
+## Computer opponents (PD-142.24)
+
+`newGame(id, { players, options, bots: [seatIndexes] })` marks seats as computer players; `status` then has `bots` (seat list) and `botTurn` (the acting seat is a bot). Bots work for every game, including Liar's Dice.
+
+- `botMove(state, { seed?, seat? })` returns ONE action for the bot to take, or `null` (not a bot's turn, nothing to do, game over). It is a pure function: the same state and `seed` always give the same move (the PRNG for bluffs and tie-breaks is seeded from both). Pass a different `seed` per call if you want variety; the app can use the move number.
+- `{type:'roll'}` from a bot has no `values`: the app throws the dice (`rollSpec`), then calls `act` with the settled values, exactly as for a human. Everything else is a normal action (`hold`, `score`, `bank`, `bet`, `bid`, `challenge`, ...), so bots go through the same validation as people.
+- `runBots(state, { seed, maxActions })` plays bot turns with seeded simulated dice until it is a human's turn or the game ends: returns `{ state, actions }`. It throws if a bot ever makes an illegal move. For tests and instant play ("skip the bot's turn"); an animated UI calls `botMove` one action at a time instead.
+- Craps: bot seats are bettors. `botMove` returns their bets first (pass line of 2 x min bet, then full odds once a point is set), then `{type:'roll'}` only when the shooter is a bot. With a human shooter, call `botMove`/`runBots` before the human's roll to place bot bets.
+- Liar's Dice: the bot looks only at `status(state, seat)` and `suggest(state, seat)` for its own seat, so it cannot peek (a spec checks this). At the reveal it returns `{type:'next'}` only when no human is left in the game; otherwise the human presses Next.
+- Strategies (all rule-of-thumb, not perfect play): Yahtzee scores against per-category par with a one-step lookahead over the dice to keep (averages about 230 over seeded games); Farkle takes the most points and banks at a threshold that falls with fewer dice left (all-in during the final round until ahead); Pig holds at 20; Shut the Box closes the set holding the highest tile; Ship, Captain and Crew keeps a cargo of 9 or more; Bunco has no decisions; Craps is pass line plus full odds; Liar's Dice challenges when the standing bid is more than 60% likely false, raises while a raise is at least 50% likely true (12% of the time it will bluff down to 25%).
+
 ## Rule schema (data-defined games)
 
 A game module exports a rule object; the engine core (`games/core.js`) supplies turns, players, holds, round counting and result ranking.

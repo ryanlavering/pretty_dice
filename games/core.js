@@ -7,6 +7,7 @@ import * as ShutBox from './shutbox.js';
 import * as ShipCaptain from './shipcaptain.js';
 import * as Bunco from './bunco.js';
 import * as Liars from './liarsdice.js';
+import * as Bots from './bots.js';
 
 const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine },
   shutbox: { info: ShutBox.info, mod: ShutBox.engine }, shipcaptain: { info: ShipCaptain.info, mod: ShipCaptain.engine }, bunco: { info: Bunco.info, mod: Bunco.engine },
@@ -16,14 +17,17 @@ export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.str
 const eng = s => { const g = GAMES[s.game]; if (!g) throw new Error('unknown game ' + s.game); return g.mod; };
 const clone = s => JSON.parse(JSON.stringify(s));
 
-export function newGame(id, { players = ['Player 1'], options = {} } = {}) {
+export function newGame(id, { players = ['Player 1'], options = {}, bots = [] } = {}) {
   const g = GAMES[id]; if (!g) throw new Error('unknown game ' + id);
   const { minPlayers, maxPlayers } = g.info;
   if (players.length < minPlayers || players.length > maxPlayers) throw new Error(`${g.info.name} takes ${minPlayers}-${maxPlayers} players`);
   const opts = {}; g.info.options.forEach(o => { opts[o.id] = options[o.id] ?? o.default; });
-  return g.mod.init({ game: id, players: players.map(String), options: opts });
+  if (!Array.isArray(bots) || bots.some(b => !Number.isInteger(b) || b < 0 || b >= players.length)) throw new Error('bots must be seat indexes of players');
+  const st = g.mod.init({ game: id, players: players.map(String), options: opts });
+  if (bots.length) st.bots = [...new Set(bots)].sort((a, b) => a - b);
+  return st;
 }
-export const status = (s, viewer) => eng(s).status(s, viewer);
+export const status = (s, viewer) => { const v = eng(s).status(s, viewer), bots = s.bots || []; return { ...v, bots, botTurn: v.phase !== 'over' && bots.includes(v.player) }; };
 export const rollSpec = s => eng(s).rollSpec(s);
 export const suggest = (s, viewer) => eng(s).suggest(s, viewer);
 // A copy of the state that is safe to show `viewer` (a player index, null for the public, or omitted for everything); hidden-information games blank other players' secrets.
@@ -105,4 +109,19 @@ function yahtzeeEngine() {
       return { ranking: rows, winners: rows.filter(r => r.rank === 1).map(r => r.player) };
     },
   };
+}
+
+// One action for a computer player (or null). `{type:'roll'}` has no values: the app throws the dice (see rollSpec), then calls act with the values.
+// Pass `seat` to ask for a particular bot (Craps bot bettors); `seed` varies the (deterministic) choices.
+export const botMove = (s, opts = {}) => Bots.botMove(s, opts, { status, suggest, rollSpec });
+// Play bots until it is a human's turn (or the game ends), rolling seeded simulated dice; for tests and instant play. Returns { state, actions }.
+export function runBots(state, { seed = 1, maxActions = 5000 } = {}) {
+  const rng = Bots.mulberry32(seed >>> 0), actions = []; let s = state;
+  for (let i = 0; i < maxActions; i++) {
+    let a = botMove(s, { seed: i }); if (!a) break;
+    if (a.type === 'roll' && !a.values) a = { type: 'roll', values: rollSpec(s).sides.map(n => 1 + Math.floor(rng() * n)) };
+    const r = act(s, a); if (!r.ok) throw new Error(`bot made an illegal move ${JSON.stringify(a)}: ${r.error}`);
+    s = r.state; actions.push(a);
+  }
+  return { state: s, actions };
 }
