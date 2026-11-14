@@ -3,6 +3,7 @@
 // - Each test gets a fresh browser context (empty localStorage) and loads ?libs=local (no network).
 // - Any pageerror, console.error or alert/confirm dialog fails the test.
 import { test as base, expect } from '@playwright/test';
+import { navFor } from './nav.mjs';
 
 export { expect };
 
@@ -27,6 +28,7 @@ const ready = async page => {
 /** Helpers shared by both fixtures. */
 const helpers = page => ({
   page,
+  nav: navFor(page),
   ready: () => ready(page),
   /** Run fn(pd, arg) in the page, where pd is window.__pd. fn is sent as source, so it cannot close over test variables. */
   run(fn, arg) {

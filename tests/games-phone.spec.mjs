@@ -6,13 +6,13 @@ const phone = async (app, w, h) => { await app.page.setViewportSize({ width: w, 
 for (const [w, h] of [[360, 640], [390, 844]]) {
   test(`phone ${w}x${h}: scorecard tab in the settings slot, thin strip on the mat, dice stay uncovered`, async ({ shared: app }) => {
     await app.reset(91); await phone(app, w, h);
-    await app.page.click('#gamesbtn');
+    await app.nav.openGames();
     await expect(app.page.locator('#paneltabs')).toBeVisible();
     await expect(app.page.locator('#scorepane')).toBeVisible();
     await expect(app.page.locator('#settingspane')).toBeHidden();
     await expect(app.page.locator('#gamestab')).toHaveText('Games');   // setup
     await expect(app.page.locator('#gamepanel')).toBeHidden();          // nothing floats over the mat during setup
-    await app.page.click('#scorepane button.big');                      // Start game
+    await app.nav.roll();                      // Start game
     await expect(app.page.locator('#gamestab')).toHaveText('Scorecard');
     await expect(app.page.locator('#gamestab')).toHaveAttribute('aria-selected', 'true');
     const strip = await app.page.locator('#gamepanel.strip').boundingBox();
@@ -40,9 +40,9 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
 
 test('desktop keeps the side panel and no tab strip', async ({ shared: app }) => {
   await app.reset(92); await app.page.setViewportSize({ width: 1280, height: 720 });
-  await app.page.click('#gamesbtn');
+  await app.nav.openGames();
   await expect(app.page.locator('#gamepanel')).toBeVisible(); await expect(app.page.locator('#paneltabs')).toBeHidden(); await expect(app.page.locator('#scorepane')).toBeHidden();
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   await expect(app.page.locator('#gamepanel .gh h2')).toHaveText(await app.page.evaluate(() => window.__pd.GAMES.listGames().find(g => g.id === 'yahtzee').name));   // display name comes from the registry (Yacht after PD-142.41)
   await app.run(pd => pd.endGame());
 });
@@ -57,7 +57,7 @@ test('overhead view (PD-142.34): non-game keeps the big total as the handle; in 
   await app.page.mouse.up();
   expect(await app.page.evaluate(() => document.body.classList.contains('peek'))).toBe(false);
   // in a game (desktop side panel): total hidden, status line is the handle, t still works
-  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'craps'); await app.page.click('#gamepanel button.big');
+  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'craps'); await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   await expect(app.page.locator('body.game')).toHaveCount(1);
   await expect(app.page.locator('#result .tot')).toBeHidden();
@@ -77,7 +77,7 @@ test('overhead view (PD-142.34): non-game keeps the big total as the handle; in 
 
 test('overhead view on a phone: the strip status text is the handle', async ({ shared: app }) => {
   await app.reset(94); await app.page.setViewportSize({ width: 390, height: 844 });
-  await app.page.click('#gamesbtn'); await app.page.selectOption('#scorepane select >> nth=0', 'craps'); await app.page.click('#scorepane button.big');
+  await app.nav.openGames(); await app.page.selectOption('#scorepane select >> nth=0', 'craps'); await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   await expect(app.page.locator('#gamepanel.strip .st.peekh')).toBeVisible();
   const b = await app.page.locator('#gamepanel.strip .st').boundingBox();

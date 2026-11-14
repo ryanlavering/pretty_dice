@@ -1,5 +1,6 @@
 // PD-142.35: the artifact build must start under the claude.ai artifact CSP (script-src limited to the CDNs, so no data: scripts).
 // Hermetic: the page is served from memory with the CSP header and the CDN requests are answered from vendor/.
+import { navFor } from './helpers/nav.mjs';
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -42,7 +43,7 @@ test('the artifact build boots under a CDN-only script CSP and starts a game', a
   // a game starts and the engine answers (the engine is bundled into the page, not imported)
   await page.evaluate(() => window.__pd.openGames());
   await page.selectOption('#gamepanel select >> nth=0', 'yahtzee');
-  await page.click('#gamepanel button.big');
+  await navFor(page).roll();
   const st = await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state));
   expect(st).toMatchObject({ phase: 'roll', round: 1, rollsUsed: 0 });
   await page.evaluate(() => window.__pd.simRoll());

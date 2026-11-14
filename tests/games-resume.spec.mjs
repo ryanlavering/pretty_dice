@@ -4,7 +4,7 @@ import { test, expect } from './helpers/app.mjs';
 test('a game in progress resumes after a reload; ending the game clears the save', async ({ shared: app }) => {
   await app.reset(81); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const before = await app.run(pd => JSON.stringify(pd.game.state));
   await app.page.reload();

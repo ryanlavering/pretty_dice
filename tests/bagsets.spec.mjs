@@ -67,7 +67,7 @@ test('the roll log keeps the last 200 rolls and rolls without a set are logged t
 test('Sets tab: save the current dice, quick roll, open on the mat, delete from the menu @slow', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   await page.locator('#sheettabs button[data-tab="sets"]').click();
   await expect(page.locator('#setlist .setrow')).toHaveCount(2);
   await page.locator('#setsave').click();
@@ -89,7 +89,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await page.locator('#setlist .setrow[data-id="adv"] .main').click();
   await expect(page.locator('#bagsheet')).toBeHidden();
   expect(await app.run(pd => ({ n: pd.state.notation, rolling: pd.rolling, placed: pd.placed, log: pd.bag.log.length }))).toEqual({ n: '2d20@amethyst', rolling: true, placed: true, log: 1 });   // placed, not thrown
-  await page.locator('#logbtn').click();
+  await app.nav.openLog();
   await expect(page.locator('#logpanel .le')).toHaveCount(1);
 });
 
@@ -148,16 +148,16 @@ test('the dice-use design recolours the stepper chips, and the stepper cells do 
 test('the roll log button is only there in roll view @slow', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await expect(page.locator('#logbtn')).toBeHidden();
+  await expect(app.nav.btn('log')).toBeHidden();
   await app.run(pd => pd.startRoll());
-  await expect(page.locator('#logbtn')).toBeVisible();
+  await expect(app.nav.btn('log')).toBeVisible();
   await app.run(pd => { pd.setOps.quick('dmg'); });
-  await page.locator('#logbtn').click();
+  await app.nav.openLog();
   await expect(page.locator('#logpanel .le .ttl', { hasText: 'Damage' }).first()).toHaveText('Damage ⚡');   // the set's name only; the terms are shown below it
   await page.locator('#logpanel button[aria-label="Close the roll log"]').click();
   await expect(page.locator('#logpanel')).toBeHidden();
   await app.run(pd => pd.exitRoll());
-  await expect(page.locator('#logbtn')).toBeHidden();
+  await expect(app.nav.btn('log')).toBeHidden();
 });
 
 test('Save under the Custom controls adds a new set (a copy) from the current dice', async ({ app, page }) => {
@@ -178,7 +178,7 @@ test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({
   await app.open();
   await app.run(SETUP);
   await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   for (const id of ['sheetsave', 'sheetload', 'sheetcopy', 'sheetclose']) await expect(page.locator('#' + id)).toBeVisible();
   const order = await page.locator('#sheethead > *').evaluateAll(n => n.map(e => e.id));
   expect(order.slice(-2)).toEqual(['sheetact', 'sheetclose']);   // the buttons sit right next to Close
@@ -198,7 +198,7 @@ test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({
 test('the bag name is editable in the sheet title and names the saved file', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   await page.locator('#sheettitle .bn').click();
   await page.locator('#sheettitle input').fill('Dungeon night!'); await page.keyboard.press('Enter');
   await expect(page.locator('#sheettitle .bn')).toHaveText('Dungeon night!');
@@ -207,7 +207,7 @@ test('the bag name is editable in the sheet title and names the saved file', asy
   expect(dl.suggestedFilename()).toBe('dungeon-night.bag.json');
   await page.locator('#sheetclose').click();
   await expect(page.locator('#bagpos')).toContainText('in Dungeon night!');
-  await page.click('#bagbtn'); await page.locator('#sheettitle .bn').click();
+  await app.nav.openBag(); await page.locator('#sheettitle .bn').click();
   await page.locator('#sheettitle input').fill('Nope'); await page.keyboard.press('Escape');
   expect(await app.run(pd => pd.bag.name)).toBe('Dungeon night!');   // Escape keeps the old name
 });
@@ -218,7 +218,7 @@ test('scrollbars are thin and dark, and the roll log never scrolls sideways', as
   const sb = await page.evaluate(() => { const c = getComputedStyle(document.querySelector('aside')); return { w: c.scrollbarWidth, col: c.scrollbarColor }; });
   expect(sb.w).toBe('thin'); expect(sb.col).toContain('58, 64, 82');
   await app.run(pd => { pd.startRoll(); for (let i = 0; i < 30; i++) pd.setOps.quick('dmg'); });
-  await page.locator('#logbtn').click();
+  await app.nav.openLog();
   const over = await page.locator('#logpanel').evaluate(e => ({ x: e.scrollWidth > e.clientWidth + 1, y: e.scrollHeight > e.clientHeight }));
   expect(over.x).toBe(false);
 });
@@ -228,7 +228,7 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await app.open();
   await app.run(SETUP);
   const live = await app.run(pd => pd.state.notation);
-  await page.click('#bagbtn'); await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await app.nav.openBag(); await page.locator('#sheettabs button[data-tab="sets"]').click();
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Make a copy' }).click();
   expect(await app.run(pd => pd.bag.sets.map(s => [s.id, s.name]))).toEqual([['dmg', 'Damage'], ['damage-copy', 'Damage copy'], ['adv', 'Advantage']]);
@@ -390,26 +390,26 @@ test('the table title names the custom dice, and the reset button is a reset, no
 test('the bag sheet header counts the unsaved draft too (PD-142.14.1.20)', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   await expect(page.locator('#sheettitle')).toContainText('2 designs');
   await expect(page.locator('#sheettitle')).not.toContainText('draft');
   await page.keyboard.press('Escape');
   await app.run(pd => { pd.randomize(true); });
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   await expect(page.locator('#sheettitle')).toContainText('2 designs + draft');
 });
 
 test('the quick roll result shows above the open bag sheet, and the roll log fades while dice move (PD-142.14.1.11, .12)', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await page.click('#bagbtn');
+  await app.nav.openBag();
   await app.run(pd => pd.setOps.quick('dmg'));
   await expect(page.locator('#quickres')).toHaveClass(/on/);
   const z = await page.evaluate(() => [getComputedStyle(document.getElementById('quickres')).zIndex, getComputedStyle(document.getElementById('bagsheet')).zIndex].map(Number));
   expect(z[0]).toBeGreaterThan(z[1]);
   await page.keyboard.press('Escape');
-  await page.locator('#mode').click();
-  await page.locator('#logbtn').click();
+  await app.nav.toggleMode();
+  await app.nav.openLog();
   await app.run(pd => { document.body.classList.add('throwing'); });
   expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).toBe('none');
   await app.run(pd => { document.body.classList.remove('throwing'); });
@@ -419,7 +419,7 @@ test('the quick roll result shows above the open bag sheet, and the roll log fad
 test('a double-click on quick roll is one logged roll, a later click is another (PD-142.14.1.16)', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await page.click('#bagbtn'); await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await app.nav.openBag(); await page.locator('#sheettabs button[data-tab="sets"]').click();
   const q = '#setlist .setrow[data-id="dmg"] .quick';
   const n0 = await app.run(pd => pd.bag.log.length);
   await page.evaluate(sel => { document.querySelector(sel).click(); document.querySelector(sel).click(); }, q);
@@ -450,7 +450,7 @@ test('roll log: notation rolls are titled by their notation, entries take a labe
   await app.open();
   await app.run(SETUP);
   await page.locator('#roll').click();
-  await page.locator('#logbtn').click();
+  await app.nav.openLog();
   await page.locator('#logpanel .lwho input').fill('Mira'); await page.locator('#logpanel .lwho input').press('Tab');
   await page.locator('#qbar input').fill('3d6+2'); await page.locator('#qbar input').press('Enter');
   await app.run(pd => { pd.simRoll(); });
@@ -468,7 +468,7 @@ test('the roll log copies as plain text with time, roller, label, dice and total
   await app.open();
   await app.run(SETUP);
   await app.run(pd => { pd.bag.roller = 'Thorn'; pd.setOps.quick('dmg'); const e = pd.bag.log.at(-1); e.label = 'Axe'; });
-  await page.locator('#roll').click(); await page.locator('#logbtn').click();
+  await page.locator('#roll').click(); await app.nav.openLog();
   await app.run(pd => { pd.simRoll(); });   // let the roll that entering Roll view starts settle and log
   const txt = await app.run(pd => pd.logText());
   expect(txt.split('\n')[0]).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d {2}Thorn: Axe — Damage = \d+ {2}\(.*2d6.*\)$/);

@@ -152,7 +152,7 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await page.locator('#cards .card[data-id="bone"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('bone');
   await expect(page.locator('#dname')).toHaveValue('Brand new name');
   await expect(page.locator('#bagname')).toHaveText('Brand new name');
-  await expect(page.locator('#bagbtn')).toBeVisible();
+  await expect(app.nav.btn('bag')).toBeVisible();
 });
 
 test('rotating the phone or flicking the shelf does not change the chosen design', async ({ app, page }) => {

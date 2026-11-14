@@ -3,6 +3,7 @@
 // Usage: node scripts/guide-shots.mjs [name-filter ...]   e.g. node scripts/guide-shots.mjs bag roll
 // The guide pages in docs/guide/*.md reference these file names; keep both in step.
 import { chromium } from '@playwright/test';
+import { navFor } from '../tests/helpers/nav.mjs';
 import { spawn } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 
@@ -36,7 +37,7 @@ async function open({ vp = DESK, query = '', seed = 7 } = {}) {
   return { page, close: () => ctx.close() };
 }
 const settle = page => page.waitForFunction(() => window.__pd.rolling && window.__pd.settled, null, { timeout: 120_000 }).then(() => page.waitForTimeout(600));
-const rollNow = async page => { await page.click('#mode'); await settle(page); };
+const rollNow = async page => { await navFor(page).toggleMode(); await settle(page); };
 const panelAt = async (page, heading) => {   // scroll the side panel so a section heading is at the top
   await page.locator('#panes h2', { hasText: new RegExp('^' + heading + '$', 'i') }).first().evaluate(e => e.scrollIntoView({ block: 'start' }));
   await page.waitForTimeout(300);
@@ -56,31 +57,31 @@ const SHOTS = [
   ['09-bag-sets', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagopen'); await p.click('#sheettabs >> text=Sets'); await p.waitForTimeout(600); }],
   ['10-custom-set', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+d20+3'); await p.click('#notapply'); await p.waitForTimeout(1200); await panelAt(p, 'Custom set'); return side; }],
   ['11-roll-settled', {}, async p => { await rollNow(p); }],
-  ['12-roll-log', {}, async p => { await rollNow(p); await p.click('#logbtn'); await p.waitForTimeout(400); }],
-  ['13-roll-controls', {}, async p => { await p.click('#mode'); await p.waitForTimeout(500); await panelAt(p, 'Roll feel & sound'); return side; }],
+  ['12-roll-log', {}, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
+  ['13-roll-controls', {}, async p => { await navFor(p).toggleMode(); await p.waitForTimeout(500); await panelAt(p, 'Roll feel & sound'); return side; }],
   ['14-save-export', {}, async p => { await panelAt(p, 'Save & export'); return side; }],
   ['15-phone-showcase', { vp: PHONE }, async () => undefined],
   ['16-phone-roll', { vp: PHONE }, async p => { await rollNow(p); }],
-  ['18-games-setup', {}, async p => { await p.click('#gamesbtn'); await p.waitForTimeout(800); }],
+  ['18-games-setup', {}, async p => { await navFor(p).openGames(); await p.waitForTimeout(800); }],
   ['19-yahtzee-hold', { seed: 7 }, async p => {   // seed 7 + software GL lands the same dice every run; tap two settled dice
-    await p.click('#gamesbtn'); await p.click('text=Start game'); await p.waitForTimeout(1500);
+    await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500);
     await p.click('#gamepanel button:has-text("Roll")'); await settle(p); await p.waitForTimeout(1000);
     await p.mouse.click(865, 570); await p.waitForTimeout(900); await p.mouse.click(660, 310); await p.waitForTimeout(1200); }],
-  ['20-phone-game', { vp: PHONE }, async p => { await p.click('#gamesbtn'); await p.waitForTimeout(600); await p.click('text=Start game'); await p.waitForTimeout(1500); }],
+  ['20-phone-game', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.waitForTimeout(600); await p.click('text=Start game'); await p.waitForTimeout(1500); }],
   ['21-group-roll-initiative', {}, async p => {   // 4x d20+2 as four separate rolls, then add them to the initiative list
     await rollNow(p); await p.fill('input[placeholder="3d6+2"]', '4x d20+2'); await p.keyboard.press('Enter'); await p.waitForTimeout(1000); await settle(p);
-    await p.click('#logbtn'); await p.waitForTimeout(500); await p.click('#logpanel >> text=+ init >> nth=0'); await p.waitForTimeout(600); }],
+    await navFor(p).openLog(); await p.waitForTimeout(500); await p.click('#logpanel >> text=+ init >> nth=0'); await p.waitForTimeout(600); }],
   ['22-result-table-log', { query: 'shape=custom' }, async p => {   // a set with a result table, rolled with its lightning button
     await p.fill('#notation', 'd10'); await p.click('#notapply'); await p.waitForTimeout(600);
     await p.fill('#setname', 'Dungeon room'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600);
-    await p.click('#mode'); await p.waitForTimeout(20000);
+    await navFor(p).toggleMode(); await p.waitForTimeout(20000);
     await p.click('#bagopen'); await p.click('#sheettabs >> text=Sets'); await p.waitForTimeout(600);
     await p.click('button:text-is("✎")'); await p.waitForTimeout(900);
     await p.locator('textarea').first().fill('1-2 Locked door\n3 Empty room\n4-8 Goblins\n9+ Boss');
     await p.click('#bagsheet button:text-is("Save")'); await p.waitForTimeout(800);
     await p.click('#bagsheet button:text-is("Close")'); await p.waitForTimeout(1000);
     await p.click('#qbar >> text=Dungeon room'); await p.waitForTimeout(1500); await settle(p);
-    await p.click('#logbtn'); await p.waitForTimeout(600); }],
+    await navFor(p).openLog(); await p.waitForTimeout(600); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await p.click('#bagopen'); await p.waitForTimeout(700); }],
 ];
 

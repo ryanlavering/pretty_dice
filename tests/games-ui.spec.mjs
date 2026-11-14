@@ -5,7 +5,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   await app.reset(41);
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee');
-  await app.page.click('#gamepanel button.big');   // Start game (1 player)
+  await app.nav.roll();   // Start game (1 player)
   if (await app.page.locator('#gamepanel td').count() === 0) await app.page.click('text=Scorecard');
   expect(await app.run(pd => pd.state.notation)).toBe('5d6');
   await app.run(pd => pd.simRoll());
@@ -27,7 +27,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   expect(c.st.rollsUsed).toBe(0); expect(c.held).toEqual([]);
   expect(c.st.round).toBe(before + 1);
   // the roll/showcase button cannot pull the dice off the mat mid-game
-  await app.page.click('#mode');
+  await app.nav.toggleMode();
   expect(await app.run(pd => pd.rolling)).toBe(true);
   await app.run(pd => pd.endGame());
   expect(await app.run(pd => pd.game)).toBe(null);
@@ -36,7 +36,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
 test('yahtzee: a hold before the first roll is refused; suggestions can be switched off', async ({ shared: app }) => {
   await app.reset(42);
   await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee'); await app.page.uncheck('#gamepanel input[type=checkbox] >> nth=-1');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   expect(await app.run(pd => pd.toggleHold(0))).toBe(false);
   await app.run(pd => pd.simRoll());
   expect(await app.page.locator('#gamepanel td.sug').count()).toBe(0);
@@ -46,7 +46,7 @@ test('yahtzee: a hold before the first roll is refused; suggestions can be switc
 
 test('yahtzee: the desktop side panel can fold the scorecard away', async ({ shared: app }) => {
   await app.reset(43); await app.page.setViewportSize({ width: 1280, height: 720 });
-  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee'); await app.page.click('#gamepanel button.big');
+  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee'); await app.nav.roll();
   await app.run(pd => pd.simRoll());
   expect(await app.page.locator('#gamepanel table').count()).toBe(1);
   await app.page.click('#gamepanel button:has-text("Scorecard")'); expect(await app.page.locator('#gamepanel table').count()).toBe(0);
@@ -58,7 +58,7 @@ for (const rolls of [1, 2]) {
   test(`yahtzee: scoring after toss ${rolls} ends the turn: next player starts at toss 1, holds cleared`, async ({ shared: app }) => {
     await app.reset(70 + rolls); await app.run(pd => pd.openGames());
     await app.page.selectOption('#gamepanel select >> nth=0', 'yahtzee');
-    await app.page.click('#gamepanel button.big');
+    await app.nav.roll();
     if (await app.page.locator('#gamepanel td').count() === 0) await app.page.click('text=Scorecard');
     const who0 = await app.run(pd => pd.GAMES.status(pd.game.state).player);
     await app.run(pd => pd.simRoll({ rerolls: 6 }));
@@ -69,7 +69,7 @@ for (const rolls of [1, 2]) {
     expect(a.st.rollsUsed, 'fresh toss 1').toBe(0); expect(a.st.canRoll).toBe(true); expect(a.held).toEqual([]); expect(a.rings).toBe(0);
     expect(await app.page.locator('#gamepanel .gstat small').textContent()).not.toMatch(/roll \d of 3/);
     // the next toss is toss 1 of the next turn, not toss 3 of the old one
-    await app.page.click('#gamepanel button.big');
+    await app.nav.roll();
     await app.run(pd => pd.simRoll({ rerolls: 6 }));
     const b = await app.run(pd => pd.GAMES.status(pd.game.state));
     expect(b.rollsUsed).toBe(1);

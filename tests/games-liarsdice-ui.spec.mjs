@@ -10,10 +10,10 @@ async function open(app, seed, players = 2, bots = []) {
   await app.page.selectOption('#gamepanel select >> nth=0', 'liarsdice');
   await app.page.selectOption('#gamepanel select >> nth=1', String(players));
   for (const b of bots) await app.page.check(`#gamepanel input[aria-label="Seat ${b + 1} is a computer player"]`);
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
 }
 async function rollUnderCup(app) {
-  await app.page.click('#gamepanel button.big');   // Roll N dice under the cup
+  await app.nav.roll();   // Roll N dice under the cup
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
 }
 
@@ -71,7 +71,7 @@ test('bot seat in another game: the bot takes its turn by itself and hands back'
   await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
   await app.page.selectOption('#gamepanel select >> nth=1', '2');
   await app.page.check('#gamepanel input[aria-label="Seat 2 is a computer player"]');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bots)).toEqual([1]);
   expect(await app.run(pd => pd.game.state.players[1])).toBe('Bot 2');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));

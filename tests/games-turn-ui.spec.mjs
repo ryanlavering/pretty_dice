@@ -4,7 +4,7 @@ import { test, expect } from './helpers/app.mjs';
 test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: app }) => {
   await app.reset(51); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('1d6');
   await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
@@ -17,7 +17,7 @@ test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: 
 test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app }) => {
   await app.reset(52); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'farkle');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('6d6');
   await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
@@ -34,7 +34,7 @@ test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app 
 test('craps: place a pass line bet from the panel, roll, bankroll moves; cash out closes the table', async ({ shared: app }) => {
   await app.reset(53); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('2d6');
   await app.page.click('#gamepanel button[aria-label="Pass line"]');
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bankrolls[0])).toBe(495);
@@ -52,7 +52,7 @@ test('craps: place a pass line bet from the panel, roll, bankroll moves; cash ou
 async function start(app, id, seed) {
   await app.reset(seed); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', id);
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
 }
 
 test('shut the box: roll, pick tiles from the panel, tiles shut', async ({ shared: app }) => {
@@ -117,11 +117,11 @@ test('farkle: banking passes the turn with holds and rings cleared (turn handoff
 test('craps: no betting while the dice are rolling; bets open again once the roll is reported', async ({ shared: app }) => {
   await app.reset(54); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   await app.page.click('#gamepanel button[aria-label="Pass line"]');
   const field = app.page.locator('#gamepanel button[aria-label="Field"]');
   await expect(field).toBeEnabled();
-  await app.page.click('#gamepanel button.big');   // start the roll (dice in the air)
+  await app.nav.roll();   // start the roll (dice in the air)
   expect(await app.run(pd => pd.rolling && !pd.settled)).toBe(true);
   await expect(field).toBeDisabled();
   await expect(app.page.locator('#gamepanel button:has-text("Cash out")')).toBeDisabled();
@@ -136,14 +136,14 @@ test('craps: no betting while the dice are rolling; bets open again once the rol
 test('craps: table spots (hardway, horn), engine roll lock via rollStart, come bet after a point (PD-142.32 UI)', async ({ shared: app }) => {
   await app.reset(56); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   const bets = () => app.run(pd => pd.GAMES.status(pd.game.state).bets);
   await app.page.click('#gamepanel button[aria-label="H6 (units of 1)"], #gamepanel button[aria-label="H6"]');
   expect((await bets()).map(b => [b.kind, b.number, b.amount])).toEqual([['hardway', 6, 5]]);   // off on the come-out, still accepted
   await app.page.click('#gamepanel button[aria-label^="Horn"]');
   expect((await bets()).find(b => b.kind === 'horn').amount).toBe(8);   // 5 rounded up to a multiple of 4
   // roll lock comes from the engine too
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   const mid = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(mid.rolling).toBe(true); expect(mid.canBet).toBe(false);
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
@@ -158,7 +158,7 @@ test('craps: table spots (hardway, horn), engine roll lock via rollStart, come b
 test('craps table: tap adds a unit, chip stacks show per player, tap takes a unit down, hold takes the bet down (PD-142.33)', async ({ shared: app }) => {
   await app.reset(57); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   const bets = () => app.run(pd => pd.GAMES.status(pd.game.state).bets.map(b => [b.kind, b.number, b.amount]));
   const six = '#gamepanel button[aria-label^="6 (units"]';
   await app.page.click(six);                                  // place 6: unit 6, table minimum 5 rounds up to 6
@@ -182,7 +182,7 @@ test('craps table: tap adds a unit, chip stacks show per player, tap takes a uni
 test('turn animations: a bust or a bank pulses the status line once (PD-142 animations)', async ({ shared: app }) => {
   await app.reset(58); await app.run(pd => pd.openGames());
   await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
-  await app.page.click('#gamepanel button.big');
+  await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   if (st.canBank && st.turnTotal > 0) {
