@@ -70,7 +70,9 @@ test('the Sound effects checkbox is gone from the panel (the drawer item is the 
 });
 
 test('the drawer opens as a pill once when a session starts, then slides shut', async ({ app, page }) => {
+  // a slow boot can outlast the pill, so record that it opened instead of polling for the moment
+  await page.addInitScript(() => { window.__pillSeen = false; new MutationObserver(() => { const d = document.getElementById('drawer'); if (d && d.classList.contains('open')) window.__pillSeen = true; }).observe(document, { subtree: true, attributes: true, childList: true }); });
   await app.open({ query: 'pill=1' });
-  await expect(page.locator('#drawer.open')).toHaveCount(1, { timeout: 5000 });
-  await expect(page.locator('#drawer.open')).toHaveCount(0, { timeout: 8000 });
+  await expect.poll(() => page.evaluate(() => window.__pillSeen), { timeout: 10_000 }).toBe(true);
+  await expect(page.locator('#drawer.open')).toHaveCount(0, { timeout: 10_000 });
 });
