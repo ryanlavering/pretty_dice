@@ -1,6 +1,6 @@
 # Navigation and control model: proposals (PD-142.38, deliverable 2)
 
-Status: 2026-11-14, for owner review. Built on [ui-controls-audit.md](ui-controls-audit.md). Mock-ups: [ui-navigation-mockups/index.html](ui-navigation-mockups/index.html) (open at `http://localhost:8136/docs/design/ui-navigation-mockups/`), with a picture of each: [A](ui-navigation-mockups/a-two-rooms.jpg), [B](ui-navigation-mockups/b-tab-bar.jpg), [C](ui-navigation-mockups/c-clear-mat.jpg).
+Status: 2026-11-14. **Decided: the owner chose A, Two rooms** (see "Owner decisions" at the end and [ui-navigation-plan.md](ui-navigation-plan.md)). B and C are kept for the record. Built on [ui-controls-audit.md](ui-controls-audit.md). Mock-ups: [ui-navigation-mockups/index.html](ui-navigation-mockups/index.html) (open at `http://localhost:8136/docs/design/ui-navigation-mockups/`), with a picture of each: [A](ui-navigation-mockups/a-two-rooms.jpg), [B](ui-navigation-mockups/b-tab-bar.jpg), [C](ui-navigation-mockups/c-clear-mat.jpg).
 
 **Recommendation: proposal A, "Two rooms"**, with the full-mat view from C kept as an option in the drawer. Reasons are in the comparison section. Five questions for the owner are at the end.
 
@@ -170,3 +170,12 @@ B is the fallback if the owner finds two levels (room, then tab) too deep in pra
 3. **Room names:** "Design | Play" (recommended), or keep "Showcase | Roll"?
 4. **Desktop scorecard:** move into the left panel's Scorecard tab (recommended, one home on both form factors), or keep the floating panel on wide screens?
 5. **Randomize as the Design room's gold dock button** (recommended), or leave it at the top of the Look tab and give Design no dock?
+
+## Owner decisions (2026-11-14)
+
+1. **A, Two rooms.** B and C brought nothing compelling.
+2. A must include a clearly visible **full-screen view** that hides the side/bottom pane: a collapse handle on the pane, plus Full view in the drawer and the H key.
+3. Die chips **load only**; the dock's Roll button throws.
+4. Room names **Design | Play**.
+5. Desktop scorecard moves into the **left panel tab**.
+6. **Randomize is not a mat action**: it stays in the Look tab, so the Design room has no gold dock button (this replaces the "Randomize" row in the dock table above). **Undo and Redo go on the mat** in the Design room, on one row with the shelf, which keeps its [+] slot (blank and random open the same draft).
