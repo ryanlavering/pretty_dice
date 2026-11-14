@@ -2,6 +2,7 @@
 // `{type:'roll'}` without values means "throw the dice" (the app throws, or runBots simulates), then act with the values.
 // Deterministic: the same state and `seed` always give the same move (randomness, used for bluffing and tie-breaks, comes from a PRNG seeded by both).
 import * as Y from './yahtzee.js';
+import { unitFor, snapDown } from './craps.js';
 
 export function hashSeed(state, seed = 0) {   // FNV-1a over the state text, mixed with the seed
   const str = JSON.stringify(state); let h = 2166136261 ^ seed;
@@ -81,7 +82,10 @@ function crapsMove(s, opts) {
   for (const p of crapsBotSeats(s, opts.seat)) {
     const bank = s.bankrolls[p], min = s.options.minBet, mine = k => s.bets.find(b => b.player === p && b.kind === k);
     if (!s.point && !mine('pass') && bank >= min) return { type: 'bet', kind: 'pass', amount: Math.min(2 * min, bank), player: p };
-    if (s.point && mine('pass') && !mine('passOdds') && bank >= min) return { type: 'bet', kind: 'passOdds', amount: Math.min(mine('pass').amount * s.options.oddsMax, bank), player: p };
+    if (s.point && mine('pass') && !mine('passOdds')) {
+      const unit = unitFor('passOdds', s.point), amount = snapDown(Math.min(mine('pass').amount * s.options.oddsMax, bank), unit);
+      if (amount >= unit) return { type: 'bet', kind: 'passOdds', amount, player: p };
+    }
   }
   return (s.bots || []).includes(s.shooter) ? { type: 'roll' } : null;
 }

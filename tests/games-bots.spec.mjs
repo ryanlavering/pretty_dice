@@ -91,6 +91,15 @@ test('Craps bot bets the pass line, then full odds, then rolls when it is the sh
   expect(status(played.state).bankrolls[0]).toBeGreaterThanOrEqual(0);
 });
 
+test('Craps bot snaps its odds to the unit so payouts are whole chips @quick', () => {
+  const t = newGame('craps', { players: ['Bot'], bots: [0], options: { bankroll: 36 } });
+  const lined = ok(t, botMove(t));                                    // pass line of 10, 26 left
+  const point6 = roll(lined, [3, 3]);
+  expect(botMove(point6)).toEqual({ type: 'bet', kind: 'passOdds', amount: 25, player: 0 });   // 26 snapped down to a multiple of 5 (6:5 odds)
+  const point5 = roll(lined, [2, 3]);
+  expect(botMove(point5)).toEqual({ type: 'bet', kind: 'passOdds', amount: 26, player: 0 });   // 5 pays 3:2: a multiple of 2
+});
+
 test('Liar\'s Dice bot never peeks: its move ignores other players\' dice @quick', () => {
   const rollAll = (s, hands) => hands.reduce((st, h) => roll(st, h), s);
   const mk = hands => rollAll(newGame('liarsdice', { players: ['A', 'B'], bots: [0, 1], options: { dice: 3 } }), hands);
