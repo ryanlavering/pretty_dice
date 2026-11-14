@@ -175,3 +175,18 @@ test('craps table: tap adds a unit, chip stacks show per player, tap takes a uni
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bankrolls[0])).toBe(475);
   await app.run(pd => pd.endGame());
 });
+
+test('turn animations: a bust or a bank pulses the status line once (PD-142 animations)', async ({ shared: app }) => {
+  await app.reset(58); await app.run(pd => pd.openGames());
+  await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
+  await app.page.click('#gamepanel button.big');
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const st = await app.run(pd => pd.GAMES.status(pd.game.state));
+  if (st.canBank && st.turnTotal > 0) {
+    await app.page.click('#gamepanel button:has-text("Bank")');
+    await expect(app.page.locator('#gamepanel .gstat.fx-bank')).toHaveCount(1);
+  } else {
+    await expect(app.page.locator('#gamepanel .gstat.fx-bust')).toHaveCount(1);          // a rolled 1 busts the turn
+  }
+  await app.run(pd => pd.endGame());
+});

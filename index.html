@@ -88,6 +88,8 @@
   :is(#gamepanel,#scorepane) .row.chips{flex-wrap:wrap;gap:4px} :is(#gamepanel,#scorepane) .chipsel{padding:4px 5px;min-width:0;flex:1} :is(#gamepanel,#scorepane) .chipsel.on{border-color:var(--accent);color:var(--accent);background:#2a2619}
   :is(#gamepanel,#scorepane) .cups{display:flex;flex-direction:column;gap:3px;margin:6px 0} :is(#gamepanel,#scorepane) .cup{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px} :is(#gamepanel,#scorepane) .cup.cur{border-color:var(--accent)} :is(#gamepanel,#scorepane) .cup.out{opacity:.4} :is(#gamepanel,#scorepane) .cup .pips{font-size:18px;letter-spacing:2px;line-height:1.1}
   :is(#gamepanel,#scorepane) .qty{min-width:28px;text-align:center;font-weight:700;font-size:16px} :is(#gamepanel,#scorepane) button.face{padding:6px 8px} :is(#gamepanel,#scorepane) button.face.on{border-color:var(--accent);color:var(--accent);background:#2a2619} :is(#gamepanel,#scorepane) .botlbl{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--dim)}
+  @keyframes fxbust{0%,100%{transform:none;color:inherit}15%{transform:translateX(-5px);color:#ff5a6e}35%{transform:translateX(5px);color:#ff5a6e}55%{transform:translateX(-3px)}75%{transform:translateX(3px)}} @keyframes fxhot{0%{text-shadow:0 0 0 #f2c14e}40%{text-shadow:0 0 14px #f2c14e;color:#f2c14e}100%{text-shadow:none}} @keyframes fxbank{0%{color:inherit}35%{color:#6fcf97;transform:scale(1.06)}100%{color:inherit;transform:none}}
+  .fx-bust{animation:fxbust .5s} .fx-hot{animation:fxhot .9s} .fx-bank{animation:fxbank .7s} @media (prefers-reduced-motion:reduce){ .fx-bust,.fx-hot,.fx-bank{animation:none} }
   :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none} #tools #logbtn{display:none} body.inroll #tools #logbtn{display:grid} body:not(.inroll) #logpanel{display:none}
@@ -2568,12 +2570,12 @@ function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) 
   if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; if(spec.private){ hideDice(true); gameMsg=''; }
   if(game.id==='craps'){ const ev=r.events, tot=ev.find(e=>e.type==='rolled')?.total, pay=ev.filter(e=>e.type==='payout'&&e.amount);
     gameMsg='Rolled '+tot+(ev.some(e=>e.type==='sevenOut')?' · seven out':'')+(ev.some(e=>e.type==='pointMade')?' · point made':'')+pay.map(e=>' · '+game.state.players[e.player]+' '+(e.amount>0?'+':'')+e.amount).join(''); }
-  if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); const pts=r.events.find(e=>e.type==='turnScore'||e.type==='scored'); gameMsg=bust?'Bust! Turn total lost':(pts?(game.id==='bunco'&&pts.kind==='bunco'?'BUNCO! ':'')+'+'+pts.points:''); gameSync(); gtiles.clear(); }
+  if(TURN_GAMES.includes(game.id)){ const bust=r.events.find(e=>e.type==='bust'); const pts=r.events.find(e=>e.type==='turnScore'||e.type==='scored'); if(bust) gflash='bust'; gameMsg=bust?'Bust! Turn total lost':(pts?(game.id==='bunco'&&pts.kind==='bunco'?'BUNCO! ':'')+'+'+pts.points:''); gameSync(); gtiles.clear(); }
   renderGame(); }
 function gameSetAside(slots){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
-  game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
+  game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); if(hot) gflash='hot'; gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
 function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
-  game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
+  game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gflash='bank'; gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
 function gameScore(cat){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
@@ -2592,7 +2594,7 @@ function gviewer(){ if(!game||!game.info.hidden) return undefined; const hum=hum
   const h=GAMES.status(game.state,null).handoff; if(h==null){ game.ack=null; return null; } return game.ack===h?h:null; }   // several humans: only after the device was handed over
 function needPass(){ if(!game||!game.info.hidden||humanSeats().length<2) return false; const h=GAMES.status(game.state,null).handoff; return h!=null&&!(game.state.bots||[]).includes(h)&&game.ack!==h; }
 function hideDice(on){ for(const d of dice) d.mesh.visible=!on; }   // a private roll is "under the cup": the settled dice vanish from the mat; the owner's dice are drawn in the panel
-let botTimer=null, botN=0, lbid=null;
+let botTimer=null, botN=0, lbid=null, gflash=null;   // gflash: 'bust' | 'hot' | 'bank' plays once on the next render (a short colour pulse on the status line)
 const BOT_MS=+new URLSearchParams(location.search).get('botms')||750;
 function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
   const st=GAMES.status(game.state); if(st.phase==='over'||!st.botTurn) return; botTimer=setTimeout(botStep,BOT_MS); }
@@ -2634,6 +2636,7 @@ function renderGame(){
   const phone=phoneUI(); GP=phone?SP:GPstage; if(!phone){ SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); }
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   if(phone){ PT.hidden=false; $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
+  if(gflash){ for(const el of [GP.querySelector('.gstat'),GPstage.querySelector('.st')]) if(el){ el.classList.remove('fx-bust','fx-hot','fx-bank'); void el.offsetWidth; el.classList.add('fx-'+gflash); } gflash=null; }
   gsaveGame(); botPump();
 }
 phoneMq.addEventListener?.('change',()=>{ if(game||!GPstage.hidden||!SP.hidden){ paneAuto=phoneUI(); renderGame(); } });
