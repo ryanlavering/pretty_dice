@@ -29,3 +29,18 @@ test('the roll log shows a + init button per roll and the tracker rows, names ed
   await page.locator('#logpanel .lih .linkbtn', { hasText: 'Next' }).click();
   await expect(page.locator('#logpanel .lih')).toContainText('round 1');
 });
+
+// PD-142.14.1.8.1: renaming an initiative row labels its roll log entry, and the label stays after the row is deleted.
+test('renaming a combatant sets its roll log label, kept after the row is deleted (.14.1.8.1)', async ({ app, page }) => {
+  await app.open();
+  await app.run(pd => { pd.state.notation = 'd20+3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); });
+  await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
+  await app.run(pd => pd.renderLog());
+  await page.locator('#logpanel .ini').first().click();
+  const inp = page.locator('#logpanel .lir input').first();
+  await inp.fill('Goblin boss'); await inp.press('Enter');
+  await expect(page.locator('#logpanel .lbl').first()).toHaveText('Goblin boss');
+  await page.locator('#logpanel .lir button[aria-label="Remove from initiative"]').first().click();
+  await expect(page.locator('#logpanel .lir')).toHaveCount(0);
+  await expect(page.locator('#logpanel .lbl').first()).toHaveText('Goblin boss');
+});

@@ -80,7 +80,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await expect(page.locator('#quickres')).toHaveClass(/on/);   // big gold total over the sheet
   await expect(page.locator('#quickres .tot')).toHaveText(/^\d+$/);
   expect(await page.locator('#quickres .tot').evaluate(e => getComputedStyle(e).fontFamily)).toContain('Cinzel');
-  await expect(page.locator('#setlist .setrow[data-id="adv"] .main > small')).toContainText('last ');
+  await expect(page.locator('#setlist .setrow[data-id="adv"] .main > small')).toContainText('last: ');
   expect(await app.run(pd => pd.bag.log.length)).toBe(1);
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Delete…' }).click();

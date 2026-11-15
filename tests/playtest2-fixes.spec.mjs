@@ -170,8 +170,10 @@ test('the dock rolls typed text with the Roll button and keeps nothing stale (.1
   await box.fill('3d6+2');
   await page.locator('#rollbtn').click();
   await expect.poll(() => app.run(pd => pd.state.notation)).toBe('3d6+2');
-  await expect(box).toHaveValue('');
-  await expect(box).toHaveAttribute('placeholder', /3d6\+2/);
+  await expect(box, 'the text stays after the roll (.14.1.6.2)').toHaveValue('3d6+2');
+  await page.locator('body').click({ position: { x: 5, y: 5 } }); await box.focus();
+  expect(await box.evaluate(e => [e.selectionStart, e.selectionEnd, e.value.length]), 'focus selects all').toEqual([0, 5, 5]);
+  await page.keyboard.type('d8'); await expect(box).toHaveValue('d8');
 });
 
 // PD-142.14.1.1.2: dice left out by keep/drop get a grey ring.

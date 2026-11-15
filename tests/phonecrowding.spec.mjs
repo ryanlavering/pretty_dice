@@ -15,7 +15,7 @@ test('20d4 on a 360x640 phone: breakdown, chips and quick roll bar stay on scree
     return { W, brk: brk && box(brk), chips, qb, kidsInside: kids.every(k => k.l >= qb.l - 1 && k.r <= qb.r + 1), chipOverlap: chips.some((a, i) => chips.some((b, j) => j > i && overlap(a, b))), docW: document.documentElement.scrollWidth };
   });
   expect(r.brk.l).toBeGreaterThanOrEqual(0); expect(r.brk.r).toBeLessThanOrEqual(r.W);
-  expect(r.qb.l).toBeGreaterThanOrEqual(0); expect(r.qb.r).toBeLessThanOrEqual(r.W); expect(r.kidsInside).toBe(true);
+  expect(r.qb.l).toBeGreaterThanOrEqual(0); expect(r.qb.r).toBeLessThanOrEqual(r.W); expect(r.qb.b - r.qb.t).toBeLessThan(60);   // one row: children may scroll out of the ribbon, the bar itself stays on screen
   expect(r.chips.length).toBeGreaterThan(0); for (const c of r.chips) { expect(c.l).toBeGreaterThanOrEqual(0); expect(c.r).toBeLessThanOrEqual(r.W); }
   expect(r.chipOverlap).toBe(false); expect(r.docW).toBeLessThanOrEqual(r.W);
   await page.screenshot({ path: 'test-results/phone-crowding-20d4-360x640.png' });
