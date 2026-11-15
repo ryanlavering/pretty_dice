@@ -88,7 +88,8 @@ test('the notation box has its own row (2d20kh1+5 is not cut off) and log header
 test('initiative: add a named entry with a score by hand, sorted among rolled rows (.6)', async ({ app, page }) => {
   await app.open();
   await app.nav.toPlay();
-  await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
+  await app.run(pd => pd.simRoll());   // settle the dice at once: the log fades and ignores taps while they move
+  await app.nav.openLog();
   await app.run(pd => pd.renderLog());
   await page.locator('#logpanel .liopen').click();
   const name = page.locator('#logpanel .liadd input').first(), score = page.locator('#logpanel .liadd input[type=number]');
@@ -164,6 +165,7 @@ test('a dropped nat 1 or nat 20 does not trigger the nat effect (.14.1.1.3)', as
 test('the dock rolls typed text with the Roll button and keeps nothing stale (.14.1.6.1)', async ({ app, page }) => {
   await app.open();
   await app.nav.toPlay();
+  await app.run(pd => pd.simRoll());   // settle the dice at once: the log fades and ignores taps while they move
   const box = page.locator('#rollbox');
   await expect(box).toHaveAttribute('placeholder', /\S/);
   expect(await box.evaluate(e => getComputedStyle(e, '::placeholder').fontStyle)).toBe('italic');

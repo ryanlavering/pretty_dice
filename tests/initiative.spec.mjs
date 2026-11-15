@@ -20,7 +20,7 @@ test('group rolls feed an ordered initiative list with turn and round, and it su
 test('the roll log shows a + init button per roll and the tracker rows, names editable', async ({ app, page }) => {
   await app.open();
   await app.run(pd => { pd.state.notation = '3x d20+1'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); });
-  await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
+  await app.nav.openLog();
   await app.run(pd => pd.renderLog());
   await page.locator('#logpanel .ini').first().click();
   await expect(page.locator('#logpanel .lir')).toHaveCount(3);
@@ -34,7 +34,7 @@ test('the roll log shows a + init button per roll and the tracker rows, names ed
 test('renaming a combatant sets its roll log label, kept after the row is deleted (.14.1.8.1)', async ({ app, page }) => {
   await app.open();
   await app.run(pd => { pd.state.notation = 'd20+3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); });
-  await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
+  await app.nav.openLog();
   await app.run(pd => pd.renderLog());
   await page.locator('#logpanel .ini').first().click();
   const inp = page.locator('#logpanel .lir input').first();
