@@ -1,0 +1,46 @@
+// Navigation slice 4 (PD-142.38): two rooms, Design | Play. The switch never throws dice, a running game survives a visit to Design,
+// Randomize and Space belong to the Design room only.
+import { test, expect } from './helpers/app.mjs';
+
+const st = app => app.run(pd => ({ rolling: pd.rolling, settled: pd.settled, placed: pd.placed, game: !!pd.game, cls: document.body.className, state: JSON.stringify(pd.state) }));
+
+test.beforeEach(async ({ shared }) => { await shared.reset(7); });
+
+test('the Design | Play switch never throws: Play puts the dice down unrolled, Design returns to the showcase', async ({ shared: app }) => {
+  await expect(app.page.locator('#back')).toHaveText('Design'); await expect(app.page.locator('#roll')).toHaveText('Play');
+  expect(await app.page.locator('#mode').count(), 'the round mode button is gone').toBe(0);
+  await app.nav.toPlay();
+  expect(await st(app)).toMatchObject({ rolling: true, placed: true, settled: true });
+  await expect(app.page.locator('#roll')).toHaveClass(/on/); await expect(app.page.locator('#qbar')).toBeVisible();
+  await app.nav.toPlay();   // a second tap on the active half does nothing
+  expect(await st(app)).toMatchObject({ rolling: true, placed: true });
+  await app.nav.toDesign();
+  expect(await st(app)).toMatchObject({ rolling: false }); await expect(app.page.locator('#back')).toHaveClass(/on/);
+  await expect(app.page.locator('#qbar')).toBeHidden();
+  await app.nav.toDesign(); expect(await st(app)).toMatchObject({ rolling: false });
+});
+
+test('a running game survives a visit to Design; Play carries a dot meanwhile; both halves work in a game', async ({ shared: app }) => {
+  await app.run(pd => pd.startGame('farkle', ['P1'], {}, []));
+  expect(await st(app)).toMatchObject({ game: true, rolling: true });
+  const before = await app.run(pd => JSON.stringify(pd.game.state));
+  await app.page.locator('#back').click();
+  expect(await st(app)).toMatchObject({ game: true, rolling: false }); expect((await st(app)).cls).toContain('design');
+  await expect(app.page.locator('#roll')).toHaveClass(/dot/); await expect(app.page.locator('#qbar')).toBeHidden();
+  expect(await app.run(pd => JSON.stringify(pd.game.state))).toBe(before);
+  await app.page.locator('#roll').click();
+  expect(await st(app)).toMatchObject({ game: true, rolling: true }); await expect(app.page.locator('#roll')).not.toHaveClass(/dot/);
+  await expect(app.page.locator('#qbar')).toBeVisible();
+  expect(await app.run(pd => JSON.stringify(pd.game.state))).toBe(before);
+});
+
+test('Randomize and Space belong to the Design room', async ({ shared: app }) => {
+  await app.nav.toDesign(); await expect(app.page.locator('#rand')).toBeVisible();
+  const d0 = await app.run(pd => JSON.stringify(pd.designToJSON()));
+  await app.page.keyboard.press('Space');
+  expect(await app.run(pd => JSON.stringify(pd.designToJSON())), 'Space randomizes in Design').not.toBe(d0);
+  await app.nav.toPlay(); await expect(app.page.locator('#rand')).toBeHidden();
+  const d1 = await app.run(pd => JSON.stringify(pd.designToJSON()));
+  await app.page.keyboard.press('Space');
+  expect(await app.run(pd => JSON.stringify(pd.designToJSON())), 'Space is inert in Play').toBe(d1);
+});

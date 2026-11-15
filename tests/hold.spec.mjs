@@ -30,7 +30,7 @@ test('hold: release clears; a new set and leaving the roll clear all holds; unse
   await app.run(async pd => { pd.state.notation = '4d8'; await pd.buildDice(); });
   expect(await app.run(pd => pd.held)).toEqual([]);
   await app.run(pd => { pd.simRoll(); pd.toggleHold(1); });
-  await app.run(pd => document.getElementById('mode').click());   // leave the roll view
+  await app.run(pd => document.getElementById('back').click());   // leave the roll view
   expect(await app.run(pd => pd.held)).toEqual([]);
 });
 

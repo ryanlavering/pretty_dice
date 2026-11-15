@@ -45,11 +45,11 @@ const STATES = {
   'showcase': async () => {},
   'showcase-info': async p => { await tap(p, '#info'); await wait(p); },
   'showcase-panel-hidden': async p => { await tap(p, '#layout'); await wait(p, 800); },
-  'roll': async p => { await tap(p, '#mode'); await settle(p); },
-  'roll-custom-set': async p => { await p.evaluate(() => { location.hash = ''; }); await tap(p, '#mode'); await settle(p); },
-  'roll-log': async p => { await tap(p, '#mode'); await settle(p); await tap(p, '#logbtn'); await wait(p); },
-  'roll-panel-hidden': async p => { await tap(p, '#mode'); await settle(p); await tap(p, '#layout'); await wait(p, 800); },
-  'roll-held': async p => { await p.fill('#notation', '5d6'); await tap(p, '#notapply'); await wait(p, 800); await tap(p, '#mode'); await settle(p); for (const i of [0, 1]) { const q = await p.evaluate(i => window.__pd.bodyScreen(i), i); await p.mouse.click(q.x, q.y); await wait(p, 300); } },
+  'roll': async p => { await tap(p, '#roll'); await settle(p); },
+  'roll-custom-set': async p => { await p.evaluate(() => { location.hash = ''; }); await tap(p, '#roll'); await settle(p); },
+  'roll-log': async p => { await tap(p, '#roll'); await settle(p); await tap(p, '#logbtn'); await wait(p); },
+  'roll-panel-hidden': async p => { await tap(p, '#roll'); await settle(p); await tap(p, '#layout'); await wait(p, 800); },
+  'roll-held': async p => { await p.fill('#notation', '5d6'); await tap(p, '#notapply'); await wait(p, 800); await tap(p, '#roll'); await settle(p); for (const i of [0, 1]) { const q = await p.evaluate(i => window.__pd.bodyScreen(i), i); await p.mouse.click(q.x, q.y); await wait(p, 300); } },
   'showcase-add-menu': async p => { await tap(p, '#cards >> text=Add'); await wait(p, 600); },
   'showcase-custom-set': async p => { await p.fill('#notation', '2d6+d20+3'); await tap(p, '#notapply'); await wait(p, 1200); },
   'bag-set-editor': async p => { await p.fill('#notation', '2d6+3'); await tap(p, '#notapply'); await wait(p, 800); await p.fill('#setname', 'Thorn axe'); await tap(p, '#setsavebtn'); await wait(p, 600); await tap(p, '#bagopen'); await wait(p, 400); await tap(p, '#sheettabs button[data-tab=sets]'); await wait(p, 600); await tap(p, '#setlist .setrow .pen'); await wait(p, 700); },
@@ -133,7 +133,6 @@ if (!filters.length || filters.includes('behaviours')) {
     'key t (held)': async p => { await p.keyboard.down('t'); await wait(p, 700); },
     'panel #roll (Showcase|Roll switch, Roll half)': p => tap(p, '#roll'),
     'panel #back (Showcase half)': p => tap(p, '#back'),
-    'mat #mode (round button, bottom right)': p => tap(p, '#mode'),
     'quick bar Roll (empty box)': p => tap(p, '#qbar button:text-is("Roll")'),
     'quick bar d6 chip': p => tap(p, '#qbar button:text-is("d6")'),
     'flick on the mat': async p => { const c = await centre(p); await p.mouse.move(c.x - 80, c.y); await p.mouse.down(); await p.mouse.move(c.x + 80, c.y + 10, { steps: 3 }); await p.mouse.up(); },
@@ -151,7 +150,7 @@ if (!filters.length || filters.includes('behaviours')) {
   };
   const CONTEXTS = {
     'showcase': { setup: async () => {}, skip: /quick bar|flick|settled die|total|game panel/ },
-    'roll (5d6, settled)': { query: 'shape=custom', setup: async p => { await p.fill('#notation', '5d6'); await tap(p, '#notapply'); await wait(p, 800); await tap(p, '#mode'); await settle(p); }, skip: /spinbtn|game panel/ },
+    'roll (5d6, settled)': { query: 'shape=custom', setup: async p => { await p.fill('#notation', '5d6'); await tap(p, '#notapply'); await wait(p, 800); await tap(p, '#roll'); await settle(p); }, skip: /spinbtn|game panel/ },
     'game: Yahtzee after the first roll': { setup: async p => { await startGame(p, 'Yahtzee'); await tap(p, '#gamepanel button.big'); await settle(p); }, skip: /spinbtn|drag on|right-drag|wheel|double-click|snd|long-press|#layout|key h|key t/ },
     'game: Yahtzee before the first roll': { setup: async p => { await startGame(p, 'Yahtzee'); }, skip: /spinbtn|drag on|right-drag|wheel|double-click|snd|long-press|#layout|key h|key t|settled die|total/ },
   };
