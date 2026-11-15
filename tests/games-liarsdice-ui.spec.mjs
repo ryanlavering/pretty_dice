@@ -22,7 +22,7 @@ test('liar\'s dice hot-seat: pass screens hide dice, each player sees only their
   await expect(panel(app)).toContainText('Pass the device to Player 1');
   expect(await text(app)).not.toMatch(PIP);
   await app.page.click('#gamepanel button:has-text("I\'m Player 1")');
-  await expect(panel(app).locator('button.big')).toContainText('under the cup');
+  await expect(app.page.locator('#rollbtn')).toContainText('under the cup');
   await rollUnderCup(app);
   await expect.poll(() => app.run(pd => pd.rolling), { timeout: 5000 }).toBe(false);   // the set goes back to the showcase: no values on the mat
   await expect(panel(app)).toContainText('Pass the device to Player 2');
@@ -76,7 +76,7 @@ test('bot seat in another game: the bot takes its turn by itself and hands back'
   expect(await app.run(pd => pd.game.state.players[1])).toBe('Bot 2');
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
-  if (st.canBank && st.player === 0) await app.page.click('#gamepanel button:has-text("Bank")');
+  if (st.canBank && st.player === 0) await app.page.click('#qbar button:has-text("Bank")');
   await expect.poll(() => app.run(pd => { const s = pd.GAMES.status(pd.game.state); return s.botTurn; }), { timeout: 15000 }).toBe(true);
   // the test page does not step physics on its own, so settle each of the bot's throws by hand; the bot decides (roll, bank) by itself
   for (let i = 0; i < 40; i++) {

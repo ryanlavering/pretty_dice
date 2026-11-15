@@ -10,7 +10,7 @@ test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: 
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(st.dice[0]).toBeGreaterThanOrEqual(1);
   if (st.dice[0] === 1) { expect(st.player).toBe(0); expect(st.turnTotal).toBe(0); }   // 1 busts; one player keeps the turn
-  else { expect(st.turnTotal).toBe(st.dice[0]); await app.page.click('#gamepanel button:has-text("Bank")'); expect(await app.run(pd => pd.GAMES.status(pd.game.state).scores[0])).toBe(st.dice[0]); }
+  else { expect(st.turnTotal).toBe(st.dice[0]); await app.page.click('#qbar button:has-text("Bank")'); expect(await app.run(pd => pd.GAMES.status(pd.game.state).scores[0])).toBe(st.dice[0]); }
   await app.run(pd => pd.endGame());
 });
 
@@ -43,7 +43,7 @@ test('craps: place a pass line bet from the panel, roll, bankroll moves; cash ou
   await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(st.rollsUsed).toBe(1);
-  await app.page.click('#gamepanel button:has-text("Cash out")');
+  await app.page.click('#qbar button:has-text("Cash out")');
   const end = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(end.phase).toBe('over'); expect(end.bets.length).toBe(0);
   await app.run(pd => pd.endGame());
@@ -107,7 +107,7 @@ test('farkle: banking passes the turn with holds and rings cleared (turn handoff
   await app.page.click('#gamepanel .sugs button.best');
   const mid = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held }));
   expect(mid.held.length).toBeGreaterThan(0);
-  await app.page.click('#gamepanel button:has-text("Bank")');
+  await app.page.click('#qbar button:has-text("Bank")');
   const end = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held, rings: pd.holdRings }));
   expect(end.s.player).toBe(1); expect(end.s.turnTotal).toBe(0); expect(end.s.held.some(Boolean)).toBe(false);
   expect(end.held).toEqual([]); expect(end.rings).toBe(0);
@@ -124,7 +124,7 @@ test('craps: no betting while the dice are rolling; bets open again once the rol
   await app.nav.roll();   // start the roll (dice in the air)
   expect(await app.run(pd => pd.rolling && !pd.settled)).toBe(true);
   await expect(field).toBeDisabled();
-  await expect(app.page.locator('#gamepanel button:has-text("Cash out")')).toBeDisabled();
+  await expect(app.page.locator('#qbar button:has-text("Cash out")')).toBeDisabled();
   expect(await app.run(() => document.querySelectorAll('#gamepanel .ctab button:not(:disabled)').length), 'every spot and chip is locked').toBe(0);
   const before = await app.run(pd => pd.GAMES.status(pd.game.state).bets.length);
   await app.run(pd => { pd.simRoll({ rerolls: 6 }); });
@@ -186,7 +186,7 @@ test('turn animations: a bust or a bank pulses the status line once (PD-142 anim
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   if (st.canBank && st.turnTotal > 0) {
-    await app.page.click('#gamepanel button:has-text("Bank")');
+    await app.page.click('#qbar button:has-text("Bank")');
     await expect(app.page.locator('#gamepanel .gstat.fx-bank')).toHaveCount(1);
   } else {
     await expect(app.page.locator('#gamepanel .gstat.fx-bust')).toHaveCount(1);          // a rolled 1 busts the turn

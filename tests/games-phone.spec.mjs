@@ -22,7 +22,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     const hit = await app.run(pd => { const r = document.getElementById('gamepanel').getBoundingClientRect(); return pd.dice.map((_, i) => pd.bodyScreen(i)).filter(q => q.x >= r.left && q.x <= r.right && q.y >= r.top && q.y <= r.bottom).length; });
     expect(hit, 'dice under the strip').toBe(0);
     // roll from the strip, score from the pane
-    await expect(app.page.locator('#gamepanel.strip button.big')).toBeEnabled();
+    await expect(app.page.locator('#rollbtn')).toBeEnabled();
     await expect(app.page.locator('#scorepane table')).toBeVisible();
     await app.page.click('#scorepane td.pick');
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(0);
