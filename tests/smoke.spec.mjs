@@ -46,7 +46,7 @@ test.describe('desktop', () => {
 
   test('shape buttons, also while rolling; Standard 7 builds seven dice', async ({ app, page }) => {
     await app.nav.toggleMode();
-    await page.click('#shapes [data-id=d8]');
+    await page.evaluate(() => document.querySelector('#shapes [data-id=d8]').click());   // the shape grid is a Look-tab control (slice 5), hidden in the Play room: drive its handler while rolling
     await expect.poll(() => app.run(pd => [pd.state.shape, pd.dice.length, pd.bodies.length, pd.rolling])).toEqual(['d8', 1, 1, true]);
     await app.nav.toggleMode();
     await page.click('#shapes [data-id=set7]');
@@ -265,14 +265,16 @@ test('roll feel section holds the physics sliders and comes first in the roll vi
   const inRoll = await app.page.evaluate(() => ['bounce', 'fricdice', 'fricmat', 'volume'].every(id => document.getElementById('sec-roll').contains(document.getElementById(id))));
   expect(inRoll, 'bounciness, friction and volume sit in #sec-roll').toBe(true);
   const top = () => app.page.evaluate(() => ({ roll: document.getElementById('sec-roll').getBoundingClientRect().top, shape: [...document.querySelectorAll('#panes h2')].find(h => h.textContent === 'Shape').getBoundingClientRect().top }));
-  let t = await top(); expect(t.roll, 'showcase: below the look controls').toBeGreaterThan(t.shape);
-  await app.run(pd => pd.startRoll());
-  t = await top(); expect(t.roll, 'roll view: first in the pane').toBeLessThan(t.shape);
+  // slice 5: the roll-feel section lives in the Play room's Table tab; the Look tab hides it
+  expect(await app.page.evaluate(() => getComputedStyle(document.getElementById('sec-roll')).display), 'Design room: hidden').toBe('none');
+  await app.nav.toPlay();
+  expect(await app.page.evaluate(() => getComputedStyle(document.getElementById('sec-roll')).display), 'Play room: shown').not.toBe('none');
+  const t = await top(); expect(t.roll, 'Play room: first in the pane').toBeGreaterThan(0);
 });
 
 // PD-97: the Test sound button plays a blip inside the tap and reports the audio state (so a silent phone can be diagnosed).
 test('Test sound plays a blip and reports the audio state', async ({ app }) => {
-  await app.open();
+  await app.open(); await app.nav.toPlay();   // Test sound lives in the Play room's Table tab (slice 5)
   await app.page.click('#soundtest');
   await expect.poll(() => app.page.textContent('#soundstat'), { timeout: 30_000 }).toMatch(/^audio (running|suspended|interrupted)/);
   expect(await app.run(pd => pd.sfx.ctx !== null), 'audio context was created by the tap').toBe(true);
@@ -282,7 +284,7 @@ test('Test sound plays a blip and reports the audio state', async ({ app }) => {
 test.describe('iPhone user agent', () => {
   test.use({ userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1' });
   test('a tap starts a silent audio loop from a data: URI so the silent switch does not mute the dice', async ({ app }) => {
-    await app.open();
+    await app.open(); await app.nav.toPlay();
     await app.page.click('#soundtest');
     await expect.poll(() => app.run(pd => pd.sfx.hold ? pd.sfx.hold.src.slice(0, 22) : null), { timeout: 10_000 }).toBe('data:audio/wav;base64,');
   });

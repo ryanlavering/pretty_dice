@@ -291,6 +291,7 @@ test('a set mixes designs: @design notation, one look per design, rolls and read
   await expect(page.locator('#result')).toContainText('1d8:');   // the design shows as a chip (named in its title), not as text
   await expect(page.locator('#result .brk .rt .chip[title="Gold"]')).toHaveCount(1);
   await expect(page.locator('#termchips button')).toHaveCount(3);
+  await app.nav.toDesign();   // the set's chips are Look-tab controls (slice 5)
   await page.locator('#termchips button', { hasText: 'Gold' }).click();   // a chip removes its term
   expect(await app.run(pd => pd.state.notation)).toBe('2d6@bone+1d20@amethyst+1');
 });

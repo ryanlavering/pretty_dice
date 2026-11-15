@@ -51,6 +51,7 @@ test('a broken sample set degrades to the procedural synth', async ({ app, page 
 test('the choice persists, can be preset with ?sound=, and the dropdown drives it', async ({ app, page }) => {
   await app.open({ query: 'sound=proc' });
   expect(await app.run(pd => pd.soundBackend)).toBe('proc');
+  await app.nav.toPlay();   // the sound-set menu lives in the Play room's Table tab (slice 5)
   await page.selectOption('#sndbk', 'classic');
   expect(await app.run(pd => pd.soundBackend)).toBe('classic');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('prettydice.v1')).soundBk)).toBe('classic');
