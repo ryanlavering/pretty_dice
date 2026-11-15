@@ -124,3 +124,23 @@ test('set editor: a Save sits right under the result table box, saves the table,
   const table = await app.run(pd => pd.bag.sets.at(-1).table);
   expect(table).toContain('Goblins');
 });
+
+test.describe('phone dock and log reach (.2 .3)', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the dock is one slim row, the settled die is not under it, and the log, + init and initiative rows can be tapped', async ({ app, page }) => {
+    await app.open();
+    await app.nav.toPlay();
+    await app.run(pd => { pd.simRoll(); });
+    const dock = await page.locator('#qbar').boundingBox();
+    expect(dock.height, 'slim dock').toBeLessThan(70);
+    await app.nav.openLog();
+    await app.run(pd => { pd.initOps.add([{ name: 'Mira', total: 17 }]); pd.renderLog(); });
+    const panel = await page.locator('#logpanel').boundingBox();
+    expect(panel.y + panel.height, 'log ends above the dock').toBeLessThanOrEqual(dock.y + 2);
+    for (const sel of ['#logpanel .ini', '#logpanel .lir input', '#logpanel .liopen']) {
+      const loc = page.locator(sel).first(); await loc.scrollIntoViewIfNeeded();
+      const hit = await loc.evaluate(e => { const r = e.getBoundingClientRect(), t = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return e === t || e.contains(t); });
+      expect(hit, sel + ' is on top where it is drawn').toBe(true);
+    }
+  });
+});
