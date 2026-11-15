@@ -4,7 +4,7 @@
 //  toPlay()/toDesign()  go to the roll mat / the showcase (never throw dice) -- today the round #mode button
 //  toggleMode()         a plain tap of that button, for tests of the toggle itself
 //  openBag() openGames() openLog()   open the bag sheet / games panel / roll log
-//  roll()               the roll button of the current game panel (setup "Start game" or in-game Roll)
+//  roll()               the roll button of the current game panel (setup "Start game" or in-game Roll); with no game panel showing, the dock's #rollbtn (slice 2)
 //  sound() pauseSpin() layout() resetView()   the utility items: each opens the drawer first (slice 1); layout() = the Full view item
 //  openDrawer() closeDrawer()   the utility drawer (paired-circles button, #drawerbtn)
 //  fullView(on)         hide (on=true) or restore the side pane with the two handles (#paneclose / #paneopen); H also toggles it
@@ -24,7 +24,7 @@ export const navFor = page => {
     openBag: () => click('#bagbtn'),
     openGames: () => click('#gamesbtn'),
     openLog: () => click('#logbtn'),
-    roll: () => page.locator('#gamepanel button.big:visible, #scorepane button.big:visible').first().click(),
+    async roll() { const g = page.locator('#gamepanel button.big:visible, #scorepane button.big:visible'); await ((await g.count()) ? g.first() : page.locator('#rollbtn')).click(); },
     async sound() { await this.openDrawer(); await click('#snd'); },
     async pauseSpin() { await this.openDrawer(); await click('#spinbtn'); },
     async layout() { await this.openDrawer(); await click('#layout'); },

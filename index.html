@@ -169,7 +169,11 @@
   /* PD-142.14.1.6: the quick roll bar takes the shelf's place at the table: a formula box, saved sets and plain dice, so the dice change without Showcase or the bag */
   #qbar{position:absolute;left:64px;right:64px;bottom:8px;z-index:7;display:none;gap:6px;align-items:center;overflow-x:auto;padding:5px 8px;background:rgba(20,23,31,.82);border:1px solid var(--line);border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);scrollbar-width:none}
   body.inroll:not(.game):not(.lab) #qbar:not([hidden]){display:flex} body.throwing #qbar{opacity:.35}
-  #qbar input{flex:0 0 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a}
+  /* PD-142.38 slice 2: the bar is the dock: a formula box and the one gold Roll button. Die and set chips moved to the panel (#dicechips) and only load */
+  #qbar{max-width:440px;margin:0 auto} #qbar #rollbtn{background:var(--accent);color:#1a1405;border:0;font-weight:700;height:34px;padding:0 20px} #qbar #rollbtn:hover{color:#1a1405;filter:brightness(1.08)}
+  #sec-dice{display:none} body.inroll:not(.game) #sec-dice{display:block;order:-2} #dicechips{display:flex;flex-wrap:wrap;gap:6px}
+  #dicechips button{flex:none;height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #dicechips button:hover{border-color:var(--accent);color:var(--accent)} #dicechips .qsep{flex:0 0 100%;height:0}
+  #qbar input{flex:1 1 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a}
   #qbar button{flex:none;display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar button:hover{border-color:var(--accent);color:var(--accent)} #qbar .qsep{flex:none;width:1px;height:20px;background:var(--line)}
   #logpanel .lwho input{width:100%;box-sizing:border-box;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin-bottom:6px} #logpanel .lbl,#logpanel .ini{font:600 11px Inter,sans-serif;color:var(--accent);background:none;border:0;padding:0;cursor:pointer} #logpanel .lbl.empty{color:var(--dim);font-weight:500;opacity:.7} #logpanel .lbi{width:90px;font:inherit;font-size:11px;color:var(--ink);background:#1d212c;border:1px solid var(--accent);border-radius:4px;padding:1px 4px} #logpanel .who{color:var(--dim);margin-left:auto}   /* PD-142.14.1.3 */
   #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.1;pointer-events:none}   /* PD-142.14.1.12: the log never hides dice that are still moving */
@@ -333,7 +337,7 @@
     <div id="settingspane">
     <h1>PRETTY DICE</h1>
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
-    <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view (tap again to re-roll)">Roll</button></div>
+    <div id="modesw" role="group" aria-label="View"><button id="back" type="button">Showcase</button><button id="roll" type="button" title="Switch to roll view">Roll</button></div>
     <div id="bagbox">
     <div id="bagrow"><button id="bagopen" type="button" title="Open the whole bag"><span id="bagth" class="th"></span><span class="bt"><span id="bagname"></span><small id="bagpos"></small></span></button><span id="modbadge" hidden>Modified</span></div>
     <div id="bagact" hidden><button id="bsave" type="button"></button><button id="bcopy" type="button">Save as copy</button><button id="brevert" type="button">Revert</button></div>
@@ -349,7 +353,7 @@
 
     <div id="customctl">
       <h2>Custom set</h2>
-      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notadv" type="button" title="Roll the d20 with advantage (2d20, keep the highest)" style="padding:7px 8px;flex:none">Adv</button><button id="notdis" type="button" title="Roll the d20 with disadvantage (2d20, keep the lowest)" style="padding:7px 8px;flex:none">Dis</button><button id="notclear" class="ico" type="button" title="Reset the set to a single d20" aria-label="Reset the set to a single d20"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></svg></button></div>
+      <div class="row"><input id="notation" type="text" spellcheck="false" placeholder="4d6+2d10+3" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:7px"><button id="notapply" style="padding:7px 10px;flex:none">Set</button><button id="notadv" type="button" title="Advantage: 2d20, keep the highest" style="padding:7px 8px;flex:none">Adv</button><button id="notdis" type="button" title="Disadvantage: 2d20, keep the lowest" style="padding:7px 8px;flex:none">Dis</button><button id="notclear" class="ico" type="button" title="Reset the set to a single d20" aria-label="Reset the set to a single d20"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v5h5"/></svg></button></div>
       <div id="noterr" style="color:#e07a7a;font-size:12px;min-height:16px"></div>
       <div class="row" id="dicedesignrow"><label for="stepdesign">Dice use</label><select id="stepdesign" title="Which design the + and − buttons add dice of"></select></div>
       <div id="termchips" aria-label="Dice in this set"></div>
@@ -415,6 +419,7 @@
     <h2>Showcase</h2>
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
   </section>
+  <section id="sec-dice"><h2>Dice to roll</h2><div id="dicechips" role="toolbar" aria-label="Dice to roll: a tap loads the roll box, the Roll button throws"></div></section>
   <section id="sec-roll">
     <h2>Roll feel &amp; sound</h2>
     <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02"></div>
@@ -1359,7 +1364,7 @@ $('paintmode').onchange=e=>{checkpoint(); state.paintMode=e.target.value; repain
 /* shake to roll: needs a phone with motion sensors in a secure (https) page; iOS also asks permission on the tap */
 let shakeOn=false, shakeLast=0;
 function onShake(e){ const a=e.accelerationIncludingGravity; if(!a||a.x==null) return; const g=Math.hypot(a.x,a.y,a.z), now=performance.now();
-  if(g>26&&now-shakeLast>1500&&true){ shakeLast=now; startRoll(true); } }
+  if(g>26&&now-shakeLast>1500&&true){ shakeLast=now; dockRoll(true); } }
 async function setShake(on){
   if(on&&!shakeOn){ try{ if(typeof DeviceMotionEvent.requestPermission==='function'&&await DeviceMotionEvent.requestPermission()!=='granted') on=false; }catch{ on=false; } }
   if(on&&!shakeOn){ addEventListener('devicemotion',onShake); if(state.sound) audioInit(); } else if(!on&&shakeOn) removeEventListener('devicemotion',onShake);
@@ -1790,14 +1795,23 @@ function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
 /* the quick roll bar (PD-142.14.1.6): rolls a formula, a saved set or one plain die right at the table */
 function tableRoll(notation){ const p=parseNotation(notation,true); if(p.error) return p.error; checkpoint(); bag.active.set=null; rollSetId=null; state.notation=fmtNotation(p.terms,p.mod,p.group); state.shape='custom'; closeSheet&&closeSheet(); buildDice(); startRoll(false,false); syncUI(); save(); return null; }
 let qbarSig='';
-function renderQBar(){ const bar=$('qbar'); if(!bag||!bar) return; const sig=bag.sets.map(s=>s.id+'|'+s.name).join('\n'); if(sig===qbarSig&&bar.firstChild){ bar.hidden=false; return; } qbarSig=sig;
-  const inp=el('input'); inp.type='text'; inp.spellcheck=false; inp.placeholder='3d6+2'; inp.setAttribute('aria-label','Roll a formula'); inp.title='Type dice, e.g. 4d6kh3+2, then Enter';
-  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter'){ const err=tableRoll(inp.value||state.notation); inp.classList.toggle('bad',!!err); inp.title=err||'Type dice, e.g. 4d6kh3+2, then Enter'; if(!err) inp.value=''; } }; inp.oninput=()=>inp.classList.remove('bad');
-  const go=el('button','','Roll'); go.type='button'; go.onclick=()=>{ const err=tableRoll(inp.value||state.notation); inp.classList.toggle('bad',!!err); inp.title=err||''; if(!err) inp.value=''; };
-  const kids=[inp,go];
-  if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Roll '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ setOps.open(st.id,{roll:true}); }; kids.push(b); } }
-  kids.push(el('span','qsep')); for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Roll one '+dieName(n); b.dataset.die=n; b.onclick=()=>{ tableRoll('1d'+(n===100?'%':n)); }; kids.push(b); }
-  bar.replaceChildren(...kids); bar.hidden=false; }
+/* the dock (PD-142.38 slice 2; was the quick roll bar): a formula box and the one Roll button. dockRoll is the single way to throw in roll view: the button, Enter in the box, R, a flick and a shake all call it */
+const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
+function dockRoll(launch=false){ const inp=$('rollbox'), v=inp&&rolling&&!game?inp.value.trim():''; if(!v){ startRoll(launch||placed); return; }
+  const err=tableRoll(v); inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; if(!err){ inp.value=''; syncDock(); } }
+function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
+const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
+function dockLoad(n){ const inp=$('rollbox'), p=inp&&dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); }   // a die chip adds one die to the box; it never throws
+function dockAdv(mode){ const inp=$('rollbox'), p=inp&&dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; const i=p.terms.findIndex(t=>t.sides===20), one={count:2,sides:20,keep:{mode,n:1}}; if(i<0) p.terms.unshift(one); else p.terms[i]={...p.terms[i],...one}; inp.value=fmtNotation(p.terms,p.mod,p.group); }   // the first d20 (of the box, or of the dice on the mat when the box is empty) becomes 2d20 keep highest/lowest
+function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar) return; const sig=bag.sets.map(s=>s.id+'|'+s.name).join('\n'); if(sig===qbarSig&&bar.firstChild){ bar.hidden=false; syncDock(); return; } qbarSig=sig;
+  const old=$('rollbox'), inp=el('input'); inp.id='rollbox'; inp.type='text'; inp.spellcheck=false; inp.value=old?old.value:''; inp.setAttribute('aria-label','Roll a formula'); inp.title=DOCK_TIP;
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') dockRoll(); }; inp.oninput=()=>inp.classList.remove('bad');
+  const go=el('button','','Roll'); go.id='rollbtn'; go.type='button'; go.title='Roll the dice (R)'; go.onclick=()=>dockRoll();
+  bar.replaceChildren(inp,go); bar.hidden=false;
+  const kids=[]; for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Add one '+dieName(n)+' to the roll box'; b.dataset.die=n; b.onclick=()=>dockLoad(n); kids.push(b); }
+  for(const [m,t,tip] of [['h','Adv','Advantage: 2d20, keep the highest'],['l','Dis','Disadvantage: 2d20, keep the lowest']]){ const b=el('button','',t); b.type='button'; b.title=tip; b.dataset.adv=m; b.onclick=()=>dockAdv(m); kids.push(b); }
+  if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Load '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ setOps.open(st.id); }; kids.push(b); } }
+  if(chips) chips.replaceChildren(...kids); syncDock(); }
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText,look){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); if(look) q.append(el('div','qn look','→ '+look)); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...(bag.roller?{roller:bag.roller}:{}),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
@@ -1849,7 +1863,7 @@ function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replac
     body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }
 $('logbtn').onclick=()=>{ $('logpanel').hidden=!$('logpanel').hidden; renderLog(); };
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
-  return [{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open and roll now',run:()=>setOps.open(id,{roll:true})},
+  return [{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open',run:()=>setOps.open(id)},
     {label:'Move up',disabled:k===0,run:()=>{ setOps.move(id,k-1); renderSheet(); }},{label:'Move down',disabled:k===last,run:()=>{ setOps.move(id,k+1); renderSheet(); }},
     {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(menuAnchor,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(id); renderSheet(); }},{label:'Cancel',run:()=>{}}]),0)}]; }
 /* Inline set editor (PD-124): the Custom controls (notation, dice use, term chips, steppers, modifier) plus single-shape presets, working on a draft of one set. The live Custom selection is never touched. */
@@ -1943,13 +1957,13 @@ addEventListener('keydown',e=>{ const t=e.target; if(e.key==='Enter'&&t&&t.tagNa
 $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
-$('roll').onclick=()=>startRoll(placed);
+$('roll').onclick=()=>{ if(rolling) return; startRoll(placed); };   // PD-142.38 slice 2: a pure switch; in roll view only the dock's Roll button throws
 $('reset').onclick=()=>{ if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
 addEventListener('keydown',e=>{
   const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') startRoll(true); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) toggleFull(); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
+  if(e.code==='Space'){e.preventDefault();randomize();} if(e.key==='r') dockRoll(true); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) toggleFull(); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
 addEventListener('keyup',e=>{ if(e.key==='t'||e.key==='T') holdTop(false); });
 addEventListener('blur',()=>holdTop(false));
 $('hint').textContent=['drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view','space = randomize · ctrl+z / ctrl+y = undo / redo · r = roll · flick in roll view = roll again','hold the total, or hold t = top-down look at the dice (controls step aside)','h, or long-press the layout button = distraction-free view (one button left to bring the controls back)','buttons: layout = hide / show settings · speaker = sound · bag = all designs · pause = stop the spin'].join('\n');
@@ -1973,7 +1987,7 @@ cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY
   if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
 let flick=null;           // roll view: a quick one-finger swipe throws the dice again
 const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)<8&&performance.now()-fl.t<400){ const hi=pickDie(e.clientX,e.clientY); if(hi>=0&&toggleHold(hi)) { ptrs.delete(e.pointerId); return; } }   // a short tap on a settled die holds or releases it
-   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) startRoll(true);
+   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) dockRoll(true);
   ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
@@ -2370,7 +2384,7 @@ function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return
 function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
 function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!nl||!settled) return;
-  const bt=document.createElement('button'); bt.className='relean'; bt.textContent='\u26A0 '+nl+' leaning \u00B7 Re-roll'; bt.title=nl+(nl>1?' dice are':' die is')+' leaning: tap to re-roll '+(nl>1?'them':'it'); bt.onclick=rerollLeans; R.append(bt); }   /* PD-142.40: one chip, not a warning plus a button */
+  const bt=document.createElement('button'); bt.className='relean'; bt.textContent='\u26A0 Fix '+nl+' leaning '+(nl>1?'dice':'die'); bt.title=nl+(nl>1?' dice are':' die is')+' leaning: tap to re-roll '+(nl>1?'them':'it'); bt.onclick=rerollLeans; R.append(bt); }   /* PD-142.40: one chip, not a warning plus a button */
 function refreshLeans(){                        // a die that settles after the rings went up loses its ring; the note and button go when the last lean clears
   let changed=false; for(const m of leanRings.slice()){ const i=m.userData.i;
     const b=bodies[i], still=b.velocity.lengthSquared()<.1&&b.angularVelocity.lengthSquared()<.5;
@@ -2834,7 +2848,7 @@ function renderTurn(S,st,over){
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.scores[p]),className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } paneAuto=true; renderGame(); });
-window.__pd={state,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+window.__pd={state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},

@@ -80,7 +80,7 @@ const SHOTS = [
     await p.locator('textarea').first().fill('1-2 Locked door\n3 Empty room\n4-8 Goblins\n9+ Boss');
     await p.click('#bagsheet button:text-is("Save")'); await p.waitForTimeout(800);
     await p.click('#bagsheet button:text-is("Close")'); await p.waitForTimeout(1000);
-    await p.click('#qbar >> text=Dungeon room'); await p.waitForTimeout(1500); await settle(p);
+    await p.click('#dicechips >> text=Dungeon room'); await p.click('#rollbtn'); await p.waitForTimeout(1500); await settle(p);
     await navFor(p).openLog(); await p.waitForTimeout(600); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await p.click('#bagopen'); await p.waitForTimeout(700); }],
 ];
