@@ -30,6 +30,6 @@ The **Sets** tab has a **Save the current dice as a set** button at the top (it 
 
 - **⚡** quick roll: throws that set straight away.
 - **✎** edit: opens the set's editor inside the sheet (presets, formula, modifier and an optional result table).
-- **⋯** menu: the other per-set actions.
+- **⋯** menu: Edit, Make a copy, Open and roll now, Move up, Move down, Delete.
 
 See [Sets and the editor](04-sets-and-editor.md) for building and saving sets.

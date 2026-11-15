@@ -27,6 +27,7 @@ Dice are written `<count>d<sides>`; the count may be left off. Letters can be up
 | `4d6dl1` | `4d6kh3` | roll 4, **d**rop the **l**owest 1 (same as keep highest 3) |
 | `4d6dh1` | `4d6kl3` | roll 4, **d**rop the **h**ighest 1 |
 | `d20 adv` | `2d20kh1` | advantage; `dis` gives `2d20kl1` |
+| `d20 adv+5` | `2d20kh1+5` | advantage with a modifier: put `adv` or `dis` right after the die, then the modifier. `d20+5 adv` is not understood |
 | `4d6kh` | `4d6kh1` | a keep with no number keeps one |
 
 ### Several rolls at once: group roll
@@ -37,7 +38,7 @@ Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "a
 
 ## Save it as a set
 
-Type a name in **Name this set** (under the Modifier row) and press **Save as set**. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab and also appear as chips in the quick roll bar at the table. Open the bag, choose **Sets**, and use ⚡ to roll one or ✎ to edit it. See [The bag and shelf](03-bag-and-shelf.md).
+Type a name in the **Set name** box (under the Modifier row; empty, it shows the name a blank box would get) and press **Save as set** or Enter. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab and also appear as chips in the quick roll bar at the table. Open the bag, choose **Sets**, and use ⚡ to roll one, ✎ to edit it or ⋯ for Edit, Make a copy, Open and roll now, Move up/down and Delete. The bag and its Sets tab can be opened in Roll mode too. See [The bag and shelf](03-bag-and-shelf.md).
 
 ## Give a set a result table
 

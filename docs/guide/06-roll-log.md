@@ -4,7 +4,7 @@ Every roll is recorded. Open the **Roll log** (the three-lines button) to see it
 
 ![The roll log open beside a settled die](img/12-roll-log.png)
 
-Each entry shows the total, the time and what was rolled. A roll typed into the notation box or quick roll bar shows its formula (for example `d20` or `4x 1d20+2`); a roll of a saved set shows the set's name with ⚡. For rolls of several dice or a group roll, the entry lists each die or each roll.
+Each entry shows the total, the time and what was rolled. A roll typed into the notation box or quick roll bar shows its formula (for example `d20` or `4x 1d20+2`); a roll of a saved set shows the set's name, and a ⚡ after it when you used the set's quick roll (⚡) button. For rolls of several dice or a group roll, the entry lists each die or each roll.
 
 ## Name who is rolling
 
