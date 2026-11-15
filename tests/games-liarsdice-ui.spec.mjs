@@ -96,3 +96,11 @@ test("Liar's Dice setup: a fresh setup shows two seats to match '2 players' (PD-
   expect(await app.page.locator('#scorepane input[type=text]').count()).toBe(2);
   await app.run(pd => pd.endGame());
 });
+
+test("Liar's Dice: between rolls the showcase shows only the dice the current player has left (PD-142.39.1)", async ({ shared: app }) => {
+  await open(app, 76, 2);
+  const r = await app.run(pd => { const st = pd.GAMES.status(pd.game.state), c = st.cups[st.player]; return { n: c.count, vis: pd.dice.filter(d => d.mesh.visible).length, name: document.getElementById('name').textContent, rolling: pd.rolling }; });
+  expect(r.rolling).toBe(false);
+  expect(r.vis).toBe(r.n); expect(r.name).toContain(r.n + ' dice left');
+  await app.run(pd => pd.endGame());
+});

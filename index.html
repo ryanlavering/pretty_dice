@@ -2802,6 +2802,9 @@ function gviewer(){ if(!game||!game.info.hidden) return undefined; const hum=hum
   const h=GAMES.status(game.state,null).handoff; if(h==null){ game.ack=null; return null; } return game.ack===h?h:null; }   // several humans: only after the device was handed over
 function needPass(){ if(!game||!game.info.hidden||humanSeats().length<2) return false; const h=GAMES.status(game.state,null).handoff; return h!=null&&!(game.state.bots||[]).includes(h)&&game.ack!==h; }
 function hideDice(on){ if(on){ for(const d of dice) d.mesh.visible=true; if(rolling) exitRoll(true); } }   // 'under the cup': leave the roll view for the showcase of the set (no values on the mat); unused dice come back with it
+function showcaseCount(){   // PD-142.39.1: between rolls the showcase shows exactly the dice the current player has left, and says how many
+  if(!game||!game.info.hidden||game.setup||rolling) return; const st=GAMES.status(game.state), c=st.cups&&st.cups[st.player]; if(!c||st.phase==='over') return;
+  dice.forEach((d,i)=>{ d.mesh.visible=i<c.count; }); const nm=$('name'); if(nm) nm.textContent=c.name+': '+c.count+(c.count===1?' die':' dice')+' left'; }
 function liveDiceOnly(){ const live=new Set(GAMES.rollSpec(game.state).slots); dice.forEach((d,i)=>{ d.mesh.visible=live.has(i); }); }   // while throwing, only the dice the engine rolls are drawn: no rings on spares
 let botTimer=null, botN=0, lbid=null, gflash=null;   // gflash: 'bust' | 'hot' | 'bank' plays once on the next render (a short colour pulse on the status line)
 const BOT_MS=+new URLSearchParams(location.search).get('botms')||900;
@@ -2854,7 +2857,7 @@ function renderGame(){
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   { $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
   if(gflash){ for(const el of [GP.querySelector('.gstat'),GPstage.querySelector('.st')]) if(el){ el.classList.remove('fx-bust','fx-hot','fx-bank'); void el.offsetWidth; el.classList.add('fx-'+gflash); } gflash=null; }
-  renderDock(); gsaveGame(); botPump(); showCallout();
+  renderDock(); gsaveGame(); botPump(); showCallout(); showcaseCount();
 }
 
 function renderStrip(){   // the phone's mat strip keeps one line: the status (Roll, Bank and Set aside live in the dock)
