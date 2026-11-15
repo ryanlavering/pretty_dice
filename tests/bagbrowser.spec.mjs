@@ -184,18 +184,18 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   await expect(page.locator('#bagdirty')).toBeHidden();
   await app.run(pd => pd.bagOps.addBlank());
   await app.nav.openBag(); await expect(page.locator('#bagdirty')).toBeVisible();
-  await page.locator('#paneltabs [data-pane="look"]').click();   // the file buttons stay on the Look tab until slice 7 gathers them in the Bag tab
-  await expect(page.locator('#savebag')).toHaveClass(/dirty/);
+    // the file buttons stay on the Look tab until slice 7 gathers them in the Bag tab
+  await expect(page.locator('#sheetsave')).toHaveClass(/dirty/);
   await expect(page.locator('#replacebag')).toHaveCount(0);
   // unsaved: Load bag asks; Cancel leaves everything alone
-  await page.click('#loadbag'); await expect(page.locator('#bagask')).toBeVisible();
+  await page.click('#sheetload'); await expect(page.locator('#bagask')).toBeVisible();
   await page.click('#baskCancel'); await expect(page.locator('#bagask')).toBeHidden();
   expect(await app.run(pd => pd.bag.designs.length)).toBe(2);
   // Save bag (from the link) clears the badge; a clean bag loads with no question and is replaced, not appended to
   await app.nav.openBag(); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bagsave')]);
   expect(dl.suggestedFilename()).toMatch(/\.bag\.json$/);
   await expect(page.locator('#bagdirty')).toBeHidden();
-  await page.locator('#paneltabs [data-pane="look"]').click(); const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#loadbag')]);
+  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#sheetload')]);
   await expect(page.locator('#bagask')).toBeHidden();
   await fc.setFiles({ name: 'b.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Loaded bag')) });
   await expect.poll(() => app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['one']);
@@ -203,7 +203,7 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   await expect(page.locator('#bagdirty')).toBeHidden();   // what was just loaded is what the file holds
   // dirty again: Discard goes straight to the file picker
   await app.run(pd => pd.bagOps.addBlank()); await app.nav.openBag(); await expect(page.locator('#bagdirty')).toBeVisible();
-  await page.locator('#paneltabs [data-pane="look"]').click(); await page.click('#loadbag');
+  await page.click('#sheetload');
   const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
   await fc2.setFiles({ name: 'c.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Second')) });
   await expect.poll(() => app.run(pd => pd.bag.name)).toBe('Second');
@@ -215,7 +215,7 @@ test('Save bag writes the current state of edited designs; the session keeps the
   await app.open();
   await app.run(SETUP);
   await app.run(async pd => { pd.state.radius = 0.11; pd.save(); await pd.bagActivate('gold'); pd.state.radius = 0.09; pd.save(); });   // bone and gold both carry edits
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#savebag')]);
+  await app.nav.openBag(); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
   const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
   expect(file.pending).toEqual({});
   expect(file.designs.find(d => d.id === 'gold').design.edge_radius).toBe(0.09);
@@ -226,7 +226,7 @@ test('Save bag writes the current state of edited designs; the session keeps the
   expect(s.was).toEqual({ gold: true, bone: true });
   expect(s.goldMod).toBe(false); expect(s.radiusAfter).not.toBe(0.09);
   // loading that file: the designs come in clean with the newer state
-  await page.click('#loadbag');   // the revert above changed the bag, so it asks first
+  await page.click('#sheetload');   // the revert above changed the bag, so it asks first
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
   await fc.setFiles({ name: 'x.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(JSON.stringify(file)) });
   await expect.poll(() => app.run(pd => pd.bag.designs.find(d => d.id === 'bone').design.edge_radius)).toBe(0.11);

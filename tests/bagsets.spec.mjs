@@ -109,8 +109,8 @@ test('Copy bag JSON puts the bag file text on the clipboard @slow', async ({ app
   await app.open();
   await app.run(SETUP);
   await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
-  await page.locator('#copybag').click();
-  await expect(page.locator('#copybag')).toHaveText('Copied');
+  await app.nav.openBag(); await page.locator('#sheetcopy').click();
+  await expect(page.locator('#sheetcopy')).toHaveClass(/ok/);
   const j = JSON.parse(await page.evaluate(() => window.__copied));
   expect(j.format).toBe('pretty-dice-bag'); expect(j.designs.map(d => d.id)).toEqual(['amethyst', 'bone']); expect(j.sets.length).toBe(2);
 });
