@@ -2031,6 +2031,11 @@ const NEW_FEATURES=[
   {id:'PD-142.38.s6', rev:1, anchor:'#paneltabs [data-pane=log]', text:'The roll log now lives in the Log tab (Play room) and the Bag and Sets tabs show inline on desktop. The round Bag and Log buttons are gone.', card:'PD-142.38 slice 6'},
   {id:'PD-142.38.s7', rev:1, anchor:'#paneltabs [data-pane=bag]', text:'Save, load and copy the bag now live only here, in the Bag tab. Pencil on set rows now shows on phones too.', card:'PD-142.38 slice 7'},
   {id:'PD-142.38.4', rev:1, anchor:'#qbar .dchip', text:'Die and set preset chips are back in the bottom bar after Roll. They load the roll box, they never throw.', card:'PD-142.38.4'},
+  {id:'PD-142.38.s4', rev:1, anchor:'#modesw', text:'Design | Play switch replaces the round mode button. It never throws dice; a running game survives a visit to Design (Play carries a dot).', card:'PD-142.38 slice 4'},
+  {id:'PD-142.38.s8', rev:1, anchor:'#stripmid', text:'Long-press a settled die (or right-click) in Play to re-skin that one die with another design from the bag. Value and position stay; Undo restores it.', card:'PD-142.38 slice 8'},
+  {id:'PD-142.38.5', rev:1, anchor:'#histrow', text:'Undo and Redo moved to the top right on phones (Design room). Check: they stay clear of the dice and the strip.', card:'PD-142.38.5'},
+  {id:'PD-142.33.1', rev:1, anchor:'#gamestab', text:'Craps: drag chips to set the bet amount, and the roll call-outs. Start Craps from this tab.', card:'PD-142.33.1 / .2'},
+  {id:'PD-142.39.1', rev:1, anchor:'#gamestab', text:"Liar's Dice: between rolls the showcase shows only the current player's remaining dice and a count. Also new: setup seats.", card:'PD-142.39.1 / PD-142.37.1'},
   {id:'PD-142.38.drawer', rev:1, anchor:'#drawerbtn', text:'Utilities drawer: sound, reset view, full view, hints, pause spin, reset to defaults. Seen all (below) retires every callout.', card:'PD-142.38 slice 1/5'}
 ];
 const NF_ON=!!(window.__PD_REVIEW||new URLSearchParams(location.search).get('new')==='1'), NFKEY='prettydice.seen';
@@ -2048,10 +2053,10 @@ function nfShow(f,dot){ document.querySelectorAll('.nfdot.open').forEach(d=>d.cl
   nfBox.append(hd,el('div','',f.text),got); nfPlace(f,dot); }
 function nfAnchor(f){ let t=document.querySelector(f.anchor); if(t&&t.closest('#dmenu')&&!$('drawer').classList.contains('open')) t=$('drawerbtn'); return t; }
 const nfDots=new Map();
-function nfRender(){ if(!NF_ON) return; const un=nfUnseen(); for(const [k,d] of [...nfDots]) if(!un.some(f=>nfKey(f)===k)){ d.remove(); nfDots.delete(k); }
+function nfRender(){ if(!NF_ON) return; const un=nfUnseen(), stack=new Map(); for(const [k,d] of [...nfDots]) if(!un.some(f=>nfKey(f)===k)){ d.remove(); nfDots.delete(k); }
   for(const f of un){ const k=nfKey(f); let d=nfDots.get(k); if(!d){ d=el('button','nfdot'); d.type='button'; d.dataset.feature=f.id; d.setAttribute('aria-label','New: '+f.card); d.onclick=e=>{ e.stopPropagation(); if(nfOpen===f) nfCollapse(); else nfShow(f,d); }; document.body.append(d); nfDots.set(k,d); }
     const t=nfAnchor(f), r=t&&t.getBoundingClientRect(), vis=!!r&&r.width>0&&r.height>0&&getComputedStyle(t).visibility!=='hidden'&&getComputedStyle(t).display!=='none'&&r.bottom>0&&r.top<innerHeight;
-    d.hidden=!vis; if(vis){ d.style.left=(r.right-4)+'px'; d.style.top=(r.top+4)+'px'; } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
+    d.hidden=!vis; if(vis){ const n=stack.get(t)||0; stack.set(t,n+1); d.style.left=(r.right-4-n*18)+'px'; d.style.top=(r.top+4)+'px'; } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
   const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=`Seen all (${un.length} new)`; } }
 const nfCollapsedOnce=new Set();
 if(NF_ON){ document.body.append(nfBox);
