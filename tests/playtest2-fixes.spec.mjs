@@ -100,3 +100,27 @@ test('initiative: add a named entry with a score by hand, sorted among rolled ro
   expect(rows).toEqual(['Thorn:21', 'Mira:17']);
   await expect(page.locator('#logpanel .lir')).toHaveCount(2);
 });
+
+test('set editor: a Save sits right under the result table box, saves the table, and the wheel scrolls the sheet (.7)', async ({ app, page }) => {
+  await app.open();
+  await app.nav.openBag();
+  await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await page.locator('#setsave').click();
+  const ed = page.locator('#setlist .seted');
+  await expect(ed).toBeVisible();
+  const tb = ed.locator('textarea.setable');
+  await tb.scrollIntoViewIfNeeded();
+  await tb.fill('1-10 Empty room\n11-20 Goblins');
+  const save2 = ed.locator('.sesave2');
+  const bt = await tb.boundingBox(), bs = await save2.boundingBox();
+  expect(bs.y - (bt.y + bt.height), 'Save is directly below the table box').toBeLessThan(40);
+  // wheel over the editor scrolls the sheet's list
+  await page.locator('#setlist').evaluate(e => { e.scrollTop = 0; });
+  const box = await page.locator('#setlist').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + 60); await page.mouse.wheel(0, 300);
+  await expect.poll(() => page.locator('#setlist').evaluate(e => e.scrollTop)).toBeGreaterThan(0);
+  await save2.scrollIntoViewIfNeeded(); await save2.click();
+  await expect(page.locator('#setlist .seted')).toHaveCount(0);
+  const table = await app.run(pd => pd.bag.sets.at(-1).table);
+  expect(table).toContain('Goblins');
+});
