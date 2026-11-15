@@ -84,3 +84,19 @@ test('the notation box has its own row (2d20kh1+5 is not cut off) and log header
   const heights = await page.evaluate(() => [...document.querySelectorAll('#logpanel .le .lt button')].map(b => b.getBoundingClientRect().height));
   for (const h of heights) expect(h, 'one line each').toBeLessThan(22);
 });
+
+test('initiative: add a named entry with a score by hand, sorted among rolled rows (.6)', async ({ app, page }) => {
+  await app.open();
+  await app.nav.toPlay();
+  await page.evaluate(() => { document.getElementById('logpanel').hidden = false; });
+  await app.run(pd => pd.renderLog());
+  await page.locator('#logpanel .liopen').click();
+  const name = page.locator('#logpanel .liadd input').first(), score = page.locator('#logpanel .liadd input[type=number]');
+  await name.fill('Mira'); await score.fill('17'); await score.press('Enter');
+  await name.fill('Thorn'); await score.fill('21'); await page.locator('#logpanel .liadd button', { hasText: 'Add' }).click();
+  await score.fill(''); await page.locator('#logpanel .liadd button', { hasText: 'Add' }).click();
+  await expect(score, 'a missing score is flagged, not added').toHaveClass(/bad/);
+  const rows = await app.run(pd => pd.bag.init.rows.map(r => r.name + ':' + r.total));
+  expect(rows).toEqual(['Thorn:21', 'Mira:17']);
+  await expect(page.locator('#logpanel .lir')).toHaveCount(2);
+});

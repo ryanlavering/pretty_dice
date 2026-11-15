@@ -186,6 +186,7 @@
   #logpanel .lt{display:flex;align-items:baseline;gap:8px;min-width:0} #logpanel .tm{color:var(--dim);flex:none} #logpanel .ttl.go{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px} #logpanel .ttl.go:hover{color:var(--gold,#e8c45a)} #logpanel .ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0} #logpanel .lr{color:var(--dim);margin-top:2px} #logpanel .lr .rt{display:flex;margin:2px 0}
   /* PD-142.14.2.1.10: log headers wrap as whole pieces (title, label, + init, roller) instead of squeezing the title or breaking a button over two lines */
   #logpanel .lt{flex-wrap:wrap;row-gap:2px} #logpanel .ttl{flex:0 1 auto;max-width:100%} #logpanel .lbl,#logpanel .ini{white-space:nowrap;flex:none} #logpanel .lt .who{font-size:12px;color:var(--ink);opacity:.75;margin-left:auto;white-space:nowrap}
+  #logpanel .liadd{display:flex;gap:6px;align-items:center;margin-top:6px} #logpanel .liadd input{min-width:0;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin:0} #logpanel .liadd input:first-child{flex:1 1 90px} #logpanel .liadd input[type=number]{flex:0 0 64px} #logpanel .liadd input.bad{border-color:#e0605a} #logpanel .liopen{display:block;margin:2px 2px 8px;padding:0}
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
@@ -1843,10 +1844,21 @@ const initOps={
   next(){ const I=this.get(); if(!I.rows.length) return; I.turn++; if(I.turn>=I.rows.length){ I.turn=0; I.round++; } save(); },
   remove(i){ const I=this.get(); I.rows.splice(i,1); if(I.turn>i||I.turn>=I.rows.length) I.turn=Math.max(0,Math.min(I.turn-(I.turn>i?1:0),I.rows.length-1)); save(); },
   clear(){ bag.init={rows:[],turn:0,round:1}; save(); } };
-function renderInit(p){ const I=bag.init; if(!I||!I.rows.length) return; const box=el('div','linit'), h=el('div','lih'); h.append(el('span','',`Initiative · round ${I.round}`));
+let initFormOpen=false;
+/* PD-142.14.2.1.6: add a named entry by hand (scores from physical dice or another device) */
+function initAddForm(){ const f=el('div','liadd'), n=el('input'), sc=el('input'), ok=el('button','linkbtn','Add'); n.type='text'; n.maxLength=30; n.placeholder='Name'; n.setAttribute('aria-label','Initiative entry name');
+  sc.type='number'; sc.inputMode='numeric'; sc.placeholder='Score'; sc.setAttribute('aria-label','Initiative score'); ok.type='button';
+  const go=()=>{ if(sc.value===''||!Number.isFinite(+sc.value)){ sc.classList.add('bad'); sc.focus(); return; } initOps.add([{name:n.value.trim()||'Entry',total:+sc.value}]); initFormOpen=true; renderLog(); const nn=document.querySelector('#logpanel .liadd input'); if(nn) nn.focus(); };
+  for(const i of [n,sc]){ i.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') go(); }; i.oninput=()=>sc.classList.remove('bad'); }
+  ok.onclick=go; const done=el('button','linkbtn','Done'); done.type='button'; done.onclick=()=>{ initFormOpen=false; renderLog(); }; f.append(n,sc,ok,done); return f; }
+function renderInit(p){ let I=bag.init;
+  if((!I||!I.rows.length)&&!initFormOpen){ const a=el('button','linkbtn liopen','+ Initiative: add a name and score'); a.type='button'; a.onclick=()=>{ initFormOpen=true; renderLog(); const nn=document.querySelector('#logpanel .liadd input'); if(nn) nn.focus(); }; p.append(a); return; }
+  I=initOps.get();
+  const box=el('div','linit'), h=el('div','lih'); h.append(el('span','',`Initiative · round ${I.round}`));
   const nx=el('button','linkbtn','Next'); nx.type='button'; nx.onclick=()=>{ initOps.next(); renderLog(); }; const cl=el('button','linkbtn','Clear'); cl.type='button'; cl.onclick=()=>{ initOps.clear(); renderLog(); }; const r=el('span','lhr'); r.append(nx,cl); h.append(r); box.append(h);
   I.rows.forEach((row,i)=>{ const d=el('div','lir'+(i===I.turn?' now':'')), n=el('input'); n.type='text'; n.maxLength=30; n.value=row.name; n.setAttribute('aria-label','Initiative name'); n.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') n.blur(); }; n.onchange=()=>{ row.name=n.value.trim().slice(0,30)||row.name; save(); };
     const x=el('button','linkbtn','✕'); x.type='button'; x.setAttribute('aria-label','Remove from initiative'); x.onclick=()=>{ initOps.remove(i); renderLog(); }; d.append(el('b','',String(row.total)),n,x); box.append(d); });
+  if(initFormOpen) box.append(initAddForm()); else { const a=el('button','linkbtn liopen','+ Add by hand'); a.type='button'; a.onclick=()=>{ initFormOpen=true; renderLog(); const nn=document.querySelector('#logpanel .liadd input'); if(nn) nn.focus(); }; box.append(a); }
   p.append(box); }
 function toast(msg){ const t=$('toast'); if(!t) return; t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>{ t.hidden=true; },2600); }
 function logFlash(btn,txt){ const old=btn.textContent; btn.textContent=txt; setTimeout(()=>{ btn.textContent=old; },1500); toast(txt==='Copied'?'Roll log copied to the clipboard':txt==='Use Save'?'Copy is blocked here: use Save':txt); }
