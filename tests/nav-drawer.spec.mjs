@@ -76,3 +76,30 @@ test('the drawer opens as a pill once when a session starts, then slides shut', 
   await expect.poll(() => page.evaluate(() => window.__pillSeen), { timeout: 10_000 }).toBe(true);
   await expect(page.locator('#drawer.open')).toHaveCount(0, { timeout: 10_000 });
 });
+
+// PD-142.38.1: on a phone the Full view handles are centred up/down chevrons that never overlap a round mat button.
+test.describe('phone handles', () => {
+  test.use({ viewport: SIZES.phone });
+  const overlaps = async (page, handle) => page.evaluate(h => {
+    const r = document.querySelector(h).getBoundingClientRect(), hit = [];
+    for (const b of document.querySelectorAll('#tools button, #shelf, #drawerbtn')) {
+      if (!b.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+      const q = b.getBoundingClientRect();
+      if (q.width && r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top) hit.push(b.id || b.className || b.tagName);
+    }
+    return hit;
+  }, handle);
+
+  test('close and open handles are centred, clear of the round buttons, and point up/down', async ({ app, page }) => {
+    await app.open();
+    const c = await page.locator('#paneclose').boundingBox();
+    expect(Math.abs(c.x + c.width / 2 - 195), 'centred').toBeLessThan(2);
+    expect(await overlaps(page, '#paneclose'), 'pane open: close handle overlaps nothing').toEqual([]);
+    expect(await page.locator('#paneclose svg').evaluate(e => getComputedStyle(e).transform), 'chevron points down').not.toBe('none');
+    await app.nav.fullView(true);
+    const o = await page.locator('#paneopen').boundingBox();
+    expect(Math.abs(o.x + o.width / 2 - 195), 'centred').toBeLessThan(2);
+    expect(await overlaps(page, '#paneopen'), 'full view: open handle overlaps nothing').toEqual([]);
+    expect(o.y + o.height, 'sits on the bottom edge').toBeGreaterThan(844 - 2);
+  });
+});
