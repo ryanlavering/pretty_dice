@@ -26,9 +26,11 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   const c = await app.run(pd => ({ st: pd.GAMES.status(pd.game.state), held: pd.held }));
   expect(c.st.rollsUsed).toBe(0); expect(c.held).toEqual([]);
   expect(c.st.round).toBe(before + 1);
-  // the roll/showcase button cannot pull the dice off the mat mid-game
+  // PD-142.38 slice 4: the Design half works mid-game (the game survives), Play puts the dice back on the mat
   await app.nav.toggleMode();
-  expect(await app.run(pd => pd.rolling)).toBe(true);
+  expect(await app.run(pd => [pd.rolling, !!pd.game])).toEqual([false, true]);
+  await app.nav.toggleMode();
+  expect(await app.run(pd => [pd.rolling, !!pd.game])).toEqual([true, true]);
   await app.run(pd => pd.endGame());
   expect(await app.run(pd => pd.game)).toBe(null);
 });

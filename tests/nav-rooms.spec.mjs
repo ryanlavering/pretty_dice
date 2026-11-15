@@ -44,3 +44,21 @@ test('Randomize and Space belong to the Design room', async ({ shared: app }) =>
   await app.page.keyboard.press('Space');
   expect(await app.run(pd => JSON.stringify(pd.designToJSON())), 'Space is inert in Play').toBe(d1);
 });
+
+test('Undo and Redo sit on the shelf row in the Design room (also in Full view) and are not shown in Play', async ({ shared: app }) => {
+  await app.nav.toDesign();
+  for (const full of [false, true]) {
+    await app.nav.fullView(full);
+    const u = await app.page.locator('#undo').boundingBox(), r = await app.page.locator('#redo').boundingBox(), cards = await app.page.locator('#cards').boundingBox();
+    expect(u && r, `undo and redo visible (full view ${full})`).toBeTruthy();
+    expect(Math.abs((u.y + u.height / 2) - (cards.y + cards.height / 2)), 'same row as the shelf').toBeLessThan(cards.height);
+    expect(u.x + u.width, 'left of the shelf cards').toBeLessThanOrEqual(cards.x + 1);
+  }
+  await app.nav.fullView(false);
+  expect(await app.page.locator('#actions #undo, #actions #redo').count(), 'no longer in the panel').toBe(0);
+  const before = await app.run(pd => pd.state.shape);
+  await app.run(pd => pd.randomize()); await expect(app.page.locator('#undo')).toBeEnabled();
+  await app.page.locator('#undo').click();
+  await app.nav.toPlay(); await expect(app.page.locator('#undo')).toBeHidden();
+  void before;
+});

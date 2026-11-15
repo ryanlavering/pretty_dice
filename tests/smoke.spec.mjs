@@ -35,7 +35,8 @@ test.describe('desktop', () => {
 
   test('Roll shows a result, Showcase goes back', async ({ app, page }) => {
     await page.click('#roll');
-    expect(await app.run(pd => pd.rolling)).toBe(true);
+    expect(await app.run(pd => pd.rolling)).toBe(true);   // Play only puts the dice down
+    await app.nav.roll();
     await expect(page.locator('#result')).toHaveClass(/\bon\b/, { timeout: 60_000 });
     const r = await app.run(pd => ({ text: document.getElementById('result').textContent, labels: pd.dice.length }));
     expect(r.text).toMatch(/\d/);
