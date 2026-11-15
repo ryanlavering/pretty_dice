@@ -73,6 +73,7 @@
   #result.fumble{color:#8c919e;text-shadow:0 2px 18px #000}
   #result .relean{pointer-events:auto;margin:6px 3px 0;font:600 12px Inter,sans-serif;letter-spacing:0;padding:4px 11px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
   #result .relean:hover{background:rgba(60,34,24,.9)}
+  #result .relean{position:absolute;left:10px;top:-36px;margin:0;text-align:left} #result .relean~.relean{top:-6px}   /* PD-142.40.2: the leaning / held chips sit in the top-left corner, off the middle where dice land; a second one stacks under the first */
   #result .brk.lean{color:#ffb48a} #result .brk .rt{white-space:normal;overflow-wrap:anywhere;text-align:left;margin:0 6px;display:inline} #result .brk .rt .chip{display:inline-block;vertical-align:middle;margin-right:4px}   /* PD-142.40: a long breakdown wraps inside the screen */
   #result .brk{font:500 14px Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:4px auto 0;max-width:min(92vw,560px);box-sizing:border-box;width:fit-content;padding:3px 12px;border-radius:999px;background:rgba(14,16,22,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);text-shadow:0 1px 8px #000}   /* PD-142.14.1.13: backing pill so the line reads over dice that land under it */
   #tools{position:absolute;inset:0;z-index:8;pointer-events:none}   /* two columns of round buttons in the bottom corners; the shelf runs between them */
@@ -245,7 +246,8 @@
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
-  @media (max-width:520px){ body #qbar{flex-wrap:wrap;overflow:visible;border-radius:18px;justify-content:center;row-gap:5px} body #qbar input{flex:1 1 90px} body #qbar .qsep{flex:0 0 100%;height:0;width:auto} body #qbar button{height:28px;padding:0 8px} }   /* PD-142.40: the quick roll bar wraps to rows instead of clipping on a phone */
+  #qbar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qbar::-webkit-scrollbar{display:none} #qbar input{flex:0 1 104px;transition:flex-basis .15s} #qbar input:focus{flex:1 0 100%} #qbar.drag{cursor:grabbing}   /* PD-142.40.1: the dock is ONE row, a scrollable ribbon (drag or wheel); the formula box is small until it has focus, then fills the row */
+  @media (max-width:520px){ body #qbar button{height:28px;padding:0 8px} }
   @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
   </style>
   <div id="bootdice" title="Keeps rolling while the page loads; if it stops, the page is frozen"><div class="sh"></div><div class="hop"><div class="cube">
@@ -1835,6 +1837,14 @@ function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar)
   for(const [m,t,tip] of [['h','Adv','Advantage: 2d20, keep the highest'],['l','Dis','Disadvantage: 2d20, keep the lowest']]){ const b=el('button','',t); b.type='button'; b.title=tip; b.dataset.adv=m; b.onclick=()=>dockAdv(m); kids.push(b); }
   if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Load '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ setOps.open(st.id); }; kids.push(b); } }
   if(chips) chips.replaceChildren(...kids); syncDock(); renderDock(); }
+/* PD-142.40.1: the dock scrolls sideways with the wheel and by dragging (touch scrolls natively); a drag that moved never counts as a click */
+(()=>{ const bar=$('qbar'); if(!bar) return; let dx=0, sx=0, sl=0, moved=false, id=null;
+  bar.addEventListener('wheel',e=>{ if(bar.scrollWidth<=bar.clientWidth) return; bar.scrollLeft+=e.deltaY+e.deltaX; e.preventDefault(); },{passive:false});
+  bar.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.target.closest('input')) return; id=e.pointerId; sx=e.clientX; sl=bar.scrollLeft; moved=false; });
+  bar.addEventListener('pointermove',e=>{ if(id!==e.pointerId) return; dx=e.clientX-sx; if(!moved&&Math.abs(dx)>5){ moved=true; bar.classList.add('drag'); } if(moved) bar.scrollLeft=sl-dx; });
+  const end=e=>{ if(id!==e.pointerId) return; id=null; bar.classList.remove('drag'); };
+  bar.addEventListener('pointerup',end); bar.addEventListener('pointercancel',end);
+  bar.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true); })();
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText,look){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); if(look) q.append(el('div','qn look','→ '+look)); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...(bag.roller?{roller:bag.roller}:{}),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
@@ -2201,6 +2211,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
   document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); { const look=logRoll(main,sub,subItems,subMod); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
+  showDropped();
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
@@ -2421,7 +2432,11 @@ function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.
 function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.cocked,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
   m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
-function dropRings(){ for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
+let dropMarks=[];   // PD-142.14.1.1.2: a grey ring under every die the keep/drop rule left out (kh/kl/dl, adv/dis), so it reads as not counted
+function showDropped(){ for(const m of dropMarks){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } dropMarks=[];
+  if(!settled) return; droppedDice.forEach(i=>{ const d=dice[i], b=bodies[i]; if(!d||!b) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:0x9aa0ad,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
+    m.renderOrder=10; m.rotation.x=-Math.PI/2; m.position.set(b.position.x,TABLE_Y+.03,b.position.z); m.userData.dropped=i; rig.add(m); dropMarks.push(m); }); }
+function dropRings(){ for(const m of dropMarks){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } dropMarks=[]; for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
 function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!nl||!settled) return;
   const bt=document.createElement('button'); bt.className='relean'; bt.textContent='\u26A0 Fix '+nl+' leaning '+(nl>1?'dice':'die'); bt.title=nl+(nl>1?' dice are':' die is')+' leaning: tap to re-roll '+(nl>1?'them':'it'); bt.onclick=rerollLeans; R.append(bt); }   /* PD-142.40: one chip, not a warning plus a button */

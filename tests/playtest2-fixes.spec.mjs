@@ -173,3 +173,47 @@ test('the dock rolls typed text with the Roll button and keeps nothing stale (.1
   await expect(box).toHaveValue('');
   await expect(box).toHaveAttribute('placeholder', /3d6\+2/);
 });
+
+// PD-142.14.1.1.2: dice left out by keep/drop get a grey ring.
+test('a die dropped by adv gets a grey ring, a kept one does not (.14.1.1.2)', async ({ shared: app }) => {
+  await app.reset(1);
+  const n = await app.run(pd => { pd.state.shape = 'custom'; pd.state.notation = '3d6kh2'; pd.buildDice(); pd.simRoll(); return pd.dice.length; });
+  expect(n).toBe(3);
+  const marks = await app.run(pd => pd.rig.children.filter(m => m.userData && m.userData.dropped !== undefined).length);
+  expect(marks).toBe(1);
+  expect(await app.run(pd => { pd.state.notation = '1d20'; pd.buildDice(); pd.simRoll(); return pd.rig.children.filter(m => m.userData && m.userData.dropped !== undefined).length; })).toBe(0);
+});
+
+// PD-142.40.1 / .40.2: the dock is one scrollable row with a small formula box until focus; chips sit top-left.
+test('the dock is one row and its formula box grows on focus (.40.1)', async ({ app, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await app.open(); await app.nav.toPlay();
+  const bar = page.locator('#qbar'), box = page.locator('#rollbox');
+  const h = (await bar.boundingBox()).height; expect(h).toBeLessThan(60);
+  const w0 = (await box.boundingBox()).width; expect(w0).toBeLessThan(140);
+  await box.focus();
+  await expect.poll(async () => (await box.boundingBox()).width).toBeGreaterThan(w0 + 80);
+  expect((await bar.boundingBox()).height).toBeLessThan(60);
+});
+
+test('the leaning / held chips sit in the top-left corner (.40.2)', async ({ shared: app, page }) => {
+  await app.reset(1); await app.nav.toPlay();
+  const r = await app.run(pd => { pd.simRoll(); pd.toggleHold(0); const R = document.getElementById('result'); R.classList.add('on'); const c = R.querySelector('.relean'); if (!c) return null; const b = c.getBoundingClientRect(); const st = document.getElementById('stage').getBoundingClientRect(); return { x: b.x - st.x, y: b.y - st.y, vh: st.height, vis: getComputedStyle(R).opacity }; });
+  expect(r, 'a held chip exists').not.toBeNull();
+  expect(r.x).toBeLessThan(120); expect(r.y).toBeLessThan(r.vh * .2);
+});
+
+// PD-142.14.1.1.1: the Custom formula box keeps its full width after Adv/Dis, and the controls sit on the next line.
+test('the Custom formula box stays wide after Adv and Dis (.14.1.1.1)', async ({ app, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await app.open();
+  await page.locator('#shapes button[data-id="custom"]').click();
+  const box = page.locator('#notation'), row = box.locator('..');
+  const w0 = (await box.boundingBox()).width;
+  await box.fill('d20+4'); await page.locator('#notadv').click();
+  await page.locator('#notdis').click();
+  const bb = await box.boundingBox(), rb = await row.boundingBox(), ab = await page.locator('#notadv').boundingBox();
+  expect(bb.width, 'as wide as before').toBeGreaterThan(w0 - 4);
+  expect(bb.width, 'fills its row').toBeGreaterThan(rb.width - 30);
+  expect(ab.y, 'Adv/Dis on the line below the box').toBeGreaterThan(bb.y + bb.height - 2);
+});
