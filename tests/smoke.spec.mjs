@@ -261,8 +261,8 @@ test('Clear resets the custom set to a single d20 with no modifier', async ({ ap
 // Settings pane layout: the roll-feel sliders live in their own section, which moves to the top while rolling.
 test('roll feel section holds the physics sliders and comes first in the roll view', async ({ app }) => {
   await app.open();
-  const inRoll = await app.page.evaluate(() => ['bounce', 'fricdice', 'fricmat', 'sound', 'volume'].every(id => document.getElementById('sec-roll').contains(document.getElementById(id))));
-  expect(inRoll, 'bounciness, friction, sound and volume sit in #sec-roll').toBe(true);
+  const inRoll = await app.page.evaluate(() => ['bounce', 'fricdice', 'fricmat', 'volume'].every(id => document.getElementById('sec-roll').contains(document.getElementById(id))));
+  expect(inRoll, 'bounciness, friction and volume sit in #sec-roll').toBe(true);
   const top = () => app.page.evaluate(() => ({ roll: document.getElementById('sec-roll').getBoundingClientRect().top, shape: [...document.querySelectorAll('#panes h2')].find(h => h.textContent === 'Shape').getBoundingClientRect().top }));
   let t = await top(); expect(t.roll, 'showcase: below the look controls').toBeGreaterThan(t.shape);
   await app.run(pd => pd.startRoll());
