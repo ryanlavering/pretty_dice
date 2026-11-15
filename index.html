@@ -110,6 +110,10 @@
   :is(#gamepanel,#scorepane) tr.sec td{font-size:11px;color:var(--dim);background:#12151c;text-align:left} :is(#gamepanel,#scorepane) tr.tot td{font-weight:700}
   @media (max-width:700px){ #gamepanel{top:auto;bottom:64px;right:8px;left:8px;width:auto;max-height:46%} }
   body.inroll #spinbtn{display:none}
+  /* 'New' callouts (PD-142.38.3): review builds only. A pulsing dot on the control; press it for the comment; Got it retires it */
+  .nfdot{position:fixed;z-index:40;width:14px;height:14px;margin:-7px 0 0 -7px;padding:0;border-radius:50%;background:#ffcf5a;border:2px solid #14171f;box-shadow:0 0 0 0 rgba(255,207,90,.7);animation:nfpulse 1.4s infinite;cursor:pointer} .nfdot.open{animation:none;box-shadow:0 0 0 3px rgba(255,207,90,.45)} .nfdot[hidden]{display:none}
+  @keyframes nfpulse{0%{box-shadow:0 0 0 0 rgba(255,207,90,.7)}70%{box-shadow:0 0 0 10px rgba(255,207,90,0)}100%{box-shadow:0 0 0 0 rgba(255,207,90,0)}} .nfdot.later{animation-duration:2.8s}
+  .nfbox{position:fixed;z-index:41;width:min(300px,calc(100vw - 24px));box-sizing:border-box;background:#1d212c;border:1px solid var(--accent);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:13px;line-height:1.4;box-shadow:0 8px 30px #000b} .nfbox[hidden]{display:none} .nfbox .nfh{display:flex;justify-content:space-between;gap:8px;cursor:pointer;font-weight:700;color:var(--accent);margin-bottom:4px} .nfbox .nfh small{font-weight:400;color:var(--dim)} .nfbox .nfgot{margin-top:8px;width:100%}
   #hint{white-space:pre-line;display:none} #hint.show{display:block}
   #hint{position:absolute;left:50%;transform:translateX(-50%);bottom:108px;width:min(360px,calc(100% - 140px));background:rgba(20,23,31,.94);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font-size:13px;line-height:1.45;text-align:left;pointer-events:auto;cursor:pointer;z-index:6;box-shadow:0 8px 30px #000a;backdrop-filter:blur(8px)}   /* floating info panel: click it, or the i button, to dismiss */
   #name{position:absolute;top:16px;left:0;right:0;text-align:center;font:600 13px Cinzel,serif;letter-spacing:.18em;color:var(--dim);pointer-events:none}
@@ -2021,6 +2025,41 @@ $('dname').onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') e.target.blur
 addEventListener('keydown',e=>{ const t=e.target; if(e.key==='Enter'&&t&&t.tagName==='INPUT'&&t.type==='text') setTimeout(()=>{ if(document.activeElement===t) t.blur(); },0); },true);   // iOS keeps the keyboard up on Enter otherwise
 $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
+/* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
+const NEW_FEATURES=[
+  {id:'PD-142.38.s5', rev:1, anchor:'#paneltabs', text:'Panel tabs by room: Design has Look, Bag, Sets; Play has Table, Games, Log. The last tab per room is remembered. Check: both rooms, phone and desktop.', card:'PD-142.38 slice 5'},
+  {id:'PD-142.38.s6', rev:1, anchor:'#paneltabs [data-pane=log]', text:'The roll log now lives in the Log tab (Play room) and the Bag and Sets tabs show inline on desktop. The round Bag and Log buttons are gone.', card:'PD-142.38 slice 6'},
+  {id:'PD-142.38.s7', rev:1, anchor:'#paneltabs [data-pane=bag]', text:'Save, load and copy the bag now live only here, in the Bag tab. Pencil on set rows now shows on phones too.', card:'PD-142.38 slice 7'},
+  {id:'PD-142.38.4', rev:1, anchor:'#qbar .dchip', text:'Die and set preset chips are back in the bottom bar after Roll. They load the roll box, they never throw.', card:'PD-142.38.4'},
+  {id:'PD-142.38.drawer', rev:1, anchor:'#drawerbtn', text:'Utilities drawer: sound, reset view, full view, hints, pause spin, reset to defaults. Seen all (below) retires every callout.', card:'PD-142.38 slice 1/5'}
+];
+const NF_ON=!!(window.__PD_REVIEW||new URLSearchParams(location.search).get('new')==='1'), NFKEY='prettydice.seen';
+let nfSeen=new Set(); try{ nfSeen=new Set(JSON.parse(localStorage.getItem(NFKEY)||'[]')); }catch{}
+const nfKey=f=>f.id+'@'+f.rev, nfUnseen=()=>NEW_FEATURES.filter(f=>!nfSeen.has(nfKey(f)));
+const nfSave=()=>{ try{ localStorage.setItem(NFKEY,JSON.stringify([...nfSeen])); }catch{} };
+let nfOpen=null; const nfBox=el('div','nfbox'); nfBox.hidden=true; nfBox.setAttribute('role','dialog');
+function nfCollapse(){ nfOpen=null; nfBox.hidden=true; document.querySelectorAll('.nfdot.open').forEach(d=>d.classList.remove('open')); }
+function nfRetire(keys){ for(const k of keys) nfSeen.add(k); nfSave(); nfCollapse(); nfRender(); }
+function nfPlace(f,dot){ const r=dot.getBoundingClientRect(), w=Math.min(300,innerWidth-24); nfBox.hidden=false; const h=nfBox.offsetHeight;
+  let x=Math.max(12,Math.min(innerWidth-w-12,r.left-w/2)), y=r.bottom+10; if(y+h>innerHeight-12) y=Math.max(12,r.top-h-10); nfBox.style.left=x+'px'; nfBox.style.top=y+'px'; }
+function nfShow(f,dot){ document.querySelectorAll('.nfdot.open').forEach(d=>d.classList.remove('open')); nfOpen=f; dot.classList.add('open'); nfBox.replaceChildren();
+  const hd=el('div','nfh'); hd.append(el('span','',f.card),el('small','','tap to collapse')); hd.onclick=nfCollapse;
+  const got=el('button','nfgot','Got it'); got.type='button'; got.onclick=()=>nfRetire([nfKey(f)]);
+  nfBox.append(hd,el('div','',f.text),got); nfPlace(f,dot); }
+function nfAnchor(f){ let t=document.querySelector(f.anchor); if(t&&t.closest('#dmenu')&&!$('drawer').classList.contains('open')) t=$('drawerbtn'); return t; }
+const nfDots=new Map();
+function nfRender(){ if(!NF_ON) return; const un=nfUnseen(); for(const [k,d] of [...nfDots]) if(!un.some(f=>nfKey(f)===k)){ d.remove(); nfDots.delete(k); }
+  for(const f of un){ const k=nfKey(f); let d=nfDots.get(k); if(!d){ d=el('button','nfdot'); d.type='button'; d.dataset.feature=f.id; d.setAttribute('aria-label','New: '+f.card); d.onclick=e=>{ e.stopPropagation(); if(nfOpen===f) nfCollapse(); else nfShow(f,d); }; document.body.append(d); nfDots.set(k,d); }
+    const t=nfAnchor(f), r=t&&t.getBoundingClientRect(), vis=!!r&&r.width>0&&r.height>0&&getComputedStyle(t).visibility!=='hidden'&&getComputedStyle(t).display!=='none'&&r.bottom>0&&r.top<innerHeight;
+    d.hidden=!vis; if(vis){ d.style.left=(r.right-4)+'px'; d.style.top=(r.top+4)+'px'; } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
+  const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=`Seen all (${un.length} new)`; } }
+const nfCollapsedOnce=new Set();
+if(NF_ON){ document.body.append(nfBox);
+  const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','','Seen all')); all.onclick=()=>{ closeDrawer(); nfRetire(NEW_FEATURES.map(nfKey)); }; $('dmenu').append(all);
+  document.addEventListener('pointerdown',e=>{ if(nfOpen&&!e.target.closest('.nfbox,.nfdot')){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&nfOpen){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
+  setInterval(()=>{ nfRender(); if(nfOpen){ const d=nfDots.get(nfKey(nfOpen)); if(d&&!d.hidden) nfPlace(nfOpen,d); else nfCollapse(); } },400); nfRender(); }
+window.__nf={ on:NF_ON, unseen:()=>nfUnseen().map(nfKey), render:nfRender };
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>goPlay();   // PD-142.38 slice 2: a pure switch; in roll view only the dock's Roll button throws
 dset($('reset'),'<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg>','Reset to defaults'); $('reset').onclick=()=>{ closeDrawer(); if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };

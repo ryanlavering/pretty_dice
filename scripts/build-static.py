@@ -64,7 +64,7 @@ if ARTIFACT:
     marker = "import * as GAMES from 'pd-games';"
     assert html.count(marker) == 1, 'index.html must import the engine with exactly: ' + marker
     html = html.replace(marker, games_bundle())
-    out = html.replace(m.group(0), '<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
+    out = html.replace(m.group(0), '<script>window.__PD_REVIEW=1;</script>\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
     out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')
     (root / 'dist').mkdir(exist_ok=True)
     p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
