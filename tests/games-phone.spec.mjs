@@ -7,6 +7,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
   test(`phone ${w}x${h}: scorecard tab in the settings slot, thin strip on the mat, dice stay uncovered`, async ({ shared: app }) => {
     await app.reset(91); await phone(app, w, h);
     await app.nav.openGames();
+    await app.page.selectOption('#scorepane select >> nth=0', 'yahtzee');   // the setup remembers the last game picked by earlier tests
     await expect(app.page.locator('#paneltabs')).toBeVisible();
     await expect(app.page.locator('#scorepane')).toBeVisible();
     await expect(app.page.locator('#settingspane')).toBeHidden();

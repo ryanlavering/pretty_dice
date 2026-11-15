@@ -115,6 +115,7 @@ test('phone: Undo and Redo sit in the top right of the mat, clear of the shelf a
   const page = app.page; await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
   try {
     await app.nav.toDesign();
+    await app.run(() => window.dispatchEvent(new Event('resize')));   // the shared page's frames are throttled in headless runs, so the browser's own resize event can arrive late
     await expect(page.locator('#topstrip #histrow')).toBeVisible();   // wait for the resize to be delivered (frames can be throttled in headless)
     const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sw = await page.locator('#modesw').boundingBox(), sh = await page.locator('#shelf').boundingBox();
     expect(u.y).toBeLessThan(60); expect(r.x + r.width).toBeGreaterThan(300); expect(u.x).toBeGreaterThan(sw.x + sw.width);

@@ -8,7 +8,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   await app.nav.roll();   // Start game (1 player)
   if (await app.page.locator('#scorepane td').count() === 0) await app.page.click('text=Scorecard');
   expect(await app.run(pd => pd.state.notation)).toBe('5d6');
-  await app.run(pd => pd.simRoll());
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const a = await app.run(pd => { const st = pd.GAMES.status(pd.game.state); return { st }; });
   expect(a.st.rollsUsed).toBe(1);
   const d1 = a.st.dice;
@@ -16,7 +16,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   expect(await app.run(pd => pd.toggleHold(0) && pd.toggleHold(2))).toBe(true);
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).held)).toEqual([true, false, true, false, false]);
   expect(await app.run(pd => pd.held)).toEqual([0, 2]);
-  await app.run(pd => pd.simRoll());
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const b = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(b.rollsUsed).toBe(2);
   expect([b.dice[0], b.dice[2]]).toEqual([d1[0], d1[2]]);   // held dice keep their values
