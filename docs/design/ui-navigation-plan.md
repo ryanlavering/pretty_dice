@@ -42,6 +42,8 @@ Tab contents:
 
 Keys: R and Enter = press the dock button. Space = Randomize in the Design room only. H = Full view. T = top-down. Double-click still resets the view.
 
+**Change 2026-11-14 (owner, PD-142.38.4):** slice 2 moved the die, Adv/Dis and set chips out of the dock into the Table tab. On a phone the panel is closed in Play, so they were unreachable. They are back in the dock's one-row scrollable ribbon, after Roll (load the formula box, never throw), and stay in the Table tab too. They are hidden while a game runs (the dock then holds game actions). Specs: `nav-tabs`, `nav-dock`, `phonecrowding`.
+
 ## Rules for every slice
 
 - One lane edits one region; post `TOUCHING` first. Lanes: **games-ui** owns mat, strip, dock, room switch, game wiring. **settings** owns the panel, tabs, drawer, quick bar, notation. **guide** owns `docs/guide/`. **design** (this lane) reviews each slice against this plan and keeps the plan current.

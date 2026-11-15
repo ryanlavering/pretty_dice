@@ -27,7 +27,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     await app.page.click('#scorepane td.pick');
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(0);
     // Settings tab shows the settings again; the game keeps running
-    await app.page.click('#paneltabs button[data-pane=settings]');
+    await app.page.click('#paneltabs button[data-pane=table]');
     await expect(app.page.locator('#settingspane')).toBeVisible();
     await expect(app.page.locator('#scorepane')).toBeHidden();
     expect(await app.run(pd => !!pd.game)).toBe(true);

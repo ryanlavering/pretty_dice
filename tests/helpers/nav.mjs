@@ -21,8 +21,8 @@ export const navFor = page => {
     toggleMode: async () => click((await page.locator('#back.on').count()) ? '#roll' : '#back'),
     async toPlay() { if (await page.locator('#back.on').count()) await click('#roll'); },
     async toDesign() { if (!(await page.locator('#back.on').count())) await click('#back'); },
-    openBag: () => click('#bagbtn'),
-    openGames: () => click('#gamestab'),
+    openBag: () => click('#bagbtn'),   // the round button stays until slice 6; the Bag tab (design room) opens the same sheet
+    async openGames() { await this.toPlay(); await click('#gamestab'); },   // the Games tab belongs to the Play room (slice 5)
     openLog: () => click('#logbtn'),
     async roll() { const inGame = await page.evaluate(() => document.body.classList.contains('game')); const g = page.locator('#gamepanel button.big:visible, #scorepane button.big:visible'); await ((!inGame && (await g.count())) ? g.first() : page.locator('#rollbtn')).click(); },
     async sound() { await this.openDrawer(); await click('#snd'); },

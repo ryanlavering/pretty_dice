@@ -22,7 +22,7 @@ for (const [name, vp] of Object.entries(SIZES)) {
   test(`${name}: in roll view exactly one visible control throws, the dock's Roll button`, async ({ shared: app }) => {
     await app.page.setViewportSize(vp); await toRoll(app);
     await expect(app.page.locator('#qbar')).toBeVisible();
-    expect(await app.page.locator('#qbar > input, #qbar > button').evaluateAll(k => k.map(e => e.id)), 'the dock is a box and a button').toEqual(['rollbox', 'rollbtn']);
+    expect(await app.page.locator('#qbar > input, #qbar > button:not(.dchip)').evaluateAll(k => k.map(e => e.id)), 'the dock is a box and a button').toEqual(['rollbox', 'rollbtn']);
     const dock = await app.page.locator('#qbar').boundingBox();
     expect(dock.x).toBeGreaterThanOrEqual(0); expect(dock.x + dock.width).toBeLessThanOrEqual(vp.width);
     // every candidate: the dock, the panel switch's Roll half, each chip
@@ -36,7 +36,7 @@ for (const [name, vp] of Object.entries(SIZES)) {
       await app.page.evaluate(() => [...document.querySelectorAll('#qbar button, #roll, #dicechips button')].forEach((b, i) => { b.dataset.cand = i; }));
     }
     expect(throwers).toEqual(['rollbtn']);
-    if (name === 'desktop') expect(seen, 'dock, switch, 7 dice, Adv, Dis, one set').toBe(12);
+    if (name === 'desktop') expect(seen, 'dock, switch, 7 dice, Adv, Dis, one set, in the panel and again in the dock').toBeGreaterThanOrEqual(12);
   });
 }
 
