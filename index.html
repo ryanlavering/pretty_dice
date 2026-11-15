@@ -191,6 +191,13 @@
   .tile.plus .th{display:grid;place-items:center;font-size:34px;color:var(--dim);border-style:dashed;background:transparent}
   #cardmenu{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;z-index:30;min-width:170px;background:#1d212c;border:1px solid var(--line);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:2px;box-shadow:0 8px 30px #000a} #cardmenu[hidden]{display:none}
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
+  #topstrip{display:none}
+  @media (max-width:760px){   /* slice 4c: the phone's top strip holds the Design | Play switch; the middle is the top-down hold handle */
+    #topstrip{display:flex;position:absolute;top:6px;left:8px;right:8px;z-index:6;gap:8px;align-items:center;pointer-events:none}
+    #topstrip #modesw{width:160px;flex:none;pointer-events:auto} #topstrip #modesw button{padding:6px 0}
+    #stripmid{flex:1;height:36px;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none} body.inroll #stripmid{pointer-events:auto}
+    #name{top:52px} #result{top:78px} #gamepanel.strip{top:50px}
+  }
   @media (max-width:760px){
     #tools .col,#shelf,#qbar{bottom:6px} #shelf,#qbar{left:60px;right:60px} #hint{bottom:104px}
     body.full #tools .col,body.full #shelf,body.full #qbar{bottom:calc(16px + env(safe-area-inset-bottom,0px))} body.full #hint{bottom:calc(114px + env(safe-area-inset-bottom,0px))}   /* full view only: the stage then reaches the screen edge, where round phone corners cut off the bottom and edge touches are hard */
@@ -457,7 +464,7 @@
     </div>
     <div id="scorepane" hidden></div>
   </aside>
-  <button id="paneclose" type="button" aria-label="Hide the side pane (full view)" title="Hide the pane (full view)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button id="paneopen" type="button" aria-label="Show the side pane" title="Show the pane"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><div id="stage"><div id="qbar" role="toolbar" aria-label="Quick roll" hidden></div><div id="qerr" role="alert" hidden></div><div id="toast" role="status" aria-live="polite" hidden></div><div id="shelf"><div id="histrow" role="group" aria-label="History"><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button><button id="gamesbtn" type="button" aria-label="Games" title="Games"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></button></div><div class="col" id="tr"><div id="drawer"><div id="dmenu" role="menu" aria-label="Utilities"><button class="di" id="snd" type="button" role="menuitem" aria-label="Sound on or off" title="Sound"></button><button class="di" id="resetview" type="button" role="menuitem" title="Reset the view angle and zoom"></button><button class="di" id="layout" type="button" role="menuitem"></button><button class="di" id="info" type="button" role="menuitem" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button class="di" id="spinbtn" type="button" role="menuitem"></button></div><button id="drawerbtn" type="button" aria-label="Utilities" aria-haspopup="menu" aria-expanded="false" title="Sound, view, hints"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></button></div><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
+  <button id="paneclose" type="button" aria-label="Hide the side pane (full view)" title="Hide the pane (full view)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button id="paneopen" type="button" aria-label="Show the side pane" title="Show the pane"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><div id="stage"><div id="topstrip"><div id="stripmid" aria-hidden="true"></div></div><div id="qbar" role="toolbar" aria-label="Quick roll" hidden></div><div id="qerr" role="alert" hidden></div><div id="toast" role="status" aria-live="polite" hidden></div><div id="shelf"><div id="histrow" role="group" aria-label="History"><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="bagbtn" type="button" aria-label="Open the dice bag" title="All designs (the bag)"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button><button id="gamesbtn" type="button" aria-label="Games" title="Games"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.2" fill="currentColor"/><circle cx="15" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></button></div><div class="col" id="tr"><div id="drawer"><div id="dmenu" role="menu" aria-label="Utilities"><button class="di" id="snd" type="button" role="menuitem" aria-label="Sound on or off" title="Sound"></button><button class="di" id="resetview" type="button" role="menuitem" title="Reset the view angle and zoom"></button><button class="di" id="layout" type="button" role="menuitem"></button><button class="di" id="info" type="button" role="menuitem" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button class="di" id="spinbtn" type="button" role="menuitem"></button></div><button id="drawerbtn" type="button" aria-label="Utilities" aria-haspopup="menu" aria-expanded="false" title="Sound, view, hints"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></button></div><button id="logbtn" type="button" aria-label="Roll log" title="Roll log"><svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h9"/></svg></button></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span></span><span id="sheetact"><button id="sheetsave" type="button" class="sico" title="Save bag to a file" aria-label="Save bag to a file"><svg viewBox="0 0 24 24"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg></button><button id="sheetload" type="button" class="sico" title="Load a bag file (replaces this bag)" aria-label="Load a bag file"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 8.5l4-4 4 4M5 19h14"/></svg></button><button id="sheetcopy" type="button" class="sico" title="Copy the bag JSON to the clipboard" aria-label="Copy bag JSON"><svg viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="10.5" height="11.5" rx="2"/><path d="M15.5 8.5V6A2 2 0 0 0 13.5 4H7A2 2 0 0 0 5 6v9.5A2 2 0 0 0 7 17.5h1.5"/></svg></button></span><button id="sheetclose" type="button">Close</button></div><div id="sheettabs" role="tablist"><button type="button" data-tab="designs" role="tab">Designs</button><button type="button" data-tab="sets" role="tab">Sets</button></div><div id="tiles"></div><div id="setlist" hidden></div></div>
@@ -1220,6 +1227,12 @@ function randomize(noBuild){
   const wasRoll=rolling;
   ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); if(wasRoll&&state.shape!==oldShape) startRoll(); });   // a new shape in roll view is thrown straight onto the mat   // geometry/atlas depend on radius, font and number settings
 }
+function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does, starting from a plain off-white die
+  enterDraft(); checkpoint(); const oldShape=state.shape;
+  Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
+  state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); checkpoint();
+  const tok=buildTok+1; buildTok=tok; ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); });
+}
 
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
@@ -1730,7 +1743,7 @@ function openMenu(anchor,items){ if(menuShut&&menuShut.a===anchor&&Date.now()-me
   m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+'px'; m.style.top=Math.max(8,(r.top-h-6>8?r.top-h-6:r.bottom+6))+'px'; }
 function closeMenu(){ $('cardmenu').hidden=true; }
 addEventListener('pointerdown',e=>{ if(!$('cardmenu').hidden&&!e.target.closest('#cardmenu')){ menuShut=menuEl&&menuEl.contains&&menuEl.contains(e.target)?{a:menuEl,t:Date.now()}:null; closeMenu(); } },true);
-const addItems=()=>[{head:'Add to the bag'},{label:'New blank design',run:()=>bagOps.addBlank()},{label:'Random draft (Randomize)',run:()=>randomize()},{label:'From a file…',run:()=>{ bagReplace=false; $('bagfile').click(); }}];
+const addItems=()=>[{head:'Add to the bag'},{label:'Blank draft',run:()=>blankDraft()},{label:'Random draft',run:()=>randomize()},{label:'From a file…',run:()=>{ bagReplace=false; $('bagfile').click(); }}];
 function cardItems(id){
   if(id==='draft') return [{label:'Keep in the bag',run:()=>bagOps.keep()},{label:'Discard draft',danger:true,run:()=>bagOps.discard()}];
   const k=bag.designs.findIndex(d=>d.id===id), last=bag.designs.length-1;
@@ -2125,6 +2138,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40); }
+    if(place&&lastLay&&lastLay.key===rollKey&&lastLay.n===dice.length){ const L=lastLay.poses[i]; b.position.set(L.p.x,L.p.y+.02,L.p.z); b.quaternion.copy(L.q); d.mesh.quaternion.copy(L.q); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }   // put back where it last lay
     hookHit(b);   // one sound per pair
     world.addBody(b); return b;});
   if(place){   // set the dice out as if put down by hand: let them fall and come to rest out of sight (no sound, no result), then wait for a roll
@@ -2132,11 +2146,13 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     dice.forEach((d,i)=>{ d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion); });
     const R=$('result'); R.textContent=''; const h=document.createElement('div'); h.className='brk'; h.textContent='Ready: tap Roll or flick the dice'; R.append(h); R.classList.add('on'); }
 }
+var lastLay=null;
 function exitRoll(instant){
   if(game&&!instant) return;   // a game keeps the dice on the mat until it ends
   holdTop(false); clearHolds();
   clearFx(); clearLeans();
   if(!rolling&&!instant) return;
+  if(rolling&&bodies.length===dice.length&&settled) lastLay={key:rollKey,n:dice.length,poses:bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()}))};   // slice 4c: Play shows the dice as they last lay
   rolling=false; placed=false; world=null; bodies=[]; $('result').classList.remove('on'); if(!game) designRoom=true; syncMode();
   dice.forEach(d=>{d.mesh.position.set(d.x,d.y,0); d.mesh.quaternion.identity();});
   rig.position.set(0,0,0); if(!instant) rig.quaternion.identity();
@@ -2677,6 +2693,9 @@ PT.querySelectorAll('button').forEach(b=>b.onclick=()=>setPane(b.dataset.pane));
 function peekHandle(el){ if(!el) return; el.classList.add('peekh'); el.title='Hold to look from above'; el.setAttribute('aria-label','Hold to look from above');
   for(const ev of ['pointerup','pointercancel','lostpointercapture']) el.addEventListener(ev,()=>holdTop(false));
   el.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; try{el.setPointerCapture(e.pointerId);}catch{} holdTop(true); }); el.addEventListener('contextmenu',e=>e.preventDefault()); }
+const stripHome=$('modesw').parentNode, stripNext=$('modesw').nextSibling;
+function placeSwitch(){ const ph=phoneUI(); if(ph) $('topstrip').insertBefore($('modesw'),$('stripmid')); else stripHome.insertBefore($('modesw'),stripNext); }
+peekHandle($('stripmid')); placeSwitch(); phoneMq.addEventListener('change',placeSwitch);
 addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
 function closeGamesUI(){ document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; SP.hidden=true; PT.hidden=true; $('settingspane').hidden=false; document.body.classList.remove('gstrip'); GP=GPstage; renderDock(); }

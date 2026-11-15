@@ -4,7 +4,7 @@ import { test, expect } from './helpers/app.mjs';
 
 const st = app => app.run(pd => ({ rolling: pd.rolling, settled: pd.settled, placed: pd.placed, game: !!pd.game, cls: document.body.className, state: JSON.stringify(pd.state) }));
 
-test.beforeEach(async ({ shared }) => { await shared.reset(7); });
+test.beforeEach(async ({ shared }) => { await shared.reset(7); await shared.run(pd => pd.endGame()); });
 
 test('the Design | Play switch never throws: Play puts the dice down unrolled, Design returns to the showcase', async ({ shared: app }) => {
   await expect(app.page.locator('#back')).toHaveText('Design'); await expect(app.page.locator('#roll')).toHaveText('Play');
@@ -61,4 +61,39 @@ test('Undo and Redo sit on the shelf row in the Design room (also in Full view) 
   await app.page.locator('#undo').click();
   await app.nav.toPlay(); await expect(app.page.locator('#undo')).toBeHidden();
   void before;
+});
+
+// Slice 4c
+test('phone: the switch sits in the top strip, the strip middle holds top-down in Play, and the desktop keeps it in the panel', async ({ shared: app }) => {
+  const page = app.page;
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+  try {
+    await expect(page.locator('#topstrip #modesw')).toBeVisible();
+    const b = await page.locator('#modesw').boundingBox(); expect(b.y).toBeLessThan(60);
+    await app.nav.toPlay();
+    const m = await page.locator('#stripmid').boundingBox();
+    await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2); await page.mouse.down();
+    await expect(page.locator('body')).toHaveClass(/peek/);
+    await page.mouse.up(); await expect(page.locator('body')).not.toHaveClass(/peek/);
+    await app.nav.toDesign();
+  } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
+  await expect(page.locator('#settingspane #modesw')).toHaveCount(1);
+});
+
+test('[+] Blank and Random both open the same draft; Blank is a plain starting look', async ({ shared: app }) => {
+  const before = await app.run(pd => pd.bag.designs.length);
+  await app.run(() => document.querySelector('#shelf .plus, #shelf .card.plus')?.click());
+  await app.page.locator('#cardmenu button', { hasText: 'Blank draft' }).click();
+  await app.page.waitForTimeout(300);
+  const r = await app.run(pd => ({ n: pd.bag.designs.length, draft: pd.bag.active.draft, sub: pd.state.substrate }));
+  expect(r).toMatchObject({ n: before, draft: true, sub: 'solid' });
+});
+
+test('Play puts the dice back as they last lay', async ({ shared: app }) => {
+  await app.nav.toPlay(); await app.nav.roll();
+  await app.run(pd => pd.simRoll());
+  const lay = () => app.run(pd => pd.dice.map(d => [d.mesh.position.x, d.mesh.position.z].map(v => +v.toFixed(2))));
+  const a = await lay();
+  await app.nav.toDesign(); await app.nav.toPlay();
+  expect(await lay()).toEqual(a);
 });
