@@ -2733,7 +2733,7 @@ function needPass(){ if(!game||!game.info.hidden||humanSeats().length<2) return 
 function hideDice(on){ if(on){ for(const d of dice) d.mesh.visible=true; if(rolling) exitRoll(true); } }   // 'under the cup': leave the roll view for the showcase of the set (no values on the mat); unused dice come back with it
 function liveDiceOnly(){ const live=new Set(GAMES.rollSpec(game.state).slots); dice.forEach((d,i)=>{ d.mesh.visible=live.has(i); }); }   // while throwing, only the dice the engine rolls are drawn: no rings on spares
 let botTimer=null, botN=0, lbid=null, gflash=null;   // gflash: 'bust' | 'hot' | 'bank' plays once on the next render (a short colour pulse on the status line)
-const BOT_MS=+new URLSearchParams(location.search).get('botms')||750;
+const BOT_MS=+new URLSearchParams(location.search).get('botms')||900;
 function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
   const st=GAMES.status(game.state); if(st.phase==='over'||!st.botTurn) return; botTimer=setTimeout(botStep,BOT_MS); }
 function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
