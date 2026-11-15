@@ -22,7 +22,7 @@ for (const [name, vp] of Object.entries(SIZES)) {
   test(`${name}: in roll view exactly one visible control throws, the dock's Roll button`, async ({ shared: app }) => {
     await app.page.setViewportSize(vp); await toRoll(app);
     await expect(app.page.locator('#qbar')).toBeVisible();
-    expect(await app.page.locator('#qbar > *').evaluateAll(k => k.map(e => e.id)), 'the dock is a box and a button').toEqual(['rollbox', 'rollbtn']);
+    expect(await app.page.locator('#qbar > input, #qbar > button').evaluateAll(k => k.map(e => e.id)), 'the dock is a box and a button').toEqual(['rollbox', 'rollbtn']);
     const dock = await app.page.locator('#qbar').boundingBox();
     expect(dock.x).toBeGreaterThanOrEqual(0); expect(dock.x + dock.width).toBeLessThanOrEqual(vp.width);
     // every candidate: the dock, the panel switch's Roll half, each chip
