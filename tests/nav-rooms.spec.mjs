@@ -26,10 +26,10 @@ test('a running game survives a visit to Design; Play carries a dot meanwhile; b
   const before = await app.run(pd => JSON.stringify(pd.game.state));
   await app.page.locator('#back').click();
   expect(await st(app)).toMatchObject({ game: true, rolling: false }); expect((await st(app)).cls).toContain('design');
-  await expect(app.page.locator('#roll')).toHaveClass(/dot/); await expect(app.page.locator('#qbar')).toBeHidden();
+  await expect(app.page.locator('#roll')).toHaveClass(/gamelive/); await expect(app.page.locator('#qbar')).toBeHidden();
   expect(await app.run(pd => JSON.stringify(pd.game.state))).toBe(before);
   await app.page.locator('#roll').click();
-  expect(await st(app)).toMatchObject({ game: true, rolling: true }); await expect(app.page.locator('#roll')).not.toHaveClass(/dot/);
+  expect(await st(app)).toMatchObject({ game: true, rolling: true }); await expect(app.page.locator('#roll')).not.toHaveClass(/gamelive/);
   await expect(app.page.locator('#qbar')).toBeVisible();
   expect(await app.run(pd => JSON.stringify(pd.game.state))).toBe(before);
 });
