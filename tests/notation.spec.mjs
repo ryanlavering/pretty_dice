@@ -14,6 +14,19 @@ test('parses kh/kl/dh/dl and adv/dis, and round-trips them', async ({ shared: ap
   expect(r.sum).toBe(11); expect(r.low).toBe(2); expect(r.plain).toBe(9);
 });
 
+// PD-142.14.1.1.4: the count after kh / kl / dh / dl is optional and means 1.
+test('kh, kl, dh and dl without a number default to 1', async ({ shared: app }) => {
+  await app.reset(1);
+  const r = await app.run(pd => {
+    const f = s => { const p = pd.parseNotation(s); return p.error ? 'ERR ' + p.error : pd.fmtNotation(p.terms, p.mod); };
+    return { kh: f('2d20kh'), khp: f('2d20kh+3'), kl: f('2d20kl'), dl: f('4d6dl'), dh: f('4d6dh'), spaced: f('2D20 KH + 3'), full: f('2d20kh1'), k: f('2d20k'), d: f('4d6d'), kh0: f('2d20kh0'), dl0: f('4d6dl0'), tooMany: f('1d20dl'), mixed: f('2d20kh+4d6dl') };
+  });
+  expect(r.kh).toBe('2d20kh1'); expect(r.khp).toBe('2d20kh1+3'); expect(r.kl).toBe('2d20kl1'); expect(r.dl).toBe('4d6kh3'); expect(r.dh).toBe('4d6kl3');
+  expect(r.spaced).toBe('2d20kh1+3'); expect(r.full).toBe(r.kh);
+  expect(r.mixed).toBe('2d20kh1+4d6kh3');
+  for (const bad of [r.k, r.d, r.kh0, r.dl0, r.tooMany]) expect(bad).toMatch(/^ERR/);
+});
+
 test('a roll with advantage logs both dice, sets one aside and totals the kept one; quick roll agrees', async ({ shared: app }) => {
   await app.reset(1);
   const r = await app.run(async pd => {
