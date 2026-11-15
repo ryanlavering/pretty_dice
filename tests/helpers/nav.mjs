@@ -11,7 +11,7 @@
 export const navFor = page => {
   const inRoll = () => page.evaluate(() => document.body.classList.contains('inroll'));
   const click = sel => page.locator(sel).click();
-  const BTN = { mode: '#modesw', games: '#gamesbtn', bag: '#bagbtn', log: '#logbtn', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
+  const BTN = { mode: '#modesw', games: '#gamestab', bag: '#bagbtn', log: '#logbtn', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
   return {
     page,
     /** locator for a chrome control by name: mode games bag log sound spin layout info shelf panel */
@@ -22,7 +22,7 @@ export const navFor = page => {
     async toPlay() { if (await page.locator('#back.on').count()) await click('#roll'); },
     async toDesign() { if (!(await page.locator('#back.on').count())) await click('#back'); },
     openBag: () => click('#bagbtn'),
-    openGames: () => click('#gamesbtn'),
+    openGames: () => click('#gamestab'),
     openLog: () => click('#logbtn'),
     async roll() { const inGame = await page.evaluate(() => document.body.classList.contains('game')); const g = page.locator('#gamepanel button.big:visible, #scorepane button.big:visible'); await ((!inGame && (await g.count())) ? g.first() : page.locator('#rollbtn')).click(); },
     async sound() { await this.openDrawer(); await click('#snd'); },

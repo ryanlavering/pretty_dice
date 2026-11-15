@@ -10,8 +10,8 @@ test('games button: visible beside the bag button, opens the Games panel, roll b
   expect(g.width).toBeGreaterThanOrEqual(40);
   expect(await app.run(() => document.getElementById('extras'))).toBe(null);   // the tray is gone
   await app.nav.openGames();
-  await expect(page.locator('#gamepanel')).toBeVisible();
-  await expect(page.locator('#gamepanel h2')).toHaveText('Games');
+  await expect(page.locator('#scorepane')).toBeVisible();
+  await expect(page.locator('#scorepane h2')).toHaveText('Games');
   expect(await app.run(pd => pd.rolling)).toBe(false);
   await app.nav.toggleMode();   // a plain tap toggles the view
   expect(await app.run(pd => pd.rolling)).toBe(true);

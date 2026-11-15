@@ -42,7 +42,7 @@ test('the artifact build boots under a CDN-only script CSP and starts a game', a
 
   // a game starts and the engine answers (the engine is bundled into the page, not imported)
   await page.evaluate(() => window.__pd.openGames());
-  await page.selectOption('#gamepanel select >> nth=0', 'yahtzee');
+  await page.selectOption('#scorepane select >> nth=0', 'yahtzee');
   await navFor(page).roll();
   const st = await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state));
   expect(st).toMatchObject({ phase: 'roll', round: 1, rollsUsed: 0 });

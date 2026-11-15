@@ -3,7 +3,7 @@ import { test, expect } from './helpers/app.mjs';
 
 test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: app }) => {
   await app.reset(51); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
+  await app.page.selectOption('#scorepane select >> nth=0', 'pig');
   await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('1d6');
   await app.run(pd => pd.simRoll({rerolls:6}));
@@ -16,14 +16,14 @@ test('pig: roll adds to the turn total, bank passes the turn', async ({ shared: 
 
 test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app }) => {
   await app.reset(52); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'farkle');
+  await app.page.selectOption('#scorepane select >> nth=0', 'farkle');
   await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('6d6');
   await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   if (st.phase === 'score') {
     const sug = await app.run(pd => pd.GAMES.suggest(pd.game.state));
-    await app.page.click('#gamepanel .sugs button.best');
+    await app.page.click('#scorepane .sugs button.best');
     const a = await app.run(pd => ({ st: pd.GAMES.status(pd.game.state), held: pd.held }));
     expect(a.st.turnTotal).toBe(sug[0].points);
     expect(a.held).toEqual(sug[0].slots);
@@ -33,12 +33,12 @@ test('farkle: tap dice to set aside, roll the rest, bank', async ({ shared: app 
 
 test('craps: place a pass line bet from the panel, roll, bankroll moves; cash out closes the table', async ({ shared: app }) => {
   await app.reset(53); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps');
   await app.nav.roll();
   expect(await app.run(pd => pd.state.notation)).toBe('2d6');
-  await app.page.click('#gamepanel button[aria-label="Pass line"]');
+  await app.page.click('#scorepane button[aria-label="Pass line"]');
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bankrolls[0])).toBe(495);
-  await app.page.click('#gamepanel .stk');   // the pass line bet cannot be taken down: the engine's error is shown, bet stays
+  await app.page.click('#scorepane .stk');   // the pass line bet cannot be taken down: the engine's error is shown, bet stays
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bets.length)).toBe(1);
   await app.run(pd => pd.simRoll({rerolls:6}));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
@@ -51,7 +51,7 @@ test('craps: place a pass line bet from the panel, roll, bankroll moves; cash ou
 
 async function start(app, id, seed) {
   await app.reset(seed); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', id);
+  await app.page.selectOption('#scorepane select >> nth=0', id);
   await app.nav.roll();
 }
 
@@ -64,11 +64,11 @@ test('shut the box: roll, pick tiles from the panel, tiles shut', async ({ share
   expect(st.phase === 'score' || st.phase === 'over').toBe(true);
   if (st.phase === 'score') {
     const sug = await app.run(pd => pd.GAMES.suggest(pd.game.state));
-    await app.page.click('#gamepanel .sugs button.best');
+    await app.page.click('#scorepane .sugs button.best');
     const a = await app.run(pd => pd.GAMES.status(pd.game.state));
     for (const t of sug[0].tiles) expect(a.tiles[t - 1]).toBe(false);
     // the tile buttons mirror the engine
-    expect(await app.page.locator('#gamepanel .tile.shut').count()).toBe(sug[0].tiles.length);
+    expect(await app.page.locator('#scorepane .tile.shut').count()).toBe(sug[0].tiles.length);
   }
   await app.run(pd => pd.endGame());
 });
@@ -81,7 +81,7 @@ test('ship captain and crew: locks show as held, panel shows cargo and bank', as
   const st = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held }));
   expect(st.s.rollsUsed).toBe(1);
   expect(st.held).toEqual(st.s.held.map((h, i) => h ? i : -1).filter(i => i >= 0));
-  expect(await app.page.locator('#gamepanel .gstat small').textContent()).toContain('roll 1 of 3');
+  expect(await app.page.locator('#scorepane .gstat small').textContent()).toContain('roll 1 of 3');
   await app.run(pd => pd.endGame());
 });
 
@@ -92,7 +92,7 @@ test('bunco: the round target shows and a roll is scored from the dice', async (
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   expect(st.dice.length).toBe(3);
-  expect(await app.page.locator('#gamepanel .gstat').textContent()).toMatch(/Round [12] of 6/);
+  expect(await app.page.locator('#scorepane .gstat').textContent()).toMatch(/Round [12] of 6/);
   await app.run(pd => pd.endGame());
 });
 
@@ -104,7 +104,7 @@ test('farkle: banking passes the turn with holds and rings cleared (turn handoff
     st = await app.run(pd => pd.GAMES.status(pd.game.state));
   } while (st.phase !== 'score' && ++tries < 12);
   expect(st.phase).toBe('score');
-  await app.page.click('#gamepanel .sugs button.best');
+  await app.page.click('#scorepane .sugs button.best');
   const mid = await app.run(pd => ({ s: pd.GAMES.status(pd.game.state), held: pd.held }));
   expect(mid.held.length).toBeGreaterThan(0);
   await app.page.click('#qbar button:has-text("Bank")');
@@ -116,16 +116,16 @@ test('farkle: banking passes the turn with holds and rings cleared (turn handoff
 
 test('craps: no betting while the dice are rolling; bets open again once the roll is reported', async ({ shared: app }) => {
   await app.reset(54); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps');
   await app.nav.roll();
-  await app.page.click('#gamepanel button[aria-label="Pass line"]');
-  const field = app.page.locator('#gamepanel button[aria-label="Field"]');
+  await app.page.click('#scorepane button[aria-label="Pass line"]');
+  const field = app.page.locator('#scorepane button[aria-label="Field"]');
   await expect(field).toBeEnabled();
   await app.nav.roll();   // start the roll (dice in the air)
   expect(await app.run(pd => pd.rolling && !pd.settled)).toBe(true);
   await expect(field).toBeDisabled();
   await expect(app.page.locator('#qbar button:has-text("Cash out")')).toBeDisabled();
-  expect(await app.run(() => document.querySelectorAll('#gamepanel .ctab button:not(:disabled)').length), 'every spot and chip is locked').toBe(0);
+  expect(await app.run(() => document.querySelectorAll('#scorepane .ctab button:not(:disabled)').length), 'every spot and chip is locked').toBe(0);
   const before = await app.run(pd => pd.GAMES.status(pd.game.state).bets.length);
   await app.run(pd => { pd.simRoll({ rerolls: 6 }); });
   await expect(field).toBeEnabled();
@@ -135,12 +135,12 @@ test('craps: no betting while the dice are rolling; bets open again once the rol
 
 test('craps: table spots (hardway, horn), engine roll lock via rollStart, come bet after a point (PD-142.32 UI)', async ({ shared: app }) => {
   await app.reset(56); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps');
   await app.nav.roll();
   const bets = () => app.run(pd => pd.GAMES.status(pd.game.state).bets);
-  await app.page.click('#gamepanel button[aria-label="H6 (units of 1)"], #gamepanel button[aria-label="H6"]');
+  await app.page.click('#scorepane button[aria-label="H6 (units of 1)"], #scorepane button[aria-label="H6"]');
   expect((await bets()).map(b => [b.kind, b.number, b.amount])).toEqual([['hardway', 6, 5]]);   // off on the come-out, still accepted
-  await app.page.click('#gamepanel button[aria-label^="Horn"]');
+  await app.page.click('#scorepane button[aria-label^="Horn"]');
   expect((await bets()).find(b => b.kind === 'horn').amount).toBe(8);   // 5 rounded up to a multiple of 4
   // roll lock comes from the engine too
   await app.nav.roll();
@@ -157,23 +157,23 @@ test('craps: table spots (hardway, horn), engine roll lock via rollStart, come b
 
 test('craps table: tap adds a unit, chip stacks show per player, tap takes a unit down, hold takes the bet down (PD-142.33)', async ({ shared: app }) => {
   await app.reset(57); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'craps');
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps');
   await app.nav.roll();
   const bets = () => app.run(pd => pd.GAMES.status(pd.game.state).bets.map(b => [b.kind, b.number, b.amount]));
-  const six = '#gamepanel button[aria-label^="6 (units"]';
+  const six = '#scorepane button[aria-label^="6 (units"]';
   await app.page.click(six);                                  // place 6: unit 6, table minimum 5 rounds up to 6
   expect(await bets()).toEqual([['place', 6, 6]]);
   await app.page.click(six); await app.page.click(six);       // +6 each tap
   expect(await bets()).toEqual([['place', 6, 18]]);
-  await expect(app.page.locator('#gamepanel .stk')).toHaveCount(1);
-  await expect(app.page.locator('#gamepanel .stk .amt')).toHaveText('18');
-  await app.page.click('#gamepanel .stk');                    // tap: one unit down
+  await expect(app.page.locator('#scorepane .stk')).toHaveCount(1);
+  await expect(app.page.locator('#scorepane .stk .amt')).toHaveText('18');
+  await app.page.click('#scorepane .stk');                    // tap: one unit down
   expect(await bets()).toEqual([['place', 6, 12]]);
-  await app.page.locator('#gamepanel .stk').dispatchEvent('pointerdown'); await app.page.waitForTimeout(650);   // hold: the whole bet
+  await app.page.locator('#scorepane .stk').dispatchEvent('pointerdown'); await app.page.waitForTimeout(650);   // hold: the whole bet
   expect(await bets()).toEqual([]);
   // a chosen chip snaps up to the unit: a 25 chip on place 5 adds 25
-  await app.page.click('#gamepanel .chipsel:has-text("25")');
-  await app.page.click('#gamepanel button[aria-label^="5 (units"]');
+  await app.page.click('#scorepane .chipsel:has-text("25")');
+  await app.page.click('#scorepane button[aria-label^="5 (units"]');
   expect(await bets()).toEqual([['place', 5, 25]]);
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bankrolls[0])).toBe(475);
   await app.run(pd => pd.endGame());
@@ -181,15 +181,15 @@ test('craps table: tap adds a unit, chip stacks show per player, tap takes a uni
 
 test('turn animations: a bust or a bank pulses the status line once (PD-142 animations)', async ({ shared: app }) => {
   await app.reset(58); await app.run(pd => pd.openGames());
-  await app.page.selectOption('#gamepanel select >> nth=0', 'pig');
+  await app.page.selectOption('#scorepane select >> nth=0', 'pig');
   await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   const st = await app.run(pd => pd.GAMES.status(pd.game.state));
   if (st.canBank && st.turnTotal > 0) {
     await app.page.click('#qbar button:has-text("Bank")');
-    await expect(app.page.locator('#gamepanel .gstat.fx-bank')).toHaveCount(1);
+    await expect(app.page.locator('#scorepane .gstat.fx-bank')).toHaveCount(1);
   } else {
-    await expect(app.page.locator('#gamepanel .gstat.fx-bust')).toHaveCount(1);          // a rolled 1 busts the turn
+    await expect(app.page.locator('#scorepane .gstat.fx-bust')).toHaveCount(1);          // a rolled 1 busts the turn
   }
   await app.run(pd => pd.endGame());
 });
@@ -198,10 +198,10 @@ test('games scope (PD-142.41): the picker offers the five kept games only; a sav
   await app.reset(64); await app.run(pd => { if (pd.game) pd.endGame(); });
   await app.page.evaluate(() => localStorage.setItem('prettydice.games.game', JSON.stringify({ id: 'bunco', state: { players: ['A'], options: {} } })));
   await app.run(pd => pd.openGames());
-  const opts = app.page.locator('#gamepanel select >> nth=0').locator('option');
+  const opts = app.page.locator('#scorepane select >> nth=0').locator('option');
   expect(await opts.evaluateAll(os => os.map(o => o.value))).toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice']);
   const reg = await app.page.evaluate(() => Object.fromEntries(window.__pd.GAMES.listGames().map(g => [g.id, g.name])));
   expect(await opts.allTextContents(), 'names come from the engine registry').toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice'].map(id => reg[id]));
-  await expect(app.page.locator('#gamepanel button', { hasText: /^Resume/ })).toHaveCount(0);
+  await expect(app.page.locator('#scorepane button', { hasText: /^Resume/ })).toHaveCount(0);
   await app.page.evaluate(() => localStorage.removeItem('prettydice.games.game'));
 });

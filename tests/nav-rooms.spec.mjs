@@ -77,7 +77,7 @@ test('phone: the switch sits in the top strip, the strip middle holds top-down i
     await page.mouse.up(); await expect(page.locator('body')).not.toHaveClass(/peek/);
     await app.nav.toDesign();
   } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
-  await expect(page.locator('#settingspane #modesw')).toHaveCount(1);
+  await expect(page.locator('aside #modesw')).toHaveCount(1);
 });
 
 test('[+] Blank and Random both open the same draft; Blank is a plain starting look', async ({ shared: app }) => {
@@ -96,4 +96,17 @@ test('Play puts the dice back as they last lay', async ({ shared: app }) => {
   const a = await lay();
   await app.nav.toDesign(); await app.nav.toPlay();
   expect(await lay()).toEqual(a);
+});
+
+// Slice 6 (games-ui): the Games tab replaces the round Games button; the scorecard lives in the panel
+test('Games tab opens setup, shows the scorecard in the panel, and the Design | Play switch stays reachable', async ({ shared: app }) => {
+  const page = app.page;
+  expect(await page.locator('#gamesbtn').count(), 'the round Games button is gone').toBe(0);
+  await app.nav.openGames();
+  await expect(page.locator('#scorepane')).toBeVisible(); await expect(page.locator('#scorepane h2')).toHaveText('Games');
+  await expect(page.locator('#modesw')).toBeVisible();
+  await page.selectOption('#scorepane select >> nth=0', 'yahtzee'); await app.nav.roll();
+  await expect(page.locator('#gamestab')).toHaveText('Scorecard'); await expect(page.locator('#scorepane table')).toBeVisible();
+  await page.locator('#back').click(); await expect(page.locator('#back')).toHaveClass(/on/);
+  await page.locator('#roll').click(); await expect(page.locator('#roll')).toHaveClass(/on/);
 });
