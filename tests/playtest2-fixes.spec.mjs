@@ -221,3 +221,16 @@ test('the Custom formula box stays wide after Adv and Dis (.14.1.1.1)', async ({
   expect(bb.width, 'fills its row').toBeGreaterThan(rb.width - 30);
   expect(ab.y, 'Adv/Dis on the line below the box').toBeGreaterThan(bb.y + bb.height - 2);
 });
+
+// PD-142.40.1 / .14.1.6.1: with the formula box focused (expanded) the Roll button stays on screen and one tap rolls the typed text.
+test('Roll stays visible and works while the formula box is focused and expanded', async ({ app, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await app.open(); await app.nav.toPlay();
+  await app.run(pd => pd.simRoll());
+  const box = page.locator('#rollbox'), btn = page.locator('#rollbtn');
+  await box.focus(); await box.fill('2d8+1');
+  const vb = await btn.boundingBox(); expect(vb.x + vb.width, 'Roll inside the viewport').toBeLessThanOrEqual(390);
+  await btn.click();
+  await expect.poll(() => app.run(pd => pd.state.notation)).toBe('2d8+1');
+  await expect(box, 'the text stays').toHaveValue('2d8+1');
+});

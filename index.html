@@ -253,7 +253,7 @@
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
-  #qbar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qbar::-webkit-scrollbar{display:none} #qbar input{flex:0 1 104px;transition:flex-basis .15s} #qbar input:focus{flex:1 0 100%} #qbar.drag{cursor:grabbing}   /* PD-142.40.1: the dock is ONE row, a scrollable ribbon (drag or wheel); the formula box is small until it has focus, then fills the row */
+  #qbar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qbar::-webkit-scrollbar{display:none} #qbar input{flex:0 1 104px;transition:flex-basis .15s} #qbar input:focus{flex:1 0 calc(100% - 84px)} #qbar.drag{cursor:grabbing}   /* PD-142.40.1: the dock is ONE row, a scrollable ribbon (drag or wheel); the formula box is small until it has focus, then fills the row */
   @media (max-width:520px){ body #qbar button{height:28px;padding:0 8px} }
   @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
   </style>
@@ -1845,7 +1845,7 @@ function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar)
   const old=$('rollbox'), inp=el('input'); inp.id='rollbox'; inp.type='text'; inp.spellcheck=false; inp.value=old?old.value:''; inp.setAttribute('aria-label','Roll a formula'); inp.title=DOCK_TIP;
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') dockRoll(); }; inp.oninput=()=>dockFail(inp,null);
   inp.onfocus=()=>{ inp.select(); setTimeout(()=>inp.select(),0); inp.dataset.fresh='1'; }; inp.onmouseup=e=>{ if(inp.dataset.fresh){ e.preventDefault(); delete inp.dataset.fresh; } }; inp.onblur=()=>{ delete inp.dataset.fresh; };   // focus selects all, so typing overwrites; the next click places the cursor
-  const go=el('button','','Roll'); go.id='rollbtn'; go.type='button'; go.title='Roll the dice (R)'; go.onclick=()=>dockRoll();
+  const go=el('button','','Roll'); go.id='rollbtn'; go.type='button'; go.title='Roll the dice (R)'; go.onmousedown=e=>e.preventDefault(); go.onclick=()=>dockRoll();   // pressing Roll must not blur the box: it would shrink and the button would slide out from under the finger
   const dh=el('span','dhint'); dh.id='dockhint'; const da=el('span','dact'); da.id='dockact'; bar.replaceChildren(inp,dh,da,go); bar.hidden=false;
   const kids=[]; for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Add one '+dieName(n)+' to the roll box'; b.dataset.die=n; b.onclick=()=>dockLoad(n); kids.push(b); }
   for(const [m,t,tip] of [['h','Adv','Advantage: 2d20, keep the highest'],['l','Dis','Disadvantage: 2d20, keep the lowest']]){ const b=el('button','',t); b.type='button'; b.title=tip; b.dataset.adv=m; b.onclick=()=>dockAdv(m); kids.push(b); }

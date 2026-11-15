@@ -13,7 +13,7 @@ const SIZES = { desktop: { width: 1280, height: 800 }, phone: { width: 390, heig
 // the shared page does not step physics by itself: a throw leaves settled=false until pd.step() runs it out
 const settle = app => app.run(pd => { pd.step(1500); return pd.settled; });
 const st = app => app.run(pd => ({ n: pd.state.notation, dice: pd.dice.length, rolling: pd.rolling, settled: pd.settled, placed: pd.placed, set: pd.bag.active.set, box: document.getElementById('rollbox').value, ph: document.getElementById('rollbox').placeholder }));
-const toRoll = async app => { await app.nav.toPlay(); expect(await settle(app)).toBe(true); };
+const toRoll = async app => { await app.nav.toPlay(); expect(await settle(app)).toBe(true); await app.page.locator('#rollbox').fill(''); };   // the box keeps its text after a roll (PD-142.14.1.6.2) and the shared page carries it over, so start empty
 
 test.beforeEach(async ({ shared }) => { await shared.reset(7); await shared.run(SETUP); });
 test.afterAll(async ({ shared }) => { await shared.page.setViewportSize({ width: 1280, height: 720 }); });
@@ -53,7 +53,7 @@ test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter t
   await chip('[data-adv="l"]'); expect((await st(app)).box).toBe('2d20kl1+1d6+2');
   expect(await st(app), 'loading never throws or changes the dice on the mat').toMatchObject({ n: before.n, dice: before.dice, settled: true });
   await app.page.locator('#rollbox').press('Enter');
-  expect(await st(app)).toMatchObject({ n: '2d20kl1+1d6+2', dice: 3, settled: false, box: '', ph: '2d20kl1+1d6+2' });
+  expect(await st(app)).toMatchObject({ n: '2d20kl1+1d6+2', dice: 3, settled: false, box: '2d20kl1+1d6+2', ph: '2d20kl1+1d6+2' });   // the text stays in the box after a roll (PD-142.14.1.6.2)
   await settle(app);
   // a formula that does not parse marks the box and changes nothing
   await app.page.locator('#rollbox').fill('banana'); await app.page.locator('#rollbtn').click();
@@ -71,7 +71,7 @@ test('R, Enter in an empty box and the button all throw the dice on the mat; the
   await app.page.locator('#roll').click(); expect(await st(app), 'the Roll half of the panel switch is a pure switch in roll view').toMatchObject({ settled: true, rolling: true });
   // R with a formula in the box throws that formula, the same as the button
   await app.page.locator('#rollbox').fill('3d6+2'); await app.page.locator('#stage').click({ position: { x: 5, y: 5 } }); await app.page.keyboard.press('r');
-  expect(await st(app)).toMatchObject({ n: '3d6+2', dice: 3, settled: false, box: '' });
+  expect(await st(app)).toMatchObject({ n: '3d6+2', dice: 3, settled: false, box: '3d6+2' });
   await settle(app);
 });
 
