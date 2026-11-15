@@ -127,6 +127,10 @@ A game module exports a rule object; the engine core (`games/core.js`) supplies 
 
 - **Liar's Dice** (`liarsdice`, PD-142.17): 2-6 players, options `dice` (5) and `wild` (ones wild, bid 2-6 only). Hidden information: each cup is private until a challenge. Phases `roll` (each player rolls their own cup in seat order; `rollSpec` has `private: true` and `player`), `bid` (`{type:'bid', quantity, face}` or `{type:'challenge'}`), `reveal` (`{type:'next'}`), `over`. `status.handoff` is the player who must hold the device; `status.cups[i].dice` is `null` unless the viewer may see it. `suggest(state, viewer)` returns the legal bids with `chance` (probability the bid is true given the viewer's own dice) and a leading `challenge` row. Full rules, phases and the privacy contract: [games-hidden-info.md](games-hidden-info.md).
 
+## Rule flag `allowDesignSwap` (PD-142.38 slice 8)
+
+A game's `info` may set `allowDesignSwap: false` to turn off the long-press "change this die's design" menu in the Play room (default true; no current game sets it). It is cosmetic only: the die type, face and place never change. Not offered on dice hidden under the cup (Liar's Dice).
+
 ## Testing
 
 `tests/games.spec.mjs` (tagged `@quick`) imports `games/index.js` directly in node via a Playwright test with no page (no browser boot) and drives games with fixed value sequences.

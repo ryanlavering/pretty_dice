@@ -205,3 +205,30 @@ test('games scope (PD-142.41): the picker offers the five kept games only; a sav
   await expect(app.page.locator('#scorepane button', { hasText: /^Resume/ })).toHaveCount(0);
   await app.page.evaluate(() => localStorage.removeItem('prettydice.games.game'));
 });
+
+test('craps: the roll effect is called out in the big result area (PD-142.33.2)', async ({ shared: app }) => {
+  const c = (ev, prev) => app.run((pd, a) => pd.crapsCallout(a[0], a[1]), [ev, prev]);
+  const R = t => ({ type: 'rolled', total: t });
+  expect(await c([R(7)], null)).toBe('7 · Natural');
+  expect(await c([R(12)], null)).toBe('12 · Craps!');
+  expect(await c([R(6), { type: 'point', number: 6 }], null)).toBe('6 · Point is 6');
+  expect(await c([R(7), { type: 'sevenOut' }], 6)).toBe('7 · Seven out');
+  expect(await c([R(6), { type: 'pointMade', number: 6 }], 6)).toBe('6 · Point made');
+  expect(await c([R(9), { type: 'payout', kind: 'field', result: 'win' }], 6)).toBe('9 · Field wins');
+  expect(await c([R(8)], 6)).toBe('8');
+});
+
+test('craps: dragging a chip up picks how many it adds per tap (PD-142.33.1)', async ({ shared: app }) => {
+  await app.reset(59); await app.run(pd => { pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps'); await app.nav.roll();
+  const chip = app.page.locator('#scorepane .chipsel', { hasText: /^Unit/ }), b = await chip.boundingBox();
+  await app.page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await app.page.mouse.down();
+  await app.page.mouse.move(b.x + b.width / 2, b.y + b.height / 2 - 40, { steps: 5 }); await app.page.mouse.up();
+  await expect(app.page.locator('#scorepane .chipsel.on')).toContainText('×');
+  const n = await app.run(pd => +/×(\d+)/.exec(document.querySelector('#scorepane .chipsel.on').textContent)[1]);
+  expect(n).toBeGreaterThan(1);
+  await app.page.click('#scorepane button[aria-label^="Pass line"]');
+  const amt = await app.run(pd => pd.game.state.bets[0].amount), min = await app.run(pd => pd.game.state.options.minBet);
+  expect(amt).toBe(min * n);
+  await app.run(pd => pd.endGame());
+});

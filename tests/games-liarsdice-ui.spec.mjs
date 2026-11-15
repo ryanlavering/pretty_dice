@@ -88,3 +88,11 @@ test('bot seat in another game: the bot takes its turn by itself and hands back'
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).player)).toBe(0);
   await app.run(pd => pd.endGame());
 });
+
+test("Liar's Dice setup: a fresh setup shows two seats to match '2 players' (PD-142.37.1)", async ({ shared: app }) => {
+  await app.reset(75); await app.run(pd => { pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'liarsdice');
+  await expect(app.page.locator('#scorepane select >> nth=1')).toHaveValue('2');
+  expect(await app.page.locator('#scorepane input[type=text]').count()).toBe(2);
+  await app.run(pd => pd.endGame());
+});

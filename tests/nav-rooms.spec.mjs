@@ -110,3 +110,16 @@ test('Games tab opens setup, shows the scorecard in the panel, and the Design | 
   await page.locator('#back').click(); await expect(page.locator('#back')).toHaveClass(/on/);
   await page.locator('#roll').click(); await expect(page.locator('#roll')).toHaveClass(/on/);
 });
+
+test('phone: Undo and Redo sit in the top right of the mat, clear of the shelf and the switch (PD-142.38.5)', async ({ shared: app }) => {
+  const page = app.page; await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+  try {
+    await app.nav.toDesign();
+    await expect(page.locator('#topstrip #histrow')).toBeVisible();   // wait for the resize to be delivered (frames can be throttled in headless)
+    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sw = await page.locator('#modesw').boundingBox(), sh = await page.locator('#shelf').boundingBox();
+    expect(u.y).toBeLessThan(60); expect(r.x + r.width).toBeGreaterThan(300); expect(u.x).toBeGreaterThan(sw.x + sw.width);
+    expect(u.y + u.height).toBeLessThan(sh.y);
+    await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden();
+  } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
+  await expect(page.locator('#shelf #undo')).toHaveCount(1);
+});

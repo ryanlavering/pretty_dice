@@ -1,11 +1,11 @@
 // Ad-hoc check: boot the app headless and print the result of a JS expression evaluated with `pd` = window.__pd.
-// Usage: node scripts/probe.mjs 'pd.simRoll()' [--query 'shape=d20'] [--seed 7]   (seed goes in ?seed=)
+// Usage: node scripts/probe.mjs 'pd.simRoll()' [--query 'shape=d20'] [--seed 7]   (seed goes in ?seed=); --viewport 390x844
 // Needs the test server: it starts one on 8124 unless one is already running.
 import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 
 const args = process.argv.slice(2), opt = k => { const i = args.indexOf(k); return i >= 0 ? args.splice(i, 2)[1] : null; };
-const query = opt('--query') || '', seed = +(opt('--seed') || 1), expr = args.join(' ') || 'pd.state';
+const vp = (opt('--viewport') || '1280x800').split('x').map(Number), query = opt('--query') || '', seed = +(opt('--seed') || 1), expr = args.join(' ') || 'pd.state';
 const base = 'http://127.0.0.1:8124';
 let server = null;
 if (!(await fetch(base + '/index.html').then(r => r.ok, () => false))) {
@@ -14,7 +14,7 @@ if (!(await fetch(base + '/index.html').then(r => r.ok, () => false))) {
 }
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 try {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  const page = await browser.newPage({ viewport: { width: vp[0], height: vp[1] } });
   page.on('console', m => console.error(`[${m.type()}] ${m.text()}`));
   page.on('pageerror', e => console.error(`[pageerror] ${e.message}`));
   await page.addInitScript(seed => { let a = seed >>> 0; Math.random = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }, seed);

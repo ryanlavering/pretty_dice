@@ -33,17 +33,17 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     expect(await app.run(pd => !!pd.game)).toBe(true);
     await app.page.click('#paneltabs button[data-pane=games]');
     await app.page.click('#scorepane button:has-text("End game")');
-    await expect(app.page.locator('#paneltabs')).toBeHidden(); await expect(app.page.locator('#gamepanel')).toBeHidden(); await expect(app.page.locator('#settingspane')).toBeVisible();
+    await expect(app.page.locator('#gamepanel')).toBeHidden(); await expect(app.page.locator('#settingspane')).toBeVisible();
     await app.page.setViewportSize({ width: 1280, height: 720 });
   });
 }
 
-test('desktop keeps the side panel and no tab strip', async ({ shared: app }) => {
+test('desktop: the scorecard is the panel\'s Games tab, nothing floats over the mat during setup', async ({ shared: app }) => {
   await app.reset(92); await app.page.setViewportSize({ width: 1280, height: 720 });
   await app.nav.openGames();
-  await expect(app.page.locator('#gamepanel')).toBeVisible(); await expect(app.page.locator('#paneltabs')).toBeHidden(); await expect(app.page.locator('#scorepane')).toBeHidden();
+  await expect(app.page.locator('#scorepane')).toBeVisible(); await expect(app.page.locator('#paneltabs')).toBeVisible(); await expect(app.page.locator('#gamepanel')).toBeHidden();
   await app.nav.roll();
-  await expect(app.page.locator('#gamepanel .gh h2')).toHaveText(await app.page.evaluate(() => window.__pd.GAMES.listGames().find(g => g.id === 'yahtzee').name));   // display name comes from the registry (Yacht after PD-142.41)
+  await expect(app.page.locator('#scorepane .gh h2')).toHaveText(await app.page.evaluate(() => window.__pd.GAMES.listGames().find(g => g.id === 'yahtzee').name));   // display name comes from the registry (Yacht after PD-142.41)
   await app.run(pd => pd.endGame());
 });
 
@@ -57,13 +57,13 @@ test('overhead view (PD-142.34): non-game keeps the big total as the handle; in 
   await app.page.mouse.up();
   expect(await app.page.evaluate(() => document.body.classList.contains('peek'))).toBe(false);
   // in a game (desktop side panel): total hidden, status line is the handle, t still works
-  await app.run(pd => pd.openGames()); await app.page.selectOption('#gamepanel select >> nth=0', 'craps'); await app.nav.roll();
+  await app.run(pd => pd.openGames()); await app.page.selectOption('#scorepane select >> nth=0', 'craps'); await app.nav.roll();
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   await expect(app.page.locator('body.game')).toHaveCount(1);
   await expect(app.page.locator('#result .tot')).toBeHidden();
-  await expect(app.page.locator('#gamepanel .gstat.peekh')).toBeVisible();
-  expect(await app.page.locator('#gamepanel .gstat').textContent(), 'sum kept in the status text').toMatch(/otal \d+/);
-  const gb = await app.page.locator('#gamepanel .gstat').boundingBox();
+  await expect(app.page.locator('#scorepane .gstat.peekh')).toBeVisible();
+  expect(await app.page.locator('#scorepane .gstat').textContent(), 'sum kept in the status text').toMatch(/otal \d+/);
+  const gb = await app.page.locator('#scorepane .gstat').boundingBox();
   await app.page.mouse.move(gb.x + 20, gb.y + 8); await app.page.mouse.down();
   expect(await app.page.evaluate(() => document.body.classList.contains('peek'))).toBe(true);
   expect(await app.page.evaluate(() => getComputedStyle(document.getElementById('gamepanel')).opacity)).toBe('0.18');

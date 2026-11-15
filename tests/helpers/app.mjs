@@ -96,7 +96,7 @@ export const test = base.extend({
       errors,
       async reset(seed = 1) {
         await page.evaluate(async seed => {
-          const pd = window.__pd, boot = structuredClone(window.__pdBoot); pd.pause(); if (pd.rolling) pd.exitRoll(true);
+          const pd = window.__pd, boot = structuredClone(window.__pdBoot); pd.pause(); if (pd.game) pd.endGame(); if (pd.rolling) pd.exitRoll(true);
           for (const k of Object.keys(pd.state)) if (!(k in boot)) delete pd.state[k];
           Object.assign(pd.state, boot); document.getElementById('dname').value = '';   // every setting back to how the page booted
           pd.reseed(seed); await pd.buildDice(); pd.applyLook();
