@@ -2157,16 +2157,20 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans();
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
+  droppedDice=new Set();
   let main, sub='', subItems=null, subMod='';
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), G=P.group||1;
-    if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[]));
-      dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; per[d.copy][d.term].push(t===0?100:t); } else if(d.part!=='ones') per[d.copy][d.term].push(fmt(d,parts[i])); });
+    if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[])), perI=Array.from({length:G},()=>P.terms.map(()=>[]));
+      dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; per[d.copy][d.term].push(t===0?100:t); perI[d.copy][d.term].push(i); } else if(d.part!=='ones'){ per[d.copy][d.term].push(fmt(d,parts[i])); perI[d.copy][d.term].push(i); } });
+      per.forEach((v,c)=>v.forEach((vals,ti)=>{ const k=keepSum(vals,P.terms[ti].keep).kept; perI[c][ti].forEach((di,j)=>{ if(!k.has(j)) droppedDice.add(di); }); }));
       const ls=per.map((v,c)=>groupLine(P.terms,P.mod,v,c+1)); main=ls.map(l=>l.total).join(' · '); subItems=ls.map(l=>l.item); sub=subItems.map(i=>i.text).join('  ·  '); }
     else {
     const groups=P.terms.map(()=>[]);
-    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); } else if(d.part!=='ones') groups[d.term].push(fmt(d,parts[i])); });
+    const gI=P.terms.map(()=>[]);
+    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); } });
     const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
+    ks.forEach((k,ti)=>gI[ti].forEach((di,j)=>{ if(!k.kept.has(j)) droppedDice.add(di); }));   // dice dropped by keep/drop/adv/dis: they do not count, so no nat 20 / nat 1 effect for them
     main=String(total);
     if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i])})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||P.terms.length>1?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
@@ -2181,7 +2185,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
   document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); { const look=logRoll(main,sub,subItems,subMod); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
-  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>exitRoll();
 const ICON_SHOW='<svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>', ICON_ROLL='<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/></svg>';
@@ -2396,7 +2400,7 @@ function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('po
 const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,lead:0,hold:false};   // dim: nat 1 room dimming; lead: nat 20 light dip (+) / flash (-)
-let leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
+let droppedDice=new Set(), leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
 function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
 function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.cocked,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring

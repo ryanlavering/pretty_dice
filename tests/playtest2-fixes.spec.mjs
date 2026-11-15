@@ -144,3 +144,18 @@ test.describe('phone dock and log reach (.2 .3)', () => {
     }
   });
 });
+
+// PD-142.14.1.1.3: only kept dice count for the nat 20 / nat 1 effect.
+test('a dropped nat 1 or nat 20 does not trigger the nat effect (.14.1.1.3)', async ({ shared: app }) => {
+  await app.reset(1);
+  const run = (notation, a, b) => app.run((pd, [notation, a, b]) => {
+    pd.state.shape = 'custom'; pd.state.notation = notation; pd.buildDice(); pd.simRoll();
+    pd.dice[0].labs = pd.dice[0].labs.map(() => a); pd.dice[1].labs = pd.dice[1].labs.map(() => b);   // force the faces read at rest
+    pd.finishRoll();
+    return { crit: pd.fx.crit.length, fumble: pd.fx.fumble.length };
+  }, [notation, a, b]);
+  expect(await run('2d20kh1', 20, 1), 'adv: the kept 20 counts, the dropped 1 does not').toEqual({ crit: 1, fumble: 0 });
+  expect(await run('2d20kh1', 1, 20), 'adv: die 1 (the 20) is kept, the dropped 1 does not count').toEqual({ crit: 1, fumble: 0 });
+  expect(await run('2d20kl1', 20, 1), 'dis: the dropped 20 does not count, the kept 1 does').toEqual({ crit: 0, fumble: 1 });
+  expect(await run('2d20kh1', 1, 1), 'adv with two 1s: one is kept').toEqual({ crit: 0, fumble: 1 });
+});
