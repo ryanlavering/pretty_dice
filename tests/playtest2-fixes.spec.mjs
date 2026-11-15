@@ -159,3 +159,17 @@ test('a dropped nat 1 or nat 20 does not trigger the nat effect (.14.1.1.3)', as
   expect(await run('2d20kl1', 20, 1), 'dis: the dropped 20 does not count, the kept 1 does').toEqual({ crit: 0, fumble: 1 });
   expect(await run('2d20kh1', 1, 1), 'adv with two 1s: one is kept').toEqual({ crit: 0, fumble: 1 });
 });
+
+// PD-142.14.1.6.1: text typed in the dock is rolled by the Roll button (regression test; the loss the owner saw on the phone did not reproduce on desktop); the placeholder is a dimmer italic.
+test('the dock rolls typed text with the Roll button and keeps nothing stale (.14.1.6.1)', async ({ app, page }) => {
+  await app.open();
+  await app.nav.toPlay();
+  const box = page.locator('#rollbox');
+  await expect(box).toHaveAttribute('placeholder', /\S/);
+  expect(await box.evaluate(e => getComputedStyle(e, '::placeholder').fontStyle)).toBe('italic');
+  await box.fill('3d6+2');
+  await page.locator('#rollbtn').click();
+  await expect.poll(() => app.run(pd => pd.state.notation)).toBe('3d6+2');
+  await expect(box).toHaveValue('');
+  await expect(box).toHaveAttribute('placeholder', /3d6\+2/);
+});
