@@ -68,7 +68,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await app.open();
   await app.run(SETUP);
   await app.nav.openBag();
-  await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await page.locator('#paneltabs [data-pane="sets"]').click();
   await expect(page.locator('#setlist .setrow')).toHaveCount(2);
   await page.locator('#setsave').click();
   await expect(page.locator('#setlist .seted')).toBeVisible();   // the new set opens in the editor
@@ -179,7 +179,7 @@ test('the bag sheet has Save, Load and Copy icon buttons beside Close', async ({
   await app.run(SETUP);
   await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { value: { writeText: async t => { window.__copied = t; } }, configurable: true }); });
   await app.nav.openBag();
-  for (const id of ['sheetsave', 'sheetload', 'sheetcopy', 'sheetclose']) await expect(page.locator('#' + id)).toBeVisible();
+  for (const id of ['sheetsave', 'sheetload', 'sheetcopy']) await expect(page.locator('#' + id)).toBeVisible();
   const order = await page.locator('#sheethead > *').evaluateAll(n => n.map(e => e.id));
   expect(order.slice(-2)).toEqual(['sheetact', 'sheetclose']);   // the buttons sit right next to Close
   await page.click('#sheetcopy');
@@ -205,7 +205,6 @@ test('the bag name is editable in the sheet title and names the saved file', asy
   expect(await app.run(pd => pd.bag.name)).toBe('Dungeon night!');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
   expect(dl.suggestedFilename()).toBe('dungeon-night.bag.json');
-  await page.locator('#sheetclose').click();
   await expect(page.locator('#bagpos')).toContainText('in Dungeon night!');
   await app.nav.openBag(); await page.locator('#sheettitle .bn').click();
   await page.locator('#sheettitle input').fill('Nope'); await page.keyboard.press('Escape');
@@ -228,7 +227,7 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await app.open();
   await app.run(SETUP);
   const live = await app.run(pd => pd.state.notation);
-  await app.nav.openBag(); await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await app.nav.openBag(); await page.locator('#paneltabs [data-pane="sets"]').click();
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Make a copy' }).click();
   expect(await app.run(pd => pd.bag.sets.map(s => [s.id, s.name]))).toEqual([['dmg', 'Damage'], ['damage-copy', 'Damage copy'], ['adv', 'Advantage']]);
@@ -328,7 +327,7 @@ test('set and design names stay unique in the bag: copies and clashing renames g
 test('the set editor has one way out (the X), which asks before discarding edits @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const q = s => document.querySelector(s), menuBtn = t => [...document.querySelectorAll('#cardmenu button')].find(b => b.textContent === t || b.textContent.startsWith(t));
-    const id = pd.bag.sets[0].id; document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const id = pd.bag.sets[0].id; document.querySelector('#paneltabs [data-pane="bag"]').click(); document.querySelector('#paneltabs [data-pane="sets"]').click();
     const openEd = () => { q(`#setlist .setrow[data-id="${id}"] .dots`).click(); menuBtn('Edit').click(); };
     openEd(); const buttons = [...document.querySelectorAll('.seted .sesave, .seted .seclose')].map(b => b.textContent);
     q('.seted .seclose').click(); const cleanClosed = !q('.seted');   // nothing changed: closes at once
@@ -344,7 +343,7 @@ test('the set editor has one way out (the X), which asks before discarding edits
 test('a long press on a set opens its editor, the pencil does too, and the menu has no Rename @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const q = s => document.querySelector(s), wait = ms => new Promise(r => setTimeout(r, ms));
-    const id = pd.bag.sets[0].id; document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const id = pd.bag.sets[0].id; document.querySelector('#paneltabs [data-pane="bag"]').click(); document.querySelector('#paneltabs [data-pane="sets"]').click();
     const main = () => q(`#setlist .setrow[data-id="${id}"] .main`), ptr = (el, type) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: 5, clientY: 5, pointerType: 'touch' }));
     const m = main(); ptr(m, 'pointerdown'); await wait(650); ptr(m, 'pointerup'); m.click();   // the click after a long press must not also open the set
     const byPress = !!q('.seted') && document.activeElement !== q('.seted .sename');
@@ -362,7 +361,7 @@ test('a long press on a set opens its editor, the pencil does too, and the menu 
 test('a dirty set editor shows a corner dot and a yellow Save, and opening another set asks before discarding @quick', async ({ shared: app }) => {
   const r = await app.run(async pd => {
     const q = s => document.querySelector(s), menuBtn = t => [...document.querySelectorAll('#cardmenu button')].find(b => b.textContent.startsWith(t));
-    const [a, b] = pd.bag.sets.map(s => s.id); document.getElementById('bagbtn').click(); q('#sheettabs [data-tab="sets"]').click();
+    const [a, b] = pd.bag.sets.map(s => s.id); document.querySelector('#paneltabs [data-pane="bag"]').click(); document.querySelector('#paneltabs [data-pane="sets"]').click();
     const pen = id => q(`#setlist .setrow[data-id="${id}"] .pen`), ed = () => q('.seted');
     pen(a).click(); const cleanDot = ed().classList.contains('dirty');
     const nm = q('.seted .sename'); nm.value = 'Edited'; nm.dispatchEvent(new Event('input'));
@@ -419,7 +418,7 @@ test('the quick roll result shows above the open bag sheet, and the roll log fad
 test('a double-click on quick roll is one logged roll, a later click is another (PD-142.14.1.16)', async ({ app, page }) => {
   await app.open();
   await app.run(SETUP);
-  await app.nav.openBag(); await page.locator('#sheettabs button[data-tab="sets"]').click();
+  await app.nav.openBag(); await page.locator('#paneltabs [data-pane="sets"]').click();
   const q = '#setlist .setrow[data-id="dmg"] .quick';
   const n0 = await app.run(pd => pd.bag.log.length);
   await page.evaluate(sel => { document.querySelector(sel).click(); document.querySelector(sel).click(); }, q);

@@ -82,7 +82,7 @@ test('a saved set chip and the set menu "Open" load the set on the mat without t
   await app.page.locator('#rollbtn').click();
   expect(await st(app)).toMatchObject({ set: 'dmg', placed: false, settled: false }); await settle(app);
   // from the bag sheet: the set menu has one "Open" (was "Open and roll now")
-  await app.nav.toDesign(); await app.nav.openBag(); await app.page.locator('#sheettabs button[data-tab="sets"]').click();
+  await app.nav.toDesign(); await app.nav.openBag(); await app.page.locator('#paneltabs [data-pane="sets"]').click();
   await app.page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await expect(app.page.locator('#cardmenu')).not.toContainText('roll now');
   await app.page.locator('#cardmenu >> text=/^Open$/').click();

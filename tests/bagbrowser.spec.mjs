@@ -93,10 +93,10 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await page.locator('#cards .card[data-id="gold"]').click();
   await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
   await expect.poll(() => app.run(pd => pd.state.shape)).toBe('d8');
-  await page.locator('#bagopen').click();
+  await app.nav.openBag();
   await expect(page.locator('#tiles .tile[data-id]')).toHaveCount(3);
   // drag the last tile to the front
-  const tiles = page.locator('#tiles .tile[data-id]'), a = await tiles.nth(2).boundingBox(), b = await tiles.nth(0).boundingBox();
+  const tiles = page.locator('#tiles .tile[data-id]'); await tiles.nth(2).scrollIntoViewIfNeeded(); const a = await tiles.nth(2).boundingBox(), b = await tiles.nth(0).boundingBox();
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down(); await page.mouse.move(a.x + a.width / 2 - 20, a.y + a.height / 2, { steps: 4 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await page.mouse.up();
   await expect.poll(() => app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['gold', 'amethyst', 'bone']);
@@ -138,7 +138,7 @@ test('clicking a name on the shelf edits it in place and leaves it Modified unti
   const r = await app.run(pd => ({ saved: pd.bag.designs[2].name, mod: pd.isModified('gold'), active: pd.bag.active.design }));
   expect(r).toEqual({ saved: 'Gold', mod: true, active: 'bone' });   // renaming does not switch designs
   await page.locator('#cards .card[data-id="gold"]').click();   // pick it: the settings row shows Modified, Save keeps the name
-  await expect(page.locator('#modbadge')).toBeVisible(); await page.locator('#bsave').click();
+  await app.nav.openBag(); await expect(page.locator('#modbadge')).toBeVisible(); await page.locator('#bsave').click();
   await expect.poll(() => app.run(pd => pd.bag.designs[2].name)).toBe('Lucky coin');
   await expect(page.locator('#modbadge')).toBeHidden();
 });
@@ -147,7 +147,7 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await app.open();
   await app.run(SETUP);
   await page.locator('#dname').fill('Brand new name'); await page.keyboard.press('Enter');
-  await expect(page.locator('#modbadge')).toBeVisible();
+  await app.nav.openBag(); await expect(page.locator('#modbadge')).toBeVisible();
   await page.locator('#cards .card[data-id="gold"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
   await page.locator('#cards .card[data-id="bone"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('bone');
   await expect(page.locator('#dname')).toHaveValue('Brand new name');
@@ -183,7 +183,8 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   const mkFile = name => JSON.stringify({ format: 'pretty-dice-bag', version: 1, name, designs: [{ id: 'one', name: 'One', preview_shape: 'd8', design: { ...JSON.parse(JSON.stringify({})), format: 'pretty-dice', version: 1, shape: 'd8', substrate: 'metal' } }], sets: [], characters: [], jail: [], pending: {}, draft: null, active: { design: 'one', set: null, draft: false }, log: [] });
   await expect(page.locator('#bagdirty')).toBeHidden();
   await app.run(pd => pd.bagOps.addBlank());
-  await expect(page.locator('#bagdirty')).toBeVisible();
+  await app.nav.openBag(); await expect(page.locator('#bagdirty')).toBeVisible();
+  await page.locator('#paneltabs [data-pane="look"]').click();   // the file buttons stay on the Look tab until slice 7 gathers them in the Bag tab
   await expect(page.locator('#savebag')).toHaveClass(/dirty/);
   await expect(page.locator('#replacebag')).toHaveCount(0);
   // unsaved: Load bag asks; Cancel leaves everything alone
@@ -191,18 +192,18 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   await page.click('#baskCancel'); await expect(page.locator('#bagask')).toBeHidden();
   expect(await app.run(pd => pd.bag.designs.length)).toBe(2);
   // Save bag (from the link) clears the badge; a clean bag loads with no question and is replaced, not appended to
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bagsave')]);
+  await app.nav.openBag(); const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bagsave')]);
   expect(dl.suggestedFilename()).toMatch(/\.bag\.json$/);
   await expect(page.locator('#bagdirty')).toBeHidden();
-  const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#loadbag')]);
+  await page.locator('#paneltabs [data-pane="look"]').click(); const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#loadbag')]);
   await expect(page.locator('#bagask')).toBeHidden();
   await fc.setFiles({ name: 'b.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Loaded bag')) });
   await expect.poll(() => app.run(pd => pd.bag.designs.map(d => d.id))).toEqual(['one']);
   expect(await app.run(pd => pd.bag.name)).toBe('Loaded bag');
   await expect(page.locator('#bagdirty')).toBeHidden();   // what was just loaded is what the file holds
   // dirty again: Discard goes straight to the file picker
-  await app.run(pd => pd.bagOps.addBlank()); await expect(page.locator('#bagdirty')).toBeVisible();
-  await page.click('#loadbag');
+  await app.run(pd => pd.bagOps.addBlank()); await app.nav.openBag(); await expect(page.locator('#bagdirty')).toBeVisible();
+  await page.locator('#paneltabs [data-pane="look"]').click(); await page.click('#loadbag');
   const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
   await fc2.setFiles({ name: 'c.bag.json', mimeType: 'application/octet-stream', buffer: Buffer.from(mkFile('Second')) });
   await expect.poll(() => app.run(pd => pd.bag.name)).toBe('Second');
@@ -344,7 +345,7 @@ test('a bag of ten designs shows tinted placeholders at once and makes one pictu
     await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'Big', designs }, { replace: true });
     pd.thumbs && Object.keys(pd.thumbs).forEach(k => delete pd.thumbs[k]);
   });
-  await page.locator('#bagopen').click();
+  await app.nav.openBag();
   const bgs = await page.locator('#tiles .tile[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage));
   expect(bgs.length).toBe(10);
   expect(bgs.filter(b => b.startsWith('url("data:image/svg+xml')).length).toBeGreaterThanOrEqual(8);   // dummy d20 chips, until a real picture exists
