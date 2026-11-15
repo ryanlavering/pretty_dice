@@ -55,8 +55,8 @@ test.describe('desktop', () => {
 
   test('Randomize mid-roll replaces geometry and keeps bodies in step', async ({ app, page }) => {
     const g0 = await app.run(pd => { pd.state.randshape = true; pd.simRoll(); window.__g0 = pd.dice[0].geo; return pd.settled; });
+    expect(g0).toBe(true);
     await app.run(pd => pd.randomize());   // the Randomize button is Design-only since slice 4a; the engine call still has to cope mid-roll
-    await page.click('#rand');
     await expect.poll(() => app.run(pd => pd.dice[0].geo !== window.__g0)).toBe(true);
     expect(await app.run(pd => [pd.rolling, pd.bodies.length === pd.dice.length])).toEqual([true, true]);
   });
