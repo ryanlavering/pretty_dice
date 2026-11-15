@@ -20,6 +20,7 @@ Tap **+ init** on any roll with a number total to add it to the **initiative lis
 
 ![A group roll and the initiative list, sorted high to low](img/21-group-roll-initiative.png)
 
+- **+ Add by hand** adds a name and a score yourself.
 - The list is sorted high to low. Rows get default names ("Roll 1", "Roll 2"…); click a name to rename it ("Goblin 1").
 - **Next** moves the highlight to the next row. When it wraps past the last row the **round** counter goes up.
 - ✕ removes a row; **Clear** (in the initiative box) empties the list.

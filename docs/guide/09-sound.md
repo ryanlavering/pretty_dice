@@ -1,6 +1,6 @@
 # Sound
 
-Sound on or off is in the Utilities drawer (the paired-circles button, top right). Sound starts off.
+Sound on or off is in the Utilities drawer (the paired-circles button at the bottom right of the table). Sound starts off.
 
 In **Roll feel & sound** (the **Table** tab in the Play room) you can set:
 

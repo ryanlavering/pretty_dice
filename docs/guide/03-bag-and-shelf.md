@@ -16,7 +16,7 @@ Tap **+ Add** at the end of the shelf. You can choose:
 
 ![The bag sheet showing the Designs tab](img/08-bag-designs.png)
 
-In the Design room, open the **Bag** tab. **Designs** lists every design as a card; the **⋯** menu on a card has the per-design actions. This is the one place to save the bag, load a bag or copy the bag as JSON (three icons at the top). On a phone the tab has an expand control that opens the full-screen sheet shown below; **Close** returns to the table.
+In the Design room, open the **Bag** tab. **Designs** lists every design as a card; the **⋯** menu on a card has the per-design actions. This is the one place to save the bag, load a bag or copy the bag as JSON (three icons at the top). On a phone the **Bag** and **Sets** tabs open the full-screen sheet shown below; **Close** returns to the table.
 
 Changes to a design are held until you save them. The bag shows when the current design is modified and offers **Save**, **Save as copy** and **Revert**.
 

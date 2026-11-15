@@ -6,10 +6,10 @@ When the page opens you see one die turning slowly in the middle of the screen, 
 
 ## Two rooms: Design and Play
 
-One switch, **Design | Play**, decides what you are doing (top of the side panel on a desktop, the top strip on a phone). Switching never throws the dice.
+One switch, **Design | Play**, decides what you are doing (just under the tabs in the side panel on a desktop, at the top left on a phone). Switching never throws the dice.
 
 - **Design room**: the die floats and turns. Drag to turn it by hand, scroll or pinch to zoom, right-drag or two fingers to orbit, double-click to reset the view. The panel has three tabs: **Look** (shape, material, colours, numbers, Randomize, save and export), **Bag** (all your designs) and **Sets** (saved groups of dice). Undo, Redo and the shelf sit along the bottom of the table.
-- **Play room**: the dice lie on the table. The panel has the tabs **Table** (dice to roll, roll feel and sound), **Games** and **Log**. A dock along the bottom of the table has the formula box and the one gold **Roll** button, the only button that throws dice.
+- **Play room**: the dice lie on the table. The panel has the tabs **Table** (dice to roll, roll feel and sound), **Games** and **Log**. A dock along the bottom of the table has the formula box, the one gold **Roll** button (the only button that throws dice) and the preset chips.
 
 ## Try these first
 
@@ -22,8 +22,8 @@ One switch, **Design | Play**, decides what you are doing (top of the side panel
 | Control | What it does |
 |---|---|
 | **Design | Play** switch | Changes room. Never throws. |
-| Utilities (the paired-circles button, top right) | Opens the drawer: sound on or off, **Reset view**, **Full view**, **Hints**, **Reset to defaults**, and **Pause spin** in the Design room. |
-| Panel handle | The small arrow at the edge of the panel hides it for a full view of the table; the same arrow at the screen edge brings it back. `h` does the same. |
+| Utilities (the paired-circles button, bottom right of the table) | Opens the drawer: sound on or off, **Reset view**, **Full view**, **Hints**, **Reset to defaults**, and **Pause spin** in the Design room. |
+| Panel handle | The small arrow at the edge of the panel (on a phone, at the middle of the tab row) hides it for a full view of the table; the same arrow at the screen edge brings it back. `h` does the same. |
 | Dock (Play room) | Formula box, preset chips (d4 to d%, Adv, Dis) and the **Roll** button. See [Rolling](05-rolling.md). |
 | Shelf (Design room) | Your designs; tap one to switch to it. See [the bag and shelf](03-bag-and-shelf.md). |
 
