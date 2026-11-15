@@ -45,3 +45,42 @@ test('Escape with the bag sheet open closes only the sheet (.8)', async ({ app, 
   expect(await app.nav.shown('panel'), 'the settings pane stays').toBe(true);
   expect(await page.evaluate(() => document.body.classList.contains('full'))).toBe(false);
 });
+
+test('Copy in the roll log gives visible feedback that outlasts the button label (.5)', async ({ app, page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
+  await app.open();
+  await app.nav.toPlay(); await app.run(pd => { pd.simRoll(); });
+  await app.nav.openLog();
+  const copy = page.locator('#logpanel .lh button', { hasText: 'Copy' });
+  await expect(copy).toBeEnabled(); await copy.click();
+  await expect(page.locator('#toast')).toBeVisible();
+  await expect(page.locator('#toast')).toContainText(/copied|Save/i);
+  expect(await page.evaluate(() => window.__lastLogCopy)).toBeTruthy();
+});
+
+test('Enter in the Custom notation box applies the set and neither rolls nor switches to Roll mode (.9)', async ({ app, page }) => {
+  await app.open();
+  await app.nav.toDesign();
+  await page.locator('#shapes button[data-id="custom"]').click();
+  const box = page.locator('#notation');
+  await box.fill('d20+4'); await box.press('Enter');
+  await expect.poll(() => app.run(pd => pd.state.notation)).toBe('1d20+4');
+  await page.waitForTimeout(500);
+  const s = await app.run(pd => ({ rolling: !!pd.rolling, inroll: document.body.classList.contains('inroll'), rolled: pd.rollT > 0.5 }));
+  expect(s.inroll, 'still in the Design room').toBe(false);
+  expect(s.rolling).toBe(false);
+});
+
+test('the notation box has its own row (2d20kh1+5 is not cut off) and log header buttons stay on one line (.10)', async ({ app, page }) => {
+  await app.open();
+  await page.locator('#shapes button[data-id="custom"]').click();
+  const box = page.locator('#notation');
+  await box.fill('2d20kh1+5'); await box.press('Enter');
+  const m = await page.evaluate(() => { const i = document.getElementById('notation'); return { clipped: i.scrollWidth > i.clientWidth, w: i.clientWidth }; });
+  expect(m.clipped, 'full formula visible in the box').toBe(false);
+  await app.nav.toPlay(); await app.run(pd => { pd.simRoll(); pd.bag.roller = 'Thorn'; });
+  await app.nav.openLog();
+  await app.run(pd => { pd.renderLog(); });
+  const heights = await page.evaluate(() => [...document.querySelectorAll('#logpanel .le .lt button')].map(b => b.getBoundingClientRect().height));
+  for (const h of heights) expect(h, 'one line each').toBeLessThan(22);
+});
