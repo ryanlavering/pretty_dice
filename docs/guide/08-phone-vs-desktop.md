@@ -1,16 +1,18 @@
 # Phone versus desktop
 
-The same page adapts to the screen.
+The same page adapts to the screen. Both sizes have the same two rooms, the same tabs and the same one **Roll** button.
 
 |  | Desktop | Phone |
 |---|---|---|
-| Settings | A side panel on the left | A panel below the table; scroll down to reach it |
+| Design \| Play switch | Top of the side panel | Top strip |
+| Panel | Side panel on the left | A strip below the table that scrolls |
 | Turn the die | Drag | Drag |
 | Zoom, orbit | Scroll, right-drag | Pinch, two fingers |
-| Roll again | `r`, flick | Flick, shake (if offered) |
-| Full view | Layout button, `h` | Layout button |
+| Roll again | `r`, Enter, **Roll**, flick | **Roll**, flick, shake (if offered) |
+| Full view | Panel arrow, `h`, or Full view in the drawer | Arrow at the right end of the tab row, or Full view in the drawer |
+| Bag | **Bag** tab | **Bag** tab; expand for the full-screen sheet |
 
-On a phone the settings are a half-height strip below the table that scrolls with the wheel or by dragging. While a game is running the strip becomes two tabs, **Settings** and **Scorecard**, and the game's status line and **Roll** button sit at the top of the table.
+On a phone, hide the panel with its arrow when you want the whole table; the dock keeps the formula box and **Roll** on one row with the chips scrolling beside it. While a game is running the Games tab becomes **Scorecard**, and the game's status line is at the top of the table; hold it for a top-down look.
 
 On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips.
 

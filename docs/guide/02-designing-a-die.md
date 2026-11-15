@@ -1,6 +1,6 @@
 # Designing a die
 
-Everything here is in the settings panel in **Showcase** mode. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look.
+Everything here is in the **Look** tab of the side panel in the Design room. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look.
 
 ## Shape
 

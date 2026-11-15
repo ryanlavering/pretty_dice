@@ -4,7 +4,7 @@ Your bag and settings are kept in the browser automatically. Use files when you 
 
 ![The Save & export section](img/14-save-export.png)
 
-Everything is in **Save & export** at the bottom of the settings panel.
+The picture and single-design items are in **Save & export** at the bottom of the **Look** tab; saving and loading the whole bag is in the **Bag** tab.
 
 | What | How |
 |---|---|
@@ -13,4 +13,4 @@ Everything is in **Save & export** at the bottom of the settings panel.
 | The whole bag | **Save bag** writes a file; **Load bag** replaces this bag with a file. **Copy bag JSON** puts it on the clipboard. |
 | Add a design without replacing the bag | Shelf **Add** > **From a file…** |
 
-**Reset to defaults** (under Settings) puts the app back to how it started.
+**Reset to defaults** (in the Utilities drawer) puts the app back to how it started.

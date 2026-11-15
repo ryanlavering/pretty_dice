@@ -38,7 +38,7 @@ Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "a
 
 ## Save it as a set
 
-Type a name in the **Set name** box (under the Modifier row; empty, it shows the name a blank box would get) and press **Save as set** or Enter. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab and also appear as chips in the quick roll bar at the table. Open the bag, choose **Sets**, and use ⚡ to roll one, ✎ to edit it or ⋯ for Edit, Make a copy, Open and roll now, Move up/down and Delete. The bag and its Sets tab can be opened in Roll mode too. See [The bag and shelf](03-bag-and-shelf.md).
+Type a name in the **Set name** box (under the Modifier row; empty, it shows the name a blank box would get) and press **Save as set** or Enter. This is a different box from the design **Name** in Save & export: that one names a design file. Saved sets live in the bag's **Sets** tab and also appear as chips in the quick roll bar at the table. Open the **Sets** tab, and use ⚡ to roll one, ✎ to edit it or ⋯ for Edit, Make a copy, Open, Move up/down and Delete. In the Play room, the Table tab lists saved sets too: tap one to load it, then press **Roll**. See [The bag and shelf](03-bag-and-shelf.md).
 
 ## Give a set a result table
 

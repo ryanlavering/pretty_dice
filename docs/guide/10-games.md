@@ -6,7 +6,7 @@ Pretty Dice can run a game for you with your own dice: it keeps score, suggests 
 
 ![The Games panel with Yacht set up](img/18-games-setup.png)
 
-Tap the dice-face **Games** button (above the bag button). Choose a **Game**, the number of **Players**, and press **Start game**. Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
+Switch to the Play room and open the **Games** tab. Choose a **Game**, the number of **Players**, and press **Start game**. Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
 
 | Game | Setup options |
 |---|---|
@@ -18,14 +18,14 @@ Tap the dice-face **Games** button (above the bag button). Choose a **Game**, th
 
 ## Play Yacht (a walk-through)
 
-1. Press **Roll**. The dice are thrown and the scorecard fills with what each box would score: **italic** numbers are suggestions and the best one is **bold gold**.
-2. **Tap a settled die to hold it**; a gold ring shows. The button now says how many will be thrown, for example **Roll 3 dice**.
+1. Press the dock's **Roll** button (it reads **Roll** or, with dice held, **Roll 3 dice**). The dice are thrown and the scorecard fills with what each box would score: **italic** numbers are suggestions and the best one is **bold gold**.
+2. **Tap a settled die to hold it**; a gold ring shows. The dock button now says how many will be thrown, for example **Roll 3 dice**.
 
 ![Two dice held with gold rings, the scorecard showing suggestions](img/19-yahtzee-hold.png)
 
-3. Roll again (up to three throws), then tap a scorecard box to score it. After 13 rounds the game ends. **End game** quits early and **Scorecard** folds the card away.
+3. Roll again (up to three throws), then tap a scorecard box to score it. After 13 rounds the game ends. **End game** quits early. While a game runs, the Games tab becomes the **Scorecard** tab.
 
-While a game runs the big total on the table is hidden: the status line (with the eye icon) shows the turn, and holding it, or holding the `t` key, gives a top-down look at the dice.
+While a game runs the big total on the table is hidden: the status line at the top (with the eye icon) shows the turn, and holding it, or holding the `t` key, gives a top-down look at the dice. The dock holds the game's actions (such as **Bank** or **Cash out**) beside the one gold Roll button; the preset chips are hidden until the game ends. You can visit the Design room mid-game; the game keeps going and Play shows a dot.
 
 ## The other games
 
@@ -37,4 +37,4 @@ A quick tour of each; every game has its own rules and options in the Games pane
 
 ## Resume a game
 
-A game in progress is saved on your device. Reload the page, open Games, and a **Resume** button restores it exactly.
+A game in progress is saved on your device. Reload the page, open the Games tab, and a **Resume** button restores it exactly.

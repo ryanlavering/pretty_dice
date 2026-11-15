@@ -2,35 +2,30 @@
 
 ![The first view on a desktop screen](img/01-first-view.png)
 
-When the page opens you see one die turning slowly in the middle of the screen (the **showcase**), the settings panel on the left, and your design shelf along the bottom.
+When the page opens you see one die turning slowly in the middle of the screen, the side panel on the left, and your design shelf along the bottom. On a phone the panel sits below the table.
 
-## The two modes
+## Two rooms: Design and Play
 
-The toggle at the top of the panel switches between:
+One switch, **Design | Play**, decides what you are doing (top of the side panel on a desktop, the top strip on a phone). Switching never throws the dice.
 
-- **Showcase**: the die floats and turns. Drag to turn it by hand, scroll or pinch to zoom, right-drag or use two fingers to orbit, double-click to reset the view. This is where you design.
-- **Roll**: the dice are thrown onto a table and settle, and the total appears. This is where you play. Roll mode shows the **Roll feel & sound** settings instead of the showcase ones.
-
-The round **Roll the dice** button at the bottom right is a shortcut: tap it to throw, tap again to go back to the showcase.
+- **Design room**: the die floats and turns. Drag to turn it by hand, scroll or pinch to zoom, right-drag or two fingers to orbit, double-click to reset the view. The panel has three tabs: **Look** (shape, material, colours, numbers, Randomize, save and export), **Bag** (all your designs) and **Sets** (saved groups of dice). Undo, Redo and the shelf sit along the bottom of the table.
+- **Play room**: the dice lie on the table. The panel has the tabs **Table** (dice to roll, roll feel and sound), **Games** and **Log**. A dock along the bottom of the table has the formula box and the one gold **Roll** button, the only button that throws dice.
 
 ## Try these first
 
-1. Press **Randomize** (or Space). A new look appears. The arrows beside it undo and redo (Ctrl+Z, Ctrl+Y). "Also randomize" lets you include the substrate or the shape.
+1. In the Design room, press **Randomize** (or Space). A new look appears. **Undo** and **Redo** beside the shelf step back and forward (Ctrl+Z, Ctrl+Y). "Also randomize" lets you include the substrate or the shape.
 2. Pick a **Shape** (d4 to d20, d%, rhombic d12 and others) and a **Substrate** (plastic, metal, epoxy, stone).
-3. Switch to **Roll**. Press `r` to roll again.
+3. Switch to **Play** and press **Roll** (or `r`). Press it again to throw again.
 
-## The buttons on the table
+## The controls that are always there
 
-| Button | What it does |
+| Control | What it does |
 |---|---|
-| Layout (top of the left column) | Hides or shows the settings panel for a full view. Long-press for the distraction-free view. |
-| Speaker | Sound on or off. |
-| Pause | Stops the showcase spin. |
-| Hints (i) | Lists the gestures and shortcuts. |
-| Roll log | Opens the list of past rolls. See [the roll log](06-roll-log.md). |
-| Games (dice-face button above the bag) | Opens the Games panel: pick a game, players and options, and start. See [Games](10-games.md). |
-| Quick roll bar (bottom of the table in Roll mode) | Type a roll such as `3d6+2` and press **Roll**, or tap **d4 d6 d8 d10 d12 d20 d%** to throw one of that die. See [Rolling](05-rolling.md). |
-| Bag | Opens all your designs. See [the bag and shelf](03-bag-and-shelf.md). |
+| **Design | Play** switch | Changes room. Never throws. |
+| Utilities (the paired-circles button, top right) | Opens the drawer: sound on or off, **Reset view**, **Full view**, **Hints**, **Reset to defaults**, and **Pause spin** in the Design room. |
+| Panel handle | The small arrow at the edge of the panel hides it for a full view of the table; the same arrow at the screen edge brings it back. `h` does the same. |
+| Dock (Play room) | Formula box, preset chips (d4 to d%, Adv, Dis) and the **Roll** button. See [Rolling](05-rolling.md). |
+| Shelf (Design room) | Your designs; tap one to switch to it. See [the bag and shelf](03-bag-and-shelf.md). |
 
 ## Where next
 
