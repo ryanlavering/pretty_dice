@@ -1,6 +1,6 @@
 # The roll log
 
-Every roll is recorded. Open the **Log** tab in the Play room to see it. If the panel is hidden (full view), bring it back with the arrow at the screen edge.
+Every roll is recorded. Open the **Log** tab in the Play room to see it. If the panel is hidden (full view), bring it back with the arrow at the screen edge. While dice are rolling the panel dims and takes no clicks or typing; it works again when they settle.
 
 ![The roll log open beside a settled die](img/12-roll-log.png)
 

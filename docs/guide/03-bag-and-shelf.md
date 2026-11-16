@@ -25,7 +25,7 @@ Changes to a design are held until you save them. The bag shows when the current
 
 ![The Sets tab with one saved set](img/09-bag-sets.png)
 
-The **Sets** tab (also in the Design room) has a **Save the current dice as a set** button at the top (it saves whatever dice are in the editor, under the name in the set-name box) and lists saved sets (name and dice, for example "Thorn axe: 2d6 +3"). Each set card has:
+The **Sets** tab (also in the Design room) has two buttons at the top: **Save the current dice as a set** (opens the editor on a draft filled with the dice on the table) and **New set** (opens an empty draft). Nothing joins the bag until you press **Save** in the editor. Below them it lists saved sets (name and dice, for example "Thorn axe: 2d6 +3"). Each set card has:
 
 - **⚡** quick roll: rolls that set straight away and records it in the log.
 - **✎** edit: opens the set's editor in the tab (presets, formula, modifier and an optional result table).

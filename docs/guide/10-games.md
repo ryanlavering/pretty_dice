@@ -23,7 +23,7 @@ Switch to the Play room and open the **Games** tab. Choose a **Game** (the game 
 
 ![Two dice held with gold rings, the scorecard showing suggestions](img/19-yahtzee-hold.png)
 
-3. Roll again (up to three throws), then tap a scorecard box to score it. After 13 rounds the game ends. **End game** quits early. While a game runs, the Games tab becomes the **Scorecard** tab.
+3. Roll again (up to three throws), then tap a scorecard box to score it. After 13 rounds the game ends. **End game** quits early and returns you to the Games setup, still in the Play room. While a game runs, the Games tab becomes the **Scorecard** tab.
 
 While a game runs the big total on the table is hidden: the status line at the top (with the eye icon) shows the turn, and holding it, or holding the `t` key, gives a top-down look at the dice. The dock holds the game's actions (such as **Bank** or **Cash out**) beside the one gold Roll button; the preset chips are hidden until the game ends. You can visit the Design room mid-game; the game keeps going and Play shows a dot.
 
@@ -33,7 +33,7 @@ A quick tour of each; every game has its own rules and options in the Games pane
 
 - **Ten Thousand and Pig:** roll, then set aside scoring dice (Ten Thousand) or **Bank**. A bust shakes and reddens the status line; hot dice glow gold.
 - **Craps:** play money. Set a bet amount and tap a bet to add a unit; tap or hold a chip stack to take it down. Bets are grouped (line, come, numbers, one-roll). **Rules** explains each bet, and **Cash out** closes the table.
-- **Liar's Dice:** each player's dice are hidden from the others. With two or more people on one device, a **Pass the device** screen appears between turns. Bot seats play on their own.
+- **Liar's Dice:** each player's dice are hidden from the others. Odds and suggested bids are off by default, so a solo game against bots is not spoiled. To practise with them, turn on **Show odds and suggested bids (practice)** in the game's setup options. Holding down your own cup to peek at your dice is always available. With two or more people on one device, a **Pass the device** screen appears between turns. Bot seats play on their own.
 
 ## Resume a game
 
