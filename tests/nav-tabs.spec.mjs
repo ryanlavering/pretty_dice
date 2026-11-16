@@ -13,7 +13,7 @@ test.describe('room tabs', () => {
     const p = app.page; await app.nav.toDesign();
     await expect(p.locator('#shapes')).toBeVisible(); await expect(p.locator('#dicechips')).toBeHidden(); await expect(p.locator('#sec-roll')).toBeHidden();
     await app.nav.toPlay();
-    await expect(p.locator('#dicechips')).toBeVisible(); await expect(p.locator('#sec-roll')).toBeVisible(); await expect(p.locator('#shapes'), 'PD-142.38.12: Shape is also in the Table tab').toBeVisible(); await expect(p.locator('#subs')).toBeHidden();
+    await expect(p.locator('#sec-dice'), 'PD-142.38.23: no Dice to roll section in the Table tab').toBeHidden(); await expect(p.locator('#sec-roll')).toBeVisible(); await expect(p.locator('#shapes'), 'PD-142.38.12: Shape is also in the Table tab').toBeVisible(); await expect(p.locator('#subs')).toBeHidden();
     await expect(p.locator('#paneltabs button[data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.nav.toDesign(); await expect(p.locator('#paneltabs button[data-pane=look]')).toHaveAttribute('aria-selected', 'true');
   });
@@ -40,7 +40,7 @@ test.describe('dock preset chips (owner 2026-11-14)', () => {
     await expect(p.locator('#qbar .dchip[data-adv="h"]')).toHaveCount(1);
   });
   test('the Table tab keeps its own chips', async ({ shared: app }) => {
-    await app.nav.toPlay(); await expect(app.page.locator('#dicechips button[data-die="20"]')).toBeVisible();
+    await app.nav.toPlay(); await expect(app.page.locator('#qbar .dchip[data-die="20"]')).toBeVisible();
   });
 });
 

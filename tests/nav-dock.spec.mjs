@@ -43,8 +43,8 @@ for (const [name, vp] of Object.entries(SIZES)) {
 test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter throws the box', async ({ shared: app }) => {
   await app.page.setViewportSize(SIZES.desktop); await toRoll(app);
   const before = await st(app);
-  const chip = sel => app.page.locator(`#dicechips button${sel}`).click();
-  const add = async sel => { await app.page.waitForTimeout(500); await app.page.locator(`#dicechips button${sel}`).dblclick(); };   // PD-142.38.11: a tap replaces the box, a double-click adds one
+  const chip = sel => app.page.locator(`#qbar .dchip${sel}`).click();
+  const add = async sel => { await app.page.waitForTimeout(500); await app.page.locator(`#qbar .dchip${sel}`).dblclick(); };   // PD-142.38.11: a tap replaces the box, a double-click adds one
   await chip('[data-die="20"]'); expect((await st(app)).box).toBe('1d20');
   await chip('[data-die="20"]'); expect((await st(app)).box, 'a second tap replaces, it does not add').toBe('1d20');
   await add('[data-die="20"]'); expect((await st(app)).box).toBe('2d20');
@@ -80,7 +80,7 @@ test('R, Enter in an empty box and the button all throw the dice on the mat; the
 
 test('a saved set chip and the set menu "Open" load the set on the mat without throwing; Roll then throws it', async ({ shared: app }) => {
   await app.page.setViewportSize(SIZES.desktop); await toRoll(app);
-  await app.page.locator('#dicechips button[data-set="dmg"]').click();
+  await app.page.locator('#qbar .dchip[data-set="dmg"]').click();
   expect(await st(app)).toMatchObject({ n: '2d6@bone+1d8+3', dice: 3, set: 'dmg', placed: true, settled: true, ph: '2d6@bone+1d8+3 · Damage' });
   await app.page.locator('#rollbtn').click();
   expect(await st(app)).toMatchObject({ set: 'dmg', placed: false, settled: false }); await settle(app);

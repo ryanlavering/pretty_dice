@@ -434,14 +434,14 @@ test('the quick roll bar at the table rolls a die, a typed formula and a saved s
   await page.locator('#roll').click();
   await expect(page.locator('#qbar')).toBeVisible();
   const st = () => app.run(pd => ({ n: pd.state.notation, dice: pd.dice.length, rolling: pd.rolling, set: pd.bag.active.set }));
-  await page.locator('#dicechips button[data-die="8"]').click(); await page.locator('#rollbtn').click();   // PD-142.38 slice 2: chips load the box, the dock button throws
+  await page.locator('#qbar .dchip[data-die="8"]').click(); await page.locator('#rollbtn').click();   // PD-142.38 slice 2: chips load the box, the dock button throws
   expect(await st()).toMatchObject({ n: '1d8', dice: 1, rolling: true });
   await page.locator('#qbar input').fill('3d6+2'); await page.locator('#qbar input').press('Enter');
   expect(await st()).toMatchObject({ n: '3d6+2', dice: 3, rolling: true });
   await page.locator('#qbar input').fill('banana'); await page.locator('#qbar input').press('Enter');
   await expect(page.locator('#qbar input')).toHaveClass(/bad/);
   expect((await st()).n).toBe('3d6+2');
-  await page.locator('#dicechips button[data-set="dmg"]').click();
+  await page.locator('#qbar .dchip[data-set="dmg"]').click();
   expect(await st()).toMatchObject({ n: '2d6@bone+1d8+3', dice: 3, set: 'dmg' });
 });
 

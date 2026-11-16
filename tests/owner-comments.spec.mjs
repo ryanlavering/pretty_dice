@@ -96,7 +96,7 @@ test('Table tab also has Shape and Custom set; Look still does; a game hides the
   await page.locator('#paneltabs [data-pane=table]').click();
   await expect(page.locator('#shapes')).toBeVisible(); await expect(page.locator('#shapehead')).toBeVisible();
   await page.locator('#shapes button').nth(1).click();
-  await expect(page.locator('#sec-dice')).toBeVisible();
+  await expect(page.locator('#sec-dice')).toBeHidden();   // .38.23: the dock chips are enough
   await page.locator('#shapes button', { hasText: /custom/i }).click();
   await expect(page.locator('#customctl')).toBeVisible();
   await expect(page.locator('#panes h2', { hasText: 'Substrate' })).toBeHidden();   // the design controls stay in Look
@@ -122,3 +122,21 @@ for (const [name, vp] of [['phone', { width: 390, height: 780 }], ['desktop', { 
     else { const k = await page.evaluate(() => [...document.querySelector('aside').children].map(e => e.id)); expect(k.indexOf('modesw')).toBeLessThan(k.indexOf('paneltabs')); await expect(page.locator('#modesw')).toBeVisible(); }
   });
 }
+
+test('Table tab: Shape buttons never throw; tap replaces the formula, double-click adds; Custom set mirrors the dock box (.38.23)', async ({ app, page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 }); await app.open(); await app.nav.toPlay(); await app.run(pd => pd.simRoll());
+  await page.locator('#paneltabs [data-pane=table]').click();
+  const st = () => app.run(pd => ({ throwing: document.body.classList.contains('throwing'), box: document.getElementById('rollbox').value, dice: pd.dice.length }));
+  const before = await st();
+  const shp = id => page.locator(`#shapes button[data-id="${id}"]`);
+  await shp('d8').click(); expect(await st()).toMatchObject({ box: '1d8', throwing: false, dice: before.dice });
+  await shp('d8').click(); expect((await st()).box, 'a second tap replaces').toBe('1d8');
+  await page.waitForTimeout(500); await shp('d6').dblclick(); expect((await st()).box, 'double-click adds one').toBe('1d8+1d6');
+  // Custom set control mirrors the box, both ways
+  await page.locator('#shapes button', { hasText: /custom/i }).click(); await expect(page.locator('#customctl')).toBeVisible();
+  await expect(page.locator('#notation')).toHaveValue('1d8+1d6');
+  await page.locator('#steppers .step', { has: page.locator('[data-n="20"]') }).locator('button[data-d="1"]').click();
+  expect((await st()).box, 'a stepper edit shows in the dock box').toMatch(/1d20/); expect((await st()).throwing).toBe(false);
+  await page.locator('#rollbox').fill('3d6+2'); await expect(page.locator('#notation')).toHaveValue('3d6+2'); await expect(page.locator('#modv')).toHaveText('2');
+  await page.locator('#notation').fill('2d10'); expect((await st()).box, 'typing in the Custom box shows in the dock box').toBe('2d10');
+});
