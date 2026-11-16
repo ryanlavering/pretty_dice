@@ -1400,8 +1400,10 @@ $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); stoneColours();
 $('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((rng()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
 function stoneColours(){ state.palettes.shared=[...STONES[state.stone].pal(mulberry32((rng()*1e9)|0))]; state.colors=state.palettes.shared; }
 $('stonepaint').onclick=()=>{ checkpoint(); stoneColours(); repaint(); applyLook(); };   // another draw from the same stone's palette rules   // the stone's own palette rules
-function reliefSync(){ const on=state.panel>0, ns=$('numstyle'), pa=$('patina'); ns.options[1].disabled=!on; ns.value=(state.numRaised&&on)?'raised':'inset'; if(pa){ pa.disabled=!on; pa.title=on?'How worn the face panel looks':'Patina ages the face panel: raise Panel above 0 first'; } }   // PD-142.38.14/.15
-$('panel').addEventListener('input',()=>setTimeout(reliefSync,0)); $('panel').addEventListener('change',()=>setTimeout(reliefSync,0));
+function reliefSync(){ const on=state.panel>0, ns=$('numstyle'), pa=$('patina'); if(!on&&state.numRaised) state.numRaised=false;   /* PD-142.38.14: the selector and the die always match: Raised needs a panel, so with none the live state is Inset too */
+  ns.options[1].disabled=!on; ns.value=(state.numRaised&&on)?'raised':'inset'; if(pa){ pa.disabled=!on; pa.title=on?'How worn the face panel looks':'Patina ages the face panel: raise Panel above 0 first'; } }   // PD-142.38.14/.15
+const panelRelief=()=>setTimeout(()=>{ if(state.panel<=0&&state.numRaised){ checkpoint(); state.numRaised=false; applyLook(); } reliefSync(); },0);   // lowering the panel to 0 writes Inset into the live design (undoable), not just the selector
+$('panel').addEventListener('input',panelRelief); $('panel').addEventListener('change',panelRelief);
 $('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
 $('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
 $('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; scheduleRebuild(); applyLook(); };

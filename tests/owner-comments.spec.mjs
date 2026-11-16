@@ -59,8 +59,14 @@ test('Raised numbers need a face panel; Patina is disabled without one (.38.14 .
   await expect(page.locator('#patina')).toBeDisabled();
   await page.locator('#panel').evaluate(e => { e.value = 0.12; e.dispatchEvent(new Event('input', { bubbles: true })); });
   await expect(page.locator('#numstyle option[value="raised"]')).toBeEnabled();
-  await expect(page.locator('#numstyle')).toHaveValue('raised');   // the saved preference returns with the panel
+  await expect(page.locator('#numstyle')).toHaveValue('inset');   // PD-142.38.14: Raised was written to Inset when the panel went to 0; it does not come back by itself
   await expect(page.locator('#patina')).toBeEnabled();
+  // exact owner steps: panel > 0, choose Raised, lower the panel to 0 -> the STORED numbering style is Inset too
+  await page.locator('#panel').evaluate(e => { e.value = 0.12; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#numstyle').selectOption('raised'); expect(await app.run(pd => pd.state.numRaised)).toBe(true);
+  await page.locator('#panel').evaluate(e => { e.value = 0; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await expect.poll(() => app.run(pd => ({ s: pd.state.numRaised, j: pd.designToJSON().relief.numbers }))).toEqual({ s: false, j: 'inset' });
+  await expect(page.locator('#numstyle')).toHaveValue('inset');
   // a saved look with Raised and no panel loads as Inset, no error
   const ok = await app.run(pd => { const j = pd.designToJSON(); j.relief.panel = 0; j.relief.numbers = 'raised'; return !!j; });
   expect(ok).toBe(true);
@@ -112,11 +118,11 @@ for (const [name, vp] of [['phone', { width: 390, height: 780 }], ['desktop', { 
     const check = async tag => { const boxes = []; for (const o of ids) { const el = page.locator(o).first(); if (await el.count() && await el.isVisible()) boxes.push([o, await el.boundingBox()]); }
       for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(overlap(boxes[i][1], boxes[j][1]), `${tag}: ${boxes[i][0]} overlaps ${boxes[j][0]}`).toBeFalsy(); };
     await expect(page.locator('#drawerbtn svg path').first()).toHaveAttribute('d', /M12 3 4 7.5/);   // the cube icon, not two circles
-    await check('design'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-design.png` });
-    await app.nav.toPlay(); await page.waitForTimeout(300); await check('play'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-play.png` });
+    await check('design'); if (process.env.PD_SHOTS) await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-design.png` });
+    await app.nav.toPlay(); await page.waitForTimeout(300); await check('play'); if (process.env.PD_SHOTS) await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-play.png` });
     await app.nav.fullView(true); await page.waitForTimeout(300);
     await page.locator('#drawerbtn').click(); await expect(page.locator('#roomsw')).toBeVisible(); await page.locator('#roomsw').click(); await expect(page.locator('body')).toHaveClass(/design/);
-    await page.waitForTimeout(300); await check('full'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-fullview.png` });
+    await page.waitForTimeout(300); await check('full'); if (process.env.PD_SHOTS) await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-fullview.png` });
     await app.nav.fullView(false);
     if (name === 'phone') { await expect(page.locator('aside #modesw')).toBeHidden(); }
     else { const k = await page.evaluate(() => [...document.querySelector('aside').children].map(e => e.id)); expect(k.indexOf('modesw')).toBeLessThan(k.indexOf('paneltabs')); await expect(page.locator('#modesw')).toBeVisible(); }
