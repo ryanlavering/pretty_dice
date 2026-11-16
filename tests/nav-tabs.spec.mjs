@@ -13,7 +13,7 @@ test.describe('room tabs', () => {
     const p = app.page; await app.nav.toDesign();
     await expect(p.locator('#shapes')).toBeVisible(); await expect(p.locator('#dicechips')).toBeHidden(); await expect(p.locator('#sec-roll')).toBeHidden();
     await app.nav.toPlay();
-    await expect(p.locator('#dicechips')).toBeVisible(); await expect(p.locator('#sec-roll')).toBeVisible(); await expect(p.locator('#shapes')).toBeHidden();
+    await expect(p.locator('#dicechips')).toBeVisible(); await expect(p.locator('#sec-roll')).toBeVisible(); await expect(p.locator('#shapes'), 'PD-142.38.12: Shape is also in the Table tab').toBeVisible(); await expect(p.locator('#subs')).toBeHidden();
     await expect(p.locator('#paneltabs button[data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.nav.toDesign(); await expect(p.locator('#paneltabs button[data-pane=look]')).toHaveAttribute('aria-selected', 'true');
   });
