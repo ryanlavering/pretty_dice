@@ -20,6 +20,7 @@ test('phone: a touch on Roll dismisses the keyboard; a touch outside the dock to
   const focused = () => page.evaluate(() => document.activeElement && document.activeElement.id);
   await page.locator('#rollbox').tap(); expect(await focused()).toBe('rollbox');
   await page.fill('#rollbox', '2d6');
+  await page.waitForTimeout(500);   // the focused box grows with a transition; measure the Roll button after it settles
   const g = await rect(page, '#rollbtn'); await page.touchscreen.tap(g.x + g.width / 2, g.y + g.height / 2);
   await expect.poll(focused).not.toBe('rollbox');
   await app.run(pd => pd.simRoll());
