@@ -34,7 +34,8 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     expect(await app.run(pd => !!pd.game)).toBe(true);
     await app.page.click('#paneltabs button[data-pane=games]');
     await app.page.click('#scorepane button:has-text("End game")');
-    await expect(app.page.locator('#gamepanel')).toBeHidden(); await expect(app.page.locator('#settingspane')).toBeVisible();
+    await expect(app.page.locator('#gamepanel')).toBeHidden(); await expect(app.page.locator('#scorepane select').first()).toBeVisible();   // PD-142.14.3.1.6: End game opens the Games setup, in Play
+    await app.page.click('#paneltabs button[data-pane=table]'); await expect(app.page.locator('#settingspane')).toBeVisible();
     await app.page.setViewportSize({ width: 1280, height: 720 });
   });
 }
@@ -73,6 +74,7 @@ test('overhead view (PD-142.34): non-game keeps the big total as the handle; in 
   await app.page.keyboard.down('t'); expect(await app.page.evaluate(() => document.body.classList.contains('peek'))).toBe(true); await app.page.keyboard.up('t');
   await app.run(pd => pd.endGame());
   await expect(app.page.locator('body.game')).toHaveCount(0);
+  await app.run(pd => { pd.simRoll({ rerolls: 6 }); });   // End game keeps you in Play with the dice placed, unrolled (PD-142.14.3.1.6)
   await expect(app.page.locator('#result .tot')).toBeVisible();
 });
 
