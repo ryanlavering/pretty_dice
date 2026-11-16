@@ -188,7 +188,7 @@
   #toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:25;max-width:min(86vw,360px);text-align:center;font-size:14px;font-weight:600;color:var(--ink);background:rgba(20,23,31,.96);border:1px solid var(--accent);border-radius:999px;padding:8px 18px;pointer-events:none;box-shadow:0 4px 18px rgba(0,0,0,.45)} #toast[hidden]{display:none}   /* PD-142.14.2.1.5: feedback that survives a log re-render */   /* PD-142.14.2.1.1: the parse error, in words */
   #qbar button{flex:none;display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar button:hover{border-color:var(--accent);color:var(--accent)} #qbar .qsep{flex:none;width:1px;height:20px;background:var(--line)}
   #logpanel .lwho input{width:100%;box-sizing:border-box;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:4px 8px;margin-bottom:6px} #logpanel .lbl,#logpanel .ini{font:600 11px Inter,sans-serif;color:var(--accent);background:none;border:0;padding:0;cursor:pointer} #logpanel .lbl.empty{color:var(--dim);font-weight:500;opacity:.7} #logpanel .lbi{width:90px;font:inherit;font-size:11px;color:var(--ink);background:#1d212c;border:1px solid var(--accent);border-radius:4px;padding:1px 4px} #logpanel .who{color:var(--dim);margin-left:auto}   /* PD-142.14.1.3 */
-  #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.1;pointer-events:none}   /* PD-142.14.1.12: the log never hides dice that are still moving */
+  #logpanel{transition:opacity .2s} body.throwing #logpanel{opacity:.3} body.throwing #logpanel:hover,body.throwing #logpanel:focus-within{opacity:1}   /* PD-142.14.1.12: the log never hides dice that are still moving */
   aside #logpanel{position:static;width:auto;max-height:none;background:none;border:0;box-shadow:none;padding:0;margin:0}
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .linit{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:8px} #logpanel .lih{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px} #logpanel .lir{display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:6px} #logpanel .lir.now{background:#27324a;outline:1px solid #6ea8ff} #logpanel .lir b{min-width:26px;text-align:right} #logpanel .lir input{flex:1;min-width:0;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
@@ -1840,7 +1840,7 @@ function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint
   go.title='Roll the dice (R)'; go.disabled=true; go.textContent='Roll';
   if(over){ return; }
   if(pass){ hint.textContent='Pass the device'; return; }
-  if(id==='liarsdice'){ const n=GAMES.rollSpec(S).slots.length; go.textContent='Roll '+n+(n>1?' dice':' die')+' under the cup'; go.disabled=busy||st.phase!=='roll';
+  if(id==='liarsdice'){ const n=GAMES.rollSpec(S).slots.length; go.textContent=n>0&&st.phase==='roll'?'Roll '+n+(n>1?' dice':' die')+' under the cup':'Roll'; go.disabled=busy||st.phase!=='roll';
     hint.textContent=st.botTurn?S.players[st.player]+' is thinking…':st.phase==='reveal'?'Next round':st.phase==='roll'?'':'Bid or challenge'; return; }
   const n=GAMES.rollSpec(S).slots.length; go.disabled=!st.canRoll||busy;
   if(id==='craps'){ btn('Cash out',gameCashOut,betsLocked(),'cashout'); return; }
@@ -2847,7 +2847,7 @@ async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
   gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } closeGamesUI(); }
+function endGame(){ if(!game) return; const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2867,7 +2867,7 @@ function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&
   const S=game.state, st=GAMES.status(S); if(st.phase==='over'||!st.botTurn) return;
   const a=GAMES.botMove(S,{seed:++botN}); if(!a) return; const nm=S.players[a.player??st.player];
   if(a.type==='roll'){ const spec=GAMES.rollSpec(S);
-    if(spec.private){ const r=GAMES.act(S,{type:'roll',values:spec.slots.map(()=>1+Math.floor(rng()*6))}); if(r.ok){ game.state=r.state; hideDice(true); gameMsg=nm+' rolled under the cup'; } renderGame(); return; }   // a bot's secret dice are never thrown where the humans can see
+    if(spec.private){ const r=GAMES.act(S,{type:'roll',values:spec.slots.map(()=>1+Math.floor(rng()*6))}); if(r.ok){ game.state=r.state; hideDice(true); gameMsg=GAMES.status(game.state).phase==='roll'?nm+' rolled under the cup':''; } renderGame(); return; }   // a bot's secret dice are never thrown where the humans can see
     startRoll(rolling); return; }
   const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
   gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
@@ -2938,7 +2938,7 @@ function renderGameBody(){
     GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
   const S=game.state, st=GAMES.status(S,gviewer()), sug=game.info.hidden?[]:GAMES.suggest(S), over=st.phase==='over';
-  hd(game.info.name,()=>endGame(),'End game'); if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  hd(game.info.name,()=>{ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); },'End game'); if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(game.id==='liarsdice'){ renderLiars(S,st,over); return; }
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }

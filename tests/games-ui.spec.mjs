@@ -69,3 +69,24 @@ for (const rolls of [1, 2]) {
     await app.run(pd => pd.endGame());
   });
 }
+
+test('End game stays in the Play room and opens the Games setup (PD-142.14.3.1.6)', async ({ shared: app }) => {
+  await app.reset(43);
+  await app.run(pd => pd.openGames());
+  await app.page.selectOption('#scorepane select >> nth=0', 'craps');
+  await app.nav.roll();   // Start game
+  await app.page.click('#gamepanel button[title="End game"], #scorepane button[title="End game"], button:has-text("End game")');
+  await expect(app.page.locator('body')).not.toHaveClass(/design/);
+  expect(await app.run(pd => pd.game)).toBe(null);
+  await expect(app.page.locator('#scorepane select').first()).toBeVisible();
+});
+
+test('liar\'s dice: the dock button reads "Roll" outside the roll phase, never "Roll 0 die" (PD-142.14.3.1.7)', async ({ shared: app }) => {
+  await app.reset(44);
+  await app.run(pd => pd.openGames());
+  await app.page.selectOption('#scorepane select >> nth=0', 'liarsdice');
+  await app.nav.roll();
+  await app.run(pd => pd.simRoll());
+  const t = await app.run(pd => { const o = []; const st = pd.GAMES.status(pd.game.state); o.push([st.phase, document.getElementById('rollbtn').textContent]); return o; });
+  expect(t[0][1]).not.toMatch(/Roll 0/);
+});
