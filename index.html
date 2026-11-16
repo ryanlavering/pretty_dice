@@ -566,7 +566,14 @@ const PIPS={1:[[0,0]],2:[[-1,1],[1,-1]],3:[[-1,1],[0,0],[1,-1]],4:[[-1,1],[1,1],
 const LAYOUT_UNIT={tips:80, pips:140};                 // atlas px that correspond to one face inradius (geometry scales to match)
 // opts.layout: 'tips' -> opts.tips[i] = the 3 corner numbers of triangular face i; 'pips' -> labels are 1..6 drawn as dots
 function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2: percentile (tens) die prints 00, 10 ... 90
-  const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), cell=opts.big?384:256, F=FONTS[fontKey]||FONTS.cinzel;
+  const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), F=FONTS[fontKey]||FONTS.cinzel;
+  let cell=opts.big?384:256;
+  if(opts.big&&opts.numSize&&!opts.layout){      // PD-142.38.16: the filigree reaches the face corners (triangle circumradius = 2 x inradius); small print makes the face large in atlas px, so grow the cell until the corner fits
+    const m=document.createElement('canvas').getContext('2d'), pxm=labels.some(l=>(pad2?String(l).padStart(2,'0'):String(l)).length>1)?112:136, wt=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
+    m.font=`${wt} ${pxm}px ${F.css}`; m.textAlign='center';
+    let hd=1; for(const l of labels){ const t=(pad2?String(l).padStart(2,'0'):String(l))+(!pad2&&(l===6||l===9)?'.':''), b=m.measureText(t); hd=Math.max(hd,Math.hypot(b.actualBoundingBoxLeft+b.actualBoundingBoxRight,b.actualBoundingBoxAscent+b.actualBoundingBoxDescent)/2); }
+    const need=2*2.1*hd/opts.numSize;                       // cell side so the farthest corner (2.1 x inradius, a little margin) stays inside
+    cell=Math.min(Math.floor(4096/cols), 768, Math.max(384, Math.ceil(need/32)*32)); }
   if(opts.layout){
     const mk=bgc=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bgc; g.fillRect(0,0,c.width,c.height); return [c,g];};
     const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600, px=72, D=LAYOUT_UNIT.tips, info=[];
@@ -1176,7 +1183,7 @@ function buildDice(keepRoll){
         const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
         opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
       } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
-      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
+      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
       part={faces,labs,atlas,geo};
     }
     nextParts.set(key,part);
@@ -1677,7 +1684,7 @@ function picGear(){ if(picKit) return picKit; const sc=new THREE.Scene(); sc.env
 async function picDie(j){
   const L=lookFromDesign(j); await ensureFont(L.font);
   const spec=SHAPES.d20, verts=spec.verts(), R=Math.max(...verts.map(v=>v.length())); verts.forEach(v=>v.multiplyScalar(1/R));
-  const faces=hull(verts), labs=assignLabels(faces,spec.labels), atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,false,L.filigree!=='none'?{big:true}:{}),
+  const faces=hull(verts), labs=assignLabels(faces,spec.labels), atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,false,L.filigree!=='none'?{big:true,numSize:L.numSize}:{}),
     geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft}), uni=makeUniforms(), mat=makeMaterial(atlas,uni);
   paintLook(L,uni,[mat]);
   const mesh=new THREE.Mesh(geo,mat);
