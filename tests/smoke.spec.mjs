@@ -44,10 +44,11 @@ test.describe('desktop', () => {
     expect(await app.run(pd => pd.rolling)).toBe(false);
   });
 
-  test('shape buttons, also while rolling; Standard 7 builds seven dice', async ({ app, page }) => {
+  test('shape buttons load the formula box and never throw, also while rolling; Standard 7 puts seven dice down (.38.23)', async ({ app, page }) => {
     await app.nav.toggleMode();
-    await page.evaluate(() => document.querySelector('#shapes [data-id=d8]').click());   // the shape grid is a Look-tab control (slice 5), hidden in the Play room: drive its handler while rolling
-    await expect.poll(() => app.run(pd => [pd.state.shape, pd.dice.length, pd.bodies.length, pd.rolling])).toEqual(['d8', 1, 1, true]);
+    await page.evaluate(() => document.querySelector('#shapes [data-id=d8]').click());   // the shape grid is a Look-tab control, hidden in the Play room: drive its handler while rolling
+    await expect.poll(() => app.run(pd => document.getElementById('rollbox').value)).toMatch(/^1d8$/);
+    expect(await app.run(pd => [pd.rolling, pd.dice.length])).toEqual([true, 1]);   // still in the roll room; nothing was thrown
     await app.nav.toggleMode();
     await page.click('#shapes [data-id=set7]');
     await expect.poll(() => app.run(pd => [pd.state.shape, pd.dice.length])).toEqual(['set7', 7]);
