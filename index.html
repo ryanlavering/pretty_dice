@@ -193,7 +193,8 @@
   #logpanel{position:absolute;top:128px;right:10px;z-index:6;width:min(280px,72vw);max-height:calc(100% - 210px);overflow-y:auto;overflow-x:hidden;background:rgba(20,23,31,.92);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:12px} #logpanel[hidden]{display:none}
   #logpanel .linit{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:8px} #logpanel .lih{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px} #logpanel .lir{display:flex;align-items:center;gap:6px;padding:2px 4px;border-radius:6px} #logpanel .lir.now{background:#27324a;outline:1px solid #6ea8ff} #logpanel .lir b{min-width:26px;text-align:right} #logpanel .lir input{flex:1;min-width:0;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:2px 6px}
   #logpanel .llook{font-weight:600} .look{font-weight:600} textarea.setable{width:100%;box-sizing:border-box;font:inherit;font-size:12px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:4px 8px}
-  #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
+  #logpanel .lhr{display:flex;gap:14px;align-items:center} #logpanel .lh{display:flex;justify-content:space-between;align-items:center;color:var(--dim);padding:0 2px 6px} #logpanel .le{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 8px;padding:5px 2px;border-top:1px solid var(--line)} #logpanel .le.note{align-items:center;font-size:13px;color:var(--dim)} #logpanel .le.note .lnote{font-style:italic}
+ #logpanel .le b{font:800 16px Cinzel,serif;color:var(--accent);align-self:center;min-width:28px;text-align:right}
   #logpanel .lt{display:flex;align-items:baseline;gap:8px;min-width:0} #logpanel .tm{color:var(--dim);flex:none} #logpanel .ttl.go{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px} #logpanel .ttl.go:hover{color:var(--gold,#e8c45a)} #logpanel .ttl{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0} #logpanel .lr{color:var(--dim);margin-top:2px} #logpanel .lr .rt{display:flex;margin:2px 0}
   /* PD-142.14.2.1.10: log headers wrap as whole pieces (title, label, + init, roller) instead of squeezing the title or breaking a button over two lines */
   #logpanel .lt{flex-wrap:wrap;row-gap:2px} #logpanel .ttl{flex:0 1 auto;max-width:100%} #logpanel .lbl,#logpanel .ini{white-space:nowrap;flex:none} #logpanel .lt .who{font-size:12px;color:var(--ink);opacity:.75;margin-left:auto;white-space:nowrap}
@@ -1881,6 +1882,7 @@ function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetI
   addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{}),...(look?{lookup:look}:{})}); return look; }
 /* the log as plain text, oldest first, for pasting into notes (PD-142.14.1.5) */
 function logText(){ const pad=n=>String(n).padStart(2,'0'); return bag.log.map(e=>{ const t=new Date(e.ts); const head=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+  if(e.note) return `${head}  ${e.note}`;
   const items=e.items?e.items.map(i=>i.text).join('  ·  ')+(e.modText?'  ·  '+e.modText:''):(e.detail||'');
   return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}`; }).join('\n'); }
 /* table lookup (PD-142.14.1.7): a set can carry a result table, one line per result: "3 Empty room", "4-8 Goblins", "9+ Boss" */
@@ -1925,6 +1927,7 @@ function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replac
   renderInit(p);
   if(!bag.log.length) p.append(el('div','setempty','No rolls yet.'));
   for(const e of bag.log.slice(-60).reverse()){ const d=el('div','le'), t=new Date(e.ts), body=el('div','lb'), head=el('div','lt');
+    if(e.note){ d.className='le note'; d.append(el('small','tm',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`),el('span','lnote',e.note)); p.append(d); continue; }   // PD-142.14.3.1.15: audit lines (a peek at a cup) carry no roll
     head.append(el('small','tm',`${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`),el('span','ttl',`${e.set||e.notation}${e.quick?' ⚡':''}`));
     { const lb=el('button','lbl',e.label||'+ label'); lb.type='button'; lb.title='Name this roll (attack, damage, check...)'; if(!e.label) lb.classList.add('empty');
       lb.onclick=()=>{ const i=el('input','lbi'); i.type='text'; i.maxLength=30; i.value=e.label||''; i.setAttribute('aria-label','Roll label'); let done=false; const fin=ok=>{ if(done) return; done=true; if(ok){ const v=i.value.trim().slice(0,30); if(v) e.label=v; else delete e.label; save(); } renderLog(); }; i.onkeydown=ev=>{ ev.stopPropagation(); if(ev.key==='Enter') fin(true); else if(ev.key==='Escape') fin(false); }; i.onblur=()=>fin(true); lb.replaceWith(i); i.focus(); i.select(); };
@@ -2875,6 +2878,8 @@ function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&
   const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
   gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
 const cupPeek=(()=>{ const e=document.createElement('div'); e.id='cuppeek'; e.hidden=true; e.setAttribute('role','status'); $('stage').append(e); return e; })();   // big dice for old eyes: shown only while a finger is down on your own row
+let lastPeek={who:-1,at:0};
+function logPeek(who,name){ const now=Date.now(); if(lastPeek.who===who&&now-lastPeek.at<4000){ lastPeek.at=now; return; } lastPeek={who,at:now}; addLog({note:name+' peeked at their cup',total:'',notation:"Liar's Dice"}); }   // trust-based peeking, audited: one line per hold, the name only, never the dice (PD-142.14.3.1.15)
 function peekDice(vals){ cupPeek.textContent=''; for(const v of vals) cupPeek.append(gel('span',{className:'bigdie',textContent:String(v)})); cupPeek.hidden=false; }
 addEventListener('pointerup',()=>{ cupPeek.hidden=true; }); addEventListener('pointercancel',()=>{ cupPeek.hidden=true; }); addEventListener('blur',()=>{ cupPeek.hidden=true; });
 document.documentElement.style.setProperty('--cup','#'+RING_COLORS.cup.toString(16).padStart(6,'0'));
@@ -2889,7 +2894,7 @@ function renderLiars(S,st,over){
     const row=gel('div',{className:'cup'+(c.player===st.player&&!over?' cur':'')+(out?' out':'')+(canPeek?' peekme':''),ariaLabel:c.name+(out?' is out':' has '+c.count+' of '+S.options.dice+' dice')+(canPeek?'. Press and hold to look at your dice':'')},
       gel('b',{textContent:c.name+(mine?' (you)':'')}),gel('small',{textContent:out?'':c.count+' of '+S.options.dice+(canPeek?' · hold to peek':'')}),
       gel('span',{className:'pips',textContent:out?'out':open&&c.dice?'':'●'.repeat(c.count)},...(!out&&open&&c.dice?c.dice.map(v=>gel('span',{className:'rd'+(st.reveal&&(st.reveal.face===v||(st.wild&&v===1&&st.reveal.face!==1))?' hit':''),textContent:String(v)})):[])));
-    if(canPeek){ row.tabIndex=0; row.onpointerdown=e=>{ e.preventDefault(); peekDice(c.dice); }; row.oncontextmenu=e=>e.preventDefault(); }
+    if(canPeek){ row.tabIndex=0; row.onpointerdown=e=>{ e.preventDefault(); peekDice(c.dice); logPeek(c.player,c.name); }; row.oncontextmenu=e=>e.preventDefault(); }
     cups.append(row); }
   GP.append(cups);
   if(over) return;

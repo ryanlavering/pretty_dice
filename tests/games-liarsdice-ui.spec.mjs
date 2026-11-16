@@ -63,6 +63,16 @@ test('liar\'s dice with a bot seat: the human sees their own cup, the bot rolls 
   await expect(app.page.locator('#cuppeek .bigdie')).toHaveCount(5);
   await app.page.mouse.up();
   expect(await app.run(pd => pd.rolling)).toBe(false);
+  // PD-142.14.3.1.15: every peek is audited in the roll log: name only, no dice, one line per hold, none for the bot
+  const notes = () => app.run(pd => pd.bag.log.filter(e => e.note).map(e => e.note));
+  const before = (await notes()).length;
+  await app.page.mouse.down(); await app.page.mouse.up(); await app.page.mouse.down(); await app.page.mouse.up();   // quick re-holds
+  const n = await notes();
+  expect(before).toBe(1); expect(n.length).toBe(1);   // the first hold logged, the quick re-holds did not
+  expect(n[n.length - 1]).toMatch(/^.+ peeked at their cup$/);
+  expect(n.join(' ')).not.toMatch(/\d/);
+  expect(n[0]).not.toMatch(/Bot/);
+  expect(await app.run(pd => pd.logText())).toContain('peeked at their cup');
   await app.run(pd => pd.endGame());
 });
 
