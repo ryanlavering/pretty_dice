@@ -37,3 +37,56 @@ test('desktop: the dock shows all seven dice and Adv/Dis without scrolling (.38.
   const r = await page.evaluate(() => { const c = document.getElementById('qchips'); return { fits: c.scrollWidth <= c.clientWidth + 1, n: c.querySelectorAll('[data-die]').length, adv: c.querySelectorAll('[data-adv]').length }; });
   expect(r.n).toBe(7); expect(r.adv).toBe(2); expect(r.fits, 'no horizontal scroll needed on desktop').toBe(true);
 });
+
+test('Keep and Discard for a random draft sit next to Randomize in the Look tab (.38.17)', async ({ app, page }) => {
+  await app.open(); await app.nav.toDesign();
+  await expect(page.locator('#draftact')).toBeHidden();
+  await page.locator('#rand').click();
+  await expect(page.locator('#draftact')).toBeVisible();
+  const r = await box(page, '#rand'), k = await box(page, '#dkeep'); expect(k.y).toBeLessThan(r.y + 150);
+  const n0 = await app.run(pd => pd.bag.designs.length);
+  await page.locator('#dkeep').click();
+  expect(await app.run(pd => pd.bag.designs.length)).toBe(n0 + 1);
+  await expect(page.locator('#draftact')).toBeHidden();
+});
+
+test('Raised numbers need a face panel; Patina is disabled without one (.38.14 .38.15)', async ({ app, page }) => {
+  await app.open(); await app.nav.toDesign();
+  await app.run(pd => { Object.assign(pd.state, { panel: 0, numRaised: true }); });
+  await page.locator('#panel').evaluate(e => { e.value = 0; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await expect(page.locator('#numstyle')).toHaveValue('inset');
+  await expect(page.locator('#numstyle option[value="raised"]')).toBeDisabled();
+  await expect(page.locator('#patina')).toBeDisabled();
+  await page.locator('#panel').evaluate(e => { e.value = 0.12; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  await expect(page.locator('#numstyle option[value="raised"]')).toBeEnabled();
+  await expect(page.locator('#numstyle')).toHaveValue('raised');   // the saved preference returns with the panel
+  await expect(page.locator('#patina')).toBeEnabled();
+  // a saved look with Raised and no panel loads as Inset, no error
+  const ok = await app.run(pd => { const j = pd.designToJSON(); j.relief.panel = 0; j.relief.numbers = 'raised'; return !!j; });
+  expect(ok).toBe(true);
+});
+
+test('Paint numbers sits with the colour controls (.38.13)', async ({ app, page }) => {
+  await app.open(); await app.nav.toDesign();
+  const order = await page.evaluate(() => { const ids = [...document.querySelectorAll('#panes [id]')].map(e => e.id); return { a: ids.indexOf('paintmode'), n: ids.indexOf('numpaint'), r: ids.indexOf('panel') }; });
+  expect(order.n).toBeGreaterThan(order.a); expect(order.n - order.a).toBeLessThan(4); expect(order.n).toBeLessThan(order.r);
+});
+
+for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 780 }]]) {
+  test(`${name}: the Full view handles overlap no other control (.38.18)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open();
+    for (const room of ['toDesign', 'toPlay']) {
+      await app.nav[room](); await page.waitForTimeout(250);
+      const hit = await page.evaluate(() => {
+        const vis = e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none'; };
+        const H = document.getElementById('paneclose'), h = H.getBoundingClientRect(), out = [];
+        for (const e of document.querySelectorAll('button, input, select, #qbar, #shelf')) { if (e === H || H.contains(e) || e.id === 'paneopen' || !vis(e)) continue; const r = e.getBoundingClientRect(); if (r.left < h.right && h.left < r.right && r.top < h.bottom && h.top < r.bottom) out.push(e.id || e.textContent.trim().slice(0, 12) || e.tagName); }
+        return out;
+      });
+      expect(hit, `${room}: nothing under the Full view handle`).toEqual([]);
+    }
+    await app.nav.fullView(true);
+    const hit2 = await page.evaluate(() => { const O = document.getElementById('paneopen'), h = O.getBoundingClientRect(), out = []; for (const e of document.querySelectorAll('#tools button, #qbar, #shelf, #modesw button, #histrow button')) { const r = e.getBoundingClientRect(); if (r.width && r.left < h.right && h.left < r.right && r.top < h.bottom && h.top < r.bottom) out.push(e.id || e.tagName); } return out; });
+    expect(hit2, 'nothing under the open handle in Full view').toEqual([]);
+  });
+}

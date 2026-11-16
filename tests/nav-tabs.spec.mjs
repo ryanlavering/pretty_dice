@@ -33,7 +33,8 @@ test.describe('dock preset chips (owner 2026-11-14)', () => {
     await app.run(pd => pd.simRoll()); await p.fill('#rollbox', '');
     const chip = p.locator('#qbar .dchip[data-die="20"]'); await chip.scrollIntoViewIfNeeded(); await p.waitForTimeout(400); await expect(chip).toBeVisible();
     const tot0 = await app.run(pd => document.getElementById('result').textContent);
-    await chip.click(); await chip.click();
+    await chip.click(); await expect(p.locator('#rollbox')).toHaveValue('1d20');   // PD-142.38.11: a tap replaces, a double-click adds
+    await p.waitForTimeout(500); await chip.dblclick();
     await expect(p.locator('#rollbox')).toHaveValue(/2d20/);
     expect(await app.run(pd => ({ throwing: document.body.classList.contains('throwing'), r: document.getElementById('result').textContent }))).toEqual({ throwing: false, r: tot0 });
     await expect(p.locator('#qbar .dchip[data-adv="h"]')).toHaveCount(1);

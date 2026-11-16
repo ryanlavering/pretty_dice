@@ -44,10 +44,13 @@ test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter t
   await app.page.setViewportSize(SIZES.desktop); await toRoll(app);
   const before = await st(app);
   const chip = sel => app.page.locator(`#dicechips button${sel}`).click();
+  const add = async sel => { await app.page.waitForTimeout(500); await app.page.locator(`#dicechips button${sel}`).dblclick(); };   // PD-142.38.11: a tap replaces the box, a double-click adds one
   await chip('[data-die="20"]'); expect((await st(app)).box).toBe('1d20');
-  await chip('[data-die="20"]'); expect((await st(app)).box).toBe('2d20');
-  await chip('[data-die="6"]'); expect((await st(app)).box).toBe('2d20+1d6');
-  await chip('[data-die="100"]'); expect((await st(app)).box).toBe('2d20+1d6+1d%');
+  await chip('[data-die="20"]'); expect((await st(app)).box, 'a second tap replaces, it does not add').toBe('1d20');
+  await add('[data-die="20"]'); expect((await st(app)).box).toBe('2d20');
+  await add('[data-die="6"]'); expect((await st(app)).box).toBe('2d20+1d6');
+  await add('[data-die="100"]'); expect((await st(app)).box).toBe('2d20+1d6+1d%');
+  await chip('[data-die="8"]'); expect((await st(app)).box, 'a tap replaces the whole formula').toBe('1d8');
   await app.page.locator('#rollbox').fill('1d20+1d6+2');
   await chip('[data-adv="h"]'); expect((await st(app)).box).toBe('2d20kh1+1d6+2');
   await chip('[data-adv="l"]'); expect((await st(app)).box).toBe('2d20kl1+1d6+2');

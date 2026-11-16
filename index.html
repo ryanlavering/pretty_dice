@@ -125,7 +125,7 @@
   #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
   .bagpill{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:12px}
   #bagdirty{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:0 6px 2px;color:var(--dim);font-size:12px} .bagnote::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px} #bagdirty[hidden],#sheetbag[hidden]{display:none} #sheetbag{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:12px}
-  #savebag.dirty::after{content:' \25CF';color:var(--accent)} #bagbtn{position:relative} body.design #bagbtn{display:none}   /* PD-142.38.8: the Bag button is back at the bottom-left of the table, Play room only (Design has the Bag tab) */ #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
+  #savebag.dirty::after{content:' \25CF';color:var(--accent)} #draftact{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0} #draftact[hidden]{display:none} #draftact span{flex:1 1 100%;color:var(--dim);font-size:12px} #draftact button{flex:1} #bagbtn{position:relative} body.design #bagbtn{display:none}   /* PD-142.38.8: the Bag button is back at the bottom-left of the table, Play room only (Design has the Bag tab) */ #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
   #termchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px} #termchips:empty{display:none} #termchips button{padding:3px 9px;font-size:12px;border-radius:999px} #termchips .x{color:var(--dim);margin-left:4px}
   #bagask{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px} #bagask[hidden]{display:none} #bagask .box{max-width:360px;background:#14171f;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px} #bagask .row{display:flex;gap:8px;flex-wrap:wrap}
   #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
@@ -182,7 +182,7 @@
   /* PD-142.38 slice 2: the bar is the dock: a formula box and the one gold Roll button. Die and set chips moved to the panel (#dicechips) and only load */
   #qbar{max-width:440px;margin:0 auto} @media (min-width:761px){ #qbar{max-width:min(900px,calc(100% - 128px))} }   /* PD-142.38.10: on desktop the whole chip row (7 dice + Adv/Dis) fits; it scrolls only on narrower screens */ #qbar #rollbtn{background:var(--accent);color:#1a1405;border:0;font-weight:700;height:34px;padding:0 20px} #qbar #rollbtn:hover{color:#1a1405;filter:brightness(1.08)}
   #settingspane[data-tab=look] #sec-dice,#settingspane[data-tab=look] #sec-roll,#settingspane[data-tab=look] #sec-sound,body.game #sec-dice,body.game #qbar .dchip{display:none} #settingspane[data-tab=table]>h1,#settingspane[data-tab=table]>.sub,#settingspane[data-tab=table]>#bagbox,#settingspane[data-tab=table]>#actions,#settingspane[data-tab=table] #panes>:not(#sec-dice):not(#sec-roll):not(#sec-sound){display:none} #sec-dice{order:-2} #dicechips{display:flex;flex-wrap:wrap;gap:6px}
-  #qbar .dchip{flex:none;height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar .qsep.dchip{flex:none;width:1px;height:auto;padding:0;border:0;align-self:stretch;margin:4px 2px;background:var(--line)}
+  #qbar .dchip{touch-action:manipulation;-webkit-touch-callout:none;flex:none;height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar .qsep.dchip{flex:none;width:1px;height:auto;padding:0;border:0;align-self:stretch;margin:4px 2px;background:var(--line)}
   #dicechips button{flex:none;height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #dicechips button:hover{border-color:var(--accent);color:var(--accent)} #dicechips .qsep{flex:0 0 100%;height:0}
   #qbar input{flex:1 1 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a} #qbar input::placeholder{color:#7d8597;font-style:italic;opacity:1}
   #qerr{position:absolute;left:64px;right:64px;bottom:60px;z-index:8;text-align:center;font-size:13px;color:#f0b4b0;background:rgba(40,20,22,.92);border:1px solid #e0605a;border-radius:10px;padding:6px 10px;pointer-events:none} #qerr[hidden]{display:none}
@@ -217,6 +217,7 @@
     #cards{gap:8px;padding:4px calc(50% - 34px)} .card{width:68px} .card .th{width:60px;height:60px} .card .nm{max-width:68px}   /* about 3.5 cards across: a partial card shows there is more to scroll to */
     #app{flex-direction:column-reverse}
     /* phone: both handles are centred (clear of the round buttons in the corners), with up/down chevrons: v hides the sheet, ^ brings it back */
+    #paneltabs{padding-top:26px}   /* PD-142.38.18: the centred Full-view handle covers the top 20px of the panel; the tabs start below it */
     #paneclose{left:50%;right:auto;top:auto;bottom:calc(46% - 20px);margin:0 0 0 -28px;width:56px;height:20px;border-radius:0 0 10px 10px;border:1px solid var(--line);border-top:0} #paneclose svg{transform:rotate(-90deg)}
     #paneopen{left:50%;right:auto;top:auto;bottom:0;margin:0 0 0 -28px;width:56px;height:16px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0} #paneopen svg{transform:rotate(-90deg);width:14px;height:14px}
     aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
@@ -368,6 +369,7 @@
     <div class="sub">Procedural polyhedral dice. Drag to turn, Space to randomize.</div>
 
     <div id="actions"><div id="randrow"><button class="big" id="rand">Randomize</button></div>
+      <div id="draftact" hidden><span>Random draft, not in the bag yet</span><button id="dkeep" type="button">Keep in the bag</button><button id="ddiscard" type="button">Discard</button></div>
       <div id="randopts"><span>Also randomize</span><label class="chk"><input type="checkbox" id="randsub" checked><span>substrate</span></label><label class="chk"><input type="checkbox" id="randshape"><span>shape</span></label></div></div>
 
     <div id="panes">
@@ -392,6 +394,7 @@
     <div class="row"><label>Base</label><input type="color" id="c1"><input type="color" id="c2"><input type="color" id="c3"><button id="colorrand" class="ico" type="button" title="Randomize the base colours only" aria-label="Randomize the base colours only"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button></div>
     <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
     <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
+    <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
     <div class="row"><label>Finish</label><span class="slends"><input type="range" id="polish" min="0" max="1" step="0.01" title="matte ← → gloss"><span class="ends"><span>matte</span><span>gloss</span></span></span></div>
@@ -427,7 +430,6 @@
     <div class="row"><label>Face panel</label><input type="range" id="panel" min="0" max="0.3" step="0.01"></div>
     <div class="row"><label>Panel depth</label><input type="range" id="paneldepth" min="0" max="1" step="0.01"></div>
     <div class="row"><label>Numbers</label><select id="numstyle"><option value="inset">Inset</option><option value="raised">Raised (embossed)</option></select></div>
-    <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
     <div class="row"><label>Patina</label><input type="range" id="patina" min="0" max="1" step="0.01"></div>
     <button id="antique" style="width:100%;margin-bottom:6px">Antique relief preset</button>
 
@@ -1364,7 +1366,7 @@ function syncUI(){
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=state.notation; if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
-  $('numstyle').value=state.numRaised?'raised':'inset'; $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
+  reliefSync(); $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
   $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
 const NUM_MIN=.45, NUM_MAX=5;   // number size, as a fraction of the face inradius: tiny print is no use, jumbo print is cropped by the face edges on purpose
@@ -1382,6 +1384,8 @@ $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); stoneColours();
 $('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((rng()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
 function stoneColours(){ state.palettes.shared=[...STONES[state.stone].pal(mulberry32((rng()*1e9)|0))]; state.colors=state.palettes.shared; }
 $('stonepaint').onclick=()=>{ checkpoint(); stoneColours(); repaint(); applyLook(); };   // another draw from the same stone's palette rules   // the stone's own palette rules
+function reliefSync(){ const on=state.panel>0, ns=$('numstyle'), pa=$('patina'); ns.options[1].disabled=!on; ns.value=(state.numRaised&&on)?'raised':'inset'; if(pa){ pa.disabled=!on; pa.title=on?'How worn the face panel looks':'Patina ages the face panel: raise Panel above 0 first'; } }   // PD-142.38.14/.15
+$('panel').addEventListener('input',()=>setTimeout(reliefSync,0)); $('panel').addEventListener('change',()=>setTimeout(reliefSync,0));
 $('numstyle').onchange=e=>{ checkpoint(); state.numRaised=e.target.value==='raised'; applyLook(); };
 $('numpaint').onchange=e=>{ checkpoint(); state.numPaint=e.target.checked; applyLook(); };
 $('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; scheduleRebuild(); applyLook(); };
@@ -1443,7 +1447,7 @@ function lookFromDesign(d){
   { const ic=d.inclusion||{}; L.inclusion=MODELS[ic.type]?ic.type:'none'; L.inclSize=num(ic.size,.15,.9,.55); L.inclTurn=num(ic.turn_deg,-180,180,0); L.inclY=num(ic.height,-.6,.6,0); } const rs=d.resin||{}; L.glitter=num(rs.glitter,0,1,.5); L.bubbles=num(rs.bubbles,0,1,.3); L.clarity=num(rs.clarity,.2,1,.6);
   L.font=FONTS[n.font]?n.font:'cinzel'; L.numSize=num(n.size,NUM_MIN,NUM_MAX,.65); L.numRot=num(n.rotation_deg,-180,180,0); L.d4Style=n.d4_style==='center'?'center':'tips'; L.d6Style=n.d6_style==='pips'?'pips':'numbers';
   L.numDepth=num(n.depth,0,6,2.2); L.numSoft=num(n.softness,.5,10,3);
-  { const rl=d.relief||{}, fg=d.filigree||{}; L.panel=num(rl.panel,0,.3,0); L.panelDepth=num(rl.panel_depth,0,1,.5); L.numRaised=rl.numbers==='raised'; L.numPaint=rl.paint_numbers!==false; L.patina=num(rl.patina,0,1,0);
+  { const rl=d.relief||{}, fg=d.filigree||{}; L.panel=num(rl.panel,0,.3,0); L.panelDepth=num(rl.panel_depth,0,1,.5); L.numRaised=rl.numbers==='raised'&&L.panel>0;   /* PD-142.38.14: raised numbers need a face panel; older saves with Raised and no panel load as Inset */ L.numPaint=rl.paint_numbers!==false; L.patina=num(rl.patina,0,1,0);
     L.filigree=['scroll','beads','deco'].includes(fg.style)?fg.style:'none'; L.filiFill=fg.filled!==false; L.enamelSame=!hex(fg.enamel); L.enamel=hex(fg.enamel)?fg.enamel:'#c9a24a'; }
   return L;
 }
@@ -1699,9 +1703,10 @@ function slots(){   // what the shelf and sheet show, in order: designs, then th
   if(bag.draft||bag.active.draft) out.push({id:'draft',name:(bag.active.draft?liveJSON():bag.draft).name||'Draft',json:bag.active.draft?liveJSON():bag.draft,on:bag.active.draft,draft:true});
   return out; }
 let lastSig='', lastCenter=null;
+$('dkeep').onclick=()=>bagOps.keep(); $('ddiscard').onclick=()=>bagOps.discard();   // PD-142.38.17: Keep / Discard sit next to Randomize in the Look tab
 function renderBag(){
   if(!bag) return; renderQBar(); const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
-  $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
+  $('draftact').hidden=!draft; $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
   $('bagth').style.backgroundImage=thumbStyle(liveJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
   { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('sheetsave').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
@@ -1836,7 +1841,7 @@ function dockRoll(launch=false){ const inp=$('rollbox'), v=inp&&!game?inp.value.
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
-function dockLoad(n){ const inp=$('rollbox'), p=inp&&dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); }   // a die chip adds one die to the box; it never throws
+function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
 function dockAdv(mode){ const inp=$('rollbox'), p=inp&&dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; const i=p.terms.findIndex(t=>t.sides===20), one={count:2,sides:20,keep:{mode,n:1}}; if(i<0){ dockFail(inp,(mode==='h'?'Advantage':'Disadvantage')+' needs a d20 in the roll; add a d20 first'); return; } p.terms[i]={...p.terms[i],...one}; inp.value=fmtNotation(p.terms,p.mod,p.group); }   // the first d20 (of the box, or of the dice on the mat when the box is empty) becomes 2d20 keep highest/lowest
 /* PD-142.38 slice 3: in a game the dock is the game's one Roll button plus the turn actions (Bank, Set aside, Cash out) and a short hint; the panel keeps picks, bids and scorecards. The conditions are the ones the panel buttons used */
 function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent='';
@@ -1860,7 +1865,11 @@ function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar)
   inp.onfocus=()=>{ inp.select(); setTimeout(()=>inp.select(),0); inp.dataset.fresh='1'; }; inp.onmouseup=e=>{ if(inp.dataset.fresh){ e.preventDefault(); delete inp.dataset.fresh; } }; inp.onblur=()=>{ delete inp.dataset.fresh; };   // focus selects all, so typing overwrites; the next click places the cursor
   const go=el('button','','Roll'); go.id='rollbtn'; go.type='button'; go.title='Roll the dice (R)'; let goTouch=false; go.onpointerdown=e=>{ goTouch=e.pointerType==='touch'; }; go.onmousedown=e=>e.preventDefault(); go.onclick=()=>{ dockRoll(); if(goTouch){ goTouch=false; inp.blur(); } };   // touch: Roll also closes the keyboard (PD-142.14.1.6.3); with a mouse it keeps the box focused   // pressing Roll must not blur the box: it would shrink and the button would slide out from under the finger
   const dh=el('span','dhint'); dh.id='dockhint'; const da=el('span','dact'); da.id='dockact'; bar.replaceChildren(inp,dh,da,go); bar.hidden=false;
-  const mk=()=>{ const kids=[]; for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Add one '+dieName(n)+' to the roll box'; b.dataset.die=n; b.onclick=()=>dockLoad(n); kids.push(b); }
+  const mk=()=>{ const kids=[]; for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Tap: roll box = one '+dieName(n)+'. Double-click or long press: add one'; b.dataset.die=n; let prev='', last=0, lp=0, fired=false; const box=()=>$('rollbox');
+    b.onclick=()=>{ if(fired){ fired=false; return; } const now=Date.now(); if(now-last>450) prev=box()?box().value:''; last=now; dockLoad(n,false); };
+    b.ondblclick=()=>{ if(box()) box().value=prev; dockLoad(n,true); };
+    b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse') return; lp=setTimeout(()=>{ fired=true; dockLoad(n,true); },480); }); for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp)); b.addEventListener('contextmenu',e=>e.preventDefault());
+    kids.push(b); }
   for(const [m,t,tip] of [['h','Adv','Advantage: 2d20, keep the highest'],['l','Dis','Disadvantage: 2d20, keep the lowest']]){ const b=el('button','',t); b.type='button'; b.title=tip; b.dataset.adv=m; b.onclick=()=>dockAdv(m); kids.push(b); }
   if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Load '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ const bx=$('rollbox'); if(bx){ bx.value=''; bx.classList.remove('bad'); bx.title=DOCK_TIP; } setOps.open(st.id); syncDock(); }; kids.push(b);   // PD-142.14.3.1.3: the chip replaces whatever was typed, so Roll throws the set
  } }
@@ -2042,7 +2051,7 @@ const NEW_FEATURES=[
   {id:'PD-142.38.s5', rev:1, anchor:'#paneltabs', text:'Panel tabs by room: Design has Look, Bag, Sets; Play has Table, Games, Log. The last tab per room is remembered. Check: both rooms, phone and desktop.', card:'PD-142.38 slice 5'},
   {id:'PD-142.38.s6', rev:1, anchor:'#paneltabs [data-pane=log]', text:'The roll log now lives in the Log tab (Play room) and the Bag and Sets tabs show inline on desktop. The round Bag and Log buttons are gone.', card:'PD-142.38 slice 6'},
   {id:'PD-142.38.s7', rev:1, anchor:'#paneltabs [data-pane=bag]', text:'Save, load and copy the bag now live only here, in the Bag tab. Pencil on set rows now shows on phones too.', card:'PD-142.38 slice 7'},
-  {id:'PD-142.38.4', rev:1, anchor:'#qbar .dchip', text:'Die and set preset chips are back in the bottom bar after Roll. They load the roll box, they never throw.', card:'PD-142.38.4'},
+  {id:'PD-142.38.4', rev:1, anchor:'#qbar .dchip', text:'Die and set preset chips are in the bottom bar after Roll. A die chip tap REPLACES the roll box with one die; double-click or long press adds one. Set chips load the set. They never throw.', card:'PD-142.38.4'},
   {id:'PD-142.38.s4', rev:1, anchor:'#modesw', text:'Design | Play switch replaces the round mode button. It never throws dice; a running game survives a visit to Design (Play carries a dot).', card:'PD-142.38 slice 4'},
   {id:'PD-142.38.s8', rev:1, anchor:'#stripmid', text:'Long-press a settled die (or right-click) in Play to re-skin that one die with another design from the bag. Value and position stay; Undo restores it.', card:'PD-142.38 slice 8'},
   {id:'PD-142.38.5', rev:1, anchor:'#histrow', text:'Undo and Redo moved to the top right on phones (Design room). Check: they stay clear of the dice and the strip.', card:'PD-142.38.5'},
