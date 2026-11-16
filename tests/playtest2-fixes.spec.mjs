@@ -177,14 +177,18 @@ test('the dock rolls typed text with the Roll button and keeps nothing stale (.1
   await page.keyboard.type('d8'); await expect(box).toHaveValue('d8');
 });
 
-// PD-142.14.1.1.2: dice left out by keep/drop get a grey ring.
-test('a die dropped by adv gets a grey ring, a kept one does not (.14.1.1.2)', async ({ shared: app }) => {
+// PD-142.38.20 (was .14.1.1.2 grey ring): dice left out by keep/drop are faded, with no ring, because a ring reads as "chosen".
+test('a die dropped by kh is faded with no ring; a kept one is untouched (.38.20)', async ({ shared: app }) => {
   await app.reset(1);
   const n = await app.run(pd => { pd.state.shape = 'custom'; pd.state.notation = '3d6kh2'; pd.buildDice(); pd.simRoll(); return pd.dice.length; });
   expect(n).toBe(3);
-  const marks = await app.run(pd => pd.rig.children.filter(m => m.userData && m.userData.dropped !== undefined).length);
-  expect(marks).toBe(1);
-  expect(await app.run(pd => { pd.state.notation = '1d20'; pd.buildDice(); pd.simRoll(); return pd.rig.children.filter(m => m.userData && m.userData.dropped !== undefined).length; })).toBe(0);
+  const info = () => app.run(pd => { const op = m => { let o = 1; m.mesh.traverse(x => { if (x.material) { const a = Array.isArray(x.material) ? x.material : [x.material]; a.forEach(y => { if (y.transparent) o = Math.min(o, y.opacity); }); } }); return o; };
+    return { faded: pd.dice.filter(d => d.mesh.userData.dropped !== undefined).length, ops: pd.dice.map(op), rings: pd.rig.children.filter(m => m.geometry && m.geometry.type === 'RingGeometry').length }; });
+  const r = await info();
+  expect(r.faded).toBe(1); expect(r.rings, 'no ring under a dropped die').toBe(0);
+  expect(r.ops.filter(o => o < 0.6).length, 'exactly the dropped die is translucent').toBe(1);
+  const r2 = await app.run(pd => { pd.state.notation = '1d20'; pd.buildDice(); pd.simRoll(); return pd.dice.filter(d => d.mesh.userData.dropped !== undefined).length; });
+  expect(r2).toBe(0);
 });
 
 // PD-142.40.1 / .40.2: the dock is one scrollable row with a small formula box until focus; chips sit top-left.
