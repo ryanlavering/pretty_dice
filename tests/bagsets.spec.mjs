@@ -410,9 +410,9 @@ test('the quick roll result shows above the open bag sheet, and the roll log fad
   await app.nav.toggleMode();
   await app.nav.openLog();
   await app.run(pd => { document.body.classList.add('throwing'); });
-  await expect.poll(() => page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBeLessThan(1);   // dimmed, but still clickable (PD-142.14.3.1.8)
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).toBe('none');   // PD-142.14.3.1.8: no input at all while dice move
   await app.run(pd => { document.body.classList.remove('throwing'); });
-  await expect.poll(() => page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBe(1);   // after the .2s fade
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).not.toBe('none');
 });
 
 test('a double-click on quick roll is one logged roll, a later click is another (PD-142.14.1.16)', async ({ app, page }) => {

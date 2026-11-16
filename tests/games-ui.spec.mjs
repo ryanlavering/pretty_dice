@@ -90,3 +90,15 @@ test('liar\'s dice: the dock button reads "Roll" outside the roll phase, never "
   const t = await app.run(pd => { const o = []; const st = pd.GAMES.status(pd.game.state); o.push([st.phase, document.getElementById('rollbtn').textContent]); return o; });
   expect(t[0][1]).not.toMatch(/Roll 0/);
 });
+
+test('liar\'s dice: odds and suggested bids are hidden unless the practice option is on (PD-142.14.3.1.7)', async ({ shared: app }) => {
+  await app.reset(45);
+  await app.run(pd => pd.openGames());
+  await app.page.selectOption('#scorepane select >> nth=0', 'liarsdice');
+  await expect(app.page.locator('#scorepane label:has-text("Suggest scores")')).toHaveCount(0);
+  await expect(app.page.locator('#scorepane label:has-text("odds and suggested bids")')).toHaveCount(1);
+  await app.nav.roll();
+  expect(await app.run(pd => pd.game.state.options.help)).toBe(false);
+  await app.run(pd => pd.simRoll());
+  await expect(app.page.locator('#scorepane')).not.toContainText('likely true');
+});

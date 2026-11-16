@@ -4,7 +4,8 @@ import { range } from './util.js';
 
 export const info = { id: 'liarsdice', name: "Liar's Dice", minPlayers: 2, maxPlayers: 6, dice: { count: 5, sides: 6 }, hidden: true,
   options: [{ id: 'dice', label: 'Dice each', type: 'int', min: 3, max: 6, default: 5 },
-            { id: 'wild', label: 'Ones are wild (bid 2-6 only)', type: 'bool', default: true }] };
+            { id: 'wild', label: 'Ones are wild (bid 2-6 only)', type: 'bool', default: true },
+            { id: 'help', label: 'Show odds and suggested bids (practice)', type: 'bool', default: false }] };   // PD-142.14.3.1.7: off by default, nothing spoils the game
 
 const active = s => range(s.players.length).filter(p => s.counts[p] > 0);
 const nextActive = (s, p) => { for (let k = 1; k <= s.players.length; k++) { const q = (p + k) % s.players.length; if (s.counts[q] > 0) return q; } return p; };
