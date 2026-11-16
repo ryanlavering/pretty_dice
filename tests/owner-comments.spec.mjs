@@ -102,3 +102,22 @@ test('Table tab also has Shape and Custom set; Look still does; a game hides the
   await expect(page.locator('#panes h2', { hasText: 'Substrate' })).toBeHidden();   // the design controls stay in Look
   await app.nav.toDesign(); await expect(page.locator('#shapes')).toBeVisible();
 });
+
+// PD-142.38.22: phone round Design/Play button (also in Full view), desktop switch above the tabs; no overlaps.
+for (const [name, vp] of [['phone', { width: 390, height: 780 }], ['desktop', { width: 1280, height: 800 }]]) {
+  test(`${name}: the Design | Play control clears Undo/Redo, the Bag button and the pane handles, normal and Full view (.38.22)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toDesign(); await page.waitForTimeout(300);
+    const sel = name === 'phone' ? '#roomround' : '#modesw';
+    const overlap = (a, b) => a && b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    const check = async tag => {
+      const me = await page.locator(sel).boundingBox(); expect(me, tag + ': control visible').toBeTruthy();
+      for (const o of ['#undo', '#redo', '#paneclose', '#paneopen', '#bagbtn']) { const el = page.locator(o).first(); if (!(await el.count()) || !(await el.isVisible())) continue; expect(overlap(me, await el.boundingBox()), `${tag}: ${sel} overlaps ${o}`).toBeFalsy(); }
+    };
+    await check('design'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-design.png` });
+    await app.nav.toPlay(); await page.waitForTimeout(300); await check('play'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-play.png` });
+    await app.nav.fullView(true); await page.waitForTimeout(300);
+    if (name === 'phone') { await expect(page.locator('#roomround')).toBeVisible(); await page.locator('#roomround').click(); await expect(page.locator('body')).toHaveClass(/design/); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-fullview.png` }); await app.nav.fullView(false); }
+    else { await expect(page.locator('#drawerbtn')).toBeVisible(); await app.nav.fullView(false); }
+    if (name === 'desktop') { const k = await page.evaluate(() => [...document.querySelector('aside').children].map(e => e.id)); expect(k.indexOf('modesw')).toBeLessThan(k.indexOf('paneltabs')); }
+  });
+}

@@ -64,12 +64,15 @@ test('Undo and Redo sit on the shelf row in the Design room (also in Full view) 
 });
 
 // Slice 4c
-test('phone: the switch sits in the top strip, the strip middle holds top-down in Play, and the desktop keeps it in the panel', async ({ shared: app }) => {
+test('phone: a round corner button switches rooms, the strip middle holds top-down in Play, and the desktop keeps the switch at the top of the panel (PD-142.38.22)', async ({ shared: app }) => {
   const page = app.page;
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
   try {
-    await expect(page.locator('#topstrip #modesw')).toBeVisible();
-    const b = await page.locator('#modesw').boundingBox(); expect(b.y).toBeLessThan(60);
+    await expect(page.locator('#topstrip #roomround')).toBeVisible(); await expect(page.locator('aside #modesw')).toBeHidden();
+    const b = await page.locator('#roomround').boundingBox(); expect(b.y).toBeLessThan(60); expect(b.width, 'a round button, not a full-width switch').toBeLessThan(60);
+    const nm = await page.locator('#name').boundingBox(); expect(nm.y, 'the title line is not pushed down').toBeLessThan(40);
+    await expect(page.locator('#roomround')).toHaveText('Play'); await page.locator('#roomround').click(); await expect(page.locator('body')).not.toHaveClass(/design/); await expect(page.locator('#roomround')).toHaveText('Design');
+    await page.locator('#roomround').click(); await expect(page.locator('body')).toHaveClass(/design/);
     await app.nav.toPlay();
     const m = await page.locator('#stripmid').boundingBox();
     await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2); await page.mouse.down();
@@ -78,6 +81,8 @@ test('phone: the switch sits in the top strip, the strip middle holds top-down i
     await app.nav.toDesign();
   } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
   await expect(page.locator('aside #modesw')).toHaveCount(1);
+  const top = await app.run(() => { const a = document.querySelector('aside'), kids = [...a.children].map(e => e.id); return { i: kids.indexOf('modesw'), t: kids.indexOf('paneltabs') }; });
+  expect(top.i, 'desktop: the Design | Play switch sits above the tabs').toBeLessThan(top.t);
 });
 
 test('[+] Blank and Random both open the same draft; Blank is a plain starting look', async ({ shared: app }) => {
@@ -117,7 +122,7 @@ test('phone: Undo and Redo sit in the top right of the mat, clear of the shelf a
     await app.nav.toDesign();
     await app.run(() => window.dispatchEvent(new Event('resize')));   // the shared page's frames are throttled in headless runs, so the browser's own resize event can arrive late
     await expect(page.locator('#topstrip #histrow')).toBeVisible();   // wait for the resize to be delivered (frames can be throttled in headless)
-    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sw = await page.locator('#modesw').boundingBox(), sh = await page.locator('#shelf').boundingBox();
+    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sw = await page.locator('#roomround').boundingBox(), sh = await page.locator('#shelf').boundingBox();
     expect(u.y).toBeLessThan(60); expect(r.x + r.width).toBeGreaterThan(300); expect(u.x).toBeGreaterThan(sw.x + sw.width);
     expect(u.y + u.height).toBeLessThan(sh.y);
     await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden();

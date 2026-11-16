@@ -11,6 +11,8 @@
 export const navFor = page => {
   const inRoll = () => page.evaluate(() => document.body.classList.contains('inroll'));
   const click = sel => page.locator(sel).click();
+  const phone = () => (page.viewportSize() || { width: 1280 }).width <= 760;   // PD-142.38.22: on a phone the Design | Play switch is the round corner button
+  const room = sel => click(phone() && (sel === '#roll' || sel === '#back') ? '#roomround' : sel);
   const BTN = { mode: '#modesw', games: '#gamestab', bag: '#paneltabs [data-pane=bag]', log: '#paneltabs [data-pane=log]', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
   return {
     page,
@@ -18,9 +20,9 @@ export const navFor = page => {
     btn: name => page.locator(BTN[name]),
     /** true when the control is displayed, visible (drawer items are hidden while the drawer is closed) and not faded out */
     shown: name => page.locator(BTN[name]).evaluate(e => getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).opacity !== '0'),
-    toggleMode: async () => click((await page.locator('#back.on').count()) ? '#roll' : '#back'),
-    async toPlay() { if (await page.locator('#back.on').count()) await click('#roll'); },
-    async toDesign() { if (!(await page.locator('#back.on').count())) await click('#back'); },
+    toggleMode: async () => room((await page.locator('#back.on').count()) ? '#roll' : '#back'),
+    async toPlay() { if (await page.locator('#back.on').count()) await room('#roll'); },
+    async toDesign() { if (!(await page.locator('#back.on').count())) await room('#back'); },
     async openBag() { await this.toDesign(); await click('#paneltabs [data-pane=bag]'); },   // the Bag tab (Design room); inline on desktop, the full-screen sheet on a phone
     async openGames() { await this.toPlay(); await click('#gamestab'); },   // the Games tab belongs to the Play room (slice 5)
     async openLog() { await this.toPlay(); await click('#paneltabs [data-pane=log]'); },   // the Log tab (Play room)
