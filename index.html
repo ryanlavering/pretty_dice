@@ -2225,7 +2225,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     world.addBody(b); return b;});
   pendingLay=null;
   if(place){   // set the dice out as if put down by hand: let them fall and come to rest out of sight (no sound, no result), then wait for a roll
-    placing=true; try{ simSteps(1500); }finally{ placing=false; } settled=true; placed=true; restT=0;
+    placing=true; try{ simSteps(1500); }finally{ placing=false; } settled=true; placed=true; restT=0; document.body.classList.remove('throwing');   /* dice at rest, nothing is moving: the log and dock are live (PD-142.14.3.1.14) */
     dice.forEach((d,i)=>{ d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion); });
     const R=$('result'); R.textContent=''; const h=document.createElement('div'); h.className='brk'; h.textContent='Ready: tap Roll or flick the dice'; R.append(h); R.classList.add('on'); }
 }

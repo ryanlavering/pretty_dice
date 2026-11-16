@@ -102,3 +102,18 @@ test('liar\'s dice: odds and suggested bids are hidden unless the practice optio
   await app.run(pd => pd.simRoll());
   await expect(app.page.locator('#scorepane')).not.toContainText('likely true');
 });
+
+for (const id of ['craps', 'liarsdice']) {
+  test(`${id}: End game with no rolls leaves the Roll button and the roll log live (PD-142.14.3.1.14)`, async ({ shared: app }) => {
+    await app.reset(46);
+    await app.run(pd => pd.openGames());
+    await app.page.selectOption('#scorepane select >> nth=0', id);
+    await app.nav.roll();   // Start game, no roll
+    await app.page.click('button:has-text("End game")');
+    await expect(app.page.locator('body')).not.toHaveClass(/throwing/);
+    await expect(app.page.locator('#rollbtn')).toBeEnabled();
+    await app.nav.openLog();
+    expect(await app.page.evaluate(() => getComputedStyle(document.getElementById('logpanel')).pointerEvents)).not.toBe('none');
+    expect(await app.page.evaluate(() => +getComputedStyle(document.getElementById('qbar')).opacity)).toBe(1);
+  });
+}
