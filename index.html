@@ -264,7 +264,8 @@
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
-  #qbar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qbar::-webkit-scrollbar{display:none} #qbar input{flex:0 1 104px;transition:flex-basis .15s} #qbar input:focus{flex:1 0 calc(100% - 84px)} #qbar.drag{cursor:grabbing}   /* PD-142.40.1: the dock is ONE row, a scrollable ribbon (drag or wheel); the formula box is small until it has focus, then fills the row */
+  #qbar{flex-wrap:nowrap;overflow:hidden} #qbar input{flex:1 0 104px;min-width:104px;transition:flex-basis .15s,min-width .15s} #qbar input:focus{flex-basis:150px;min-width:150px} #qchips{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qchips::-webkit-scrollbar{display:none} #qchips.drag{cursor:grabbing}   /* PD-142.14.3.1.1/.2: the box keeps a readable width and Roll stays put; only the preset chips scroll */
+  /* PD-142.40.1: the dock is ONE row; the preset chips are a scrollable ribbon (drag or wheel) */
   @media (max-width:520px){ body #qbar button{height:28px;padding:0 8px} }
   @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
   </style>
@@ -1830,7 +1831,7 @@ function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DO
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
 function dockLoad(n){ const inp=$('rollbox'), p=inp&&dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); }   // a die chip adds one die to the box; it never throws
-function dockAdv(mode){ const inp=$('rollbox'), p=inp&&dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; const i=p.terms.findIndex(t=>t.sides===20), one={count:2,sides:20,keep:{mode,n:1}}; if(i<0) p.terms.unshift(one); else p.terms[i]={...p.terms[i],...one}; inp.value=fmtNotation(p.terms,p.mod,p.group); }   // the first d20 (of the box, or of the dice on the mat when the box is empty) becomes 2d20 keep highest/lowest
+function dockAdv(mode){ const inp=$('rollbox'), p=inp&&dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; const i=p.terms.findIndex(t=>t.sides===20), one={count:2,sides:20,keep:{mode,n:1}}; if(i<0){ dockFail(inp,(mode==='h'?'Advantage':'Disadvantage')+' needs a d20 in the roll; add a d20 first'); return; } p.terms[i]={...p.terms[i],...one}; inp.value=fmtNotation(p.terms,p.mod,p.group); }   // the first d20 (of the box, or of the dice on the mat when the box is empty) becomes 2d20 keep highest/lowest
 /* PD-142.38 slice 3: in a game the dock is the game's one Roll button plus the turn actions (Bank, Set aside, Cash out) and a short hint; the panel keeps picks, bids and scorecards. The conditions are the ones the panel buttons used */
 function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent='';
   if(!game||game.setup){ go.textContent='Roll'; go.disabled=false; return; }
@@ -1855,17 +1856,18 @@ function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar)
   const dh=el('span','dhint'); dh.id='dockhint'; const da=el('span','dact'); da.id='dockact'; bar.replaceChildren(inp,dh,da,go); bar.hidden=false;
   const mk=()=>{ const kids=[]; for(const n of [4,6,8,10,12,20,100]){ const b=el('button','',dieName(n)); b.type='button'; b.title='Add one '+dieName(n)+' to the roll box'; b.dataset.die=n; b.onclick=()=>dockLoad(n); kids.push(b); }
   for(const [m,t,tip] of [['h','Adv','Advantage: 2d20, keep the highest'],['l','Dis','Disadvantage: 2d20, keep the lowest']]){ const b=el('button','',t); b.type='button'; b.title=tip; b.dataset.adv=m; b.onclick=()=>dockAdv(m); kids.push(b); }
-  if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Load '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ setOps.open(st.id); }; kids.push(b); } }
+  if(bag.sets.length){ kids.push(el('span','qsep')); for(const st of bag.sets){ const b=el('button','',st.name); b.type='button'; b.title='Load '+setNotation(st); b.dataset.set=st.id; b.onclick=()=>{ const bx=$('rollbox'); if(bx){ bx.value=''; bx.classList.remove('bad'); bx.title=DOCK_TIP; } setOps.open(st.id); syncDock(); }; kids.push(b);   // PD-142.14.3.1.3: the chip replaces whatever was typed, so Roll throws the set
+ } }
   return kids; };
   const dc=mk(); for(const b of dc){ b.classList.add('dchip'); b.onmousedown=e=>e.preventDefault(); }   // like Roll: a chip must not blur the box, or the box shrinks and the chip slides out from under the finger
-   bar.append(...dc);   // owner 2026-11-14: the preset chips are in the dock again (phone panel is closed in Play); they only load
+   { const qc=el('div'); qc.id='qchips'; qc.append(...dc); bar.append(qc); }   // owner 2026-11-14: the preset chips are in the dock again (phone panel is closed in Play); they only load
   if(chips) chips.replaceChildren(...mk()); syncDock(); renderDock(); }
 /* PD-142.40.1: the dock scrolls sideways with the wheel and by dragging (touch scrolls natively); a drag that moved never counts as a click */
-(()=>{ const bar=$('qbar'); if(!bar) return; let dx=0, sx=0, sl=0, moved=false, id=null;
-  bar.addEventListener('wheel',e=>{ if(bar.scrollWidth<=bar.clientWidth) return; bar.scrollLeft+=e.deltaY+e.deltaX; e.preventDefault(); },{passive:false});
-  bar.addEventListener('pointerdown',e=>{ if(e.pointerType!=='mouse'||e.target.closest('input')) return; id=e.pointerId; sx=e.clientX; sl=bar.scrollLeft; moved=false; });
-  bar.addEventListener('pointermove',e=>{ if(id!==e.pointerId) return; dx=e.clientX-sx; if(!moved&&Math.abs(dx)>5){ moved=true; bar.classList.add('drag'); } if(moved) bar.scrollLeft=sl-dx; });
-  const end=e=>{ if(id!==e.pointerId) return; id=null; bar.classList.remove('drag'); };
+(()=>{ const bar=$('qbar'); if(!bar) return; let dx=0, sx=0, sl=0, moved=false, id=null; const sc=()=>$('qchips');   // only the chips scroll; the box and Roll stay put (PD-142.14.3.1.2)
+  bar.addEventListener('wheel',e=>{ const c=sc(); if(!c||c.scrollWidth<=c.clientWidth) return; c.scrollLeft+=e.deltaY+e.deltaX; e.preventDefault(); },{passive:false});
+  bar.addEventListener('pointerdown',e=>{ const c=sc(); if(!c||e.pointerType!=='mouse'||!e.target.closest('#qchips')) return; id=e.pointerId; sx=e.clientX; sl=c.scrollLeft; moved=false; });
+  bar.addEventListener('pointermove',e=>{ const c=sc(); if(!c||id!==e.pointerId) return; dx=e.clientX-sx; if(!moved&&Math.abs(dx)>5){ moved=true; c.classList.add('drag'); } if(moved) c.scrollLeft=sl-dx; });
+  const end=e=>{ if(id!==e.pointerId) return; id=null; const c=sc(); if(c) c.classList.remove('drag'); };
   bar.addEventListener('pointerup',end); bar.addEventListener('pointercancel',end);
   bar.addEventListener('click',e=>{ if(moved){ e.stopPropagation(); e.preventDefault(); moved=false; } },true); })();
 document.addEventListener('pointerdown',e=>{ const b=$('rollbox'); if(b&&document.activeElement===b&&!e.target.closest('#qbar')) b.blur(); },true);   // a tap anywhere outside the dock (mat, canvas) dismisses the phone keyboard (PD-142.14.1.6.3)

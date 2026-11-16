@@ -195,7 +195,8 @@ test('the dock is one row and its formula box grows on focus (.40.1)', async ({ 
   const h = (await bar.boundingBox()).height; expect(h).toBeLessThan(60);
   const w0 = (await box.boundingBox()).width; expect(w0).toBeLessThan(140);
   await box.focus();
-  await expect.poll(async () => (await box.boundingBox()).width).toBeGreaterThan(w0 + 80);
+  await expect.poll(async () => (await box.boundingBox()).width).toBeGreaterThan(w0 + 30);   // PD-142.14.3.1.1: it grows a little, Roll stays on screen
+  const rb = await page.locator('#rollbtn').boundingBox(); expect(rb.x + rb.width).toBeLessThanOrEqual(390);
   expect((await bar.boundingBox()).height).toBeLessThan(60);
 });
 
