@@ -90,3 +90,15 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     expect(hit2, 'nothing under the open handle in Full view').toEqual([]);
   });
 }
+
+test('Table tab also has Shape and Custom set; Look still does; a game hides them (.38.12)', async ({ app, page }) => {
+  await app.open(); await app.nav.toPlay(); await app.run(pd => pd.simRoll());
+  await page.locator('#paneltabs [data-pane=table]').click();
+  await expect(page.locator('#shapes')).toBeVisible(); await expect(page.locator('#shapehead')).toBeVisible();
+  await page.locator('#shapes button').nth(1).click();
+  await expect(page.locator('#sec-dice')).toBeVisible();
+  await page.locator('#shapes button', { hasText: /custom/i }).click();
+  await expect(page.locator('#customctl')).toBeVisible();
+  await expect(page.locator('#panes h2', { hasText: 'Substrate' })).toBeHidden();   // the design controls stay in Look
+  await app.nav.toDesign(); await expect(page.locator('#shapes')).toBeVisible();
+});
