@@ -85,7 +85,7 @@ test('Sets tab: save the current dice, quick roll, open on the mat, delete from 
   await page.locator('#setlist .setrow[data-id="dmg"] .dots').click();
   await page.locator('#cardmenu button', { hasText: 'Delete…' }).click();
   await page.locator('#cardmenu button', { hasText: /^Delete$/ }).click();
-  expect(await app.run(pd => pd.bag.sets.map(s => s.id))).toEqual(['adv', 'd6']);
+  expect(await app.run(pd => pd.bag.sets.map(s => s.id))).toEqual(['adv', 'mine']);
   await page.locator('#setlist .setrow[data-id="adv"] .main').click();
   await expect(page.locator('#bagsheet')).toBeHidden();
   expect(await app.run(pd => ({ n: pd.state.notation, rolling: pd.rolling, placed: pd.placed, log: pd.bag.log.length }))).toEqual({ n: '2d20@amethyst', rolling: true, placed: true, log: 1 });   // placed, not thrown
