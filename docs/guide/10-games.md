@@ -6,7 +6,7 @@ Pretty Dice can run a game for you with your own dice: it keeps score, suggests 
 
 ![The Games panel with Yacht set up](img/18-games-setup.png)
 
-Switch to the Play room and open the **Games** tab. Choose a **Game**, the number of **Players**, and press **Start game**. Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
+Switch to the Play room and open the **Games** tab. Choose a **Game** (the game puts its own dice on the table, for example two d6 for Craps, and your dice come back when it ends), the number of **Players**, and press **Start game**. Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
 
 | Game | Setup options |
 |---|---|
