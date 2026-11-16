@@ -46,7 +46,7 @@ test('liar\'s dice hot-seat: pass screens hide dice, each player sees only their
   await app.page.click(`#scorepane button:has-text("I'm Player ${2 - who}")`);
   await app.page.click('#scorepane button:has-text("Challenge")');
   await expect(panel(app)).toContainText('Next round');
-  expect((await cupText(app)).match(PIP)).toHaveLength(10);                                 // reveal: both cups open
+  await expect(app.page.locator('#scorepane .cups .rd')).toHaveCount(10);   // PD-142.14.3.1.13: numerals on tiles  // reveal: both cups open
   await app.page.click('#scorepane button:has-text("Next round")');
   await app.run(pd => pd.endGame());
 });
