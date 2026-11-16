@@ -187,6 +187,9 @@ test('a die dropped by kh is faded with no ring; a kept one is untouched (.38.20
   const r = await info();
   expect(r.faded).toBe(1); expect(r.rings, 'no ring under a dropped die').toBe(0);
   expect(r.ops.filter(o => o < 0.6).length, 'exactly the dropped die is translucent').toBe(1);
+  // PD-142.38.21: a faded die must draw after the transparent mat and keep depth writes, or parts of it vanish from some angles
+  const draw = await app.run(pd => { const d = pd.dice.find(d => d.mesh.userData.dropped !== undefined); let ro = 99, dw = true; d.mesh.traverse(o => { if (o.material) { ro = Math.min(ro, o.renderOrder); [].concat(o.material).forEach(m => { dw = dw && m.depthWrite; }); } }); return { ro, dw }; });
+  expect(draw.ro, 'draws after the mat (order 0)').toBeGreaterThan(0); expect(draw.dw, 'keeps depth writes').toBe(true);
   const r2 = await app.run(pd => { pd.state.notation = '1d20'; pd.buildDice(); pd.simRoll(); return pd.dice.filter(d => d.mesh.userData.dropped !== undefined).length; });
   expect(r2).toBe(0);
 });

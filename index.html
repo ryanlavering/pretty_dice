@@ -2552,10 +2552,10 @@ function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
   m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
 let dropMarks=[];   // PD-142.38.20: a die the keep/drop rule left out (kh/kl/dl, adv/dis) is drawn faded and translucent, with no ring (a ring reads as "chosen"). Each entry keeps the die's own materials so they come back exactly
-function undimDropped(){ for(const e of dropMarks){ delete e.mesh.userData.dropped; for(const [o,mat] of e.orig){ if(o.material!==mat){ const c=o.material; o.material=mat; (Array.isArray(c)?c:[c]).forEach(x=>x.dispose&&x.dispose()); } } } dropMarks=[]; }
+function undimDropped(){ for(const e of dropMarks){ delete e.mesh.userData.dropped; for(const [o,mat,ro] of e.orig){ o.renderOrder=ro; if(o.material!==mat){ const c=o.material; o.material=mat; (Array.isArray(c)?c:[c]).forEach(x=>x.dispose&&x.dispose()); } } } dropMarks=[]; }
 function showDropped(){ undimDropped();
   if(!settled) return; droppedDice.forEach(i=>{ const d=dice[i]; if(!d||!d.mesh) return; const orig=[];
-    d.mesh.traverse(o=>{ if(!o.material) return; orig.push([o,o.material]); const dim=x=>{ const c=x.clone(); c.transparent=true; c.opacity=Math.min(c.opacity==null?1:c.opacity,.4); c.depthWrite=false; return c; }; o.material=Array.isArray(o.material)?o.material.map(dim):dim(o.material); });
+    d.mesh.traverse(o=>{ if(!o.material) return; orig.push([o,o.material,o.renderOrder]); o.renderOrder=5; const dim=x=>{ const c=x.clone(); c.transparent=true; c.opacity=Math.min(c.opacity==null?1:c.opacity,.4); return c; }; o.material=Array.isArray(o.material)?o.material.map(dim):dim(o.material); });
     d.mesh.userData.dropped=i; dropMarks.push({mesh:d.mesh,orig}); }); }
 function dropRings(){ undimDropped(); for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
