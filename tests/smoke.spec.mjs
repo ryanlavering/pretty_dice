@@ -262,8 +262,11 @@ test('Clear resets the custom set to a single d20 with no modifier', async ({ ap
 // Settings pane layout: the roll-feel sliders live in their own section, which moves to the top while rolling.
 test('roll feel section holds the physics sliders and comes first in the roll view', async ({ app }) => {
   await app.open();
-  const inRoll = await app.page.evaluate(() => ['bounce', 'fricdice', 'fricmat', 'volume'].every(id => document.getElementById('sec-roll').contains(document.getElementById(id))));
-  expect(inRoll, 'bounciness, friction and volume sit in #sec-roll').toBe(true);
+  const inRoll = await app.page.evaluate(() => ['bounce', 'fricdice', 'fricmat'].every(id => document.getElementById('sec-roll').contains(document.getElementById(id))));
+  expect(inRoll, 'bounciness and friction sit in #sec-roll').toBe(true);
+  // PD-142.38.6: Sound is its own section; Volume and Width (basic) come before the advanced controls
+  const snd = await app.page.evaluate(() => { const S = document.getElementById('sec-sound'), pos = id => [...S.querySelectorAll('[id]')].findIndex(e => e.id === id); return { has: ['rumble', 'volume', 'sndwidth', 'soundtest', 'sndbk', 'sndsurf', 'sndring'].every(id => S.contains(document.getElementById(id))), basicFirst: Math.max(pos('volume'), pos('sndwidth')) < Math.min(pos('sndbk'), pos('sndmix'), pos('sndsurf'), pos('sndring')), roll: document.getElementById('sec-roll').contains(document.getElementById('volume')) }; });
+  expect(snd.has, 'the sound controls are in #sec-sound').toBe(true); expect(snd.basicFirst, 'Volume and Width before the advanced sound controls').toBe(true); expect(snd.roll).toBe(false);
   const top = () => app.page.evaluate(() => ({ roll: document.getElementById('sec-roll').getBoundingClientRect().top, shape: [...document.querySelectorAll('#panes h2')].find(h => h.textContent === 'Shape').getBoundingClientRect().top }));
   // slice 5: the roll-feel section lives in the Play room's Table tab; the Look tab hides it
   expect(await app.page.evaluate(() => getComputedStyle(document.getElementById('sec-roll')).display), 'Design room: hidden').toBe('none');

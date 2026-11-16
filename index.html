@@ -30,12 +30,13 @@
   #actions{margin-top:16px;display:grid;gap:8px}
   #randrow{display:flex;gap:6px;align-items:center} #randrow .big{flex:1;margin-top:0}
   #randopts{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--dim);font-size:12px} #randopts .chk{margin:0;font-size:12px} #randopts input{margin:0}
-  #panes{display:flex;flex-direction:column} #panes>*{flex:none} body.inroll #sec-roll{order:-1}   /* rolling: the feel controls come to the top of the pane */
+  #panes{display:flex;flex-direction:column} #panes>*{flex:none} body.inroll #sec-roll,body.inroll #sec-sound{order:-1} .advh{margin:14px 0 6px;font:600 11px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}   /* PD-142.38.6: basic controls first, an Advanced subhead then the rest */   /* rolling: the feel controls come to the top of the pane */
   aside>#modesw{margin:0 0 12px} #modesw{display:grid;grid-template-columns:1fr 1fr;padding:3px;background:#1d212c;border:1px solid var(--line);border-radius:999px}
   #modesw button{border:0;background:transparent;color:var(--dim);font-weight:600;padding:9px 0;border-radius:999px;cursor:pointer;transition:background .2s,color .2s}
   #modesw button.on{background:var(--accent);color:#1a1405}
   .row{display:flex;gap:8px;align-items:center;margin:6px 0}
   .row label{flex:1;color:var(--dim)}
+  .slends{flex:1;min-width:0;display:flex;flex-direction:column} .slends .ends{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:2px}   /* PD-142.38.7: the end labels sit under the slider itself, flush with its left and right ends */
   input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
   @media (pointer:coarse),(hover:none){ input[type=text],input:not([type]),input[type=number],input[type=search],select,textarea{font-size:16px!important} }   /* iOS Safari zooms the whole page when a field under 16px gets focus (and stays zoomed); !important beats the inline font:inherit */
   .row select,.row input[type=range]{min-width:0}   /* a select is as wide as its longest option unless told it may shrink: it pushed the sound rows off a phone screen */
@@ -58,7 +59,7 @@
   #drawer.open #dmenu{transform:none;opacity:1;visibility:visible;pointer-events:auto;transition:opacity .22s,transform .22s,visibility 0s}
   #tools #drawer .di{pointer-events:auto;display:flex;align-items:center;gap:10px;width:auto;height:40px;border-radius:20px;padding:0 14px 0 8px;border:0;background:none;color:var(--ink);font:inherit;font-size:14px;text-align:left;backdrop-filter:none;white-space:nowrap}
   #tools #drawer .di:hover,#tools #drawer .di:focus-visible{background:#2a2f3d;color:var(--ink)} #tools #drawer .di svg{width:22px;height:22px;flex:none} #tools #drawer #info.on{color:var(--accent)} #tools #drawer #snd.off{color:var(--dim)}
-  body.inroll #tools #drawer #spinbtn{display:none}
+  body.inroll #tools #drawer #spinbtn{display:none} body:not(.full) #tools #drawer #roomsw{display:none}   /* PD-142.38.9: in Full view the Design | Play switch is hidden, so the drawer carries it */
   /* full view handles: one on the pane's edge, one on the screen edge once the pane is hidden */
   #paneclose svg,#paneopen svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;display:block;margin:auto}
   #paneclose,#paneopen{position:fixed;z-index:9;border:1px solid var(--line);background:rgba(20,23,31,.82);color:var(--ink);cursor:pointer;font:22px/1 sans-serif;padding:0;width:22px;height:56px;backdrop-filter:blur(6px)}
@@ -124,7 +125,7 @@
   #modbadge{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} #modbadge[hidden]{display:none}
   .bagpill{flex:none;font-size:11px;font-weight:600;color:#1a1405;background:var(--accent);border-radius:999px;padding:3px 9px} .linkbtn{background:none;border:0;padding:2px 4px;color:var(--accent);text-decoration:underline;cursor:pointer;font-size:12px}
   #bagdirty{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:0 6px 2px;color:var(--dim);font-size:12px} .bagnote::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:7px} #bagdirty[hidden],#sheetbag[hidden]{display:none} #sheetbag{display:flex;align-items:center;gap:8px;margin-left:auto;margin-right:12px}
-  #savebag.dirty::after{content:' \25CF';color:var(--accent)} #bagbtn{position:relative} #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
+  #savebag.dirty::after{content:' \25CF';color:var(--accent)} #bagbtn{position:relative} body.design #bagbtn{display:none}   /* PD-142.38.8: the Bag button is back at the bottom-left of the table, Play room only (Design has the Bag tab) */ #bagbtn.dirty::after{content:'';position:absolute;top:4px;right:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid rgba(20,23,31,.9)}
   #termchips{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px} #termchips:empty{display:none} #termchips button{padding:3px 9px;font-size:12px;border-radius:999px} #termchips .x{color:var(--dim);margin-left:4px}
   #bagask{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:grid;place-items:center;padding:16px} #bagask[hidden]{display:none} #bagask .box{max-width:360px;background:#14171f;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px} #bagask .row{display:flex;gap:8px;flex-wrap:wrap}
   #bagact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0} #bagact[hidden]{display:none} #bagact button{padding:7px 2px;font-size:12px}
@@ -179,8 +180,8 @@
   #qbar{position:absolute;left:64px;right:64px;bottom:8px;z-index:7;display:none;gap:6px;align-items:center;overflow-x:auto;padding:5px 8px;background:rgba(20,23,31,.82);border:1px solid var(--line);border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);scrollbar-width:none}
   body:is(.inroll,.game):not(.lab):not(.design) #qbar:not([hidden]){display:flex} body.game #rollbox,body.game:not(.design) #shelf{display:none} body.inroll #rand{display:none} #roll.gamelive::after{content:'';display:inline-block;width:7px;height:7px;margin-left:6px;border-radius:50%;background:currentColor;vertical-align:middle} #qbar .dact{display:contents} #qbar .dhint{flex:1 1 auto;min-width:0;color:var(--dim);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px} #qbar .dhint:empty{display:none} #qbar button:disabled{opacity:.45;cursor:default}   /* PD-142.38 slice 3: in a game the dock shows the game's actions and a hint instead of the formula box */ body.throwing #qbar{opacity:.35}
   /* PD-142.38 slice 2: the bar is the dock: a formula box and the one gold Roll button. Die and set chips moved to the panel (#dicechips) and only load */
-  #qbar{max-width:440px;margin:0 auto} #qbar #rollbtn{background:var(--accent);color:#1a1405;border:0;font-weight:700;height:34px;padding:0 20px} #qbar #rollbtn:hover{color:#1a1405;filter:brightness(1.08)}
-  #settingspane[data-tab=look] #sec-dice,#settingspane[data-tab=look] #sec-roll,body.game #sec-dice,body.game #qbar .dchip{display:none} #settingspane[data-tab=table]>h1,#settingspane[data-tab=table]>.sub,#settingspane[data-tab=table]>#bagbox,#settingspane[data-tab=table]>#actions,#settingspane[data-tab=table] #panes>:not(#sec-dice):not(#sec-roll){display:none} #sec-dice{order:-2} #dicechips{display:flex;flex-wrap:wrap;gap:6px}
+  #qbar{max-width:440px;margin:0 auto} @media (min-width:761px){ #qbar{max-width:min(900px,calc(100% - 128px))} }   /* PD-142.38.10: on desktop the whole chip row (7 dice + Adv/Dis) fits; it scrolls only on narrower screens */ #qbar #rollbtn{background:var(--accent);color:#1a1405;border:0;font-weight:700;height:34px;padding:0 20px} #qbar #rollbtn:hover{color:#1a1405;filter:brightness(1.08)}
+  #settingspane[data-tab=look] #sec-dice,#settingspane[data-tab=look] #sec-roll,#settingspane[data-tab=look] #sec-sound,body.game #sec-dice,body.game #qbar .dchip{display:none} #settingspane[data-tab=table]>h1,#settingspane[data-tab=table]>.sub,#settingspane[data-tab=table]>#bagbox,#settingspane[data-tab=table]>#actions,#settingspane[data-tab=table] #panes>:not(#sec-dice):not(#sec-roll):not(#sec-sound){display:none} #sec-dice{order:-2} #dicechips{display:flex;flex-wrap:wrap;gap:6px}
   #qbar .dchip{flex:none;height:28px;padding:0 9px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #qbar .qsep.dchip{flex:none;width:1px;height:auto;padding:0;border:0;align-self:stretch;margin:4px 2px;background:var(--line)}
   #dicechips button{flex:none;height:30px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:#1d212c;color:var(--ink);font:600 12px Inter,sans-serif;cursor:pointer} #dicechips button:hover{border-color:var(--accent);color:var(--accent)} #dicechips .qsep{flex:0 0 100%;height:0}
   #qbar input{flex:1 1 110px;min-width:0;font:inherit;font-size:13px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:999px;padding:6px 10px} #qbar input.bad{border-color:#e0605a} #qbar input::placeholder{color:#7d8597;font-style:italic;opacity:1}
@@ -393,8 +394,7 @@
     <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
-    <div class="row"><label>Finish</label><input type="range" id="polish" min="0" max="1" step="0.01" title="matte ← → gloss"></div>
-    <div style="display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin:-4px 0 4px 96px"><span>matte</span><span>gloss</span></div>
+    <div class="row"><label>Finish</label><span class="slends"><input type="range" id="polish" min="0" max="1" step="0.01" title="matte ← → gloss"><span class="ends"><span>matte</span><span>gloss</span></span></span></div>
 
     <div id="stonectl"><h2>Stone</h2>
       <div class="row"><label>Type</label><select id="stone"></select><button id="stonepaint" class="ico" type="button" title="Paint with this stone's natural colours" aria-label="Paint with this stone's natural colours"><svg viewBox="0 0 24 24"><path d="M20.5 3.5l-8 8"/><path d="M10.2 11.2l2.6 2.6" stroke-width="2.6"/><path d="M10.6 13.4c-3.1-1.1-5.9.9-5.9 3.6 0 1.8-.9 3-2.2 3.5 5 1.4 10.7-.9 10-5" fill="currentColor" fill-opacity=".85"/></svg></button></div>
@@ -406,11 +406,11 @@
       <div class="row"><label>Clarity</label><input type="range" id="clarity" min="0.2" max="1" step="0.01"></div>
       <div class="row"><label>Inclusion</label><select id="incl"></select></div>
       <div id="inclctl">
-        <div class="row"><button id="loadmodel" style="flex:1">Load model file (glb, obj, stl)…</button></div>
-        <input type="file" id="modelfile" accept=".glb,.gltf,.obj,.stl" hidden>
         <div class="row"><label>Size</label><input type="range" id="inclsize" min="0.15" max="0.9" step="0.01"></div>
         <div class="row"><label>Turn</label><input type="range" id="inclturn" min="-180" max="180" step="1"></div>
         <div class="row"><label>Height</label><input type="range" id="inclheight" min="-0.6" max="0.6" step="0.01"></div>
+        <div class="row"><button id="loadmodel" style="flex:1">Load model file (glb, obj, stl)…</button></div>
+        <input type="file" id="modelfile" accept=".glb,.gltf,.obj,.stl" hidden>
       </div>
     </div>
 
@@ -443,20 +443,24 @@
   </section>
   <section id="sec-dice"><h2>Dice to roll</h2><div id="dicechips" role="toolbar" aria-label="Dice to roll: a tap loads the roll box, the Roll button throws"></div></section>
   <section id="sec-roll">
-    <h2>Roll feel &amp; sound</h2>
+    <h2>Roll feel</h2>
     <div class="row"><label>Bounciness</label><input type="range" id="bounce" min="0" max="0.8" step="0.02"></div>
     <div class="row"><label>Dice friction</label><input type="range" id="fricdice" min="0" max="1" step="0.02"></div>
     <div class="row"><label>Mat friction</label><input type="range" id="fricmat" min="0" max="1" step="0.02"></div>
     <div class="chk" id="shakerow" hidden><input type="checkbox" id="shake"><span>Shake phone to roll</span></div>
+  </section>
+  <section id="sec-sound">
+    <h2>Sound</h2>
     <div class="chk"><input type="checkbox" id="rumble"><span>Rolling sound (soft ticks as dice tumble)</span></div>
     <div class="row"><label>Volume</label><input type="range" id="volume" min="0" max="1" step="0.01"></div>
+    <div class="row"><label>Spatial width (stereo)</label><input type="range" id="sndwidth" min="0" max="1" step="0.01"></div>
+    <div class="row"><button id="soundtest" type="button" style="padding:7px 12px;flex:none">Test sound</button><span id="soundstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
+    <h3 class="advh">Advanced sound</h3>
     <div class="row"><label>Sound set</label><select id="sndbk"></select><button id="sndaud" type="button" style="padding:7px 12px;flex:none">Audition</button></div>
     <div class="row" id="sndmixrow"><label>Best ↔ Kenney</label><input type="range" id="sndmix" min="0" max="1" step="0.01"><select id="sndmixmode"><option value="random">Per hit</option><option value="layer">Layered</option><option value="auto">Auto (by hardness)</option></select></div>
     <div class="row"><label>Surface (for sound)</label><select id="sndsurf"></select></div>
     <div class="row"><label>Metal / glass ring</label><input type="range" id="sndring" min="0" max="1" step="0.01"></div>
-    <div class="row"><label>Spatial width (stereo)</label><input type="range" id="sndwidth" min="0" max="1" step="0.01"></div>
     <div class="row"><span id="sndbkstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
-    <div class="row"><button id="soundtest" type="button" style="padding:7px 12px;flex:none">Test sound</button><span id="soundstat" style="color:var(--dim);font-size:12px;min-width:0"></span></div>
   </section>
   <h2>Save &amp; export</h2>
     <div class="row"><label>Size</label><select id="expsize"><option value="0">Current view</option><option value="1024">1024 px</option><option value="2048" selected>2048 px</option><option value="4096">4096 px</option></select></div>
@@ -469,7 +473,7 @@
     </div>
     <div id="scorepane" hidden></div>
   </aside>
-  <button id="paneclose" type="button" aria-label="Hide the side pane (full view)" title="Hide the pane (full view)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button id="paneopen" type="button" aria-label="Show the side pane" title="Show the pane"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><div id="stage"><div id="topstrip"><div id="stripmid" aria-hidden="true"></div></div><div id="qbar" role="toolbar" aria-label="Quick roll" hidden></div><div id="qerr" role="alert" hidden></div><div id="toast" role="status" aria-live="polite" hidden></div><div id="shelf"><div id="histrow" role="group" aria-label="History"><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"></div><div class="col" id="tr"><div id="drawer"><div id="dmenu" role="menu" aria-label="Utilities"><button class="di" id="snd" type="button" role="menuitem" aria-label="Sound on or off" title="Sound"></button><button class="di" id="resetview" type="button" role="menuitem" title="Reset the view angle and zoom"></button><button class="di" id="layout" type="button" role="menuitem"></button><button class="di" id="info" type="button" role="menuitem" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button class="di" id="spinbtn" type="button" role="menuitem"></button><button class="di" id="reset" type="button" role="menuitem"></button></div><button id="drawerbtn" type="button" aria-label="Utilities" aria-haspopup="menu" aria-expanded="false" title="Sound, view, hints"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></button></div></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
+  <button id="paneclose" type="button" aria-label="Hide the side pane (full view)" title="Hide the pane (full view)"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><button id="paneopen" type="button" aria-label="Show the side pane" title="Show the pane"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button><div id="stage"><div id="topstrip"><div id="stripmid" aria-hidden="true"></div></div><div id="qbar" role="toolbar" aria-label="Quick roll" hidden></div><div id="qerr" role="alert" hidden></div><div id="toast" role="status" aria-live="polite" hidden></div><div id="shelf"><div id="histrow" role="group" aria-label="History"><button id="undo" class="ico" type="button" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button id="redo" class="ico" type="button" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div><div id="cards" role="listbox" aria-label="Designs in the bag"></div></div><div id="tools"><div class="col" id="tl"><button id="bagbtn" type="button" aria-label="Open the dice bag" title="The bag: designs and sets"><svg viewBox="0 0 24 24"><path d="M9.2 3.5h5.6l-1.1 3.2h-3.4z"/><path d="M8.6 6.7C5.2 9.2 4 12.4 4 15.2 4 18 6.2 20.5 9 20.5h6c2.8 0 5-2.5 5-5.3 0-2.8-1.2-6-4.6-8.5"/><path d="M9.5 6.7h5"/><path d="M8.2 12.2c2.4 1.3 5.2 1.3 7.6 0"/></svg></button></div><div class="col" id="tr"><div id="drawer"><div id="dmenu" role="menu" aria-label="Utilities"><button class="di" id="snd" type="button" role="menuitem" aria-label="Sound on or off" title="Sound"></button><button class="di" id="resetview" type="button" role="menuitem" title="Reset the view angle and zoom"></button><button class="di" id="layout" type="button" role="menuitem"></button><button class="di" id="info" type="button" role="menuitem" aria-label="Show control hints" aria-expanded="false" title="Hints"></button><button class="di" id="spinbtn" type="button" role="menuitem"></button><button class="di" id="roomsw" type="button" role="menuitem"></button><button class="di" id="reset" type="button" role="menuitem"></button></div><button id="drawerbtn" type="button" aria-label="Utilities" aria-haspopup="menu" aria-expanded="false" title="Sound, view, hints"><svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></button></div></div></div><div id="name"></div><div id="logpanel" hidden></div><div id="result"></div><div id="hint"></div><div id="gamepanel" hidden></div></div>
 </div>
 <div id="bagask" hidden><div class="box" role="dialog" aria-modal="true" aria-labelledby="baskt"><b id="baskt">This bag has unsaved changes</b><span>Loading a bag replaces it. Save it to a file first?</span><div class="row"><button id="baskSave" type="button">Save bag, then load</button><button id="baskDiscard" type="button">Discard changes</button><button id="baskCancel" type="button">Cancel</button></div></div></div>
 <div id="bagsheet" hidden><div id="sheethead"><b id="sheettitle"></b><span id="sheetbag" hidden><span class="bagpill">Bag modified</span></span><span id="sheetact"><button id="sheetsave" type="button" class="sico" title="Save bag to a file" aria-label="Save bag to a file"><svg viewBox="0 0 24 24"><path d="M12 4v10M8 10.5l4 4 4-4M5 19h14"/></svg></button><button id="sheetload" type="button" class="sico" title="Load a bag file (replaces this bag)" aria-label="Load a bag file"><svg viewBox="0 0 24 24"><path d="M12 15V5M8 8.5l4-4 4 4M5 19h14"/></svg></button><button id="sheetcopy" type="button" class="sico" title="Copy the bag JSON to the clipboard" aria-label="Copy bag JSON"><svg viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="10.5" height="11.5" rx="2"/><path d="M15.5 8.5V6A2 2 0 0 0 13.5 4H7A2 2 0 0 0 5 6v9.5A2 2 0 0 0 7 17.5h1.5"/></svg></button></span><button id="sheetclose" type="button">Close</button></div><div id="bagbox">
@@ -1699,7 +1703,7 @@ function renderBag(){
   if(!bag) return; renderQBar(); const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
   $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
   $('bagth').style.backgroundImage=thumbStyle(liveJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
-  { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('sheetsave').classList.toggle('dirty',dirty); }
+  { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('sheetsave').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
   $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
   if(document.activeElement&&document.activeElement.classList.contains('nmedit')) return;   // never rebuild under a name being typed
@@ -1999,7 +2003,7 @@ function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level 
 $('tiles').addEventListener('touchmove',e=>{ if($('tiles').querySelector('.tile.drag')) e.preventDefault(); },{passive:false});
 function openSheet(){ closeMenu(); try{ if(!phoneUI()){ setPane(sheetTab==='sets'?'sets':'bag'); return; } }catch{} renderSheet(); $('bagsheet').hidden=false; scheduleThumb(); }
 function closeSheet(){ closeMenu(); $('bagsheet').hidden=true; try{ if(inlineSheet()) setPane('look'); }catch{} }
-$('sheetclose').onclick=closeSheet;
+$('sheetclose').onclick=closeSheet; $('bagbtn').onclick=()=>{ if(document.body.classList.contains('full')) setFull(false); sheetTab='designs'; openSheet(); };
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('bagsheet').hidden){ if(!$('cardmenu').hidden) closeMenu(); else closeSheet(); } });
 $('bsave').onclick=()=>bagOps.save(); $('bcopy').onclick=()=>bagOps.saveCopy(); $('brevert').onclick=()=>bagOps.revert();
 let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=setTimeout(()=>{ uiRaf=0; renderBag(); },30); scheduleThumb(); }   // a timer, not rAF: rAF stops in a background tab
@@ -2073,6 +2077,7 @@ if(NF_ON){ document.body.append(nfBox);
   addEventListener('keydown',e=>{ if(e.key==='Escape'&&nfOpen){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   setInterval(()=>{ nfRender(); if(nfOpen){ const d=nfDots.get(nfKey(nfOpen)); if(d&&!d.hidden) nfPlace(nfOpen,d); else nfCollapse(); } },400); nfRender(); }
 window.__nf={ on:NF_ON, unseen:()=>nfUnseen().map(nfKey), render:nfRender };
+$('roomsw').onclick=()=>{ closeDrawer(); $(document.body.classList.contains('design')?'roll':'back').click(); };
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>goPlay();   // PD-142.38 slice 2: a pure switch; in roll view only the dock's Roll button throws
 dset($('reset'),'<svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v6M14 11v6"/></svg>','Reset to defaults'); $('reset').onclick=()=>{ closeDrawer(); if(confirm('Reset all settings to defaults?')){ try{localStorage.removeItem(STORE);}catch{} location.reload(); } };
@@ -2322,7 +2327,7 @@ $('back').onclick=()=>goDesign();
 var designRoom=true;
 function goDesign(){ designRoom=true; if(rolling||game) exitRoll(true); syncMode(); }
 function goPlay(){ designRoom=false; if(!rolling) startRoll(false,true); syncMode(); }   // placed unrolled; only the dock's Roll throws
-function syncMode(){ placeSwitch(); const des=designRoom&&!rolling; document.body.classList.toggle('inroll',rolling); document.body.classList.toggle('design',des); if(!rolling) document.body.classList.remove('throwing'); resize(); $('back').classList.toggle('on',des); $('roll').classList.toggle('on',!des); $('back').setAttribute('aria-pressed',des); $('roll').setAttribute('aria-pressed',!des); $('roll').classList.toggle('gamelive',!!game&&!game.setup&&des); if(typeof applyRoomPane==='function') try{ applyRoomPane(); }catch{} }   // Play carries a dot while a game runs and you are in Design
+function syncMode(){ placeSwitch(); const des=designRoom&&!rolling; document.body.classList.toggle('inroll',rolling); document.body.classList.toggle('design',des); if(!rolling) document.body.classList.remove('throwing'); resize(); $('back').classList.toggle('on',des); $('roll').classList.toggle('on',!des); $('back').setAttribute('aria-pressed',des); $('roll').setAttribute('aria-pressed',!des); $('roll').classList.toggle('gamelive',!!game&&!game.setup&&des); if(typeof applyRoomPane==='function') try{ applyRoomPane(); }catch{} try{ const rs=$('roomsw'); if(rs) dset(rs,'<svg viewBox="0 0 24 24"><path d="M7 8h12M15 4l4 4-4 4M17 16H5M9 12l-4 4 4 4"/></svg>',des?'Switch to Play':'Switch to Design'); }catch{} }   // Play carries a dot while a game runs and you are in Design
 syncMode();
 
 /* ---------- sound: everything is synthesised with Web Audio, no audio files ---------- */
