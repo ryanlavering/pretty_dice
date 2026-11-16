@@ -22,9 +22,9 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     await expect(page.locator('#tiles')).toBeVisible();
   });
 }
-test('Full view: the drawer carries Design | Play, and only in Full view (.38.9)', async ({ app, page }) => {
+test('the drawer carries Design | Play in every view, and has no Reset to defaults (.38.9, .38.28)', async ({ app, page }) => {
   await app.open(); await app.nav.toPlay();
-  await app.nav.openDrawer(); await expect(page.locator('#roomsw')).toBeHidden(); await app.nav.closeDrawer();
+  await app.nav.openDrawer(); await expect(page.locator('#roomsw')).toBeVisible(); await expect(page.locator('#reset')).toHaveCount(0); await app.nav.closeDrawer();
   await app.nav.fullView(true);
   await app.nav.openDrawer(); await expect(page.locator('#roomsw')).toBeVisible(); await expect(page.locator('#roomsw')).toContainText('Design');
   await page.locator('#roomsw').click();

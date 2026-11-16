@@ -1,4 +1,4 @@
-// PD-142.38 slice 5: the panel is sorted into room tabs (Design = Look/Bag/Sets, Play = Table/Games/Log); Reset to defaults lives in the drawer.
+// PD-142.38 slice 5: the panel is sorted into room tabs (Design = Look/Bag/Sets, Play = Table/Games/Log); Reset to defaults was removed (PD-142.38.28).
 import { test, expect } from './helpers/app.mjs';
 test.beforeEach(async ({ shared }) => { await shared.reset(7); await shared.run(pd => pd.endGame()); });
 test.describe('room tabs', () => {
@@ -21,9 +21,8 @@ test.describe('room tabs', () => {
     const p = app.page; await app.nav.toDesign();
     await p.click('#paneltabs button[data-pane=sets]'); await expect(p.locator('#bagsheet')).toBeVisible(); await expect(p.locator('#setlist')).toBeVisible();
   });
-  test('Reset to defaults is a drawer item, not in the panel', async ({ shared: app }) => {
-    const p = app.page; expect(await p.locator('aside #reset').count()).toBe(0);
-    await app.nav.openDrawer(); await expect(p.locator('#dmenu #reset')).toBeVisible();
+  test('there is no Reset to defaults button anywhere (PD-142.38.28)', async ({ shared: app }) => {
+    expect(await app.page.locator('#reset').count()).toBe(0);
   });
 });
 

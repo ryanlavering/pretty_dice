@@ -13,4 +13,4 @@ The picture and single-design items are in **Save & export** at the bottom of th
 | The whole bag | **Save bag** writes a file; **Load bag** replaces this bag with a file. **Copy bag JSON** puts it on the clipboard. |
 | Add a design without replacing the bag | Shelf **Add** > **From a file…** |
 
-**Reset to defaults** (in the Utilities drawer) puts the app back to how it started.
+To start over, open the app with `?reset=1` on the end of its address.

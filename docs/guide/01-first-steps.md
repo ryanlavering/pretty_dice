@@ -22,7 +22,7 @@ One switch, **Design | Play**, decides what you are doing (just under the tabs i
 | Control | What it does |
 |---|---|
 | **Design | Play** switch | Changes room. Never throws. |
-| Utilities (the paired-circles button, bottom right of the table) | Opens the drawer: sound on or off, **Reset view**, **Full view**, **Hints**, **Reset to defaults**, and **Pause spin** in the Design room. |
+| Utilities (the paired-circles button, bottom right of the table) | Opens the drawer: **Design | Play** (in every view), sound on or off, **Reset view**, **Full view**, **Hints**, and **Pause spin** in the Design room. |
 | Panel handle | The small arrow at the edge of the panel (on a phone, at the middle of the tab row) hides it for a full view of the table; the same arrow at the screen edge brings it back. `h` does the same. |
 | Dock (Play room) | Formula box, preset chips (d4 to d%, Adv, Dis) and the **Roll** button. See [Rolling](05-rolling.md). |
 | Shelf (Design room) | Your designs; tap one to switch to it. See [the bag and shelf](03-bag-and-shelf.md). |
