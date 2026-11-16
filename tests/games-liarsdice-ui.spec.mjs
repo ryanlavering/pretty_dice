@@ -70,7 +70,7 @@ test('liar\'s dice with a bot seat: the human sees their own cup, the bot rolls 
   const n = await notes();
   expect(before).toBe(1); expect(n.length).toBe(1);   // the first hold logged, the quick re-holds did not
   expect(n[n.length - 1]).toMatch(/^.+ peeked at their cup$/);
-  expect(n.join(' ')).not.toMatch(/\d/);
+  expect(n[0]).toBe('Player 1 peeked at their cup');   // the name only: no dice values
   expect(n[0]).not.toMatch(/Bot/);
   expect(await app.run(pd => pd.logText())).toContain('peeked at their cup');
   await app.run(pd => pd.endGame());
