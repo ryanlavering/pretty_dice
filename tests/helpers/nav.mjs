@@ -6,13 +6,13 @@
 //  openBag() openGames() openLog()   open the bag sheet / games panel / roll log
 //  roll()               in a game (body.game) or with no panel, the dock's #rollbtn (slices 2-3); in the games setup panel, its Start game button
 //  sound() pauseSpin() layout() resetView()   the utility items: each opens the drawer first (slice 1); layout() = the Full view item
-//  openDrawer() closeDrawer()   the utility drawer (paired-circles button, #drawerbtn)
+//  openDrawer() closeDrawer()   the utility drawer (cube button, #drawerbtn)
 //  fullView(on)         hide (on=true) or restore the side pane with the two handles (#paneclose / #paneopen); H also toggles it
 export const navFor = page => {
   const inRoll = () => page.evaluate(() => document.body.classList.contains('inroll'));
   const click = sel => page.locator(sel).click();
-  const phone = () => (page.viewportSize() || { width: 1280 }).width <= 760;   // PD-142.38.22: on a phone the Design | Play switch is the round corner button
-  const room = sel => click(phone() && (sel === '#roll' || sel === '#back') ? '#roomround' : sel);
+  const phone = () => (page.viewportSize() || { width: 1280 }).width <= 760;   // PD-142.38.22: on a phone the Design | Play switch is only in the cube menu (drawer) button's list
+  const room = async sel => { if (phone() && (sel === '#roll' || sel === '#back')) { await click('#drawerbtn'); await click('#roomsw'); } else await click(sel); };
   const BTN = { mode: '#modesw', games: '#gamestab', bag: '#paneltabs [data-pane=bag]', log: '#paneltabs [data-pane=log]', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
   return {
     page,

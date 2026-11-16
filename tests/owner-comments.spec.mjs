@@ -103,21 +103,22 @@ test('Table tab also has Shape and Custom set; Look still does; a game hides the
   await app.nav.toDesign(); await expect(page.locator('#shapes')).toBeVisible();
 });
 
-// PD-142.38.22: phone round Design/Play button (also in Full view), desktop switch above the tabs; no overlaps.
+// PD-142.38.22: no switch on the phone mat (the cube menu carries Design | Play, also in Full view); desktop switch above the tabs; no overlaps.
 for (const [name, vp] of [['phone', { width: 390, height: 780 }], ['desktop', { width: 1280, height: 800 }]]) {
-  test(`${name}: the Design | Play control clears Undo/Redo, the Bag button and the pane handles, normal and Full view (.38.22)`, async ({ app, page }) => {
+  test(`${name}: Design | Play placement, the cube menu, and no overlaps with Undo/Redo, the Bag button and the pane handles (.38.22)`, async ({ app, page }) => {
     await page.setViewportSize(vp); await app.open(); await app.nav.toDesign(); await page.waitForTimeout(300);
-    const sel = name === 'phone' ? '#roomround' : '#modesw';
     const overlap = (a, b) => a && b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-    const check = async tag => {
-      const me = await page.locator(sel).boundingBox(); expect(me, tag + ': control visible').toBeTruthy();
-      for (const o of ['#undo', '#redo', '#paneclose', '#paneopen', '#bagbtn']) { const el = page.locator(o).first(); if (!(await el.count()) || !(await el.isVisible())) continue; expect(overlap(me, await el.boundingBox()), `${tag}: ${sel} overlaps ${o}`).toBeFalsy(); }
-    };
+    const ids = ['#undo', '#redo', '#paneclose', '#paneopen', '#bagbtn', '#drawerbtn'];
+    const check = async tag => { const boxes = []; for (const o of ids) { const el = page.locator(o).first(); if (await el.count() && await el.isVisible()) boxes.push([o, await el.boundingBox()]); }
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) expect(overlap(boxes[i][1], boxes[j][1]), `${tag}: ${boxes[i][0]} overlaps ${boxes[j][0]}`).toBeFalsy(); };
+    await expect(page.locator('#drawerbtn svg path').first()).toHaveAttribute('d', /M12 3 4 7.5/);   // the cube icon, not two circles
     await check('design'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-design.png` });
     await app.nav.toPlay(); await page.waitForTimeout(300); await check('play'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-play.png` });
     await app.nav.fullView(true); await page.waitForTimeout(300);
-    if (name === 'phone') { await expect(page.locator('#roomround')).toBeVisible(); await page.locator('#roomround').click(); await expect(page.locator('body')).toHaveClass(/design/); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-fullview.png` }); await app.nav.fullView(false); }
-    else { await expect(page.locator('#drawerbtn')).toBeVisible(); await app.nav.fullView(false); }
-    if (name === 'desktop') { const k = await page.evaluate(() => [...document.querySelector('aside').children].map(e => e.id)); expect(k.indexOf('modesw')).toBeLessThan(k.indexOf('paneltabs')); }
+    await page.locator('#drawerbtn').click(); await expect(page.locator('#roomsw')).toBeVisible(); await page.locator('#roomsw').click(); await expect(page.locator('body')).toHaveClass(/design/);
+    await page.waitForTimeout(300); await check('full'); await page.screenshot({ path: `docs/design/screenshots/2026-11-16-38-22-${name}-fullview.png` });
+    await app.nav.fullView(false);
+    if (name === 'phone') { await expect(page.locator('aside #modesw')).toBeHidden(); }
+    else { const k = await page.evaluate(() => [...document.querySelector('aside').children].map(e => e.id)); expect(k.indexOf('modesw')).toBeLessThan(k.indexOf('paneltabs')); await expect(page.locator('#modesw')).toBeVisible(); }
   });
 }

@@ -64,15 +64,15 @@ test('Undo and Redo sit on the shelf row in the Design room (also in Full view) 
 });
 
 // Slice 4c
-test('phone: a round corner button switches rooms, the strip middle holds top-down in Play, and the desktop keeps the switch at the top of the panel (PD-142.38.22)', async ({ shared: app }) => {
+test('phone: the cube menu button switches rooms, the strip middle holds top-down in Play, and the desktop keeps the switch at the top of the panel (PD-142.38.22)', async ({ shared: app }) => {
   const page = app.page;
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
   try {
-    await expect(page.locator('#topstrip #roomround')).toBeVisible(); await expect(page.locator('aside #modesw')).toBeHidden();
-    const b = await page.locator('#roomround').boundingBox(); expect(b.y).toBeLessThan(60); expect(b.width, 'a round button, not a full-width switch').toBeLessThan(60);
-    const nm = await page.locator('#name').boundingBox(); expect(nm.y, 'the title line is not pushed down').toBeLessThan(40);
-    await expect(page.locator('#roomround')).toHaveText('Play'); await page.locator('#roomround').click(); await expect(page.locator('body')).not.toHaveClass(/design/); await expect(page.locator('#roomround')).toHaveText('Design');
-    await page.locator('#roomround').click(); await expect(page.locator('body')).toHaveClass(/design/);
+    await expect(page.locator('#roomround'), 'no switch or round button on the mat').toHaveCount(0); await expect(page.locator('aside #modesw')).toBeHidden();
+    const nm = await page.locator('#name').boundingBox(); expect(nm.y, 'the title line is the only thing in the top strip').toBeLessThan(40);
+    await page.locator('#drawerbtn').click(); await expect(page.locator('#roomsw')).toBeVisible(); await expect(page.locator('#roomsw')).toContainText('Play');
+    await page.locator('#roomsw').click(); await expect(page.locator('body')).not.toHaveClass(/design/);
+    await page.locator('#drawerbtn').click(); await expect(page.locator('#roomsw')).toContainText('Design'); await page.locator('#roomsw').click(); await expect(page.locator('body')).toHaveClass(/design/);
     await app.nav.toPlay();
     const m = await page.locator('#stripmid').boundingBox();
     await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2); await page.mouse.down();
@@ -116,15 +116,16 @@ test('Games tab opens setup, shows the scorecard in the panel, and the Design | 
   await page.locator('#roll').click(); await expect(page.locator('#roll')).toHaveClass(/on/);
 });
 
-test('phone: Undo and Redo sit in the top right of the mat, clear of the shelf and the switch (PD-142.38.5)', async ({ shared: app }) => {
+test('phone: Undo and Redo are stacked at the bottom left at the shelf height, clear of the cards (PD-142.38.5 .38.22)', async ({ shared: app }) => {
   const page = app.page; await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
   try {
     await app.nav.toDesign();
-    await app.run(() => window.dispatchEvent(new Event('resize')));   // the shared page's frames are throttled in headless runs, so the browser's own resize event can arrive late
-    await expect(page.locator('#topstrip #histrow')).toBeVisible();   // wait for the resize to be delivered (frames can be throttled in headless)
-    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sw = await page.locator('#roomround').boundingBox(), sh = await page.locator('#shelf').boundingBox();
-    expect(u.y).toBeLessThan(60); expect(r.x + r.width).toBeGreaterThan(300); expect(u.x).toBeGreaterThan(sw.x + sw.width);
-    expect(u.y + u.height).toBeLessThan(sh.y);
+    await app.run(() => window.dispatchEvent(new Event('resize')));
+    await expect(page.locator('#undo')).toBeVisible();
+    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sh = await page.locator('#shelf').boundingBox();
+    expect(u.x).toBeLessThan(60); expect(Math.abs(u.x - r.x), 'stacked vertically').toBeLessThan(3); expect(r.y).toBeGreaterThan(u.y);
+    expect(u.y, 'at the shelf height, not the top').toBeGreaterThan(sh.y - 40); expect(r.y + r.height).toBeLessThan(844);
+    expect(u.x + u.width, 'clear of the cards').toBeLessThanOrEqual(sh.x + 1);
     await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden();
   } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
   await expect(page.locator('#shelf #undo')).toHaveCount(1);
