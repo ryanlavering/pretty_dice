@@ -410,9 +410,9 @@ test('the quick roll result shows above the open bag sheet, and the roll log fad
   await app.nav.toggleMode();
   await app.nav.openLog();
   await app.run(pd => { document.body.classList.add('throwing'); });
-  expect(await page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBeLessThan(1);   // dimmed, but still clickable (PD-142.14.3.1.8)
+  await expect.poll(() => page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBeLessThan(1);   // dimmed, but still clickable (PD-142.14.3.1.8)
   await app.run(pd => { document.body.classList.remove('throwing'); });
-  expect(await page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBe(1);
+  await expect.poll(() => page.evaluate(() => +getComputedStyle(document.getElementById('logpanel')).opacity)).toBe(1);   // after the .2s fade
 });
 
 test('a double-click on quick roll is one logged roll, a later click is another (PD-142.14.1.16)', async ({ app, page }) => {
