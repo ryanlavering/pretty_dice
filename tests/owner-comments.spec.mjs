@@ -146,3 +146,17 @@ test('Table tab: Shape buttons never throw; tap replaces the formula, double-cli
   await page.locator('#rollbox').fill('3d6+2'); await expect(page.locator('#notation')).toHaveValue('3d6+2'); await expect(page.locator('#modv')).toHaveText('2');
   await page.locator('#notation').fill('2d10'); expect((await st()).box, 'typing in the Custom box shows in the dock box').toBe('2d10');
 });
+
+for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 780 }]]) {
+  test(`${name}: Finish and Rotation sliders share the Colors slider edges; Rotation has range hints and a zero button (.38.25/.26)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toDesign();
+    const ref = await box(page, '#radius');
+    for (const id of ['#polish', '#numsize', '#numrot']) {
+      const b = await box(page, id);
+      expect(Math.abs(b.x - ref.x), id + ' left edge').toBeLessThanOrEqual(1); expect(Math.abs((b.x + b.width) - (ref.x + ref.width)), id + ' right edge').toBeLessThanOrEqual(1);
+    }
+    await expect(page.locator('.row:has(#numrot) .ends')).toHaveText('-1800180');
+    await page.locator('#numrot').fill('90'); await expect(page.locator('#numrotv')).toHaveText('90°');
+    await page.locator('#numrotreset').click(); await expect(page.locator('#numrotv')).toHaveText('0°'); await expect(page.locator('#numrot')).toHaveValue('0');
+  });
+}

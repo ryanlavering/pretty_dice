@@ -37,6 +37,8 @@
   .row{display:flex;gap:8px;align-items:center;margin:6px 0}
   .row label{flex:1;color:var(--dim)}
   .slends{flex:1;min-width:0;display:flex;flex-direction:column} .slends .ends{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:2px}   /* PD-142.38.7: the end labels sit under the slider itself, flush with its left and right ends */
+  .slends input[type=range]{margin:0;width:calc(100% - 2px)}   /* PD-142.38.25/26: same left/right edge as the bare sliders in the other rows */
+  .rzero{font:inherit;font-size:11px;padding:1px 6px;margin-left:4px;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;cursor:pointer}
   input[type=color]{width:44px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;padding:2px;cursor:pointer}
   @media (pointer:coarse),(hover:none){ input[type=text],input:not([type]),input[type=number],input[type=search],select,textarea{font-size:16px!important} }   /* iOS Safari zooms the whole page when a field under 16px gets focus (and stays zoomed); !important beats the inline font:inherit */
   .row select,.row input[type=range]{min-width:0}   /* a select is as wide as its longest option unless told it may shrink: it pushed the sound rows off a phone screen */
@@ -422,7 +424,7 @@
     <div class="row"><label>d4 numbers</label><select id="d4style"><option value="tips">Corner tips (standard)</option><option value="center">Face centre</option></select></div>
     <div class="row"><label>d6 faces</label><select id="d6style"><option value="numbers">Numbers</option><option value="pips">Pips</option></select></div>
     <div class="row"><label>Size</label><input type="range" id="numsize" min="0" max="1" step="0.002"></div>
-    <div class="row"><label>Rotation</label><input type="range" id="numrot" min="-180" max="180" step="1"><output id="numrotv" style="width:38px;text-align:right;color:var(--dim)"></output></div>
+    <div class="row"><label>Rotation <output id="numrotv" style="color:var(--dim);margin-left:4px"></output> <button type="button" id="numrotreset" class="rzero" title="Reset rotation to 0°" aria-label="Reset rotation to zero">0°</button></label><span class="slends"><input type="range" id="numrot" min="-180" max="180" step="1"><span class="ends"><span>-180</span><span>0</span><span>180</span></span></span></div>
     <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
     <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
 
@@ -1398,6 +1400,7 @@ state.numSize=Math.max(NUM_MIN,Math.min(NUM_MAX,state.numSize));   // older save
 const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce'],['fricdice','fricDice'],['fricmat','fricMat']];
 const REBUILD=new Set(['radius','numSize','numRot','numSoft','panel','panelDepth']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=k==='numSize'?numFromPos(+e.target.value):+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(world&&(k==='bounce'||k==='fricDice'||k==='fricMat')) applyContacts(); };
+$('numrotreset').onclick=()=>{ const r=$('numrot'); if(+r.value!==0){ checkpoint(); r.value=0; r.dispatchEvent(new Event('input')); } };   // PD-142.38.26
 $('incl').onchange=e=>{ const v=e.target.value; if(v==='custom'&&!customTemplate){ $('incl').value=state.inclusion; $('modelfile').click(); return; }
   checkpoint(); state.inclusion=v; buildDice(true); };
 $('loadmodel').onclick=()=>$('modelfile').click();
