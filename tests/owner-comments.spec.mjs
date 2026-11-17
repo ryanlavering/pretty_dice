@@ -243,3 +243,18 @@ test('editing the roll set on the mat leaves a clean bag clean and the named set
   await page.locator('#rollbox').fill('2d10+1'); await page.locator('#rollbox').press('Enter'); await page.waitForTimeout(600);
   expect(await snap(), 'sets, designs and pending edits are untouched by roll-set edits').toBe(s0);
 });
+
+// PD-142.38.38: formula changes keep the pose of dice that persist (Adv <-> Dis, modifier, an extra die).
+test('Adv <-> Dis, a modifier and an added die keep the pose of the dice that stay (.38.38)', async ({ app, page }) => {
+  await app.open({ query: 'shape=custom&notation=2d20kh1' }); await app.nav.toDesign();
+  const pose = () => page.evaluate(() => window.__pd.dice.map(d => { const q = new d.mesh.quaternion.constructor(); d.mesh.getWorldQuaternion(q); return [q.x, q.y, q.z, q.w]; }));
+  await page.evaluate(() => { const pd = window.__pd; pd.state.spin = 0; pd.dice.forEach((d, i) => d.mesh.quaternion.set(.5, .5 + i * .2, .5, .5).normalize()); });
+  const p0 = await pose(); expect(p0.length).toBe(2);
+  const same = (a, b, what) => { const dot = Math.abs(a.reduce((s, v, k) => s + v * b[k], 0)); expect(dot, what).toBeGreaterThan(0.999); };
+  for (const [f, n] of [['2d20kl1', 2], ['2d20kh1', 2], ['2d20kl1+3', 2], ['2d20kl1+3+1d6', 3]]) {
+    await page.locator('#paneltabs [data-pane=look]').click().catch(() => {});
+    await page.locator('#notation').fill(f); await page.locator('#notapply').click(); await page.waitForTimeout(600);
+    const p = await pose(); expect(p.length, f).toBe(n); same(p[0], p0[0], f + ' die 1'); same(p[1], p0[1], f + ' die 2');
+  }
+  expect(await app.run(pd => pd.state.spin)).toBe(0);
+});
