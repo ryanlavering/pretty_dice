@@ -49,7 +49,7 @@ test('Adv and Dis buttons: click replaces the formula with d20adv / d20dis, doub
   await page.locator('#notdis').click();
   await expect(page.locator('#notation')).toHaveValue('2d20kl1');
   await page.locator('#notation').fill('3d6+4'); await page.locator('#notapply').click();
-  await page.waitForTimeout(500); await page.locator('#notadv').dblclick();
+  await page.waitForTimeout(500); await page.evaluate(() => { const b = document.getElementById('notadv'); b.click(); b.click(); b.dispatchEvent(new MouseEvent('dblclick', { bubbles: true })); });   // the real double-click sequence: click, click, dblclick
   await expect(page.locator('#notation')).toHaveValue('3d6+2d20kh1+4');
 });
 
