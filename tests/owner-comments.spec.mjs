@@ -38,12 +38,15 @@ test('desktop: the dock shows all seven dice and Adv/Dis without scrolling (.38.
   expect(r.n).toBe(7); expect(r.adv).toBe(2); expect(r.fits, 'no horizontal scroll needed on desktop').toBe(true);
 });
 
-test('Keep and Discard for a random draft sit next to Randomize in the Look tab (.38.17)', async ({ app, page }) => {
+test('Keep and Discard for a random draft sit under Randomize in the Look tab, in a block with thumbnail and name (.38.17, .38.33)', async ({ app, page }) => {
   await app.open(); await app.nav.toDesign();
   await expect(page.locator('#draftact')).toBeHidden();
   await page.locator('#rand').click();
   await expect(page.locator('#draftact')).toBeVisible();
-  const r = await box(page, '#rand'), k = await box(page, '#dkeep'); expect(k.y).toBeLessThan(r.y + 150);
+  const r = await box(page, '#rand'), k = await box(page, '#dkeep'); expect(k.y).toBeLessThan(r.y + 200);
+  await expect(page.locator('#draftact .dname')).toHaveText('Random draft'); await expect(page.locator('#draftact #draftth')).toBeVisible();   // PD-142.38.33: thumbnail and name like the bag block
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('draftth')).backgroundImage)).not.toBe('none');
+  const vw = page.viewportSize().width, d = await box(page, '#draftact'); expect(d.x).toBeGreaterThanOrEqual(0); expect(d.x + d.width).toBeLessThanOrEqual(vw);
   const n0 = await app.run(pd => pd.bag.designs.length);
   await page.locator('#dkeep').click();
   expect(await app.run(pd => pd.bag.designs.length)).toBe(n0 + 1);
