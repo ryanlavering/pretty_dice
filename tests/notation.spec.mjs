@@ -41,13 +41,16 @@ test('a roll with advantage logs both dice, sets one aside and totals the kept o
   expect(+m[3] + 3).toBe(r.tot);
 });
 
-test('Adv and Dis buttons turn the d20 into 2d20 keep highest / lowest', async ({ app, page }) => {
+test('Adv and Dis buttons: click replaces the formula with d20adv / d20dis, double-click adds it (PD-142.38.32)', async ({ app, page }) => {
   await app.open();
   await page.locator('#shapes button[data-id="custom"]').click();
   await page.locator('#notation').fill('d20+4'); await page.locator('#notadv').click();
-  await expect(page.locator('#notation')).toHaveValue('2d20kh1+4');
+  await expect(page.locator('#notation')).toHaveValue('2d20kh1');
   await page.locator('#notdis').click();
-  await expect(page.locator('#notation')).toHaveValue('2d20kl1+4');
+  await expect(page.locator('#notation')).toHaveValue('2d20kl1');
+  await page.locator('#notation').fill('3d6+4'); await page.locator('#notapply').click();
+  await page.locator('#notadv').dblclick();
+  await expect(page.locator('#notation')).toHaveValue('3d6+2d20kh1+4');
 });
 
 test('a physical 2d20kh1 roll totals only the higher die and shows the other in brackets', async ({ shared: app }) => {
