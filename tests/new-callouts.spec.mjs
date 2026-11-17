@@ -45,7 +45,7 @@ test('the overlay stays inside the phone viewport', async ({ app, page }) => {
 });
 test('only the post-v19 entries remain; the owner-reviewed ones are retired (PD-142.38.31)', async ({ app, page }) => {
   await app.open({ query: 'new=1' });
-  const ids = (await page.evaluate(() => window.__nf.unseen())).map(f => f.id);
+  const ids = (await page.evaluate(() => window.__nf.unseen())).map(k => k.split('@')[0]);
   for (const gone of ['PD-142.38.s4', 'PD-142.38.s5', 'PD-142.38.s6', 'PD-142.38.s7', 'PD-142.38.s8', 'PD-142.38.4', 'PD-142.38.5', 'PD-142.33.1', 'PD-142.39.1', 'PD-142.38.drawer']) expect(ids).not.toContain(gone);
   for (const here of ['PD-142.38.22', 'PD-142.38.23', 'PD-142.38.17', 'PD-142.38.21', 'PD-142.38.14', 'PD-142.38.25', 'PD-142.38.28']) expect(ids).toContain(here);
 });
