@@ -2098,7 +2098,7 @@ $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 /* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
-  {id:'PD-142.38.22', rev:1, anchor:'#modesw', text:'Design | Play: on desktop the switch is at the top of the panel, above the tabs. On a phone it is only in the corner cube menu, and the Design top strip shows just the title. Undo and Redo are stacked at the bottom left on phones. Check: both rooms, phone and desktop; nothing overlaps.', card:'PD-142.38.22'},
+  {id:'PD-142.38.22', rev:1, anchor:'#modesw,#roomsw', text:'Design | Play: on desktop the switch is at the top of the panel, above the tabs. On a phone it is only in the corner cube menu, and the Design top strip shows just the title. Undo and Redo are stacked at the bottom left on phones. Check: both rooms, phone and desktop; nothing overlaps.', card:'PD-142.38.22'},
   {id:'PD-142.38.32', rev:1, anchor:'#notadv', text:'Custom set: Set is now Apply (it only applies the typed formula to the controls below). Adv and Dis work like the die chips: click REPLACES the formula with d20adv / d20dis, double-click or long press ADDS it. Check: Play > Table > Custom set; the dock box mirrors it.', card:'PD-142.38.32'},
   {id:'PD-142.38.23', rev:3, anchor:'#rollbox', text:'Shape buttons work the same in Play and Design and never roll. Tap (it waits a moment for a possible double-click) = one die of that shape, the shape is selected and Custom set is collapsed. Double-click or long press = ADD one die to the formula and open Custom set with the full formula. The Custom set controls and the dock formula box mirror each other. Check: Play > Table and Design > Look, tap and double-click shapes.', card:'PD-142.38.23 / .34'},
   {id:'PD-142.38.17', rev:3, anchor:'#draftact', text:'The Look tab has a block under Randomize with the design thumbnail and name: Keep / Discard for a Random draft, and Save / Save as copy / Revert whenever the current bag design is modified (the same actions as the Bag tab block; saving in one clears the other). Check: change a slider on a bag design, then Save, Save as copy or Revert.', card:'PD-142.38.17 / .33 / .36'},
@@ -2107,6 +2107,7 @@ const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the
   {id:'PD-142.38.25', rev:1, anchor:'#polish', text:'Finish and Rotation sliders line up with the other sliders. Rotation shows -180 / 0 / 180 hints and has a small 0 button that resets it. Check: Look tab on phone and desktop.', card:'PD-142.38.25 / .26'},
   {id:'PD-142.38.37', rev:1, anchor:'#bagrow', text:'The roll set on the mat is a draft: editing it (even one that started from a named set) no longer marks the bag modified and never changes the saved set. The bag is only modified by saving a set, renaming, reordering, deleting, Keep, or the set editor. Check: edit the roll formula or Custom set in Play, then look at the Bag tab and Bag button.', card:'PD-142.38.37'},
   {id:'PD-142.38.35', rev:2, anchor:'#numdepth', text:'Changing a design setting, or the roll formula (Adv <-> Dis, a modifier, one more die), no longer snaps the spinning dice back to their starting pose; they keep spinning from where they were (and stay paused if paused). Check: let it spin, then move sliders and pick other materials.', card:'PD-142.38.35'},
+  {id:'PD-142.38.42', rev:1, anchor:'#drawerbtn', text:'The menu item now says how many new callouts are on THIS screen, e.g. "Seen all (9 new, 4 on this screen)"; the rest are on the other room or tab. The Design | Play dot on a phone now sits on the cube menu button (the switch lives in the menu there). Check: open the menu in Design and in Play; the numbers differ.', card:'PD-142.38.42'},
   {id:'PD-142.38.28', rev:1, anchor:'#drawerbtn', text:'The cube menu always has Design | Play, in every view; Reset to defaults is gone. Check: open the menu in Design, Play and Full view.', card:'PD-142.38.28'}
 ];
 const NF_ON=!!(window.__PD_REVIEW||new URLSearchParams(location.search).get('new')==='1'), NFKEY='prettydice.seen';
@@ -2122,20 +2123,22 @@ function nfShow(f,dot){ document.querySelectorAll('.nfdot.open').forEach(d=>d.cl
   const hd=el('div','nfh'); hd.append(el('span','',f.card),el('small','','tap to collapse')); hd.onclick=nfCollapse;
   const got=el('button','nfgot','Got it'); got.type='button'; got.onclick=()=>nfRetire([nfKey(f)]);
   nfBox.append(hd,el('div','',f.text),got); nfPlace(f,dot); }
-function nfAnchor(f){ let t=document.querySelector(f.anchor); if(t&&t.closest('#dmenu')&&!$('drawer').classList.contains('open')) t=$('drawerbtn'); return t; }
+const nfShown=t=>{ if(!t) return false; const r=t.getBoundingClientRect(), cs=getComputedStyle(t); return r.width>0&&r.height>0&&cs.visibility!=='hidden'&&cs.display!=='none'; };
+function nfAnchor(f){ const ts=[...document.querySelectorAll(f.anchor)]; let t=ts.find(nfShown)||ts.find(x=>x.closest("#dmenu"))||ts[0];   // PD-142.38.42: the anchor may list alternatives (#modesw,#roomsw); take the first one that is on screen
+  if(t&&t.closest('#dmenu')&&!$('drawer').classList.contains('open')) t=$('drawerbtn'); return t; }
 const nfDots=new Map();
-function nfRender(){ if(!NF_ON) return; const un=nfUnseen(), stack=new Map(); for(const [k,d] of [...nfDots]) if(!un.some(f=>nfKey(f)===k)){ d.remove(); nfDots.delete(k); }
+function nfRender(){ if(!NF_ON) return; const un=nfUnseen(), stack=new Map(); let here=0; for(const [k,d] of [...nfDots]) if(!un.some(f=>nfKey(f)===k)){ d.remove(); nfDots.delete(k); }
   for(const f of un){ const k=nfKey(f); let d=nfDots.get(k); if(!d){ d=el('button','nfdot'); d.type='button'; d.dataset.feature=f.id; d.setAttribute('aria-label','New: '+f.card); d.onclick=e=>{ e.stopPropagation(); if(nfOpen===f) nfCollapse(); else nfShow(f,d); }; document.body.append(d); nfDots.set(k,d); }
     const t=nfAnchor(f), r=t&&t.getBoundingClientRect(), vis=!!r&&r.width>0&&r.height>0&&getComputedStyle(t).visibility!=='hidden'&&getComputedStyle(t).display!=='none'&&r.bottom>0&&r.top<innerHeight;
-    d.hidden=!vis; if(vis){ const n=stack.get(t)||0; stack.set(t,n+1); d.style.left=(r.right-4-n*18)+'px'; d.style.top=(r.top+4)+'px'; } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
-  const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=`Seen all (${un.length} new)`; } }
+    d.hidden=!vis; if(vis){ here++; const n=stack.get(t)||0; stack.set(t,n+1); d.style.left=(r.right-4-n*18)+'px'; d.style.top=(r.top+4)+'px'; } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
+  const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=here===un.length?`Seen all (${un.length} new)`:`Seen all (${un.length} new, ${here} on this screen)`; all.title=here===un.length?'':'The others are on another tab or room: Design/Play, Look/Bag/Sets, Table/Games/Log'; } }
 const nfCollapsedOnce=new Set();
 if(NF_ON){ document.body.append(nfBox);
   const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','','Seen all')); all.onclick=()=>{ closeDrawer(); nfRetire(NEW_FEATURES.map(nfKey)); }; $('dmenu').append(all);
   document.addEventListener('pointerdown',e=>{ if(nfOpen&&!e.target.closest('.nfbox,.nfdot')){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   addEventListener('keydown',e=>{ if(e.key==='Escape'&&nfOpen){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   setInterval(()=>{ nfRender(); if(nfOpen){ const d=nfDots.get(nfKey(nfOpen)); if(d&&!d.hidden) nfPlace(nfOpen,d); else nfCollapse(); } },400); nfRender(); }
-window.__nf={ on:NF_ON, unseen:()=>nfUnseen().map(nfKey), render:nfRender };
+window.__nfEntries=NEW_FEATURES; window.__nf={ on:NF_ON, unseen:()=>nfUnseen().map(nfKey), render:nfRender };
 $('roomsw').onclick=()=>{ closeDrawer(); $(document.body.classList.contains('design')?'roll':'back').click(); };
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>goPlay();   // PD-142.38 slice 2: a pure switch; in roll view only the dock's Roll button throws
