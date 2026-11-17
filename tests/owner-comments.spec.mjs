@@ -258,3 +258,15 @@ test('Adv <-> Dis, a modifier and an added die keep the pose of the dice that st
   }
   expect(await app.run(pd => pd.state.spin)).toBe(0);
 });
+
+// PD-142.38.39: Reset view returns every die in the Design showcase to the face-on pose, not just the camera.
+for (const shape of ['d20', 'custom']) {
+  test(`${shape}: Reset view brings every die back face-on and the camera to default (.38.39)`, async ({ app, page }) => {
+    await app.open({ query: 'shape=' + shape + (shape === 'custom' ? '&notation=2d20kh1%2B1d6' : '') }); await app.nav.toDesign();
+    await page.evaluate(() => { const pd = window.__pd; pd.state.spin = 0; pd.orbit.az = 0.7; pd.orbit.el = 0.4; pd.dice.length > 1 ? pd.dice.forEach((d, i) => d.mesh.quaternion.set(.5, .5 + i * .2, .5, .5).normalize()) : pd.rig.quaternion.set(.5, .5, .5, .5).normalize(); });
+    await app.nav.openDrawer(); await page.locator('#resetview').click(); await page.waitForTimeout(300);
+    const r = await page.evaluate(() => { const pd = window.__pd; return { az: pd.orbit.az, el: pd.orbit.el, q: pd.dice.map(d => { const q = new d.mesh.quaternion.constructor(); d.mesh.getWorldQuaternion(q); return [q.x, q.y, q.z, q.w]; }) }; });
+    expect(r.az).toBe(0); expect(r.el).toBe(0);
+    r.q.forEach((q, i) => expect(Math.abs(q[3]), `die ${i} face-on`).toBeGreaterThan(0.999));
+  });
+}

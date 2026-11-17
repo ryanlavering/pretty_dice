@@ -2153,7 +2153,9 @@ const orbit={ get az(){return (rolling?views.roll:views.show).az;}, set az(v){(r
 const getZoom=()=>rolling?state.rollZoom:state.zoom, setZoom=z=>{ if(rolling) state.rollZoom=z; else state.zoom=z; };
 if(new URLSearchParams(location.search).get('zoom')) state.zoom=state.rollZoom=+new URLSearchParams(location.search).get('zoom'); let orbiting=false;      // right-drag orbits the camera; left-drag turns the dice
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-function resetView(){ orbit.az=0; orbit.el=0; setZoom(1); save(); }
+function resetView(){ orbit.az=0; orbit.el=0; setZoom(1);
+  if(!rolling){ rig.quaternion.identity(); dice.forEach(d=>d.mesh.quaternion.identity()); angVel.set(0,0,0); }   // PD-142.38.39: in the Design showcase Reset view also brings every die back to face-on (a die turned by hand or by the spin, or one carried over a rebuild, stayed cocked); in Play the dice lie as thrown
+  save(); }
 cv.addEventListener('dblclick',resetView);   // resets the view you are in
 const ptrs=new Map(); let pinch=null;       // active touch/mouse pointers: one finger turns the dice, two fingers pinch-zoom and orbit
 const pinchState=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a[0]-b[0],a[1]-b[1])||1, m:[(a[0]+b[0])/2,(a[1]+b[1])/2]}; };
