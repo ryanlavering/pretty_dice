@@ -138,8 +138,8 @@ test('Table tab: Shape buttons never throw; tap replaces the formula, double-cli
   const st = () => app.run(pd => ({ throwing: document.body.classList.contains('throwing'), box: document.getElementById('rollbox').value, dice: pd.dice.length }));
   const before = await st();
   const shp = id => page.locator(`#shapes button[data-id="${id}"]`);
-  await shp('d8').click(); expect(await st()).toMatchObject({ box: '1d8', throwing: false, dice: before.dice });
-  await shp('d8').click(); expect((await st()).box, 'a second tap replaces').toBe('1d8');
+  await shp('d8').click(); await page.waitForTimeout(350); expect(await st()).toMatchObject({ box: '1d8', throwing: false, dice: before.dice });
+  await shp('d8').click(); await page.waitForTimeout(350); expect((await st()).box, 'a second tap replaces').toBe('1d8');
   await page.waitForTimeout(500); await shp('d6').dblclick(); expect((await st()).box, 'double-click adds one').toBe('1d8+1d6');
   // Custom set control mirrors the box, both ways
   await page.locator('#shapes button', { hasText: /custom/i }).click(); await expect(page.locator('#customctl')).toBeVisible();
@@ -270,3 +270,19 @@ for (const shape of ['d20', 'custom']) {
     r.q.forEach((q, i) => expect(Math.abs(q[3]), `die ${i} face-on`).toBeGreaterThan(0.999));
   });
 }
+
+// PD-142.38.40: a single tap waits for a possible double-click; a double-click goes straight to previous + 1 die with no single-die flash.
+test('shape buttons and dock chips: a double-click never passes through the single-die formula; a tap applies after the short wait (.38.40)', async ({ app, page }) => {
+  await app.open(); await app.nav.toPlay(); await page.locator('#paneltabs [data-pane=table]').click();
+  await page.locator('#rollbox').fill('2d6'); await page.locator('#rollbox').blur();
+  await page.evaluate(() => { window.__seen = []; const b = document.getElementById('rollbox'); new MutationObserver(() => {}).observe(b, { attributes: true }); const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); Object.defineProperty(b, 'value', { get() { return d.get.call(this); }, set(v) { window.__seen.push(v); d.set.call(this, v); } }); });
+  await page.locator('#shapes button[data-id="d8"]').dblclick(); await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.__seen), 'only the final formula was ever written').toEqual(['2d6+1d8']);
+  await page.evaluate(() => { window.__seen = []; });
+  await page.locator('#shapes button[data-id="d12"]').click();
+  expect(await page.locator('#rollbox').inputValue(), 'not applied yet right after the tap').toBe('2d6+1d8');
+  await expect(page.locator('#rollbox')).toHaveValue('1d12');
+  await page.waitForTimeout(400); await page.locator('#qbar .dchip[data-die="6"]').dblclick(); await page.waitForTimeout(500);
+  expect(await page.locator('#rollbox').inputValue()).toBe('1d12+1d6');
+  expect((await page.evaluate(() => window.__seen)).filter(v => v === '1d6'), 'the chip double-click never showed 1d6 alone').toEqual([]);
+});

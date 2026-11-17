@@ -43,7 +43,7 @@ for (const [name, vp] of Object.entries(SIZES)) {
 test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter throws the box', async ({ shared: app }) => {
   await app.page.setViewportSize(SIZES.desktop); await toRoll(app);
   const before = await st(app);
-  const chip = sel => app.page.locator(`#qbar .dchip${sel}`).click();
+  const chip = async sel => { await app.page.locator(`#qbar .dchip${sel}`).click(); await app.page.waitForTimeout(350); };   // a single tap waits ~250 ms for a double-click (.38.40)
   const add = async sel => { await app.page.waitForTimeout(500); await app.page.locator(`#qbar .dchip${sel}`).dblclick(); };   // PD-142.38.11: a tap replaces the box, a double-click adds one
   await chip('[data-die="20"]'); expect((await st(app)).box).toBe('1d20');
   await chip('[data-die="20"]'); expect((await st(app)).box, 'a second tap replaces, it does not add').toBe('1d20');
