@@ -206,3 +206,21 @@ for (const shape of ['d20', 'set7']) {
     expect(await app.run(pd => pd.state.spin), 'pause-spin state kept').toBe(0);
   });
 }
+
+// PD-142.38.36: a modified bag design shows the same Save / Save as copy / Revert block in the Look tab as the Bag tab, and the two always agree.
+for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 780 }]]) {
+  test(`${name}: a modified design shows Save / Save as copy / Revert in the Look tab (.38.36)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toDesign();
+    await expect(page.locator('#draftact')).toBeHidden();
+    await page.locator('#radius').evaluate(e => { e.value = 0.12; e.dispatchEvent(new Event('input')); });
+    await expect(page.locator('#draftact')).toBeVisible(); await expect(page.locator('#draftpos')).toContainText('Modified');
+    await expect(page.locator('#dkeep')).toHaveText('Save'); await expect(page.locator('#dcopy')).toBeVisible(); await expect(page.locator('#ddiscard')).toHaveText('Revert');
+    const d = await box(page, '#draftact'), r = await box(page, '#rand'); expect(d.x + d.width).toBeLessThanOrEqual(vp.width); expect(d.y).toBeLessThan(r.y + 200);
+    const n0 = await app.run(pd => pd.bag.designs.length);
+    await page.locator('#dcopy').click(); expect(await app.run(pd => pd.bag.designs.length)).toBe(n0 + 1); await expect(page.locator('#draftact')).toBeHidden();
+    await page.locator('#radius').evaluate(e => { e.value = 0.03; e.dispatchEvent(new Event('input')); }); await expect(page.locator('#draftact')).toBeVisible();
+    await page.locator('#dkeep').click(); await expect(page.locator('#draftact')).toBeHidden(); expect(await app.run(pd => pd.bag.designs.length)).toBe(n0 + 1);
+    await page.locator('#radius').evaluate(e => { e.value = 0.14; e.dispatchEvent(new Event('input')); }); await expect(page.locator('#draftact')).toBeVisible();
+    await page.locator('#ddiscard').click(); await expect(page.locator('#draftact')).toBeHidden();
+  });
+}

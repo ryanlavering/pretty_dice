@@ -9,7 +9,7 @@ Your **bag** holds all your designs. The **shelf** along the bottom of the table
 Tap **+ Add** at the end of the shelf. You can choose:
 
 - **Blank draft**: a new design from scratch
-- **Random draft**: a fresh random look. In the Look tab a block under Randomize shows its thumbnail and name with **Keep** and **Discard**
+- **Random draft**: a fresh random look. In the Look tab a block under Randomize shows its thumbnail and name with **Keep** and **Discard**. When you change a design that is already in the bag, the same block shows **Save**, **Save as copy** and **Revert** (the same actions as in the Bag tab)
 - **From a file…**: add a design saved earlier
 
 ## The Bag tab
