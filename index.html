@@ -1318,13 +1318,21 @@ function chipEl(sides,j,{flat=false,label}={}){ const c=document.createElement('
 const liveChipJ=()=>({colors:state.colors,substrate:state.substrate});
 /* ---------- UI ---------- */
 for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2'; if(DIE_CHIP[id]||id==='d100') b.append(chipEl(id,liveChipJ(),{flat:true})); b.append(s.label);
-  const sides=/^d\d+$/.test(id)?+id.slice(1):0; let prev='', last=0, lp=0, fired=false;
-  b.onclick=()=>{ if(playRoom()){   /* PD-142.38.23: in Play a shape button never throws: a tap loads one die of that type into the formula box (like a dock chip), a double-click or long press adds one more */
-      if(fired){ fired=false; return; } if(!sides){ state.shape=id; if(id!=='custom') $('rollbox').value=''; const was=rolling; buildDice(); if(was) startRoll(false,true); syncUI(); formulaSync(); return; }   // rebuild and put the dice down unrolled: it never throws
-      const now=Date.now(), bx=$('rollbox'); if(now-last>450) prev=bx.value; last=now; dockLoad(sides,false); return; }
-    checkpoint(); state.shape=id; rebuildKeepMode(); };
-  b.ondblclick=()=>{ if(!playRoom()||!sides) return; $('rollbox').value=prev; dockLoad(sides,true); };
-  b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse'||!playRoom()||!sides) return; lp=setTimeout(()=>{ fired=true; dockLoad(sides,true); },480); }); for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp)); b.addEventListener('contextmenu',e=>{ if(playRoom()) e.preventDefault(); });
+  const sides=/^d\d+$/.test(id)?+id.slice(1):0; let prev='', prevSt=null, last=0, lp=0, fired=false;
+  /* PD-142.38.34: the same semantics in Play and Design. Tap = ONE die of that shape, that shape selected, Custom collapsed. Double-click / long press = ADD one die to the formula and select Custom with the full formula showing. Never rolls. */
+  const first=()=>{ const now=Date.now(); if(now-last>450){ prev=playRoom()?$('rollbox').value:''; prevSt={shape:state.shape,notation:state.notation}; } last=now; };
+  const add=()=>{ if(!sides) return;
+    if(playRoom()){ $('rollbox').value=prev; dockLoad(sides,true); forceCustom=$('rollbox').value; shapeSelSync(); return; }
+    state.shape=prevSt.shape; state.notation=prevSt.notation; checkpoint();
+    const base=state.shape==='custom'?state.notation:(/^d\d+$/.test(state.shape)?'1'+state.shape:state.notation), pp=parseNotation(base,true), terms=pp.error?[]:pp.terms.map(t=>({...t}));
+    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.design); if(t) t.count++; else terms.push({count:1,sides});
+    state.notation=fmtNotation(terms,pp.error?0:pp.mod,pp.error?1:pp.group); state.shape='custom'; rebuildKeepMode(); };
+  b.onclick=()=>{ if(playRoom()){
+      if(fired){ fired=false; return; } if(!sides){ state.shape=id; forceCustom=id==='custom'?$('rollbox').value:null; if(id!=='custom') $('rollbox').value=''; const was=rolling; buildDice(); if(was) startRoll(false,true); syncUI(); formulaSync(); return; }   // rebuild and put the dice down unrolled: it never throws
+      first(); forceCustom=null; dockLoad(sides,false); return; }
+    if(fired){ fired=false; return; } if(sides) first(); checkpoint(); state.shape=id; rebuildKeepMode(); };
+  b.ondblclick=()=>add();
+  b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse'||!sides) return; lp=setTimeout(()=>{ fired=true; last=0; first(); add(); },480); }); for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp)); b.addEventListener('contextmenu',e=>{ if(sides) e.preventDefault(); });
   $('shapes').append(b); }
 document.addEventListener('input',e=>{ if(e.target&&e.target.id==='rollbox'&&typeof formulaSync==='function') formulaSync(); });
 
@@ -1333,6 +1341,11 @@ const rebuildKeepMode=()=>{ const was=rolling; buildDice(); if(was) startRoll();
 /* custom set: stepper UI <-> notation text */
 const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
 const playRoom=()=>!document.body.classList.contains('design')&&!!$('rollbox');   // PD-142.38.23: in Play the Custom set control and the dock formula box are two views of one formula
+let forceCustom=null;   // PD-142.38.34: after a double-click / long press the Custom set stays selected for as long as the formula is the one it produced
+const selShape=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(forceCustom!==null&&v===forceCustom.trim()) return 'custom';
+    if(v){ const p=parseNotation(v,true); if(!p.error&&p.terms.length===1&&!p.mod&&!(p.group>1)){ const t=p.terms[0]; if(t.count===1&&!t.keep&&!t.design&&document.querySelector(`#shapes [data-id="d${t.sides}"]`)) return 'd'+t.sides; } return 'custom'; } }
+  return state.shape; };
+function shapeSelSync(){ const sel=selShape(); document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===sel)); $('customctl').hidden=sel!=='custom'; }
 const curNotation=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(v&&!parseNotation(v,true).error) return v; } return state.notation; };
 let stepDesign=null;   // the design the + / − buttons add dice of (null = the live design)
 const sameDesign=(a,b)=>(a||null)===(b||null);
@@ -1360,7 +1373,7 @@ for(const [id,mode] of [['notadv','h'],['notdis','l']]){ const b=$(id); let prev
   b.onclick=()=>{ if(fired){ fired=false; return; } const now=Date.now(); if(now-last>450) prev=$('notation').value; last=now; advDis(mode,false); };
   b.ondblclick=()=>{ $('notation').value=prev; advDis(mode,true); };
   b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse') return; lp=setTimeout(()=>{ fired=true; advDis(mode,true); },480); }); for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp)); b.addEventListener('contextmenu',e=>e.preventDefault()); }
-function formulaSync(){ const {c,mod}=counts(); STEP_TYPES.forEach(t=>{ const e=document.querySelector(`#steppers [data-n="${t}"]`); if(e) e.textContent=c[t]; }); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); $('noterr').textContent=''; }
+function formulaSync(){ shapeSelSync(); const {c,mod}=counts(); STEP_TYPES.forEach(t=>{ const e=document.querySelector(`#steppers [data-n="${t}"]`); if(e) e.textContent=c[t]; }); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); $('noterr').textContent=''; }
 $('notation').addEventListener('input',()=>{ if(playRoom()&&!parseNotation($('notation').value,true).error){ $('rollbox').value=$('notation').value.trim(); $('rollbox').classList.remove('bad'); } });
 $('notapply').onclick=applyNotation; $('notclear').onclick=()=>{ $('notation').value='d20'; $('noterr').textContent=''; applyNotation(); };   // quick reset: one d20, no modifier
  $('notation').onkeydown=e=>{ if(e.key==='Enter') applyNotation(); e.stopPropagation(); };
@@ -1386,14 +1399,14 @@ function refreshChips(){ const sig=state.colors.join()+state.substrate;
   document.querySelectorAll('#steppers .step').forEach((d,i)=>{ d.querySelector('.chip').style.backgroundImage=dieChip(sj,shapeOfSides(STEP_TYPES[i]),null,true); }); }
 function syncUI(){
   syncSetDesigns(); refreshChips();
-  document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.shape));
+  shapeSelSync();
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
   $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=k==='numSize'?numToPos(state[k]):state[k];
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
-  $('customctl').hidden=state.shape!=='custom'; $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
+  $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
   reliefSync(); $('numpaint').checked=state.numPaint; $('filigree').value=state.filigree; $('filifill').checked=state.filiFill; $('enamelsame').checked=state.enamelSame; $('enamel').value=state.enamel; $('enamel').disabled=state.enamelSame;
   $('d4style').value=state.d4Style; $('d6style').value=state.d6Style; $('font').value=state.font; $('numrotv').textContent=state.numRot+'°';
 }
@@ -2081,7 +2094,7 @@ $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
   {id:'PD-142.38.22', rev:1, anchor:'#modesw', text:'Design | Play: on desktop the switch is at the top of the panel, above the tabs. On a phone it is only in the corner cube menu, and the Design top strip shows just the title. Undo and Redo are stacked at the bottom left on phones. Check: both rooms, phone and desktop; nothing overlaps.', card:'PD-142.38.22'},
   {id:'PD-142.38.32', rev:1, anchor:'#notadv', text:'Custom set: Set is now Apply (it only applies the typed formula to the controls below). Adv and Dis work like the die chips: click REPLACES the formula with d20adv / d20dis, double-click or long press ADDS it. Check: Play > Table > Custom set; the dock box mirrors it.', card:'PD-142.38.32'},
-  {id:'PD-142.38.23', rev:1, anchor:'#rollbox', text:'In Play, the Table tab has Shape and Custom set instead of Dice to roll. A shape button only loads the formula box (tap = one die, double-click or long press = add one) and never throws; the Custom set controls and the formula box mirror each other (its Set button is now Apply). Check: tap shapes, edit either box, then Roll.', card:'PD-142.38.23'},
+  {id:'PD-142.38.23', rev:2, anchor:'#rollbox', text:'Shape buttons work the same in Play and Design and never roll. Tap = one die of that shape, the shape is selected and Custom set is collapsed. Double-click or long press = ADD one die to the formula and open Custom set with the full formula. The Custom set controls and the dock formula box mirror each other. Check: Play > Table and Design > Look, tap and double-click shapes.', card:'PD-142.38.23 / .34'},
   {id:'PD-142.38.17', rev:2, anchor:'#draftact', text:'Keep and Discard for a Random draft are back in the Look tab under Randomize, in a block like the bag block (die thumbnail, name, Keep, Discard); the bag row keeps only set-level actions. Check: Randomize, then Keep or Discard.', card:'PD-142.38.17'},
   {id:'PD-142.38.21', rev:1, anchor:'#rollbox', text:'Faded (dropped) dice no longer lose parts when the camera swings. Check: roll 3d6kh2 or 2d20 adv, then orbit around a faded die.', card:'PD-142.38.21'},
   {id:'PD-142.38.14', rev:1, anchor:'#panel', text:'Lowering Face panel to 0 now switches the numbers to Inset on the live die as well as in the selector. Check: lower Panel to 0 and see the die and the selector agree.', card:'PD-142.38.14'},

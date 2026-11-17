@@ -163,3 +163,27 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     await page.locator('#numrotreset').click(); await expect(page.locator('#numrotv')).toHaveText('0°'); await expect(page.locator('#numrot')).toHaveValue('0');
   });
 }
+
+// PD-142.38.34: the same Shape semantics in Play and Design: tap = one die, selected, Custom collapsed; double-click / long press = add, Custom selected and expanded.
+for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 780 }]]) {
+  test(`${name}: Play shape tap selects the shape and collapses Custom; double-click adds and opens Custom (.38.34)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toPlay();
+    await page.locator('#paneltabs [data-pane=table]').click();
+    const shp = id => page.locator(`#shapes button[data-id="${id}"]`);
+    await shp('d8').click(); await expect(shp('d8')).toHaveClass(/\bon\b/); await expect(page.locator('#customctl')).toBeHidden();
+    await page.waitForTimeout(500); await shp('d6').dblclick();
+    await expect(page.locator('#rollbox')).toHaveValue('1d8+1d6'); await expect(page.locator('#customctl')).toBeVisible(); await expect(page.locator('#shapes button[data-id="custom"]')).toHaveClass(/\bon\b/);
+    await page.waitForTimeout(500); await shp('d12').click(); await expect(page.locator('#rollbox')).toHaveValue('1d12'); await expect(shp('d12')).toHaveClass(/\bon\b/); await expect(page.locator('#customctl')).toBeHidden();
+    await page.waitForTimeout(500); await page.evaluate(() => { document.getElementById('rollbox').value = ''; }); await shp('d10').click(); await page.waitForTimeout(500);
+    await shp('d10').dblclick(); await expect(page.locator('#customctl'), 'a double-click on an empty formula still opens Custom').toBeVisible();
+  });
+  test(`${name}: Design shape tap and double-click follow the same semantics (.38.34)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toDesign();
+    const shp = id => page.locator(`#shapes button[data-id="${id}"]`), st = () => app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation }));
+    await shp('d8').click(); await expect(shp('d8')).toHaveClass(/\bon\b/); await expect(page.locator('#customctl')).toBeHidden(); expect((await st()).shape).toBe('d8');
+    await page.waitForTimeout(500); await shp('d6').dblclick();
+    await expect.poll(async () => (await st()).shape).toBe('custom'); expect((await st()).n).toBe('1d8+1d6');
+    await expect(page.locator('#customctl')).toBeVisible();
+    await page.waitForTimeout(500); await shp('d12').click(); await expect.poll(async () => (await st()).shape).toBe('d12'); await expect(page.locator('#customctl')).toBeHidden();
+  });
+}

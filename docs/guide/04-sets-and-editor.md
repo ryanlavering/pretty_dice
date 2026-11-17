@@ -9,6 +9,7 @@ A **set** is a group of dice you roll together, for example 2d6 + 3 for an axe. 
 Choose **Custom** under Shape. The **Custom set** section has:
 
 - A **notation** box: type a roll and press **Apply** (or Enter). Errors show in red under the box. The small button beside it resets to a single d20.
+- **Shape buttons** (Design Look tab and Play Table tab work the same way, and never roll): a tap picks one die of that shape and collapses Custom set; a double-click or long press adds one die to the formula and opens Custom set so the whole formula shows.
 - **Adv** and **Dis** buttons: a click replaces the formula with advantage (`d20adv`, 2d20 keep the highest) or disadvantage (`d20dis`); a double-click or long press adds it to the formula instead.
 - **+ and −** for each die type, and a **Modifier**.
 - **Dice use**, when your bag has several designs: which design the + button adds.
