@@ -1572,7 +1572,7 @@ function syncLive(){ if(!bag||bagLoading) return;
   if(bag.active.draft){ bag.draft=liveJSON(); return; }
   const e=activeEntry(); if(!e) return;
   if(isLiveModified()) bag.pending[e.id]=liveJSON();
-  else{ delete bag.pending[e.id]; const dj=designToJSON(); e.design.shape=dj.shape; e.design.notation=dj.notation; e.preview_shape=dj.shape; } }
+  else{ delete bag.pending[e.id]; const dj=designToJSON(); if(!isMulti()){ e.design.shape=dj.shape; e.preview_shape=dj.shape; } } }   // PD-142.38.37: the roll set on the mat (Custom / Standard 7 and its formula) is a draft outside the bag: it is never written into the saved design, so editing it cannot make the bag look modified
 function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
 function saveBag(){ if(!bag||bagLoading) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
 /* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
@@ -1659,7 +1659,7 @@ const BAG_SAVED='prettydice.bagsaved.v1';
 function bagFileJSON(){ const b=bagToJSON();
   for(const e of b.designs){ const p=b.pending[e.id]; if(p){ e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; } }
   b.pending={}; return b; }
-function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets:sets.map(({last,...r})=>r),characters,jail,draft,name}); }
+function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets:sets.map(({last,...r})=>r),characters,jail,draft:draft&&(({shape,notation,...r})=>r)(draft),name}); }   // the draft's shape and roll formula are the mat's, not the bag's
 function markBagSaved(){ try{ localStorage.setItem(BAG_SAVED,bagSig()); }catch{} }
 function bagDirty(){ if(!bag) return false; try{ const v=localStorage.getItem(BAG_SAVED); if(v===null){ markBagSaved(); return false; } return v!==bagSig(); }catch{ return false; } }
 function saveBagFile(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagFileJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
@@ -2102,6 +2102,7 @@ const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the
   {id:'PD-142.38.21', rev:1, anchor:'#rollbox', text:'Faded (dropped) dice no longer lose parts when the camera swings. Check: roll 3d6kh2 or 2d20 adv, then orbit around a faded die.', card:'PD-142.38.21'},
   {id:'PD-142.38.14', rev:1, anchor:'#panel', text:'Lowering Face panel to 0 now switches the numbers to Inset on the live die as well as in the selector. Check: lower Panel to 0 and see the die and the selector agree.', card:'PD-142.38.14'},
   {id:'PD-142.38.25', rev:1, anchor:'#polish', text:'Finish and Rotation sliders line up with the other sliders. Rotation shows -180 / 0 / 180 hints and has a small 0 button that resets it. Check: Look tab on phone and desktop.', card:'PD-142.38.25 / .26'},
+  {id:'PD-142.38.37', rev:1, anchor:'#bagrow', text:'The roll set on the mat is a draft: editing it (even one that started from a named set) no longer marks the bag modified and never changes the saved set. The bag is only modified by saving a set, renaming, reordering, deleting, Keep, or the set editor. Check: edit the roll formula or Custom set in Play, then look at the Bag tab and Bag button.', card:'PD-142.38.37'},
   {id:'PD-142.38.35', rev:1, anchor:'#numdepth', text:'Changing a design setting no longer snaps the spinning die back to its starting pose; it keeps spinning from where it was (and stays paused if paused). Check: let it spin, then move sliders and pick other materials.', card:'PD-142.38.35'},
   {id:'PD-142.38.28', rev:1, anchor:'#drawerbtn', text:'The cube menu always has Design | Play, in every view; Reset to defaults is gone. Check: open the menu in Design, Play and Full view.', card:'PD-142.38.28'}
 ];

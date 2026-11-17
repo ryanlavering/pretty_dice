@@ -224,3 +224,22 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     await page.locator('#ddiscard').click(); await expect(page.locator('#draftact')).toBeHidden();
   });
 }
+
+// PD-142.38.37: the roll set on the mat is a draft outside the bag: editing it (even one loaded from a named set) never dirties the bag or changes the saved set.
+test('editing the roll set on the mat leaves a clean bag clean and the named set unchanged (.38.37)', async ({ app, page }) => {
+  await app.open(); await app.nav.toPlay();
+  await page.locator('#rollbox').fill('3d6+2'); await page.locator('#rollbox').press('Enter'); await page.waitForTimeout(600);
+  await page.locator('#paneltabs [data-pane=table]').click();
+  await page.locator('#steppers .step', { has: page.locator('[data-n="20"]') }).locator('button[data-d="1"]').click();
+  await page.locator('#shapes button[data-id="d8"]').dblclick();
+  await app.nav.toDesign(); await app.nav.openBag(); await page.waitForTimeout(300);
+  await expect(page.locator('#bagdirty'), 'the bag is still clean after editing the roll set').toBeHidden();
+  // a named set loaded onto the mat and edited stays as it was saved
+  const id = await app.run(pd => pd.setOps.create({ name: 'Fireball', terms: [{ count: 8, sides: 6 }], mod: 0 }));
+  const snap = () => app.run(pd => JSON.stringify([pd.bag.sets.map(({ last, ...r }) => r), pd.bag.designs.map(d => d.design.notation), Object.keys(pd.bag.pending)]));
+  await app.run((pd, id) => pd.setOps.open(id), id); const s0 = await snap();
+  await app.nav.toPlay(); await page.locator('#paneltabs [data-pane=table]').click();
+  await page.locator('#steppers .step', { has: page.locator('[data-n="20"]') }).locator('button[data-d="1"]').click();
+  await page.locator('#rollbox').fill('2d10+1'); await page.locator('#rollbox').press('Enter'); await page.waitForTimeout(600);
+  expect(await snap(), 'sets, designs and pending edits are untouched by roll-set edits').toBe(s0);
+});
