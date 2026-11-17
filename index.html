@@ -1166,8 +1166,10 @@ function lookFor(id){ if(!id||!bag||id===liveId()) return null; let f=foreign.ge
   const look=lookFromDesign(j); foreign.set(id,{look,uni:makeUniforms()});
   const F=FONTS[look.font]; if(F&&F.load&&!document.fonts.check(F.load)&&!fontAsked.has(look.font)){ fontAsked.add(look.font); ensureFont(look.font).then(()=>{ fontAsked.delete(look.font); for(const [k,pt] of partCache) if(k.includes('|'+look.font+'|')){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); partCache.delete(k); } scheduleRebuild(); }); }   // numbers drawn in the fallback font are not reused
   return look; }
+let lastBuildKey='';
 function buildDice(keepRoll){
   buildTok++;
+  const curKey=state.shape+'|'+state.notation, keepQ=(!rolling&&isMulti()&&curKey===lastBuildKey&&dice.length)?dice.map(d=>d.mesh.quaternion.clone()):null; lastBuildKey=curKey;   // PD-142.38.35: a look change keeps the spin pose of a multi-die showcase (a single die spins on the rig, which is never reset)
   if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)
   if(!keepRoll) exitRoll(true);
   rig.clear(); clearHolds(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
@@ -1195,6 +1197,7 @@ function buildDice(keepRoll){
     if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
+  if(keepQ&&keepQ.length===dice.length) dice.forEach((d,i)=>d.mesh.quaternion.copy(keepQ[i]));
   for(const [k,pt] of partCache) if(!nextParts.has(k)){ pt.geo.dispose(); pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); }   // parts no die uses any more
   partCache=nextParts;
   needHalfW = state.shape==='set7' ? 4.8 : state.shape==='custom' ? customHalfW : specs.length>1 ? 2.6 : 1.5;   // a single die must fit a narrow (portrait) screen too
@@ -2099,6 +2102,7 @@ const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the
   {id:'PD-142.38.21', rev:1, anchor:'#rollbox', text:'Faded (dropped) dice no longer lose parts when the camera swings. Check: roll 3d6kh2 or 2d20 adv, then orbit around a faded die.', card:'PD-142.38.21'},
   {id:'PD-142.38.14', rev:1, anchor:'#panel', text:'Lowering Face panel to 0 now switches the numbers to Inset on the live die as well as in the selector. Check: lower Panel to 0 and see the die and the selector agree.', card:'PD-142.38.14'},
   {id:'PD-142.38.25', rev:1, anchor:'#polish', text:'Finish and Rotation sliders line up with the other sliders. Rotation shows -180 / 0 / 180 hints and has a small 0 button that resets it. Check: Look tab on phone and desktop.', card:'PD-142.38.25 / .26'},
+  {id:'PD-142.38.35', rev:1, anchor:'#numdepth', text:'Changing a design setting no longer snaps the spinning die back to its starting pose; it keeps spinning from where it was (and stays paused if paused). Check: let it spin, then move sliders and pick other materials.', card:'PD-142.38.35'},
   {id:'PD-142.38.28', rev:1, anchor:'#drawerbtn', text:'The cube menu always has Design | Play, in every view; Reset to defaults is gone. Check: open the menu in Design, Play and Full view.', card:'PD-142.38.28'}
 ];
 const NF_ON=!!(window.__PD_REVIEW||new URLSearchParams(location.search).get('new')==='1'), NFKEY='prettydice.seen';

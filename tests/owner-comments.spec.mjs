@@ -187,3 +187,22 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     await page.waitForTimeout(500); await shp('d12').click(); await expect.poll(async () => (await st()).shape).toBe('d12'); await expect(page.locator('#customctl')).toBeHidden();
   });
 }
+
+// PD-142.38.35: a look change in the Design room rebuilds the dice but keeps their spin pose and the pause-spin state.
+for (const shape of ['d20', 'set7']) {
+  test(`${shape}: changing a slider and a select keeps the spin pose and the pause state (.38.35)`, async ({ app, page }) => {
+    await app.open({ query: 'shape=' + shape }); await app.nav.toDesign();
+    const pose = () => page.evaluate(() => window.__pd.dice.map(d => { const q = new d.mesh.quaternion.constructor(); d.mesh.getWorldQuaternion(q); return [q.x, q.y, q.z, q.w]; }));
+    await page.evaluate(() => { const pd = window.__pd; pd.state.spin = 0; pd.dice.forEach((d, i) => { (pd.dice.length > 1 ? d.mesh : d.mesh.parent).quaternion.set(.5, .5, .5 + i * .01, .5).normalize(); }); });
+    const before = await pose();
+    for (const id of ['radius', 'numsize', 'numrot']) {
+      await page.locator('#' + id).evaluate(e => { e.value = (+e.max + +e.min) / 2 + (+e.max - +e.min) * .2; e.dispatchEvent(new Event('input')); });
+      await page.waitForTimeout(600);
+    }
+    await page.locator('#subs button').nth(2).click(); await page.waitForTimeout(800);
+    const after = await pose();
+    expect(after.length).toBe(before.length);
+    before.forEach((b, i) => { const dot = Math.abs(b.reduce((s, v, k) => s + v * after[i][k], 0)); expect(dot, `die ${i} kept its pose`).toBeGreaterThan(0.999); });
+    expect(await app.run(pd => pd.state.spin), 'pause-spin state kept').toBe(0);
+  });
+}
