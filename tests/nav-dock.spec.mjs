@@ -91,3 +91,25 @@ test('a saved set chip and the set menu "Open" load the set on the mat without t
   await app.page.locator('#cardmenu >> text=/^Open$/').click();
   expect(await st(app)).toMatchObject({ rolling: true, placed: true, settled: true, set: 'dmg' });
 });
+
+// PD-142.38.47: the dock box and the Design Custom set are one formula across room switches.
+test('Design Custom edits (Adv, dice +/-, modifier, shape) reach the dock box, and a Play formula reaches the Custom set (.38.47)', async ({ app, page }) => {
+  await app.open(); await app.nav.toPlay();
+  const box = page.locator('#rollbox');
+  await box.fill('d20'); await page.waitForTimeout(100);
+  await app.nav.toDesign(); await page.waitForTimeout(300);
+  expect(await app.run(pd => pd.state.shape), 'Play d20 reaches the design').toBe('d20');
+  await page.locator('#shapes button[data-id=custom]').dblclick(); await page.waitForTimeout(300);
+  await page.locator('#notadv').click(); await page.waitForTimeout(500);
+  expect(await app.run(pd => pd.state.notation)).toMatch(/2d20kh1/);
+  await app.nav.toPlay(); await expect(box, 'Custom Adv in Design shows in the dock box').toHaveValue('2d20kh1');
+  // the other Custom edits
+  await app.nav.toDesign(); await page.locator('#modp').click(); await page.locator('#steppers [data-n="6"] ~ .sc button[data-d="1"], #steppers .step:has([data-n="6"]) button[data-d="1"]').first().click();
+  const f = await app.run(pd => pd.state.notation); expect(f).toMatch(/\+1/);
+  await app.nav.toPlay(); await expect(box, 'dice +/- and modifier in Design show in the dock').toHaveValue(f);
+  // reverse: typed in Play, then Design
+  await box.fill('3d8+2'); await app.nav.toDesign();
+  expect(await app.run(pd => pd.state.notation), 'Play formula reaches the Custom set').toBe('3d8+2');
+  await expect(page.locator('#notation')).toHaveValue('3d8+2');
+  await app.nav.toPlay(); await expect(box).toHaveValue('3d8+2');
+});
