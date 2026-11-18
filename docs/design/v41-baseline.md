@@ -93,4 +93,6 @@ The 10 skipped tests are skips in the specs themselves (`test.skip`/fixme, e.g. 
 
 ## Pre vs post factor
 
-(filled in at the end)
+(filled in at the end, after S9/S10 and the post-factor pair)
+
+Progress so far (S8 at f904112): golden set identical at every step S1-S8. `node scripts/golden-build.mjs` vs the pre-factor recording: artifact 938,441 -> 941,406 bytes, offline 3,751,769 -> 3,754,734 (+2,965 each: the module closure wrappers of S1-S6 and S8; S7's CSS move is byte-identical). `build.json` deliberately not re-recorded, so the comparison stays against the pre-factor builds. `index.html` 3,179 lines -> 2,468 lines; `src/`: 7 JS modules + app.css.
