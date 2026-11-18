@@ -53,6 +53,14 @@ const helpers = page => ({
   },
 });
 
+const SHARED_VIEWPORT = { width: 960, height: 600 };
+/** Boot (or re-boot) the shared worker page: empty storage, seed 1, paused, and the booted state kept for reset(). */
+const bootShared = async (page, again = false) => {
+  if (again) await page.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
+  await page.goto('/index.html?libs=local&seed=1'); await ready(page);
+  await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); });
+};
+
 export const test = base.extend({
   /** Fresh page per test (empty localStorage). Call app.open() first. */
   app: async ({ page }, use) => {
@@ -80,11 +88,10 @@ export const test = base.extend({
    *  shared.reset(seed) exits any roll, restores every setting the page booted with and reseeds the app RNG,
    *  so each test starts from the same state whatever ran before it. Errors are still checked per test. */
   _sharedPage: [async ({ browser }, use, workerInfo) => {
-    const ctx = await browser.newContext({ viewport: { width: 960, height: 600 }, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
+    const ctx = await browser.newContext({ viewport: SHARED_VIEWPORT, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
     const page = await ctx.newPage(), errors = watch(page);
     await page.addInitScript(seedMath, 1);
-    await page.goto('/index.html?libs=local&seed=1'); await ready(page);
-    await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); });
+    await bootShared(page);
     await use({ page, errors });
     await ctx.close();
   }, { scope: 'worker' }],
@@ -95,6 +102,15 @@ export const test = base.extend({
       ...helpers(page),
       errors,
       async reset(seed = 1) {
+        // 4.1 baseline: a test that reloaded or navigated the shared page (it lost __pdBoot) or left it at another size used to leak
+        // into every later test of the worker; boot it again from empty storage and put the viewport back
+        if (!(await page.evaluate(() => !!(window.__pdBoot && window.__pd)).catch(() => false))) await bootShared(page, true);
+        const vp = page.viewportSize(); if (!vp || vp.width !== SHARED_VIEWPORT.width || vp.height !== SHARED_VIEWPORT.height) await page.setViewportSize(SHARED_VIEWPORT);
+        // overlays a test left open (the Bag view, a die's card menu, the utility drawer, Full view) covered the next test's controls
+        for (let i = 0; i < 3 && await page.locator('#bagsheet:not([hidden])').count(); i++) await page.keyboard.press('Escape');   // the app's own Escape: card menu, then the sheet
+        await page.evaluate(() => { const m = document.getElementById('cardmenu'); if (m) m.hidden = true; });   // = closeMenu() (a die's menu on the mat has no Escape)
+        if (await page.locator('#drawer.open').count()) await page.keyboard.press('Escape');   // the drawer closes on Escape too
+        if (await page.evaluate(() => document.body.classList.contains('full'))) await page.evaluate(() => window.__pd.setFull(false));
         await page.evaluate(async seed => {
           const pd = window.__pd, boot = structuredClone(window.__pdBoot); pd.pause(); if (pd.game) pd.endGame(); if (pd.rolling) pd.exitRoll(true);
           for (const k of Object.keys(pd.state)) if (!(k in boot)) delete pd.state[k];
