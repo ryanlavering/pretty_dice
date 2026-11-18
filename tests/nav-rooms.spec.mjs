@@ -45,25 +45,22 @@ test('Randomize and Space belong to the Design room', async ({ shared: app }) =>
   expect(await app.run(pd => JSON.stringify(pd.designToJSON())), 'Space is inert in Play').toBe(d1);
 });
 
-test('Undo and Redo sit on the shelf row in the Design room (also in Full view) and are not shown in Play', async ({ shared: app }) => {
+test('Undo and Redo sit in the settings pane\'s sticky top strip in the Design room, are absent in Full view and in Play (PD-142.38.41)', async ({ shared: app }) => {
   await app.nav.toDesign();
-  for (const full of [false, true]) {
-    await app.nav.fullView(full);
-    const u = await app.page.locator('#undo').boundingBox(), r = await app.page.locator('#redo').boundingBox(), cards = await app.page.locator('#cards').boundingBox();
-    expect(u && r, `undo and redo visible (full view ${full})`).toBeTruthy();
-    expect(Math.abs((u.y + u.height / 2) - (cards.y + cards.height / 2)), 'same row as the shelf').toBeLessThan(cards.height);
-    expect(u.x + u.width, 'left of the shelf cards').toBeLessThanOrEqual(cards.x + 1);
-  }
+  const u = await app.page.locator('#undo').boundingBox(), r = await app.page.locator('#redo').boundingBox(), strip = await app.page.locator('#paneltabs').boundingBox();
+  expect(u && r, 'undo and redo visible').toBeTruthy();
+  expect(await app.page.locator('#paneltabs #undo, #paneltabs #redo').count(), 'inside the strip').toBe(2);
+  expect(u.y).toBeGreaterThanOrEqual(strip.y - 1); expect(u.y + u.height).toBeLessThanOrEqual(strip.y + strip.height + 1);
+  expect(r.x, 'Redo right of Undo').toBeGreaterThan(u.x);
+  expect(await app.page.locator('#paneltabs [data-pane=look], #paneltabs [data-pane=bag], #paneltabs [data-pane=sets]').count(), 'no Look/Bag/Sets tabs in Design').toBe(0);
+  expect(await app.page.locator('#shelf #undo, #shelf #redo, #actions #undo').count(), 'not on the mat').toBe(0);
+  await app.nav.fullView(true);
+  await expect(app.page.locator('#undo')).toBeHidden(); await expect(app.page.locator('#redo')).toBeHidden();
   await app.nav.fullView(false);
-  expect(await app.page.locator('#actions #undo, #actions #redo').count(), 'no longer in the panel').toBe(0);
-  const before = await app.run(pd => pd.state.shape);
   await app.run(pd => pd.randomize()); await expect(app.page.locator('#undo')).toBeEnabled();
   await app.page.locator('#undo').click();
   await app.nav.toPlay(); await expect(app.page.locator('#undo')).toBeHidden();
-  void before;
 });
-
-// Slice 4c
 test('phone: the cube menu button switches rooms, the strip middle holds top-down in Play, and the desktop keeps the switch at the top of the panel (PD-142.38.22)', async ({ shared: app }) => {
   const page = app.page;
   await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
@@ -116,17 +113,16 @@ test('Games tab opens setup, shows the scorecard in the panel, and the Design | 
   await page.locator('#roll').click(); await expect(page.locator('#roll')).toHaveClass(/on/);
 });
 
-test('phone: Undo and Redo are stacked at the bottom left at the shelf height, clear of the cards (PD-142.38.5 .38.22)', async ({ shared: app }) => {
-  const page = app.page; await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+test('phone: Undo and Redo are in the pane strip (single slim row), not on the mat; the Bag button is at the bottom left clear of the cards (PD-142.38.41/.43)', async ({ shared: app }) => {
+  const page = app.page; await page.setViewportSize({ width: 390, height: 740 }); await page.waitForTimeout(150);
   try {
     await app.nav.toDesign();
     await app.run(() => window.dispatchEvent(new Event('resize')));
     await expect(page.locator('#undo')).toBeVisible();
-    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), sh = await page.locator('#shelf').boundingBox();
-    expect(u.x).toBeLessThan(60); expect(Math.abs(u.x - r.x), 'stacked vertically').toBeLessThan(3); expect(r.y).toBeGreaterThan(u.y);
-    expect(u.y, 'at the shelf height, not the top').toBeGreaterThan(sh.y - 40); expect(r.y + r.height).toBeLessThan(844);
-    expect(u.x + u.width, 'clear of the cards').toBeLessThanOrEqual(sh.x + 1);
-    await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden();
+    const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), st = await page.locator('#paneltabs').boundingBox(), aside = await page.locator('aside').boundingBox();
+    expect(Math.abs(u.y - r.y), 'one row').toBeLessThan(2); expect(st.height, 'slim strip').toBeLessThanOrEqual(60); expect(u.y).toBeGreaterThanOrEqual(aside.y);
+    const bag = await page.locator('#bagbtn').boundingBox(), sh = await page.locator('#shelf').boundingBox();
+    expect(bag.x + bag.width, 'Bag button clear of the cards').toBeLessThanOrEqual(sh.x + 1); expect(bag.x).toBeLessThan(60);
+    await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden(); await expect(page.locator('#bagbtn')).toBeVisible();
   } finally { await page.setViewportSize({ width: 1280, height: 720 }); await page.waitForTimeout(150); }
-  await expect(page.locator('#shelf #undo')).toHaveCount(1);
 });

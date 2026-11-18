@@ -4,7 +4,7 @@ Your bag and settings are kept in the browser automatically. Use files when you 
 
 ![The Save & export section](img/14-save-export.png)
 
-The picture and single-design items are in **Save & export** at the bottom of the **Look** tab; saving and loading the whole bag is in the **Bag** tab.
+The picture and single-design items are in **Save & export** at the bottom of the **Look** tab; saving and loading the whole bag is in the Bag view (the round Bag button).
 
 | What | How |
 |---|---|

@@ -147,7 +147,7 @@ test('a typed name is kept when you switch away and back, and shows Modified', a
   await app.open();
   await app.run(SETUP);
   await page.locator('#dname').fill('Brand new name'); await page.keyboard.press('Enter');
-  await app.nav.openBag(); await expect(page.locator('#modbadge')).toBeVisible();
+  await app.nav.openBag(); await expect(page.locator('#modbadge')).toBeVisible();  await page.keyboard.press("Escape");
   await page.locator('#cards .card[data-id="gold"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
   await page.locator('#cards .card[data-id="bone"]').click(); await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('bone');
   await expect(page.locator('#dname')).toHaveValue('Brand new name');
@@ -345,7 +345,7 @@ test('a bag of ten designs shows tinted placeholders at once and makes one pictu
     await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'Big', designs }, { replace: true });
     pd.thumbs && Object.keys(pd.thumbs).forEach(k => delete pd.thumbs[k]);
   });
-  await app.nav.openBag();
+  await page.locator('#bagbtn').click({ force: true });   // no stability wait: it would sit through the whole background picture pass (a real pointer click also holds that pass off for a moment)
   const bgs = await page.locator('#tiles .tile[data-id] .th').evaluateAll(n => n.map(e => e.style.backgroundImage));
   expect(bgs.length).toBe(10);
   expect(bgs.filter(b => b.startsWith('url("data:image/svg+xml')).length).toBeGreaterThanOrEqual(8);   // dummy d20 chips, until a real picture exists

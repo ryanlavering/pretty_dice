@@ -13,7 +13,7 @@ export const navFor = page => {
   const click = sel => page.locator(sel).click();
   const phone = () => (page.viewportSize() || { width: 1280 }).width <= 760;   // PD-142.38.22: on a phone the Design | Play switch is only in the cube menu (drawer) button's list
   const room = async sel => { if (phone() && (sel === '#roll' || sel === '#back')) { await click('#drawerbtn'); await click('#roomsw'); } else await click(sel); };
-  const BTN = { mode: '#modesw', games: '#gamestab', bag: '#paneltabs [data-pane=bag]', log: '#paneltabs [data-pane=log]', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
+  const BTN = { mode: '#modesw', games: '#gamestab', bag: '#bagbtn', log: '#paneltabs [data-pane=log]', sound: '#snd', spin: '#spinbtn', layout: '#layout', drawer: '#drawerbtn', reset: '#resetview', info: '#info', shelf: '#shelf', panel: 'aside' };
   return {
     page,
     /** locator for a chrome control by name: mode games bag log sound spin layout info shelf panel */
@@ -23,7 +23,7 @@ export const navFor = page => {
     toggleMode: async () => room((await page.locator('#back.on').count()) ? '#roll' : '#back'),
     async toPlay() { if (await page.locator('#back.on').count()) await room('#roll'); },
     async toDesign() { if (!(await page.locator('#back.on').count())) await room('#back'); },
-    async openBag() { await this.toDesign(); await click('#paneltabs [data-pane=bag]'); },   // the Bag tab (Design room); inline on desktop, the full-screen sheet on a phone
+    async openBag() { if (!(await page.locator('#bagsheet:not([hidden])').count())) await click('#bagbtn'); await page.locator('#bagsheet:not([hidden])').waitFor(); },   // PD-142.38.43: the round Bag button (both rooms) opens the Bag view overlay (Designs tab)
     async openGames() { await this.toPlay(); await click('#gamestab'); },   // the Games tab belongs to the Play room (slice 5)
     async openLog() { await this.toPlay(); await click('#paneltabs [data-pane=log]'); },   // the Log tab (Play room)
     async roll() { const inGame = await page.evaluate(() => document.body.classList.contains('game')); const g = page.locator('#gamepanel button.big:visible, #scorepane button.big:visible'); await ((!inGame && (await g.count())) ? g.first() : page.locator('#rollbtn')).click(); },

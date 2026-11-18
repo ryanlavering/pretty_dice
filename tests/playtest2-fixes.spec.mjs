@@ -105,7 +105,7 @@ test('initiative: add a named entry with a score by hand, sorted among rolled ro
 test('set editor: a Save sits right under the result table box, saves the table, and the wheel scrolls the sheet (.7)', async ({ app, page }) => {
   await app.open();
   await app.nav.openBag();
-  await page.locator('#paneltabs [data-pane="sets"]').click();
+  await page.locator('#sheettabs [data-tab="sets"]').click();
   await page.locator('#setsave').click();
   const ed = page.locator('#setlist .seted');
   await expect(ed).toBeVisible();
@@ -116,10 +116,11 @@ test('set editor: a Save sits right under the result table box, saves the table,
   const bt = await tb.boundingBox(), bs = await save2.boundingBox();
   expect(bs.y - (bt.y + bt.height), 'Save is directly below the table box').toBeLessThan(40);
   // wheel over the editor scrolls the sheet's list
-  await page.locator('aside').evaluate(e => { e.scrollTop = 0; });   // slice 6: the panel itself scrolls, the sheet list no longer does
+  const sc = () => page.evaluate(() => Math.max(...['setlist', 'bagsheet'].map(i => document.getElementById(i).scrollTop)));   // PD-142.38.43: the Bag view is an overlay; its list scrolls
+  await page.evaluate(() => { for (const i of ['setlist', 'bagsheet']) document.getElementById(i).scrollTop = 0; });
   const box = await page.locator('#setlist').boundingBox();
   await page.mouse.move(box.x + box.width / 2, Math.min(box.y + 60, 400)); await page.mouse.wheel(0, 300);
-  await expect.poll(() => page.locator('aside').evaluate(e => e.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(sc).toBeGreaterThan(0);
   await save2.scrollIntoViewIfNeeded(); await save2.click();
   await expect(page.locator('#setlist .seted')).toHaveCount(0);
   const table = await app.run(pd => pd.bag.sets.at(-1).table);

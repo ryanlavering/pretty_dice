@@ -7,7 +7,7 @@ test('bag heading stays on one line (.12)', async ({ app, page }) => {
   expect(h.h).toBeLessThan(h.lh * 1.6 + 4);
 });
 test('Save the current dice as a set opens a draft; the bag changes only on Save (.4)', async ({ app, page }) => {
-  await app.open(); await app.nav.openBag(); await page.locator('#paneltabs [data-pane="sets"]').click();
+  await app.open(); await app.nav.openBag(); await page.locator('#sheettabs [data-tab="sets"]').click();
   const n0 = await sets(app);
   await page.locator('#setsave').click();
   await expect(page.locator('#setlist .seted')).toBeVisible();
@@ -20,7 +20,7 @@ test('Save the current dice as a set opens a draft; the bag changes only on Save
   expect(await app.run(pd => pd.bag.sets.at(-1).name)).toBe('Draft one');
 });
 test('closing a draft discards it (.4)', async ({ app, page }) => {
-  await app.open(); await app.nav.openBag(); await page.locator('#paneltabs [data-pane="sets"]').click();
+  await app.open(); await app.nav.openBag(); await page.locator('#sheettabs [data-tab="sets"]').click();
   const n0 = await sets(app);
   await page.locator('#setsave').click(); await page.locator('#setlist .seted .sename').fill('Never kept');
   await page.locator('#setlist .seted .seclose').click();
@@ -29,7 +29,7 @@ test('closing a draft discards it (.4)', async ({ app, page }) => {
   expect(await sets(app)).toBe(n0);
 });
 test('New set opens an empty blank draft; Save needs a die (.4)', async ({ app, page }) => {
-  await app.open(); await app.nav.openBag(); await page.locator('#paneltabs [data-pane="sets"]').click();
+  await app.open(); await app.nav.openBag(); await page.locator('#sheettabs [data-tab="sets"]').click();
   const n0 = await sets(app);
   await page.locator('#setnew').click();
   await expect(page.locator('#setlist .seted')).toBeVisible();

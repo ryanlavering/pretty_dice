@@ -47,7 +47,7 @@ test('only the post-v19 entries remain; the owner-reviewed ones are retired (PD-
   await app.open({ query: 'new=1' });
   const ids = (await page.evaluate(() => window.__nf.unseen())).map(k => k.split('@')[0]);
   for (const gone of ['PD-142.38.s4', 'PD-142.38.s5', 'PD-142.38.s6', 'PD-142.38.s7', 'PD-142.38.s8', 'PD-142.38.4', 'PD-142.38.5', 'PD-142.33.1', 'PD-142.39.1', 'PD-142.38.drawer']) expect(ids).not.toContain(gone);
-  for (const here of ['PD-142.38.22', 'PD-142.38.23', 'PD-142.38.32', 'PD-142.38.35', 'PD-142.38.37', 'PD-142.38.17', 'PD-142.38.21', 'PD-142.38.14', 'PD-142.38.25', 'PD-142.38.28', 'PD-142.38.42']) expect(ids).toContain(here);
+  for (const here of ['PD-142.38.22', 'PD-142.38.23', 'PD-142.38.32', 'PD-142.38.35', 'PD-142.38.37', 'PD-142.38.17', 'PD-142.38.21', 'PD-142.38.14', 'PD-142.38.25', 'PD-142.38.28', 'PD-142.38.42', 'PD-142.38.41', 'PD-142.38.43']) expect(ids).toContain(here);
 });
 // PD-142.38.42: every unseen entry must have a dot somewhere (some room/tab/state, phone and desktop), none covered, and the drawer label explains the rest.
 for (const [w, h] of [[390, 740], [1280, 800]]) test(`every unseen callout has a findable dot somewhere, and the count label says how many are here (${w})`, async ({ app, page }) => {
@@ -67,11 +67,13 @@ for (const [w, h] of [[390, 740], [1280, 800]]) test(`every unseen callout has a
   };
   for (const room of ['design', 'play']) {
     await (room === 'design' ? app.nav.toDesign() : app.nav.toPlay());
-    for (const t of await page.locator('#paneltabs [role=tab]:visible').evaluateAll(a => a.map(b => b.dataset.pane))) {
-      await page.locator(`#paneltabs [data-pane=${t}]`).click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150); await snap(room + '/' + t);
-      if (t === 'look' || t === 'table') { await page.locator('#shapes button[data-id=custom]').click(); await page.waitForTimeout(500); await snap(room + '/' + t + '+custom'); }
-      if (t === 'look') { await page.locator('#rand').click(); await page.waitForTimeout(300); await snap(room + '/look+draft'); }
-      await page.keyboard.press('Escape'); }
+    await snap(room + '/pane');
+    for (const t of await page.locator('#paneltabs [role=tab]:visible').evaluateAll(a => a.map(b => b.dataset.pane))) { await page.locator(`#paneltabs [data-pane=${t}]`).click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150); await snap(room + '/' + t); }
+    if (room === 'play') await page.locator('#paneltabs [data-pane=table]').click();
+    await page.locator('#shapes button[data-id=custom]').click(); await page.waitForTimeout(500); await snap(room + '/custom');
+    if (room === 'design') { await page.locator('#rand').click(); await page.waitForTimeout(300); await snap(room + '/look+draft'); }
+    await page.locator('#bagbtn').click(); await page.waitForTimeout(300); await snap(room + '/bag-designs');   // PD-142.38.43: the Bag view
+    await page.locator('#sheettabs [data-tab=sets]').click(); await snap(room + '/bag-sets'); await page.keyboard.press('Escape');
     await app.nav.openDrawer(); await snap(room + '/drawer');
     const label = await page.locator('#nfall').textContent(), un = (await page.evaluate(() => window.__nf.unseen())).length;
     expect(label).toMatch(new RegExp(`^Seen all \\(${un} new(, \\d+ on this screen)?\\)$`));

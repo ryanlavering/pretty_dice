@@ -8,12 +8,12 @@ When the page opens you see one die turning slowly in the middle of the screen, 
 
 One switch, **Design | Play**, decides what you are doing (just under the tabs in the side panel on a desktop, at the top left on a phone). Switching never throws the dice.
 
-- **Design room**: the die floats and turns. Drag to turn it by hand, scroll or pinch to zoom, right-drag or two fingers to orbit, double-click to reset the view. The panel has three tabs: **Look** (shape, material, colours, numbers, Randomize, save and export), **Bag** (all your designs) and **Sets** (saved groups of dice). Undo, Redo and the shelf sit along the bottom of the table.
+- **Design room**: the die floats and turns. Drag to turn it by hand, scroll or pinch to zoom, right-drag or two fingers to orbit, double-click to reset the view. The panel is always the **Look** settings (shape, material, colours, numbers, Randomize, save and export), with **Undo** and **Redo** in a strip at its top. The round **Bag** button at the bottom left of the table opens the Bag view (your designs and saved sets), and the shelf sits along the bottom of the table.
 - **Play room**: the dice lie on the table. The panel has the tabs **Table** (dice to roll, roll feel and sound), **Games** and **Log**. A dock along the bottom of the table has the formula box, the one gold **Roll** button (the only button that throws dice) and the preset chips.
 
 ## Try these first
 
-1. In the Design room, press **Randomize** (or Space). A new look appears. **Undo** and **Redo** beside the shelf step back and forward (Ctrl+Z, Ctrl+Y). "Also randomize" lets you include the substrate or the shape.
+1. In the Design room, press **Randomize** (or Space). A new look appears. **Undo** and **Redo** at the top of the panel step back and forward (Ctrl+Z, Ctrl+Y). "Also randomize" lets you include the substrate or the shape.
 2. Pick a **Shape** (d4 to d20, d%, rhombic d12 and others) and a **Substrate** (plastic, metal, epoxy, stone).
 3. Switch to **Play** and press **Roll** (or `r`). Press it again to throw again.
 

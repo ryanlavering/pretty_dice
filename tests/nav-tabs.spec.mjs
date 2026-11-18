@@ -2,10 +2,10 @@
 import { test, expect } from './helpers/app.mjs';
 test.beforeEach(async ({ shared }) => { await shared.reset(7); await shared.run(pd => pd.endGame()); });
 test.describe('room tabs', () => {
-  test('Design shows Look, Bag, Sets; Play shows Table, Games, Log', async ({ shared: app }) => {
+  test('Design shows no tabs (just Undo / Redo); Play shows Table, Games, Log (PD-142.38.41)', async ({ shared: app }) => {
     const p = app.page; await app.nav.toDesign();
-    const vis = () => p.$$eval('#paneltabs button', bs => bs.filter(b => getComputedStyle(b).display !== 'none').map(b => b.dataset.pane));
-    expect(await vis()).toEqual(['look', 'bag', 'sets']);
+    const vis = () => p.$$eval('#paneltabs button[data-pane]', bs => bs.filter(b => getComputedStyle(b).display !== 'none').map(b => b.dataset.pane));
+    expect(await vis()).toEqual([]);
     await app.nav.toPlay();
     expect(await vis()).toEqual(['table', 'games', 'log']);
   });
@@ -15,11 +15,11 @@ test.describe('room tabs', () => {
     await app.nav.toPlay();
     await expect(p.locator('#sec-dice'), 'PD-142.38.23: no Dice to roll section in the Table tab').toBeHidden(); await expect(p.locator('#sec-roll')).toBeVisible(); await expect(p.locator('#shapes'), 'PD-142.38.12: Shape is also in the Table tab').toBeVisible(); await expect(p.locator('#subs')).toBeHidden();
     await expect(p.locator('#paneltabs button[data-pane=table]')).toHaveAttribute('aria-selected', 'true');
-    await app.nav.toDesign(); await expect(p.locator('#paneltabs button[data-pane=look]')).toHaveAttribute('aria-selected', 'true');
+    await app.nav.toDesign(); await expect(p.locator('#settingspane')).toHaveAttribute('data-tab', 'look'); await expect(p.locator('#paneltabs button[data-pane=look]')).toHaveCount(0);   // PD-142.38.41: Design is always Look
   });
-  test('Bag and Sets tabs open the sheet on their tab', async ({ shared: app }) => {
+  test('the Bag button opens the Bag view; its Sets tab shows the set list (PD-142.38.43)', async ({ shared: app }) => {
     const p = app.page; await app.nav.toDesign();
-    await p.click('#paneltabs button[data-pane=sets]'); await expect(p.locator('#bagsheet')).toBeVisible(); await expect(p.locator('#setlist')).toBeVisible();
+    await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await expect(p.locator('#bagsheet')).toBeVisible(); await expect(p.locator('#setlist')).toBeVisible();
   });
   test('there is no Reset to defaults button anywhere (PD-142.38.28)', async ({ shared: app }) => {
     expect(await app.page.locator('#reset').count()).toBe(0);

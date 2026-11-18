@@ -9,9 +9,9 @@ for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', {
     expect(Math.abs(m.x - s.x), 'matte starts at the slider left').toBeLessThanOrEqual(2);
     expect(Math.abs((g.x + g.width) - (s.x + s.width)), 'gloss ends at the slider right').toBeLessThanOrEqual(2);
   });
-  test(`${name}: Bag button bottom-left in Play opens the bag and keeps clear of the dock (.38.8)`, async ({ app, page }) => {
+  test(`${name}: Bag button bottom-left in both rooms opens the Bag view and keeps clear of the dock (.38.8, .38.43)`, async ({ app, page }) => {
     await page.setViewportSize(vp); await app.open();
-    await app.nav.toDesign(); await expect(page.locator('#bagbtn')).toBeHidden();
+    await app.nav.toDesign(); await expect(page.locator('#bagbtn')).toBeVisible();
     await app.nav.toPlay(); await app.run(pd => pd.simRoll()); await page.waitForTimeout(300);
     const b = await box(page, '#bagbtn'), q = await box(page, '#qbar'); expect(b, 'the button is on screen in Play').toBeTruthy();
     expect(b.x + b.width <= q.x + 1 || b.y + b.height <= q.y || b.y >= q.y + q.height, 'no overlap with the dock').toBe(true);

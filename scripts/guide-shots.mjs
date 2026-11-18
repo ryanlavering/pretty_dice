@@ -54,7 +54,7 @@ const SHOTS = [
   ['06-relief-filigree', {}, async p => { await panelAt(p, 'Relief & patina'); return side; }],
   ['07-add-menu', {}, async p => { await p.click('#cards >> text=Add'); await p.waitForTimeout(500); }],
   ['08-bag-designs', {}, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
-  ['09-bag-sets', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#paneltabs [data-pane=sets]'); await p.waitForTimeout(600); }],
+  ['09-bag-sets', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await p.waitForTimeout(600); }],
   ['10-custom-set', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+d20+3'); await p.click('#notapply'); await p.waitForTimeout(1200); await panelAt(p, 'Custom set'); return side; }],
   ['11-roll-settled', {}, async p => { await rollNow(p); }],
   ['12-roll-log', {}, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
@@ -74,7 +74,7 @@ const SHOTS = [
   ['22-result-table-log', { query: 'shape=custom' }, async p => {   // a set with a result table, rolled with its lightning button
     await p.fill('#notation', 'd10'); await p.click('#notapply'); await p.waitForTimeout(600);
     await p.fill('#setname', 'Dungeon room'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600);
-    await p.click('#paneltabs [data-pane=sets]'); await p.waitForTimeout(600);
+    await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await p.waitForTimeout(600);
     await p.click('button:text-is("✎")'); await p.waitForTimeout(900);
     await p.locator('textarea').first().fill('1-2 Locked door\n3 Empty room\n4-8 Goblins\n9+ Boss');
     await p.click('#setlist button.sesave2'); await p.waitForTimeout(800);
