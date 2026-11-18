@@ -36,4 +36,4 @@ In the **Table** tab, **Bounciness**, **Dice friction** and **Mat friction** cha
 
 ## Looking at the result
 
-Hold the total at the top of the table, or hold `t`, for a top-down look at the dice; the controls step aside while you hold. Press `h`, or use **Full view** in the Utilities drawer, to hide the panel; the arrow at the screen edge brings it back.
+Hold the total at the top of the table, or hold `t`, for a top-down look at the dice (on a phone, hold the eye button in the top-right corner, where a right thumb reaches it without covering the dice); the controls step aside while you hold. Press `h`, or use **Full view** in the Utilities drawer, to hide the panel; the arrow at the screen edge brings it back.
