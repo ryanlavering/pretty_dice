@@ -116,7 +116,7 @@ test('the tuning tool boots from the served repo and lists the clips', async ({ 
 test('the tuning tool uses the same material hardness table as the app', async () => {
   for (const name of ['MAT_HARD', 'RING', 'GLASS_FM']) {
     const table = f => readFileSync(f, 'utf8').match(new RegExp(`const ${name}=(\\{[^}]*\\}|\\[\\[[\\d.,\\[\\]]*\\]\\])`))[1].replace(/\s+/g, '');
-    expect(table('tools/sound-audition.html'), name).toBe(table('index.html'));
+    expect(table('tools/sound-audition.html'), name).toBe(table('src/main.js'));
   }
 });
 

@@ -94,7 +94,11 @@ def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.w
             if f.suffix in ('.wav', '.json'): files[f'{sub}/{f.name}'] = base64.b64encode(f.read_bytes()).decode()
     return '<script>window.__SOUNDS=' + json.dumps(files) + ';</script>\n'
 html = (root / 'index.html').read_text()
-html = src_bundle(html)   # ./src/*.js modules inlined into the main module (both builds)
+main_js = (root / 'src/main.js').read_text()   # the main module: its ./x.js imports are the src/ modules (inlined below, both builds)
+main_js = re.sub(r"(from ')\./([\w-]+\.js';)", r"\1./src/\2", main_js)
+MAIN_TAG = re.compile(r'<script type="text/plain" id="main-src">[^<]*</script>')
+assert len(MAIN_TAG.findall(html)) == 1, 'index.html must hold one placeholder <script type="text/plain" id="main-src">'
+html = MAIN_TAG.sub(lambda m: '<script type="module">\n' + src_bundle(main_js) + '</script>', html)   # ./src/*.js modules inlined into the main module (both builds)
 def inline_css(html):   # <link rel="stylesheet" href="src/x.css"> -> the same CSS in a <style> element (both builds)
     return re.sub(r'<link rel="stylesheet" href="(src/[\w-]+\.css)">', lambda m: '<style>\n' + (root / m.group(1)).read_text() + '</style>', html)
 html = inline_css(html)
@@ -109,7 +113,6 @@ if ARTIFACT:
     assert html.count(marker) == 1, 'index.html must import the engine with exactly: ' + marker
     html = html.replace(marker, games_bundle())
     out = html.replace(m.group(0), '<script>window.__PD_REVIEW=1;</script>\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
-    out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')
     (root / 'dist').mkdir(exist_ok=True)
     p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
 
@@ -131,8 +134,6 @@ fonts = re.sub(r'url\(([^)]+\.woff2)\)', lambda f: 'url(' + b64((v / 'fonts' / f
 
 static = ('<script type="importmap">' + json.dumps({'imports': imports}) + '</script>\n<style>' + fonts + '</style>\n' + sounds_tag())
 out = html.replace(m.group(0), static)
-assert out.count('<script type="text/plain" id="main-src">') == 1
-out = out.replace('<script type="text/plain" id="main-src">', '<script type="module">')
 (root / 'dist').mkdir(exist_ok=True)
 p = root / 'dist/pretty-dice-offline.html'
 p.write_text(out)
