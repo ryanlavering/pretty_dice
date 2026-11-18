@@ -1324,7 +1324,7 @@ const DBL_MS=250;   // PD-142.38.40: a single tap waits this long for a second c
 function tapOrAdd(b,{single,add,canAdd=()=>true,snap=null,restore=null}){ let t=0, lp=0, fired=false, dbl=false, saved, firedAt=0;   // PD-142.38.48: a second click inside the wait adds by itself (touch browsers send no dblclick); a slow double-click (the single already ran) puts the formula back first, so the result is always previous + 1 die
   const doAdd=()=>{ if(snap&&restore&&firedAt&&performance.now()-firedAt<900){ restore(saved); } firedAt=0; add(); };
   const runSingle=()=>{ t=0; if(snap) saved=snap(); firedAt=performance.now(); single(); };
-  b.addEventListener('click',e=>{ if(fired){ fired=false; return; } if(e.detail===0){ single(); return; } if(t){ clearTimeout(t); t=0; if(canAdd()){ dbl=true; doAdd(); } return; } if(!canAdd()){ single(); return; } if(e.detail>1&&firedAt&&performance.now()-firedAt<900) return; t=setTimeout(runSingle,DBL_MS); });
+  b.addEventListener('click',e=>{ if(fired){ fired=false; return; } if(e.detail===0){ single(); return; } if(e.detail<2&&!t) firedAt=0; if(t){ clearTimeout(t); t=0; if(canAdd()){ dbl=true; doAdd(); } return; } if(!canAdd()){ single(); return; } if(e.detail>1&&firedAt&&performance.now()-firedAt<900) return; t=setTimeout(runSingle,DBL_MS); });
   b.addEventListener('dblclick',()=>{ clearTimeout(t); t=0; if(dbl){ dbl=false; return; } if(canAdd()) doAdd(); });
   b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse'||!canAdd()) return; lp=setTimeout(()=>{ fired=true; add(); },480); });
   for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp));
