@@ -118,7 +118,7 @@ Verification per step: `tests/golden.spec.mjs` (identical) + the specs that touc
 | S4 | `src/geometry.js` | low | golden rolls/frames, shader, relief-rule | done 075df3e (with S5) |
 | S5 | `src/material.js` | medium (shader strings) | golden frames, shader, smoke | done 075df3e |
 | S6 | `src/substrates.js` (`state.stone` via setter) | medium | golden looks, logic randomize | done (S6 commit; golden, logic, shader, artifact-csp, offline: 29 passed) |
-| S7 | `src/app.css` (link + build inlining) | medium (cascade order) | golden screens (DOM boxes), nav/phone specs | todo |
+| S7 | `src/app.css` (link + build inlining) | medium (cascade order) | golden screens (DOM boxes), nav/phone specs | done (S7 commit): `<link>` at the old `<style>` spot; builds byte-identical to S6 (inline_css restores the same `<style>` text); dev bootstrap injects the main module after the sheet's load/error |
 | gate 2 | broader set + merge origin/v4 | | | todo |
 | S8 | `src/bagmodel.js` (pure bag file model) | low | bag, bagsets, bagbrowser | todo |
 | S9 | `#main-src` -> `src/main.js` (bootstrap injects `src` instead of text) | medium (boot path, line numbers) | boot-screen, bootlag, offline, csp, all | todo |
