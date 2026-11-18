@@ -4,6 +4,15 @@ Status: plan, 2026-11-18 (4.1 lane, branch `v4.1`). Owner intent: "start off by 
 
 A successor session continues from this file: the step table at the bottom is the source of truth for what is done.
 
+**Handoff state (2026-11-18, opus agent a85af5ad stopped on the integrator's request; mechanical steps continue on a Sonnet agent):** S1-S8 committed and verified (last: the S8 commit, `src/bagmodel.js`). Tree clean. **Next: S9** (`#main-src` -> `src/main.js`), then S10, then gate 3 / post-factor proof (full suite x2 `--retries=0`, the pre vs post table in v41-baseline.md). Gotchas so far:
+- **Never edit the tree while a spec run is going**: the dev server serves the working tree live, so a run started on step N silently tests a mix of N and N+1 (happened once in gate 1). Prepare the next step only after the run ends, or in a scratch copy.
+- `bindState(state)` (S6) is called on the same line that creates `state`; marble palettes read `liveState.stone`. Anything new in substrates that needs app state goes through that setter, never an import of main.
+- The lag hooks reassign nine function bindings (`buildDice=L.wrap(...)` etc., section "lag monitor hooks"): none of those has been moved; a module cannot export a reassignable binding, so if one moves, wrap it inside its module or keep a main-owned wrapper.
+- `rng` stays in main (reassigned by `reseed`); modules take `r` arguments.
+- `extract.mjs --header` adds its own `// `; pass the header text without a leading `//` (S8 needed a one-line fix).
+- S7 (`src/app.css`): the dev bootstrap injects the main module only after the sheet's load/error event; the builds inline the CSS byte-identically (build sha unchanged by S7).
+- **S9 notes (not started):** a module loaded by `src` resolves imports against `src/`, so `./src/x.js` becomes `./x.js` in main.js; build-static.py must put src/main.js text (imports rewritten back to `./src/`) into the module tag so `src_bundle()` and the artifact/offline outputs stay byte-identical to S8 (that is the equivalence proof). `tests/sound.spec.mjs:116` reads `MAT_HARD`/`RING`/`GLASS_FM` from `index.html` text: in S9 point it at `src/main.js` (or do S10 together). `scripts/factor/*` read `#main-src` from index.html; extract.mjs already handles a `src/main.js` main file, check deps.mjs/prune.mjs. A dynamically inserted `src` module can fail to load (404), unlike inline text: the boot watchdog still reports no progress after 10 s.
+
 ## 1. Current structure (v4 @7503b05)
 
 `index.html` is 3,179 lines / 436 KB:
@@ -114,13 +123,13 @@ Verification per step: `tests/golden.spec.mjs` (identical) + the specs that touc
 | S1 | `src/util.js` (mulberry32, pick, range, PHI, V, signs; `SEED`/`rng` stay in main) | low | golden, logic, physics | done afced1d |
 | S2 | `src/polyhedra.js` | low | golden (rolls, atlas), logic per-shape, physics | done 4414884 |
 | S3 | `src/atlas.js` | low (canvas fonts) | golden atlas hashes, shader, logic | done 64b2ecb |
-| gate 1 | broader set + merge origin/v4 | | | todo |
+| gate 1 | broader set + merge origin/v4 | | | done after S6: 137 passed (note: S7's CSS edit landed in the tree while it ran, so it covered a mix of S6 and S7); origin/v4 had nothing new |
 | S4 | `src/geometry.js` | low | golden rolls/frames, shader, relief-rule | done 075df3e (with S5) |
 | S5 | `src/material.js` | medium (shader strings) | golden frames, shader, smoke | done 075df3e |
 | S6 | `src/substrates.js` (`state.stone` via setter) | medium | golden looks, logic randomize | done (S6 commit; golden, logic, shader, artifact-csp, offline: 29 passed) |
 | S7 | `src/app.css` (link + build inlining) | medium (cascade order) | golden screens (DOM boxes), nav/phone specs | done (S7 commit): `<link>` at the old `<style>` spot; builds byte-identical to S6 (inline_css restores the same `<style>` text); dev bootstrap injects the main module after the sheet's load/error |
-| gate 2 | broader set + merge origin/v4 | | | todo |
-| S8 | `src/bagmodel.js` (pure bag file model) | low | bag, bagsets, bagbrowser | todo |
+| gate 2 | broader set + merge origin/v4 | | | partly: S7's own set (golden screens, nav-*, phone-*, boot, offline, csp; 69 passed) and S8's set ran green; the full broader list was NOT rerun after S7/S8; origin/v4 had nothing new (7503b05) |
+| S8 | `src/bagmodel.js` (pure bag file model) | low | bag, bagsets, bagbrowser | done (S8 commit): `LOG_MAX` moved from main's STORE line into the module; also the pure canonical-design helpers (sortKeys, canonD, hashStr, thumbKey). golden, bag, bagsets, bagbrowser, bagsave-commit, logic, csp, offline: 86 passed; builds +650 bytes vs S7 (one module wrapper) |
 | S9 | `#main-src` -> `src/main.js` (bootstrap injects `src` instead of text) | medium (boot path, line numbers) | boot-screen, bootlag, offline, csp, all | todo |
 | S10 | sound tables `MAT_HARD/RING/GLASS_FM` -> `src/sound-tables.js`, sound.spec reads the module | low | sound | todo |
 | gate 3 / post-factor proof | full suite x2 `--retries=0`, golden identical, builds | | | todo |
