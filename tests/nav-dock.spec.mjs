@@ -40,7 +40,7 @@ for (const [name, vp] of Object.entries(SIZES)) {
   });
 }
 
-test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter throws the box', async ({ shared: app }) => {
+test('a die chip loads the box and does not throw; Adv replaces the box with d20adv; Enter throws the box', async ({ shared: app }) => {
   await app.page.setViewportSize(SIZES.desktop); await toRoll(app);
   const before = await st(app);
   const chip = async sel => { await app.page.locator(`#qbar .dchip${sel}`).click(); await app.page.waitForTimeout(350); };   // a single tap waits ~250 ms for a double-click (.38.40)
@@ -52,16 +52,16 @@ test('a die chip loads the box and does not throw; Adv rewrites the d20; Enter t
   await add('[data-die="100"]'); expect((await st(app)).box).toBe('2d20+1d6+1d%');
   await chip('[data-die="8"]'); expect((await st(app)).box, 'a tap replaces the whole formula').toBe('1d8');
   await app.page.locator('#rollbox').fill('1d20+1d6+2');
-  await chip('[data-adv="h"]'); expect((await st(app)).box).toBe('2d20kh1+1d6+2');
-  await chip('[data-adv="l"]'); expect((await st(app)).box).toBe('2d20kl1+1d6+2');
+  await chip('[data-adv="h"]'); expect((await st(app)).box, 'PD-142.38.46: a tap on Adv replaces the box with d20adv').toBe('2d20kh1');
+  await chip('[data-adv="l"]'); expect((await st(app)).box).toBe('2d20kl1');
   expect(await st(app), 'loading never throws or changes the dice on the mat').toMatchObject({ n: before.n, dice: before.dice, settled: true });
   await app.page.locator('#rollbox').press('Enter');
-  expect(await st(app)).toMatchObject({ n: '2d20kl1+1d6+2', dice: 3, settled: false, box: '2d20kl1+1d6+2', ph: '2d20kl1+1d6+2' });   // the text stays in the box after a roll (PD-142.14.1.6.2)
+  expect(await st(app)).toMatchObject({ n: '2d20kl1', dice: 2, settled: false, box: '2d20kl1', ph: '2d20kl1' });   // the text stays in the box after a roll (PD-142.14.1.6.2)
   await settle(app);
   // a formula that does not parse marks the box and changes nothing
   await app.page.locator('#rollbox').fill('banana'); await app.page.locator('#rollbtn').click();
   await expect(app.page.locator('#rollbox')).toHaveClass(/bad/);
-  expect(await st(app)).toMatchObject({ n: '2d20kl1+1d6+2', settled: true });
+  expect(await st(app)).toMatchObject({ n: '2d20kl1', settled: true });
   await app.page.locator('#rollbox').fill('');
 });
 

@@ -21,12 +21,16 @@ test('a set chip replaces the typed dock text (.3)', async ({ app, page }) => {
   await expect(page.locator('#rollbox')).toHaveValue('');
   expect(await app.run(pd => pd.state.notation)).not.toBe('5d10+2');
 });
-test('Adv and Dis on a roll with no d20 explain instead of adding one (.5)', async ({ app, page }) => {
+test('dock Adv/Dis insert d20adv like the Custom chips: tap replaces, double-click adds, never edits an existing die (PD-142.38.46)', async ({ app, page }) => {
   await open(app);
-  await page.fill('#rollbox', '3d6');
-  const adv = page.locator('#qbar .dchip[data-adv="h"]'); await adv.scrollIntoViewIfNeeded(); await page.waitForTimeout(300); await adv.click();
-  await expect(page.locator('#rollbox')).toHaveValue('3d6');
-  await expect(page.locator('#qerr')).toContainText('d20');
-  await page.fill('#rollbox', '1d20+3'); await adv.click();
-  await expect(page.locator('#rollbox')).toHaveValue('2d20kh1+3');
+  const adv = page.locator('#qbar .dchip[data-adv="h"]'), dis = page.locator('#qbar .dchip[data-adv="l"]'), box = page.locator('#rollbox');
+  await adv.scrollIntoViewIfNeeded(); await page.waitForTimeout(300);
+  await box.fill(''); await adv.click(); await expect(box, 'empty box, tap').toHaveValue('2d20kh1');
+  await box.fill('1d20'); await page.waitForTimeout(300); await adv.click(); await expect(box, '1d20, tap: replaced, not modified').toHaveValue('2d20kh1');
+  await box.fill('1d20'); await page.waitForTimeout(500); await adv.dblclick(); await expect(box, '1d20, double-click: added').toHaveValue('1d20+2d20kh1');
+  await box.fill('2d6+3'); await page.waitForTimeout(500); await adv.click(); await expect(box, '2d6+3, tap: replaced').toHaveValue('2d20kh1');
+  await box.fill('2d6+3'); await page.waitForTimeout(500); await dis.dblclick(); await expect(box, '2d6+3, double-click: added, modifier kept').toHaveValue('2d6+2d20kl1+3');
+  await box.fill('2d20kh1'); await page.waitForTimeout(500); await dis.click(); await expect(box, 'existing adv, tap Dis: replaced').toHaveValue('2d20kl1');
+  await box.fill('2d20kh1'); await page.waitForTimeout(500); await dis.dblclick(); await expect(box, 'existing adv, double-click Dis: added').toHaveValue('2d20kh1+2d20kl1');
+  await expect(page.locator('#qerr')).toHaveText('');
 });
