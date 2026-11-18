@@ -47,6 +47,46 @@ def games_bundle():   # the engine as plain inline JS: `const GAMES = (() => { .
         assert not re.search(r"^(import|export) ", src, re.M), f'games/{name}.js: an import/export was not rewritten'
         parts.append(f"__pdm['{name}'] = (() => {{\n{src}\nreturn {{ {', '.join(exports)} }};\n}})();")
     return "const GAMES = (() => {\nconst __pdm = {};\n" + "\n".join(parts) + "\nreturn __pdm['index'];\n})();"
+SRC_RULES = """src/ module rules (docs/design/v41-factoring-plan.md): export only const/function/class declarations (no let/var: a live
+binding would not survive bundling), no default export or export *, no top-level await, no import cycles; external imports
+only as lines the main module already has (they are dropped and the closure sees main's binding)."""
+def src_bundle(main):   # inline the ./src/*.js modules the main module imports, in native evaluation order (depth-first), as closures
+    imp_main = re.compile(r"^import \{([^}]*)\} from '\./src/([\w-]+)\.js';[ \t]*\n", re.M)
+    if not imp_main.search(main): return main
+    imp_rel = re.compile(r"^import \{([^}]*)\} from '\./([\w-]+)\.js';[ \t]*$", re.M)
+    imp_ext = re.compile(r"^import [^'\n]* from '[^.][^']*';[ \t]*$", re.M)
+    exp_decl = re.compile(r"^export (const|function|class|async function) (\w+)", re.M)
+    destructure = lambda names: '{ ' + ', '.join(n.strip().replace(' as ', ': ') for n in names.split(',') if n.strip()) + ' }'
+    main_ext = set(l.strip() for l in imp_ext.findall(main))
+    mods, order, state = {}, [], {}
+    def visit(name, path):
+        if state.get(name) == 'done': return
+        assert state.get(name) != 'visiting', f'src/{name}.js: import cycle {" -> ".join(path + [name])}\n{SRC_RULES}'
+        state[name] = 'visiting'
+        src = (root / 'src' / f'{name}.js').read_text()
+        assert '</script' not in src and '<!--' not in src, f'src/{name}.js cannot be inlined in a script tag'
+        assert not re.search(r"^export (default|\*|let|var|\{)", src, re.M), f'src/{name}.js: unsupported export form\n{SRC_RULES}'
+        assert not re.search(r"^await |^const \w+\s*=\s*await ", src, re.M), f'src/{name}.js: top-level await\n{SRC_RULES}'
+        for m in imp_rel.finditer(src): visit(m.group(2), path + [name])
+        mods[name] = src; order.append(name); state[name] = 'done'
+    for m in imp_main.finditer(main): visit(m.group(2), [])
+    parts = []
+    for name in order:
+        src = mods[name]
+        for line in imp_ext.findall(src): assert line.strip() in main_ext, f'src/{name}.js: external import not in the main module: {line}\n{SRC_RULES}'
+        src = imp_ext.sub('', src)
+        src = imp_rel.sub(lambda m: f"const {destructure(m.group(1))} = __pdm['{m.group(2)}'];", src)
+        exports = [m.group(2) for m in exp_decl.finditer(src)]
+        src = exp_decl.sub(lambda m: f"{m.group(1)} {m.group(2)}", src)
+        assert not re.search(r"^(import|export) ", src, re.M), f'src/{name}.js: an import/export was not rewritten\n{SRC_RULES}'
+        parts.append(f"__pdm['{name}'] = (() => {{\n{src}\nreturn {{ {', '.join(exports)} }};\n}})();\n")
+    first = True
+    def repl(m):
+        nonlocal first
+        head = ('const __pdm = {};\n' + ''.join(parts)) if first else ''
+        first = False
+        return head + f"const {destructure(m.group(1))} = __pdm['{m.group(2)}'];\n"
+    return imp_main.sub(repl, main)
 def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.wav", "best/manifest.json"); index.html reads window.__SOUNDS before fetching
     d = root / 'sounds'; files = {}
     for sub in ('best', 'kenney'):
@@ -54,6 +94,10 @@ def sounds_tag():   # every sample file as base64, keyed like sounds/ ("best/x.w
             if f.suffix in ('.wav', '.json'): files[f'{sub}/{f.name}'] = base64.b64encode(f.read_bytes()).decode()
     return '<script>window.__SOUNDS=' + json.dumps(files) + ';</script>\n'
 html = (root / 'index.html').read_text()
+html = src_bundle(html)   # ./src/*.js modules inlined into the main module (both builds)
+def inline_css(html):   # <link rel="stylesheet" href="src/x.css"> -> the same CSS in a <style> element (both builds)
+    return re.sub(r'<link rel="stylesheet" href="(src/[\w-]+\.css)">', lambda m: '<style>\n' + (root / m.group(1)).read_text() + '</style>', html)
+html = inline_css(html)
 m = re.search(r'<!--BOOTSTRAP-->.*?<!--/BOOTSTRAP-->', html, re.S)
 if not m: sys.exit('bootstrap markers not found in index.html')
 
