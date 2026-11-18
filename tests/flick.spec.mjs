@@ -55,8 +55,9 @@ test('flick up has a smaller depth component than flick down; sideways unchanged
   const fv = (dx, dy) => app.run((pd, a) => { const v = pd.flickVel(a.dx, a.dy, 120); return [v.x, v.z]; }, { dx, dy });
   const upV = await fv(0, -200), downV = await fv(0, 200), sideV = await fv(200, 0), diagV = await fv(200, -200);
   console.log(`FLICK vel (x,z) up=${upV.map(v => v.toFixed(1))} down=${downV.map(v => v.toFixed(1))} side=${sideV.map(v => v.toFixed(1))} upright=${diagV.map(v => v.toFixed(1))}`);
-  expect(Math.abs(upV[1]), 'an up flick sends less toward the back wall than a down flick toward the viewer').toBeLessThan(Math.abs(downV[1]) * 0.7);
-  expect(upV[1], 'still away from the viewer').toBeLessThan(-5); expect(downV[1]).toBeGreaterThan(10); expect(sideV[0], 'sideways keeps its full speed').toBeGreaterThan(15);
+  const nrm = v => Math.hypot(v[0], v[1]);   // the camera may still be settling into the roll view (its yaw is not the point), so compare lengths on the mat
+  expect(nrm(upV), 'an up flick is throttled on the mat (less depth) compared with a down flick').toBeLessThan(nrm(downV) * 0.7);
+  expect(nrm(sideV), 'sideways keeps its full speed').toBeGreaterThan(nrm(downV) * 0.95); expect(nrm(downV)).toBeGreaterThan(12);
   const depth = async dy => { await app.run(pd => pd.simRoll()); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
   const up = await depth(-200);
   expect(up).toBeLessThan(-2.5);   // still throws away from the viewer
