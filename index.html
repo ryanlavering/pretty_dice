@@ -221,7 +221,7 @@
     #paneltabs{padding-top:22px;padding-bottom:5px;margin-bottom:8px}   /* PD-142.38.18: the centred Full-view handle covers the top 20px of the panel; the strip starts below it. PD-142.38.41: slim single row, sticky */
     #paneclose{left:50%;right:auto;top:auto;bottom:calc(46% - 20px);margin:0 0 0 -28px;width:56px;height:20px;border-radius:0 0 10px 10px;border:1px solid var(--line);border-top:0} #paneclose svg{transform:rotate(-90deg)}
     #paneopen{left:50%;right:auto;top:auto;bottom:0;margin:0 0 0 -28px;width:56px;height:16px;border-radius:10px 10px 0 0;border:1px solid var(--line);border-bottom:0} #paneopen svg{transform:rotate(-90deg);width:14px;height:14px}
-    aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line)}
+    aside{width:100%;height:46%;border-right:0;border-top:1px solid var(--line);overflow-x:hidden;overflow-y:auto;overscroll-behavior-x:none;touch-action:pan-y}   /* PD-142.38.57: the phone pane scrolls vertically only: a sideways drag does nothing (nothing in it is meant to scroll sideways) */
   }
   /* phone held sideways: the round corners are at the sides, so push the controls in from the sides instead of lifting them from the bottom */
   @media (orientation:landscape) and (max-height:520px) and (pointer:coarse){
@@ -2105,6 +2105,7 @@ $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 /* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
+  {id:'PD-142.38.55', rev:1, anchor:'#shapes', text:'On a phone, tapping a Shape button (or any other control in the settings pane) no longer jumps the pane back to the top: the pane stays where you scrolled it. The pane also scrolls up and down only now; a sideways drag does nothing. Check: on a phone, scroll the Design pane down, tap Shape buttons, Adv / Dis, the Custom +/- chips, then drag sideways.', card:'PD-142.38.55'},
   {id:'PD-142.38.54', rev:1, anchor:'#bagbtn', text:'The grey "UI paused" diagnostics note now appears at the top centre instead of over the round Bag button, so the Bag button stays tappable after a slow moment. Check: after the page has paused (a big bag loading), the Bag button opens the Bag view at once.', card:'PD-142.38.54'},
   {id:'PD-142.38.53', rev:1, anchor:'#rollbox', text:'Switching rooms no longer puts old dock-box text back over a formula the app set itself (for example after you change one die\'s design). Only a box you edited since the last switch wins. Check: Play, type 2d6, Roll; Design, change the Custom set; Play: the box shows the new formula.', card:'PD-142.38.53'},
   {id:'PD-142.38.52', rev:1, anchor:'#bagsave', text:'Saving the bag (Save bag, the Bag view Save, Copy JSON) now saves every edited or renamed design first, then writes the file; no design is left showing Modified. Check: rename or tweak a few designs without saving each, then Save bag and look at the Designs list.', card:'PD-142.38.52'},
@@ -2872,7 +2873,7 @@ const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/6
 
 /* ---------- games (PD-142.4/.5): panel, setup, scorecard; the engine is 'pd-games' ---------- */
 const GPstage=$('gamepanel'), SP=$('scorepane'), PT=$('paneltabs'), GKEY='prettydice.games';
-let GP=SP, paneAuto=false;   // GP is where the full panel is drawn: the stage on desktop and landscape, the scorecard pane in the settings slot on phones
+let GP=SP, paneAuto=false, paneKey='', paneSeen='', paneRaf=0;   // GP is where the full panel is drawn: the stage on desktop and landscape, the scorecard pane in the settings slot on phones
 const phoneMq=matchMedia('(max-width:760px)'), phoneUI=()=>phoneMq.matches;
 const roomTab={design:'look',play:'table'}, roomNow=()=>document.body.classList.contains('design')?'design':'play';   // PD-142.38 slice 5: the last tab per room is remembered
 const PANES=['look','table','games','log'];   // PD-142.38.41/.43: Design has no tabs (always Look; the strip holds Undo/Redo); Bag and Sets are the Bag view's tabs
@@ -2884,7 +2885,7 @@ function setPane(name){ const room=roomNow();
   $('settingspane').hidden=g||lg; SP.hidden=!g; $('logpanel').hidden=!lg;
   if(lg) renderLog();
   if(!(g||lg)) $('settingspane').dataset.tab=name;
-  PT.querySelectorAll('button[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); $('gamestab').closest('aside').scrollTop=0; }
+  PT.querySelectorAll('button[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); paneKey=room+':'+name; if(!paneRaf) paneRaf=requestAnimationFrame(()=>{ paneRaf=0; if(paneKey!==paneSeen){ paneSeen=paneKey; $('gamestab').closest('aside').scrollTop=0; } }); }   /* PD-142.38.55: syncMode re-applies the pane on every shape tap and mode sync (and a Play rebuild passes through the Design room for a moment), so only a room or tab that has really changed by the next frame goes back to the top */
 function applyRoomPane(){ try{ setPane('settings'); }catch{} }
 PT.querySelectorAll('button[data-pane]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pane;
   if(n==='games'&&!game&&!SP.childNodes.length){ document.dispatchEvent(new CustomEvent('pd-open-games')); return; } setPane(n); });   // slice 6: the Games tab replaces the round Games button
