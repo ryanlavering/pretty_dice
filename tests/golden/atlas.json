@@ -1,0 +1,236 @@
+{
+ "d20cinzel": {
+  "cols": 5,
+  "rows": 4,
+  "cell": 256,
+  "info": [
+   {
+    "halfDiag": 44.28318
+   },
+   {
+    "halfDiag": 51.224994
+   },
+   {
+    "halfDiag": 52.423754
+   },
+   {
+    "halfDiag": 53.150729
+   },
+   {
+    "halfDiag": 53.688919
+   },
+   {
+    "halfDiag": 62.603914
+   },
+   {
+    "halfDiag": 49.600907
+   },
+   {
+    "halfDiag": 51.703482
+   },
+   {
+    "halfDiag": 61.880934
+   },
+   {
+    "halfDiag": 69.808667
+   },
+   {
+    "halfDiag": 58.363088
+   },
+   {
+    "halfDiag": 68.007353
+   },
+   {
+    "halfDiag": 67.736622
+   },
+   {
+    "halfDiag": 68.412353
+   },
+   {
+    "halfDiag": 67.97426
+   },
+   {
+    "halfDiag": 70.208618
+   },
+   {
+    "halfDiag": 65.209278
+   },
+   {
+    "halfDiag": 67.80118
+   },
+   {
+    "halfDiag": 69.814039
+   },
+   {
+    "halfDiag": 80.692317
+   }
+  ],
+  "bump": "1280x1024:2311c71d",
+  "mask": "1280x1024:8a0da263"
+ },
+ "d10pad": {
+  "cols": 4,
+  "rows": 3,
+  "cell": 256,
+  "info": [
+   {
+    "halfDiag": 92.294366
+   },
+   {
+    "halfDiag": 73.124893
+   },
+   {
+    "halfDiag": 90.801982
+   },
+   {
+    "halfDiag": 92.590496
+   },
+   {
+    "halfDiag": 89.746866
+   },
+   {
+    "halfDiag": 93.265749
+   },
+   {
+    "halfDiag": 94.151474
+   },
+   {
+    "halfDiag": 87.512856
+   },
+   {
+    "halfDiag": 94.366308
+   },
+   {
+    "halfDiag": 93.708324
+   }
+  ],
+  "bump": "1024x768:a3dde793",
+  "mask": "1024x768:4cf1193e"
+ },
+ "d12inter": {
+  "cols": 4,
+  "rows": 3,
+  "cell": 256,
+  "info": [
+   {
+    "halfDiag": 45.400991
+   },
+   {
+    "halfDiag": 52.100864
+   },
+   {
+    "halfDiag": 53.807527
+   },
+   {
+    "halfDiag": 53.263496
+   },
+   {
+    "halfDiag": 52.5
+   },
+   {
+    "halfDiag": 64.863318
+   },
+   {
+    "halfDiag": 50.803543
+   },
+   {
+    "halfDiag": 53.807527
+   },
+   {
+    "halfDiag": 64.863318
+   },
+   {
+    "halfDiag": 72.308367
+   },
+   {
+    "halfDiag": 60.1415
+   },
+   {
+    "halfDiag": 69.300072
+   }
+  ],
+  "bump": "1024x768:2281cb51",
+  "mask": "1024x768:beb02e0b"
+ },
+ "d6pips": {
+  "cols": 3,
+  "rows": 2,
+  "cell": 256,
+  "info": [
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   }
+  ],
+  "bump": "768x512:c32ea742",
+  "mask": "768x512:b2d02c04"
+ },
+ "d4tips": {
+  "cols": 2,
+  "rows": 2,
+  "cell": 256,
+  "info": [
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   },
+   {
+    "halfDiag": 1
+   }
+  ],
+  "bump": "512x512:0002c2a5",
+  "mask": "512x512:8805679b"
+ },
+ "d8big": {
+  "cols": 3,
+  "rows": 3,
+  "cell": 416,
+  "info": [
+   {
+    "halfDiag": 51.722819
+   },
+   {
+    "halfDiag": 53.535035
+   },
+   {
+    "halfDiag": 54.226377
+   },
+   {
+    "halfDiag": 55.509008
+   },
+   {
+    "halfDiag": 53.807527
+   },
+   {
+    "halfDiag": 65.408333
+   },
+   {
+    "halfDiag": 53.11544
+   },
+   {
+    "halfDiag": 54.918121
+   }
+  ],
+  "bump": "1248x1248:4340bfbe",
+  "mask": "1248x1248:6824e335"
+ }
+}

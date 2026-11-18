@@ -1,0 +1,1220 @@
+[
+ [
+  {
+   "design": {
+    "colors": [
+     "#dda576",
+     "#c0a75e",
+     "#e7b3aa"
+    ],
+    "edge_radius": 0.079,
+    "filigree": {
+     "enamel": "#84e89f",
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.72
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 2.7,
+     "font": "mono",
+     "rotation_deg": 0,
+     "size": 0.67,
+     "softness": 4.6
+    },
+    "paint": "#1f6c83",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      13.543917,
+      54.113251,
+      23.416976
+     ],
+     "scale": 1.04,
+     "seed": 627073940
+    },
+    "relief": {
+     "numbers": "raised",
+     "paint_numbers": true,
+     "panel": 0.18,
+     "panel_depth": 0.69,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.25,
+     "clarity": 0.72,
+     "glitter": 0.65
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.3,
+     "type": "marble"
+    },
+    "substrate": "pearl",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#4df6d8",
+     "#8be2f8",
+     "#cff7d7"
+    ],
+    "edge_radius": 0.065,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.51
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": -0.05,
+     "size": 0.58,
+     "turn_deg": 80,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 1.7,
+     "font": "metamorphous",
+     "rotation_deg": 0,
+     "size": 0.75,
+     "softness": 5.8
+    },
+    "paint": "#1f6c83",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      42.157793,
+      17.046173,
+      53.088695
+     ],
+     "scale": 2.04,
+     "seed": 2735721
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.79,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.57,
+     "clarity": 0.71,
+     "glitter": 0.59
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.62,
+     "type": "marble"
+    },
+    "substrate": "epoxy",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#774df3",
+     "#ef85ac",
+     "#b4f4da"
+    ],
+    "edge_radius": 0.018,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.62
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": -0.05,
+     "size": 0.58,
+     "turn_deg": 80,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 1.5,
+     "font": "cinzel",
+     "rotation_deg": 0,
+     "size": 0.52,
+     "softness": 2.8
+    },
+    "paint": "#1f6c83",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      32.789204,
+      44.958655,
+      55.492318
+     ],
+     "scale": 1.86,
+     "seed": 527447039
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.75,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.37,
+     "clarity": 0.67,
+     "glitter": 0.4
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.23,
+     "type": "marble"
+    },
+    "substrate": "solid",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ],
+ [
+  {
+   "design": {
+    "colors": [
+     "#edf64d",
+     "#cdf88b",
+     "#f7eccf"
+    ],
+    "edge_radius": 0.071,
+    "filigree": {
+     "enamel": "#98f7ef",
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.3
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0.08,
+     "size": 0.58,
+     "turn_deg": 99,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 3.9,
+     "font": "uncial",
+     "rotation_deg": 0,
+     "size": 0.61,
+     "softness": 5.7
+    },
+    "paint": "#433a7b",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      52.760778,
+      35.594595,
+      50.267624
+     ],
+     "scale": 1,
+     "seed": 734250944
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": false,
+     "panel": 0,
+     "panel_depth": 0.38,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.49,
+     "clarity": 0.36,
+     "glitter": 0.77
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.25,
+     "type": "marble"
+    },
+    "substrate": "epoxy",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#dcac63",
+     "#b9f27f",
+     "#f4b4df"
+    ],
+    "edge_radius": 0.079,
+    "filigree": {
+     "enamel": "#ebc469",
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.27
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0.08,
+     "size": 0.58,
+     "turn_deg": 99,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 2,
+     "font": "uncial",
+     "rotation_deg": 0,
+     "size": 0.59,
+     "softness": 3.9
+    },
+    "paint": "#433a7b",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      31.141594,
+      23.165221,
+      15.823668
+     ],
+     "scale": 2.1,
+     "seed": 324998432
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.79,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.51,
+     "clarity": 0.48,
+     "glitter": 0.94
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.39,
+     "type": "marble"
+    },
+    "substrate": "swirl",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#b8dc63",
+     "#7ff2c4",
+     "#f4c9b4"
+    ],
+    "edge_radius": 0.04,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.66
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0.08,
+     "size": 0.58,
+     "turn_deg": 99,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 2.9,
+     "font": "georgia",
+     "rotation_deg": 0,
+     "size": 0.64,
+     "softness": 3
+    },
+    "paint": "#433a7b",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      49.688208,
+      16.665864,
+      22.06784
+     ],
+     "scale": 2.03,
+     "seed": 285296055
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.62,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.11,
+     "clarity": 0.36,
+     "glitter": 0.34
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.02,
+     "type": "marble"
+    },
+    "substrate": "swirl",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ],
+ [
+  {
+   "design": {
+    "colors": [
+     "#a7dd76",
+     "#6bc05e",
+     "#d3e7aa"
+    ],
+    "edge_radius": 0.063,
+    "filigree": {
+     "enamel": "#5df0f0",
+     "filled": false,
+     "style": "scroll"
+    },
+    "finish": {
+     "polish": 0.94
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 2.5,
+     "font": "georgia",
+     "rotation_deg": 0,
+     "size": 0.54,
+     "softness": 2.7
+    },
+    "paint": "#0b0b10",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      27.957129,
+      18.826645,
+      58.111128
+     ],
+     "scale": 1.46,
+     "seed": 720226783
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.71,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.61,
+     "clarity": 0.41,
+     "glitter": 0.3
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.71,
+     "type": "marble"
+    },
+    "substrate": "pearl",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#6cdc63",
+     "#7fc1f2",
+     "#d5b4f4"
+    ],
+    "edge_radius": 0.025,
+    "filigree": {
+     "enamel": null,
+     "filled": false,
+     "style": "beads"
+    },
+    "finish": {
+     "polish": 0.44
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 1.3,
+     "font": "metamorphous",
+     "rotation_deg": 0,
+     "size": 0.54,
+     "softness": 2.4
+    },
+    "paint": "#0b0b10",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      34.913245,
+      0.14215,
+      34.712929
+     ],
+     "scale": 1.51,
+     "seed": 38662160
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.48,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.28,
+     "clarity": 0.44,
+     "glitter": 0.65
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.64,
+     "type": "marble"
+    },
+    "substrate": "swirl",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#dd76cf",
+     "#c05e9b",
+     "#e4aae7"
+    ],
+    "edge_radius": 0.064,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.4
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 2.8,
+     "font": "mono",
+     "rotation_deg": 0,
+     "size": 0.52,
+     "softness": 5.8
+    },
+    "paint": "#0b0b10",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      41.57458,
+      44.51914,
+      58.142801
+     ],
+     "scale": 1.7,
+     "seed": 456192192
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.79,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.58,
+     "clarity": 0.74,
+     "glitter": 0.89
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.84,
+     "type": "marble"
+    },
+    "substrate": "pearl",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ],
+ [
+  {
+   "design": {
+    "colors": [
+     "#63dcca",
+     "#f27fee",
+     "#f4d9b4"
+    ],
+    "edge_radius": 0.036,
+    "filigree": {
+     "enamel": "#acf6a5",
+     "filled": true,
+     "style": "deco"
+    },
+    "finish": {
+     "polish": 0.65
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 2.4,
+     "font": "uncial",
+     "rotation_deg": 0,
+     "size": 0.63,
+     "softness": 3.2
+    },
+    "paint": "#822245",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      15.430173,
+      26.503223,
+      33.648009
+     ],
+     "scale": 1.15,
+     "seed": 11704753
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.85,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.19,
+     "clarity": 0.56,
+     "glitter": 0.49
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.39,
+     "type": "marble"
+    },
+    "substrate": "swirl",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#cbd464",
+     "#85efb0",
+     "#f4b4ba"
+    ],
+    "edge_radius": 0.019,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.83
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 3.9,
+     "font": "metamorphous",
+     "rotation_deg": 0,
+     "size": 0.7,
+     "softness": 4.8
+    },
+    "paint": "#822245",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      46.788384,
+      49.096777,
+      59.59256
+     ],
+     "scale": 1.32,
+     "seed": 61958257
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": false,
+     "panel": 0,
+     "panel_depth": 0.54,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.52,
+     "clarity": 0.6,
+     "glitter": 0.79
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.03,
+     "type": "marble"
+    },
+    "substrate": "solid",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#d4af37",
+     "#c3ef85",
+     "#b4f4b7"
+    ],
+    "edge_radius": 0.04,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.35
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 4,
+     "font": "metamorphous",
+     "rotation_deg": 0,
+     "size": 0.77,
+     "softness": 4
+    },
+    "paint": "#822245",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      14.585082,
+      37.483869,
+      42.652833
+     ],
+     "scale": 1.62,
+     "seed": 976907632
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.85,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.45,
+     "clarity": 0.8,
+     "glitter": 0.35
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.2,
+     "type": "marble"
+    },
+    "substrate": "metal",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ],
+ [
+  {
+   "design": {
+    "colors": [
+     "#ed844d",
+     "#85efb9",
+     "#b4c9f4"
+    ],
+    "edge_radius": 0.062,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.4
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 2.1,
+     "font": "cinzel",
+     "rotation_deg": 0,
+     "size": 0.59,
+     "softness": 2.1
+    },
+    "paint": "#2a1a12",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      40.681701,
+      30.65808,
+      37.920673
+     ],
+     "scale": 1.04,
+     "seed": 601103751
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.69,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.14,
+     "clarity": 0.8,
+     "glitter": 0.8
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.79,
+     "type": "marble"
+    },
+    "substrate": "solid",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#dd6ce5",
+     "#ef85bc",
+     "#f4b4b5"
+    ],
+    "edge_radius": 0.02,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.79
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 3.8,
+     "font": "cinzel",
+     "rotation_deg": 0,
+     "size": 0.8,
+     "softness": 5.6
+    },
+    "paint": "#2a1a12",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      50.682527,
+      39.946435,
+      43.839146
+     ],
+     "scale": 1.91,
+     "seed": 448290558
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.87,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.54,
+     "clarity": 0.49,
+     "glitter": 0.11
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.45,
+     "type": "marble"
+    },
+    "substrate": "solid",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#4deaf6",
+     "#978bf8",
+     "#cff7d7"
+    ],
+    "edge_radius": 0.027,
+    "filigree": {
+     "enamel": null,
+     "filled": false,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.25
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": -0.15,
+     "size": 0.51,
+     "turn_deg": -115,
+     "type": "duck"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 2.9,
+     "font": "uncial",
+     "rotation_deg": 0,
+     "size": 0.74,
+     "softness": 5
+    },
+    "paint": "#2a1a12",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      51.451108,
+      20.976819,
+      19.536349
+     ],
+     "scale": 1.98,
+     "seed": 852465793
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0.09,
+     "panel_depth": 0.35,
+     "patina": 0.68
+    },
+    "resin": {
+     "bubbles": 0.59,
+     "clarity": 0.58,
+     "glitter": 0.89
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.94,
+     "type": "marble"
+    },
+    "substrate": "epoxy",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ],
+ [
+  {
+   "design": {
+    "colors": [
+     "#e2ded2",
+     "#b1d0da",
+     "#8fb0ff"
+    ],
+    "edge_radius": 0.064,
+    "filigree": {
+     "enamel": "#ed5070",
+     "filled": true,
+     "style": "none"
+    },
+    "finish": {
+     "polish": 0.6
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 1.3,
+     "font": "cinzel",
+     "rotation_deg": 0,
+     "size": 0.73,
+     "softness": 4.6
+    },
+    "paint": "#6b7721",
+    "paint_mode": "auto",
+    "pattern": {
+     "offset": [
+      22.656956,
+      30.720677,
+      32.057252
+     ],
+     "scale": 2.02,
+     "seed": 73294978
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0.14,
+     "panel_depth": 0.57,
+     "patina": 0.65
+    },
+    "resin": {
+     "bubbles": 0.66,
+     "clarity": 0.59,
+     "glitter": 0.21
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.1,
+     "type": "opal"
+    },
+    "substrate": "marble",
+    "version": 1
+   },
+   "roundTripSame": false
+  },
+  {
+   "design": {
+    "colors": [
+     "#194f79",
+     "#30498e",
+     "#c0c4cc"
+    ],
+    "edge_radius": 0.069,
+    "filigree": {
+     "enamel": "#baf17a",
+     "filled": true,
+     "style": "deco"
+    },
+    "finish": {
+     "polish": 0.93
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "pips",
+     "depth": 1.6,
+     "font": "georgia",
+     "rotation_deg": 0,
+     "size": 0.62,
+     "softness": 3.2
+    },
+    "paint": "#6b7721",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      56.865874,
+      30.976314,
+      3.93287
+     ],
+     "scale": 1.3,
+     "seed": 703411989
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.57,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.5,
+     "clarity": 0.53,
+     "glitter": 0.1
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.72,
+     "type": "lapis"
+    },
+    "substrate": "marble",
+    "version": 1
+   },
+   "roundTripSame": true
+  },
+  {
+   "design": {
+    "colors": [
+     "#a97142",
+     "#85efaf",
+     "#b4d7f4"
+    ],
+    "edge_radius": 0.05,
+    "filigree": {
+     "enamel": null,
+     "filled": true,
+     "style": "deco"
+    },
+    "finish": {
+     "polish": 0.81
+    },
+    "format": "pretty-dice",
+    "inclusion": {
+     "height": 0,
+     "size": 0.7,
+     "turn_deg": 35,
+     "type": "none"
+    },
+    "name": "",
+    "notation": "2d6+d20+3",
+    "numbers": {
+     "d4_style": "tips",
+     "d6_style": "numbers",
+     "depth": 3,
+     "font": "mono",
+     "rotation_deg": 0,
+     "size": 0.65,
+     "softness": 3.4
+    },
+    "paint": "#6b7721",
+    "paint_mode": "custom",
+    "pattern": {
+     "offset": [
+      45.087283,
+      6.333947,
+      43.822407
+     ],
+     "scale": 1.12,
+     "seed": 902856019
+    },
+    "relief": {
+     "numbers": "inset",
+     "paint_numbers": true,
+     "panel": 0,
+     "panel_depth": 0.86,
+     "patina": 0
+    },
+    "resin": {
+     "bubbles": 0.17,
+     "clarity": 0.63,
+     "glitter": 0.1
+    },
+    "shape": "d20",
+    "stone": {
+     "accent": 0.44,
+     "type": "lapis"
+    },
+    "substrate": "metal",
+    "version": 1
+   },
+   "roundTripSame": true
+  }
+ ]
+]

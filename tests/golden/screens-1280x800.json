@@ -1,0 +1,5392 @@
+{
+ "play": {
+  "body": "inroll",
+  "ids": {
+   "app": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     0,
+     1280,
+     800
+    ]
+   },
+   "modesw": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     20,
+     273,
+     46
+    ]
+   },
+   "back": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     24,
+     133,
+     38
+    ],
+    "text": "Design"
+   },
+   "roll": {
+    "tag": "button",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     155,
+     24,
+     133,
+     38
+    ],
+    "text": "Play"
+   },
+   "paneltabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     78,
+     309,
+     57
+    ]
+   },
+   "histrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "undo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "redo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "gamestab": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     111,
+     88,
+     87,
+     38
+    ],
+    "text": "Games"
+   },
+   "settingspane": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     146,
+     273,
+     724
+    ]
+   },
+   "actions": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "randrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "rand": {
+    "tag": "button",
+    "cls": "big",
+    "shown": false
+   },
+   "draftact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "draftth": {
+    "tag": "span",
+    "cls": "dth",
+    "shown": false
+   },
+   "draftname": {
+    "tag": "span",
+    "cls": "dname",
+    "shown": false
+   },
+   "draftpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "dkeep": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "ddiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "randopts": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "randsub": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "randshape": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panes": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     146,
+     273,
+     724
+    ]
+   },
+   "shapehead": {
+    "tag": "h2",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     166,
+     273,
+     15
+    ],
+    "text": "Shape"
+   },
+   "shapes": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": true,
+    "box": [
+     18,
+     190,
+     273,
+     168
+    ]
+   },
+   "customctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "notation": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "notapply": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notadv": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notdis": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notclear": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "noterr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "dicedesignrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "stepdesign": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "termchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "steppers": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": false
+   },
+   "modm": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modv": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "modp": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "savesetrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "setname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "setsavebtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "cat-base": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": false
+   },
+   "subs": {
+    "tag": "div",
+    "cls": "grid two",
+    "shown": false
+   },
+   "c1": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "c2": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "c3": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "colorrand": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "scale": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "radius": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "polish": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "stonectl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stone": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "stonepaint": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "accent": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "epoxyctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "glitter": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "bubbles": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "clarity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "incl": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "inclctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "inclsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclturn": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclheight": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "loadmodel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modelfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paneldepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "patina": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "antique": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-numbers": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": false
+   },
+   "numpaint": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paint": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paintmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "font": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "d4style": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "d6style": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "numsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numrotv": {
+    "tag": "output",
+    "cls": "",
+    "shown": false
+   },
+   "numrotreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": false
+   },
+   "numrot": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numdepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numsoft": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numstyle": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sec-showcase": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "spin": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-dice": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "dicechips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sec-roll": {
+    "tag": "section",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     358,
+     273,
+     121
+    ]
+   },
+   "bounce": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     403,
+     131,
+     16
+    ],
+    "value": "0.4"
+   },
+   "fricdice": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     429,
+     131,
+     16
+    ],
+    "value": "0.16"
+   },
+   "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     455,
+     131,
+     16
+    ],
+    "value": "0.2"
+   },
+   "shakerow": {
+    "tag": "div",
+    "cls": "chk",
+    "shown": false
+   },
+   "shake": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-sound": {
+    "tag": "section",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     479,
+     273,
+     391
+    ]
+   },
+   "rumble": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     534,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "volume": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     567,
+     131,
+     16
+    ],
+    "value": "0.6"
+   },
+   "sndwidth": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     603,
+     131,
+     16
+    ],
+    "value": "0.5"
+   },
+   "soundtest": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     636,
+     98,
+     36
+    ],
+    "text": "Test sound"
+   },
+   "soundstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": true,
+    "box": [
+     124,
+     654,
+     0,
+     0
+    ]
+   },
+   "sndbk": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     108,
+     707,
+     96,
+     33
+    ],
+    "value": "mix"
+   },
+   "sndaud": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     211,
+     706,
+     80,
+     36
+    ],
+    "text": "Audition"
+   },
+   "sndmixrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": true,
+    "box": [
+     18,
+     747,
+     273,
+     39
+    ]
+   },
+   "sndmix": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     108,
+     759,
+     80,
+     16
+    ],
+    "value": "0.9"
+   },
+   "sndmixmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     197,
+     751,
+     94,
+     33
+    ],
+    "value": "layer"
+   },
+   "sndsurf": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     796,
+     140,
+     33
+    ],
+    "value": "leather"
+   },
+   "sndring": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     840,
+     131,
+     16
+    ],
+    "value": "0.5"
+   },
+   "sndbkstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     864,
+     0,
+     0
+    ]
+   },
+   "expsize": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "exppng": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "expjpg": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "savejson": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "loadjson": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "jsonfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "scorepane": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "logpanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "paneclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     372,
+     22,
+     56
+    ]
+   },
+   "paneopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "stage": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "topstrip": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stripmid": {
+    "tag": "div",
+    "cls": "peekh",
+    "shown": false
+   },
+   "qbar": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     746,
+     842,
+     46
+    ]
+   },
+   "rollbox": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     383,
+     753,
+     356,
+     32
+    ],
+    "value": ""
+   },
+   "dockhint": {
+    "tag": "span",
+    "cls": "dhint",
+    "shown": false
+   },
+   "dockact": {
+    "tag": "span",
+    "cls": "dact",
+    "shown": false
+   },
+   "rollbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     745,
+     752,
+     61,
+     34
+    ],
+    "text": "Roll"
+   },
+   "qchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     812,
+     755,
+     395,
+     28
+    ]
+   },
+   "qerr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "toast": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "shelf": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cards": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "tools": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "tl": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "bagbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "tr": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "drawer": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "dmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "snd": {
+    "tag": "button",
+    "cls": "di off",
+    "shown": false
+   },
+   "resetview": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "layout": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "info": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "spinbtn": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "roomsw": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "drawerbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "name": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     16,
+     970,
+     18
+    ],
+    "text": "D20 · METALLIC PLASTIC"
+   },
+   "result": {
+    "tag": "div",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     310,
+     46,
+     970,
+     73
+    ]
+   },
+   "hint": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "gamepanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cuppeek": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagask": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "baskt": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "baskSave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskDiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskCancel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "quickres": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     460,
+     208,
+     360,
+     28
+    ]
+   },
+   "cardmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "main-src": {
+    "tag": "script",
+    "cls": "",
+    "shown": false
+   },
+   "bagsheet": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheethead": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheettitle": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "sheetbag": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetact": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetsave": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetload": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetcopy": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagbox": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagth": {
+    "tag": "span",
+    "cls": "th",
+    "shown": false
+   },
+   "bagname": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "modbadge": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bsave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "brevert": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagdirty": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagsave": {
+    "tag": "button",
+    "cls": "linkbtn",
+    "shown": false
+   },
+   "sheettabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "tiles": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "setlist": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   }
+  },
+  "buttons": [
+   "#back Design",
+   "#roll Play",
+   "Table",
+   "#gamestab Games",
+   "Log",
+   "d4",
+   "d6",
+   "d8",
+   "d10",
+   "d%",
+   "d12",
+   "d20",
+   "d14",
+   "d16",
+   "Standard 7",
+   "Custom",
+   "rhombic d12",
+   "#soundtest Test sound",
+   "#sndaud Audition",
+   "#paneclose ",
+   "#rollbtn Roll",
+   "d4",
+   "d6",
+   "d8",
+   "d10",
+   "d12",
+   "d20",
+   "d%",
+   "Adv",
+   "Dis",
+   "#bagbtn ",
+   "#drawerbtn "
+  ]
+ },
+ "design": {
+  "body": "design",
+  "ids": {
+   "app": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     0,
+     1280,
+     800
+    ]
+   },
+   "modesw": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     20,
+     273,
+     46
+    ]
+   },
+   "back": {
+    "tag": "button",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     22,
+     24,
+     133,
+     38
+    ],
+    "text": "Design"
+   },
+   "roll": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     155,
+     24,
+     133,
+     38
+    ],
+    "text": "Play"
+   },
+   "paneltabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     78,
+     309,
+     47
+    ]
+   },
+   "histrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     88,
+     273,
+     28
+    ]
+   },
+   "undo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     18,
+     88,
+     134,
+     28
+    ]
+   },
+   "redo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     158,
+     88,
+     134,
+     28
+    ]
+   },
+   "gamestab": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "settingspane": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     137,
+     273,
+     1969
+    ]
+   },
+   "actions": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     66
+    ]
+   },
+   "randrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     42
+    ]
+   },
+   "rand": {
+    "tag": "button",
+    "cls": "big",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     42
+    ],
+    "text": "Randomize"
+   },
+   "draftact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "draftth": {
+    "tag": "span",
+    "cls": "dth",
+    "shown": false
+   },
+   "draftname": {
+    "tag": "span",
+    "cls": "dname",
+    "shown": false
+   },
+   "draftpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "dkeep": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "ddiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "randopts": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     269,
+     273,
+     17
+    ]
+   },
+   "randsub": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     120,
+     271,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": true
+   },
+   "randshape": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     208,
+     271,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "panes": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     286,
+     273,
+     1820
+    ]
+   },
+   "shapehead": {
+    "tag": "h2",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     306,
+     273,
+     15
+    ],
+    "text": "Shape"
+   },
+   "shapes": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": true,
+    "box": [
+     18,
+     329,
+     273,
+     168
+    ]
+   },
+   "customctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "notation": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "notapply": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notadv": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notdis": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notclear": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "noterr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "dicedesignrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "stepdesign": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "termchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "steppers": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": false
+   },
+   "modm": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modv": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "modp": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "savesetrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "setname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "setsavebtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "cat-base": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     523,
+     273,
+     31
+    ],
+    "text": "Base"
+   },
+   "subs": {
+    "tag": "div",
+    "cls": "grid two",
+    "shown": true,
+    "box": [
+     18,
+     602,
+     273,
+     144
+    ]
+   },
+   "c1": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     101,
+     798,
+     44,
+     30
+    ],
+    "value": "#a7dd76"
+   },
+   "c2": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     153,
+     798,
+     44,
+     30
+    ],
+    "value": "#6bc05e"
+   },
+   "c3": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     205,
+     798,
+     44,
+     30
+    ],
+    "value": "#d3e7aa"
+   },
+   "colorrand": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     257,
+     796,
+     34,
+     34
+    ]
+   },
+   "scale": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     844,
+     131,
+     16
+    ],
+    "value": "1.45"
+   },
+   "radius": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     876,
+     131,
+     16
+    ],
+    "value": "0.065"
+   },
+   "polish": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     906,
+     131,
+     16
+    ],
+    "value": "0.94"
+   },
+   "stonectl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stone": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "stonepaint": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "accent": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "epoxyctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "glitter": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "bubbles": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "clarity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "incl": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "inclctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "inclsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclturn": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclheight": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "loadmodel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modelfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     996,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "paneldepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1028,
+     131,
+     16
+    ],
+    "value": "0.71"
+   },
+   "patina": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1060,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "antique": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1084,
+     273,
+     38
+    ],
+    "text": "Antique relief preset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1177,
+     140,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1225,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1256,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1284,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-numbers": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     1346,
+     273,
+     31
+    ],
+    "text": "Numbers"
+   },
+   "numpaint": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1391,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": true
+   },
+   "paint": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1419,
+     44,
+     30
+    ],
+    "value": "#0b0b10"
+   },
+   "paintmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1461,
+     140,
+     33
+    ],
+    "value": "auto"
+   },
+   "font": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1506,
+     140,
+     33
+    ],
+    "value": "georgia"
+   },
+   "d4style": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1551,
+     140,
+     33
+    ],
+    "value": "tips"
+   },
+   "d6style": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1596,
+     140,
+     33
+    ],
+    "value": "pips"
+   },
+   "numsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1643,
+     131,
+     16
+    ],
+    "value": "0.076"
+   },
+   "numrotv": {
+    "tag": "output",
+    "cls": "",
+    "shown": true,
+    "box": [
+     80,
+     1680,
+     15,
+     17
+    ],
+    "text": "0°",
+    "value": "0°"
+   },
+   "numrotreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": true,
+    "box": [
+     103,
+     1681,
+     26,
+     19
+    ],
+    "text": "0°"
+   },
+   "numrot": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1673,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "numdepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1720,
+     131,
+     16
+    ],
+    "value": "2.5"
+   },
+   "numsoft": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1752,
+     131,
+     16
+    ],
+    "value": "2.7"
+   },
+   "numstyle": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1782,
+     140,
+     33
+    ],
+    "value": "inset"
+   },
+   "sec-showcase": {
+    "tag": "section",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1821,
+     273,
+     69
+    ]
+   },
+   "spin": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1866,
+     131,
+     16
+    ],
+    "value": "0.3"
+   },
+   "sec-dice": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "dicechips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sec-roll": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "bounce": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricdice": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "shakerow": {
+    "tag": "div",
+    "cls": "chk",
+    "shown": false
+   },
+   "shake": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-sound": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "rumble": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "volume": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndwidth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "soundtest": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "soundstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sndbk": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndaud": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "sndmix": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndsurf": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndring": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndbkstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "expsize": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1940,
+     140,
+     33
+    ],
+    "value": "2048"
+   },
+   "exppng": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1979,
+     134,
+     38
+    ],
+    "text": "PNG"
+   },
+   "expjpg": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     158,
+     1979,
+     134,
+     38
+    ],
+    "text": "JPG"
+   },
+   "dname": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     110,
+     2022,
+     181,
+     34
+    ],
+    "value": ""
+   },
+   "savejson": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     2068,
+     134,
+     38
+    ],
+    "text": "Save design"
+   },
+   "loadjson": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     158,
+     2068,
+     134,
+     38
+    ],
+    "text": "Load design"
+   },
+   "bagfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "jsonfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "scorepane": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "logpanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "paneclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     372,
+     22,
+     56
+    ]
+   },
+   "paneopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "stage": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "topstrip": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stripmid": {
+    "tag": "div",
+    "cls": "peekh",
+    "shown": false
+   },
+   "qbar": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "rollbox": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "dockhint": {
+    "tag": "span",
+    "cls": "dhint",
+    "shown": false
+   },
+   "dockact": {
+    "tag": "span",
+    "cls": "dact",
+    "shown": false
+   },
+   "rollbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "qchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "qerr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "toast": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "shelf": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     706,
+     842,
+     86
+    ]
+   },
+   "cards": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     706,
+     842,
+     86
+    ]
+   },
+   "tools": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "tl": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "bagbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "tr": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "drawer": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "dmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "snd": {
+    "tag": "button",
+    "cls": "di off",
+    "shown": false
+   },
+   "resetview": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "layout": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "info": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "spinbtn": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "roomsw": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "drawerbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "name": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     16,
+     970,
+     18
+    ],
+    "text": "D20 · METALLIC PLASTIC"
+   },
+   "result": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     46,
+     970,
+     73
+    ]
+   },
+   "hint": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "gamepanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cuppeek": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagask": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "baskt": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "baskSave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskDiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskCancel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "quickres": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     460,
+     208,
+     360,
+     28
+    ]
+   },
+   "cardmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "main-src": {
+    "tag": "script",
+    "cls": "",
+    "shown": false
+   },
+   "bagsheet": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheethead": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheettitle": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "sheetbag": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetact": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetsave": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetload": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetcopy": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagbox": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagth": {
+    "tag": "span",
+    "cls": "th",
+    "shown": false
+   },
+   "bagname": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "modbadge": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bsave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "brevert": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagdirty": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagsave": {
+    "tag": "button",
+    "cls": "linkbtn",
+    "shown": false
+   },
+   "sheettabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "tiles": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "setlist": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   }
+  },
+  "buttons": [
+   "#back Design",
+   "#roll Play",
+   "#undo ",
+   "#redo ",
+   "#rand Randomize",
+   "d4",
+   "d6",
+   "d8",
+   "d10",
+   "d%",
+   "d12",
+   "d20",
+   "d14",
+   "d16",
+   "Standard 7",
+   "Custom",
+   "rhombic d12",
+   "Solid plastic",
+   "Swirled plastic",
+   "Metallic plastic",
+   "Solid metal",
+   "Clear epoxy",
+   "Stone (marble, granite…)",
+   "#colorrand ",
+   "#antique Antique relief preset",
+   "#numrotreset 0°",
+   "#exppng PNG",
+   "#expjpg JPG",
+   "#savejson Save design",
+   "#loadjson Load design",
+   "#paneclose ",
+   "+Add",
+   "#bagbtn ",
+   "#drawerbtn "
+  ]
+ },
+ "bag": {
+  "body": "design",
+  "ids": {
+   "app": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     0,
+     1280,
+     800
+    ]
+   },
+   "modesw": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     20,
+     273,
+     46
+    ]
+   },
+   "back": {
+    "tag": "button",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     22,
+     24,
+     133,
+     38
+    ],
+    "text": "Design"
+   },
+   "roll": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     155,
+     24,
+     133,
+     38
+    ],
+    "text": "Play"
+   },
+   "paneltabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     78,
+     309,
+     47
+    ]
+   },
+   "histrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     88,
+     273,
+     28
+    ]
+   },
+   "undo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     18,
+     88,
+     134,
+     28
+    ]
+   },
+   "redo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     158,
+     88,
+     134,
+     28
+    ]
+   },
+   "gamestab": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "settingspane": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     137,
+     273,
+     1969
+    ]
+   },
+   "actions": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     66
+    ]
+   },
+   "randrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     42
+    ]
+   },
+   "rand": {
+    "tag": "button",
+    "cls": "big",
+    "shown": true,
+    "box": [
+     18,
+     219,
+     273,
+     42
+    ],
+    "text": "Randomize"
+   },
+   "draftact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "draftth": {
+    "tag": "span",
+    "cls": "dth",
+    "shown": false
+   },
+   "draftname": {
+    "tag": "span",
+    "cls": "dname",
+    "shown": false
+   },
+   "draftpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "dkeep": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "ddiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "randopts": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     269,
+     273,
+     17
+    ]
+   },
+   "randsub": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     120,
+     271,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": true
+   },
+   "randshape": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     208,
+     271,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "panes": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     286,
+     273,
+     1820
+    ]
+   },
+   "shapehead": {
+    "tag": "h2",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     306,
+     273,
+     15
+    ],
+    "text": "Shape"
+   },
+   "shapes": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": true,
+    "box": [
+     18,
+     329,
+     273,
+     168
+    ]
+   },
+   "customctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "notation": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "notapply": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notadv": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notdis": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notclear": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "noterr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "dicedesignrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "stepdesign": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "termchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "steppers": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": false
+   },
+   "modm": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modv": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "modp": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "savesetrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "setname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "setsavebtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "cat-base": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     523,
+     273,
+     31
+    ],
+    "text": "Base"
+   },
+   "subs": {
+    "tag": "div",
+    "cls": "grid two",
+    "shown": true,
+    "box": [
+     18,
+     602,
+     273,
+     144
+    ]
+   },
+   "c1": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     101,
+     798,
+     44,
+     30
+    ],
+    "value": "#a7dd76"
+   },
+   "c2": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     153,
+     798,
+     44,
+     30
+    ],
+    "value": "#6bc05e"
+   },
+   "c3": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     205,
+     798,
+     44,
+     30
+    ],
+    "value": "#d3e7aa"
+   },
+   "colorrand": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": true,
+    "box": [
+     257,
+     796,
+     34,
+     34
+    ]
+   },
+   "scale": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     844,
+     131,
+     16
+    ],
+    "value": "1.45"
+   },
+   "radius": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     876,
+     131,
+     16
+    ],
+    "value": "0.065"
+   },
+   "polish": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     906,
+     131,
+     16
+    ],
+    "value": "0.94"
+   },
+   "stonectl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stone": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "stonepaint": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "accent": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "epoxyctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "glitter": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "bubbles": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "clarity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "incl": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "inclctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "inclsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclturn": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclheight": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "loadmodel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modelfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     996,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "paneldepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1028,
+     131,
+     16
+    ],
+    "value": "0.71"
+   },
+   "patina": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1060,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "antique": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1084,
+     273,
+     38
+    ],
+    "text": "Antique relief preset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1177,
+     140,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1225,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1256,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1284,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-numbers": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     1346,
+     273,
+     31
+    ],
+    "text": "Numbers"
+   },
+   "numpaint": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1391,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": true
+   },
+   "paint": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1419,
+     44,
+     30
+    ],
+    "value": "#0b0b10"
+   },
+   "paintmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1461,
+     140,
+     33
+    ],
+    "value": "auto"
+   },
+   "font": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1506,
+     140,
+     33
+    ],
+    "value": "georgia"
+   },
+   "d4style": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1551,
+     140,
+     33
+    ],
+    "value": "tips"
+   },
+   "d6style": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1596,
+     140,
+     33
+    ],
+    "value": "pips"
+   },
+   "numsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1643,
+     131,
+     16
+    ],
+    "value": "0.076"
+   },
+   "numrotv": {
+    "tag": "output",
+    "cls": "",
+    "shown": true,
+    "box": [
+     80,
+     1680,
+     15,
+     17
+    ],
+    "text": "0°",
+    "value": "0°"
+   },
+   "numrotreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": true,
+    "box": [
+     103,
+     1681,
+     26,
+     19
+    ],
+    "text": "0°"
+   },
+   "numrot": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1673,
+     131,
+     16
+    ],
+    "value": "0"
+   },
+   "numdepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1720,
+     131,
+     16
+    ],
+    "value": "2.5"
+   },
+   "numsoft": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1752,
+     131,
+     16
+    ],
+    "value": "2.7"
+   },
+   "numstyle": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1782,
+     140,
+     33
+    ],
+    "value": "inset"
+   },
+   "sec-showcase": {
+    "tag": "section",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1821,
+     273,
+     69
+    ]
+   },
+   "spin": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     1866,
+     131,
+     16
+    ],
+    "value": "0.3"
+   },
+   "sec-dice": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "dicechips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sec-roll": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "bounce": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricdice": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "shakerow": {
+    "tag": "div",
+    "cls": "chk",
+    "shown": false
+   },
+   "shake": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-sound": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "rumble": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "volume": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndwidth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "soundtest": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "soundstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sndbk": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndaud": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "sndmix": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndsurf": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndring": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndbkstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "expsize": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1940,
+     140,
+     33
+    ],
+    "value": "2048"
+   },
+   "exppng": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     1979,
+     134,
+     38
+    ],
+    "text": "PNG"
+   },
+   "expjpg": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     158,
+     1979,
+     134,
+     38
+    ],
+    "text": "JPG"
+   },
+   "dname": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     110,
+     2022,
+     181,
+     34
+    ],
+    "value": ""
+   },
+   "savejson": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     2068,
+     134,
+     38
+    ],
+    "text": "Save design"
+   },
+   "loadjson": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     158,
+     2068,
+     134,
+     38
+    ],
+    "text": "Load design"
+   },
+   "bagfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "jsonfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "scorepane": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "logpanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "paneclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     372,
+     22,
+     56
+    ]
+   },
+   "paneopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "stage": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "topstrip": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stripmid": {
+    "tag": "div",
+    "cls": "peekh",
+    "shown": false
+   },
+   "qbar": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "rollbox": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "dockhint": {
+    "tag": "span",
+    "cls": "dhint",
+    "shown": false
+   },
+   "dockact": {
+    "tag": "span",
+    "cls": "dact",
+    "shown": false
+   },
+   "rollbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "qchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "qerr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "toast": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "shelf": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     706,
+     842,
+     86
+    ]
+   },
+   "cards": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     706,
+     842,
+     86
+    ]
+   },
+   "tools": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "tl": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "bagbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "tr": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "drawer": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "dmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "snd": {
+    "tag": "button",
+    "cls": "di off",
+    "shown": false
+   },
+   "resetview": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "layout": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "info": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "spinbtn": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "roomsw": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "drawerbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "name": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     16,
+     970,
+     18
+    ],
+    "text": "D20 · METALLIC PLASTIC"
+   },
+   "result": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     46,
+     970,
+     73
+    ]
+   },
+   "hint": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "gamepanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cuppeek": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagask": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "baskt": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "baskSave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskDiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskCancel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "quickres": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     460,
+     208,
+     360,
+     28
+    ]
+   },
+   "cardmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "main-src": {
+    "tag": "script",
+    "cls": "",
+    "shown": false
+   },
+   "bagsheet": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     0,
+     1280,
+     800
+    ]
+   },
+   "sheethead": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     260,
+     0,
+     760,
+     67
+    ]
+   },
+   "sheettitle": {
+    "tag": "b",
+    "cls": "",
+    "shown": true,
+    "box": [
+     276,
+     22,
+     160,
+     22
+    ]
+   },
+   "sheetbag": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetact": {
+    "tag": "span",
+    "cls": "",
+    "shown": true,
+    "box": [
+     822,
+     15,
+     120,
+     36
+    ]
+   },
+   "sheetsave": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": true,
+    "box": [
+     822,
+     15,
+     36,
+     36
+    ]
+   },
+   "sheetload": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": true,
+    "box": [
+     864,
+     15,
+     36,
+     36
+    ]
+   },
+   "sheetcopy": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": true,
+    "box": [
+     906,
+     15,
+     36,
+     36
+    ]
+   },
+   "sheetclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     958,
+     14,
+     46,
+     38
+    ],
+    "text": "Close"
+   },
+   "bagbox": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     276,
+     75,
+     728,
+     68
+    ]
+   },
+   "bagrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     283,
+     82,
+     714,
+     54
+    ]
+   },
+   "bagopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     283,
+     82,
+     714,
+     54
+    ]
+   },
+   "bagth": {
+    "tag": "span",
+    "cls": "th",
+    "shown": true,
+    "box": [
+     290,
+     87,
+     44,
+     44
+    ]
+   },
+   "bagname": {
+    "tag": "span",
+    "cls": "",
+    "shown": true,
+    "box": [
+     344,
+     91,
+     80,
+     20
+    ],
+    "text": "Design 1"
+   },
+   "bagpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": true,
+    "box": [
+     344,
+     111,
+     80,
+     15
+    ],
+    "text": "1 of 1 in My bag"
+   },
+   "modbadge": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bsave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "brevert": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagdirty": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagsave": {
+    "tag": "button",
+    "cls": "linkbtn",
+    "shown": false
+   },
+   "sheettabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     260,
+     143,
+     760,
+     43
+    ]
+   },
+   "tiles": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     260,
+     185,
+     760,
+     615
+    ]
+   },
+   "setlist": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   }
+  },
+  "buttons": [
+   "#back Design",
+   "#roll Play",
+   "#undo ",
+   "#redo ",
+   "#rand Randomize",
+   "d4",
+   "d6",
+   "d8",
+   "d10",
+   "d%",
+   "d12",
+   "d20",
+   "d14",
+   "d16",
+   "Standard 7",
+   "Custom",
+   "rhombic d12",
+   "Solid plastic",
+   "Swirled plastic",
+   "Metallic plastic",
+   "Solid metal",
+   "Clear epoxy",
+   "Stone (marble, granite…)",
+   "#colorrand ",
+   "#antique Antique relief preset",
+   "#numrotreset 0°",
+   "#exppng PNG",
+   "#expjpg JPG",
+   "#savejson Save design",
+   "#loadjson Load design",
+   "#paneclose ",
+   "+Add",
+   "#bagbtn ",
+   "#drawerbtn ",
+   "#sheetsave ",
+   "#sheetload ",
+   "#sheetcopy ",
+   "#sheetclose Close",
+   "#bagopen Design 11 of 1 in My bag",
+   "Designs",
+   "Sets",
+   "⋯"
+  ]
+ },
+ "games": {
+  "body": "inroll",
+  "ids": {
+   "app": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     0,
+     1280,
+     800
+    ]
+   },
+   "modesw": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     20,
+     273,
+     46
+    ]
+   },
+   "back": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     24,
+     133,
+     38
+    ],
+    "text": "Design"
+   },
+   "roll": {
+    "tag": "button",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     155,
+     24,
+     133,
+     38
+    ],
+    "text": "Play"
+   },
+   "paneltabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     0,
+     78,
+     309,
+     57
+    ]
+   },
+   "histrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "undo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "redo": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "gamestab": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     111,
+     88,
+     87,
+     38
+    ],
+    "text": "Games"
+   },
+   "settingspane": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "actions": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "randrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "rand": {
+    "tag": "button",
+    "cls": "big",
+    "shown": false
+   },
+   "draftact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "draftth": {
+    "tag": "span",
+    "cls": "dth",
+    "shown": false
+   },
+   "draftname": {
+    "tag": "span",
+    "cls": "dname",
+    "shown": false
+   },
+   "draftpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "dkeep": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "ddiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "randopts": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "randsub": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "randshape": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panes": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "shapehead": {
+    "tag": "h2",
+    "cls": "",
+    "shown": false
+   },
+   "shapes": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": false
+   },
+   "customctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "notation": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "notapply": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notadv": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notdis": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "notclear": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "noterr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "dicedesignrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "stepdesign": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "termchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "steppers": {
+    "tag": "div",
+    "cls": "grid",
+    "shown": false
+   },
+   "modm": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modv": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "modp": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "savesetrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "setname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "setsavebtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "cat-base": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": false
+   },
+   "subs": {
+    "tag": "div",
+    "cls": "grid two",
+    "shown": false
+   },
+   "c1": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "c2": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "c3": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "colorrand": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "scale": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "radius": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "polish": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "stonectl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stone": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "stonepaint": {
+    "tag": "button",
+    "cls": "ico",
+    "shown": false
+   },
+   "accent": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "epoxyctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "glitter": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "bubbles": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "clarity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "incl": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "inclctl": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "inclsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclturn": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "inclheight": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "loadmodel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "modelfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "panel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paneldepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "patina": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "antique": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-numbers": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": false
+   },
+   "numpaint": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paint": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "paintmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "font": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "d4style": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "d6style": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "numsize": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numrotv": {
+    "tag": "output",
+    "cls": "",
+    "shown": false
+   },
+   "numrotreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": false
+   },
+   "numrot": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numdepth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numsoft": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "numstyle": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sec-showcase": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "spin": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-dice": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "dicechips": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sec-roll": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "bounce": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricdice": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "shakerow": {
+    "tag": "div",
+    "cls": "chk",
+    "shown": false
+   },
+   "shake": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sec-sound": {
+    "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "rumble": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "volume": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndwidth": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "soundtest": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "soundstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sndbk": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndaud": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixrow": {
+    "tag": "div",
+    "cls": "row",
+    "shown": false
+   },
+   "sndmix": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndmixmode": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndsurf": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "sndring": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "sndbkstat": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "expsize": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "exppng": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "expjpg": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "dname": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "savejson": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "loadjson": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "jsonfile": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "scorepane": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     18,
+     146,
+     273,
+     257
+    ]
+   },
+   "logpanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "paneclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     372,
+     22,
+     56
+    ]
+   },
+   "paneopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "stage": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "topstrip": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "stripmid": {
+    "tag": "div",
+    "cls": "peekh",
+    "shown": false
+   },
+   "qbar": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     374,
+     746,
+     842,
+     46
+    ]
+   },
+   "rollbox": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     383,
+     753,
+     356,
+     32
+    ],
+    "value": ""
+   },
+   "dockhint": {
+    "tag": "span",
+    "cls": "dhint",
+    "shown": false
+   },
+   "dockact": {
+    "tag": "span",
+    "cls": "dact",
+    "shown": false
+   },
+   "rollbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     745,
+     752,
+     61,
+     34
+    ],
+    "text": "Roll"
+   },
+   "qchips": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     812,
+     755,
+     395,
+     28
+    ]
+   },
+   "qerr": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "toast": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "shelf": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cards": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "tools": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     0,
+     970,
+     800
+    ]
+   },
+   "tl": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "bagbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     320,
+     748,
+     44,
+     44
+    ]
+   },
+   "tr": {
+    "tag": "div",
+    "cls": "col",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "drawer": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "dmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "snd": {
+    "tag": "button",
+    "cls": "di off",
+    "shown": false
+   },
+   "resetview": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "layout": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "info": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "spinbtn": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "roomsw": {
+    "tag": "button",
+    "cls": "di",
+    "shown": false
+   },
+   "drawerbtn": {
+    "tag": "button",
+    "cls": "",
+    "shown": true,
+    "box": [
+     1226,
+     748,
+     44,
+     44
+    ]
+   },
+   "name": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     310,
+     16,
+     970,
+     18
+    ],
+    "text": "D20 · METALLIC PLASTIC"
+   },
+   "result": {
+    "tag": "div",
+    "cls": "on",
+    "shown": true,
+    "box": [
+     310,
+     46,
+     970,
+     27
+    ]
+   },
+   "hint": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "gamepanel": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "cuppeek": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagask": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "baskt": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "baskSave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskDiscard": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "baskCancel": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "quickres": {
+    "tag": "div",
+    "cls": "",
+    "shown": true,
+    "box": [
+     460,
+     208,
+     360,
+     28
+    ]
+   },
+   "cardmenu": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "main-src": {
+    "tag": "script",
+    "cls": "",
+    "shown": false
+   },
+   "bagsheet": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheethead": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "sheettitle": {
+    "tag": "b",
+    "cls": "",
+    "shown": false
+   },
+   "sheetbag": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetact": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "sheetsave": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetload": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetcopy": {
+    "tag": "button",
+    "cls": "sico",
+    "shown": false
+   },
+   "sheetclose": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagbox": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagrow": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagopen": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagth": {
+    "tag": "span",
+    "cls": "th",
+    "shown": false
+   },
+   "bagname": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagpos": {
+    "tag": "small",
+    "cls": "",
+    "shown": false
+   },
+   "modbadge": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
+   "bagact": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bsave": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bcopy": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "brevert": {
+    "tag": "button",
+    "cls": "",
+    "shown": false
+   },
+   "bagdirty": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "bagsave": {
+    "tag": "button",
+    "cls": "linkbtn",
+    "shown": false
+   },
+   "sheettabs": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "tiles": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   },
+   "setlist": {
+    "tag": "div",
+    "cls": "",
+    "shown": false
+   }
+  },
+  "buttons": [
+   "#back Design",
+   "#roll Play",
+   "Table",
+   "#gamestab Games",
+   "Log",
+   "Close",
+   "Start game",
+   "#paneclose ",
+   "#rollbtn Roll",
+   "d4",
+   "d6",
+   "d8",
+   "d10",
+   "d12",
+   "d20",
+   "d%",
+   "Adv",
+   "Dis",
+   "#bagbtn ",
+   "#drawerbtn "
+  ]
+ }
+}

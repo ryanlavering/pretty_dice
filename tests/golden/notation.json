@@ -1,0 +1,977 @@
+{
+ "parse": [
+  {
+   "s": "d20",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d20"
+  },
+  {
+   "s": "1d20",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d20"
+  },
+  {
+   "s": "2d6",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d6"
+  },
+  {
+   "s": "4d6+2",
+   "p": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6
+     }
+    ],
+    "mod": 2
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6
+     }
+    ],
+    "mod": 2
+   },
+   "fmt": "4d6+2"
+  },
+  {
+   "s": "3d8-1",
+   "p": {
+    "terms": [
+     {
+      "count": 3,
+      "sides": 8
+     }
+    ],
+    "mod": -1
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 3,
+      "sides": 8
+     }
+    ],
+    "mod": -1
+   },
+   "fmt": "3d8-1"
+  },
+  {
+   "s": "d%",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 100
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 100
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d%"
+  },
+  {
+   "s": "1d100",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 100
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 100
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d%"
+  },
+  {
+   "s": "2d10+1d4+3",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 10
+     },
+     {
+      "count": 1,
+      "sides": 4
+     }
+    ],
+    "mod": 3
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 10
+     },
+     {
+      "count": 1,
+      "sides": 4
+     }
+    ],
+    "mod": 3
+   },
+   "fmt": "2d10+1d4+3"
+  },
+  {
+   "s": "4d6kh3",
+   "p": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6,
+      "keep": {
+       "mode": "h",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6,
+      "keep": {
+       "mode": "h",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "4d6kh3"
+  },
+  {
+   "s": "4d6dl1",
+   "p": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6,
+      "keep": {
+       "mode": "h",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 4,
+      "sides": 6,
+      "keep": {
+       "mode": "h",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "4d6kh3"
+  },
+  {
+   "s": "2d20kl1",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d20kl1"
+  },
+  {
+   "s": "5d10dh2",
+   "p": {
+    "terms": [
+     {
+      "count": 5,
+      "sides": 10,
+      "keep": {
+       "mode": "l",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 5,
+      "sides": 10,
+      "keep": {
+       "mode": "l",
+       "n": 3
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "5d10kl3"
+  },
+  {
+   "s": "3d6kh0",
+   "p": {
+    "error": "Can't keep 0 of 3 dice"
+   },
+   "strict": {
+    "error": "Can't keep 0 of 3 dice"
+   },
+   "fmt": null
+  },
+  {
+   "s": "4d6kh5",
+   "p": {
+    "error": "Can't keep 5 of 4 dice"
+   },
+   "strict": {
+    "error": "Can't keep 5 of 4 dice"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d20adv",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "h",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "h",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d20kh1"
+  },
+  {
+   "s": "d20dis",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d20kl1"
+  },
+  {
+   "s": "2d20adv",
+   "p": {
+    "error": "\"adv\" goes on a single d20, e.g. d20adv"
+   },
+   "strict": {
+    "error": "\"adv\" goes on a single d20, e.g. d20adv"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d12adv",
+   "p": {
+    "error": "\"adv\" goes on a single d20, e.g. d20adv"
+   },
+   "strict": {
+    "error": "\"adv\" goes on a single d20, e.g. d20adv"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d20+5 adv",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "h",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 5
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "h",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 5
+   },
+   "fmt": "2d20kh1+5"
+  },
+  {
+   "s": "d20+5 dis",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 5
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 20,
+      "keep": {
+       "mode": "l",
+       "n": 1
+      }
+     }
+    ],
+    "mod": 5
+   },
+   "fmt": "2d20kl1+5"
+  },
+  {
+   "s": "4x d20+2",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 2,
+    "group": 4
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 2,
+    "group": 4
+   },
+   "fmt": "4x 1d20+2"
+  },
+  {
+   "s": "3×2d6",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0,
+    "group": 3
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0,
+    "group": 3
+   },
+   "fmt": "3x 2d6"
+  },
+  {
+   "s": "1x d20",
+   "p": {
+    "error": "A group needs 2 or more rolls, e.g. 4x d20+2"
+   },
+   "strict": {
+    "error": "A group needs 2 or more rolls, e.g. 4x d20+2"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d7",
+   "p": {
+    "error": "d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)"
+   },
+   "strict": {
+    "error": "d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d0",
+   "p": {
+    "error": "d0 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)"
+   },
+   "strict": {
+    "error": "d0 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)"
+   },
+   "fmt": null
+  },
+  {
+   "s": "0d6",
+   "p": {
+    "error": "Dice count must be at least 1"
+   },
+   "strict": {
+    "error": "Dice count must be at least 1"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d",
+   "p": {
+    "error": "Can't read \"d\""
+   },
+   "strict": {
+    "error": "Can't read \"d\""
+   },
+   "fmt": null
+  },
+  {
+   "s": "",
+   "p": {
+    "error": "Enter some dice, e.g. 4d6+2d10+3"
+   },
+   "strict": {
+    "error": "Enter some dice, e.g. 4d6+2d10+3"
+   },
+   "fmt": null
+  },
+  {
+   "s": "   ",
+   "p": {
+    "error": "Enter some dice, e.g. 4d6+2d10+3"
+   },
+   "strict": {
+    "error": "Enter some dice, e.g. 4d6+2d10+3"
+   },
+   "fmt": null
+  },
+  {
+   "s": "abc",
+   "p": {
+    "error": "Can't read \"abc\""
+   },
+   "strict": {
+    "error": "Can't read \"abc\""
+   },
+   "fmt": null
+  },
+  {
+   "s": "2d6+",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d6"
+  },
+  {
+   "s": "+3",
+   "p": {
+    "error": "Add at least one die"
+   },
+   "strict": {
+    "error": "Add at least one die"
+   },
+   "fmt": null
+  },
+  {
+   "s": "-2",
+   "p": {
+    "error": "Add at least one die"
+   },
+   "strict": {
+    "error": "Add at least one die"
+   },
+   "fmt": null
+  },
+  {
+   "s": "10d6",
+   "p": {
+    "terms": [
+     {
+      "count": 10,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 10,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "10d6"
+  },
+  {
+   "s": "60d6",
+   "p": {
+    "error": "Too many dice (60); max 24"
+   },
+   "strict": {
+    "error": "Too many dice (60); max 24"
+   },
+   "fmt": null
+  },
+  {
+   "s": "61d6",
+   "p": {
+    "error": "Too many dice (61); max 24"
+   },
+   "strict": {
+    "error": "Too many dice (61); max 24"
+   },
+   "fmt": null
+  },
+  {
+   "s": "200d20",
+   "p": {
+    "error": "Too many dice (200); max 24"
+   },
+   "strict": {
+    "error": "Too many dice (200); max 24"
+   },
+   "fmt": null
+  },
+  {
+   "s": "20x 4d6",
+   "p": {
+    "error": "Too many dice (80); max 24"
+   },
+   "strict": {
+    "error": "Too many dice (80); max 24"
+   },
+   "fmt": null
+  },
+  {
+   "s": "d4+d6+d8+d10+d12+d20",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 4
+     },
+     {
+      "count": 1,
+      "sides": 6
+     },
+     {
+      "count": 1,
+      "sides": 8
+     },
+     {
+      "count": 1,
+      "sides": 10
+     },
+     {
+      "count": 1,
+      "sides": 12
+     },
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 4
+     },
+     {
+      "count": 1,
+      "sides": 6
+     },
+     {
+      "count": 1,
+      "sides": 8
+     },
+     {
+      "count": 1,
+      "sides": 10
+     },
+     {
+      "count": 1,
+      "sides": 12
+     },
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d4+1d6+1d8+1d10+1d12+1d20"
+  },
+  {
+   "s": "D20",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d20"
+  },
+  {
+   "s": " 2 d 6 ",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "2d6"
+  },
+  {
+   "s": "d14",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 14
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 14
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d14"
+  },
+  {
+   "s": "d16",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 16
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 16
+     }
+    ],
+    "mod": 0
+   },
+   "fmt": "1d16"
+  },
+  {
+   "s": "d20@zzz",
+   "p": {
+    "terms": [
+     {
+      "count": 1,
+      "sides": 20
+     }
+    ],
+    "mod": 0
+   },
+   "strict": {
+    "error": "No design \"@zzz\" in the bag"
+   },
+   "fmt": "1d20"
+  },
+  {
+   "s": "2d6-3+1d4",
+   "p": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     },
+     {
+      "count": 1,
+      "sides": 4
+     }
+    ],
+    "mod": -3
+   },
+   "strict": {
+    "terms": [
+     {
+      "count": 2,
+      "sides": 6
+     },
+     {
+      "count": 1,
+      "sides": 4
+     }
+    ],
+    "mod": -3
+   },
+   "fmt": "2d6+1d4-3"
+  }
+ ],
+ "keepSum": [
+  {
+   "v": [
+    3,
+    5,
+    1,
+    6
+   ],
+   "k": {
+    "mode": "h",
+    "n": 3
+   },
+   "sum": 14,
+   "kept": [
+    0,
+    1,
+    3
+   ]
+  },
+  {
+   "v": [
+    3,
+    5,
+    1,
+    6
+   ],
+   "k": {
+    "mode": "l",
+    "n": 1
+   },
+   "sum": 1,
+   "kept": [
+    2
+   ]
+  },
+  {
+   "v": [
+    4,
+    4,
+    2
+   ],
+   "k": {
+    "mode": "h",
+    "n": 2
+   },
+   "sum": 8,
+   "kept": [
+    0,
+    1
+   ]
+  },
+  {
+   "v": [
+    1,
+    2
+   ],
+   "k": null,
+   "sum": 3,
+   "kept": [
+    0,
+    1
+   ]
+  },
+  {
+   "v": [
+    6,
+    6,
+    6
+   ],
+   "k": {
+    "mode": "l",
+    "n": 5
+   },
+   "sum": 18,
+   "kept": [
+    0,
+    1,
+    2
+   ]
+  }
+ ]
+}
