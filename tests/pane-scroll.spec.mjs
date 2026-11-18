@@ -11,6 +11,9 @@ const CONTROLS = {
 for (const room of ['toDesign', 'toPlay']) {
   test(`tapping controls does not move the pane scroll (${room === 'toDesign' ? 'Design' : 'Play Table'}, phone)`, async ({ app }) => {
     await app.open(); await app.nav[room]();
+    // entering a room scrolls the pane to the top on the next animation frame (setPane); with software GL a frame can take 300 ms,
+    // so wait for it, or that reset lands after the scroll below and reads as a jump caused by the first tap (4.1 baseline)
+    await app.page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     const moved = [];
     let tapped = 0;
     for (const sel of CONTROLS[room]) {
