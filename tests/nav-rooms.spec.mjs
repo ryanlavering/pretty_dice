@@ -121,6 +121,10 @@ test('phone: Undo and Redo are in the pane strip (single slim row), not on the m
     await expect(page.locator('#undo')).toBeVisible();
     const u = await page.locator('#undo').boundingBox(), r = await page.locator('#redo').boundingBox(), st = await page.locator('#paneltabs').boundingBox(), aside = await page.locator('aside').boundingBox();
     expect(Math.abs(u.y - r.y), 'one row').toBeLessThan(2); expect(st.height, 'slim strip').toBeLessThanOrEqual(60); expect(u.y).toBeGreaterThanOrEqual(aside.y);
+    // PD-142.38.56: on the phone the strip scrolls away with the pane (Play's tab strip stays sticky); desktop keeps it sticky
+    await app.run(() => { document.querySelector('aside').scrollTop = 400; }); await page.waitForTimeout(150);
+    const gone = await page.locator('#paneltabs').boundingBox(); expect(gone.y + gone.height, 'strip scrolled off the top of the pane').toBeLessThanOrEqual(aside.y + 1);
+    await app.run(() => { document.querySelector('aside').scrollTop = 0; });
     const bag = await page.locator('#bagbtn').boundingBox(), sh = await page.locator('#shelf').boundingBox();
     expect(bag.x + bag.width, 'Bag button clear of the cards').toBeLessThanOrEqual(sh.x + 1); expect(bag.x).toBeLessThan(60);
     await app.nav.toPlay(); await expect(page.locator('#undo')).toBeHidden(); await expect(page.locator('#bagbtn')).toBeVisible();

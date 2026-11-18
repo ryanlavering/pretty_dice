@@ -11,7 +11,7 @@ The same page adapts to the screen. Both sizes have the same two rooms, the same
 | Roll again | `r`, Enter, **Roll**, flick | **Roll**, flick, shake (if offered) |
 | Full view | Panel arrow, `h`, or Full view in the drawer | Arrow at the middle of the tab row, or Full view in the drawer |
 | Bag | The round **Bag** button opens the Bag view (a centred sheet) | The round **Bag** button opens the Bag view (full screen) |
-| Undo / Redo | Top strip of the panel (Design room) | Top strip of the panel (Design room) |
+| Undo / Redo | Top strip of the panel (Design room), always in view | Top strip of the panel (Design room); it scrolls away with the panel, scroll back up to reach it |
 
 On a phone, hide the panel with its arrow when you want the whole table; the dock keeps the formula box and **Roll** on one row with the chips scrolling beside it. While a game is running the Games tab becomes **Scorecard**, and the game's status line is at the top of the table; hold it for a top-down look.
 
