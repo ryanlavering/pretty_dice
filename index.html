@@ -1224,6 +1224,7 @@ function paintLook(L,U,mats){
   }
 }
 function applyLook(){
+  legalRelief();
   const S=SUBSTRATES[state.substrate];
   paintLook(state,U,dice.filter(d=>!d.look).map(d=>d.mat));
   for(const f of foreign.values()) paintLook(f.look,f.uni,dice.filter(d=>d.look===f.look).map(d=>d.mat));
@@ -1244,7 +1245,7 @@ function randomize(noBuild){
   state.d4Style='tips'; state.d6Style=r()<.7?'numbers':'pips';
   const relief=r()<.2;                                // face panel (and its patina) appears on 20% of randomizes
   state.numRaised=r()<.3; state.numPaint=state.numRaised?r()<.5:true;
-  state.panel=relief?f(.08+r()*.14,2):0; state.panelDepth=f(.3+r()*.6,2); state.patina=relief&&r()<.7?f(.25+r()*.65,2):0;
+  state.panel=relief?f(.08+r()*.14,2):0; state.panelDepth=f(.3+r()*.6,2); state.patina=relief&&r()<.7?f(.25+r()*.65,2):0; legalRelief();
   state.filigree=r()<.2?pick(['scroll','beads','deco'],r):'none'; state.filiFill=r()<.8; state.enamelSame=r()<.5; state.enamel=hsl(r(),.55+r()*.3,.4+r()*.25);
   if(state.substrate==='epoxy'&&state.inclusion!=='custom'){ state.inclusion=r()<.45?pick(Object.keys(MODELS),r):'none'; state.inclSize=f(.45+r()*.35,2); state.inclTurn=Math.round((r()*2-1)*180); state.inclY=f((r()*2-1)*.25,2); }
   repaint(r);
@@ -1273,7 +1274,7 @@ function checkpoint(){                                   // record the current d
 const scheduleCheckpoint=()=>{ if(hIdx<0) return; clearTimeout(hTimer); hTimer=setTimeout(checkpoint,500); syncHistoryUI(); };   // coalesces slider drags
 function syncHistoryUI(){ $('undo').disabled=!(hIdx>0||hTimer); $('redo').disabled=!(hIdx>=0&&hIdx<history.length-1); }
 async function restore(snap){
-  const o=JSON.parse(snap), oldShape=state.shape; Object.assign(state,o); setSubstrate(state.substrate);
+  const o=JSON.parse(snap), oldShape=state.shape; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate);
   const tok=++buildTok; await ensureFont(state.font); if(buildTok===tok) buildDice(state.shape===oldShape); syncHistoryUI();
 }
 async function undo(){ checkpoint(); if(hIdx>0){ hIdx--; await restore(history[hIdx]); } }
@@ -1436,6 +1437,7 @@ $('stone').onchange=e=>{ checkpoint(); setStone(e.target.value); stoneColours();
 $('colorrand').onclick=()=>{ checkpoint(); state.palettes.shared=freshPalette(state.substrate,mulberry32((rng()*1e9)|0)); state.colors=state.palettes.shared; repaint(); applyLook(); };   // new base colours by the active substrate's rules; nothing else changes
 function stoneColours(){ state.palettes.shared=[...STONES[state.stone].pal(mulberry32((rng()*1e9)|0))]; state.colors=state.palettes.shared; }
 $('stonepaint').onclick=()=>{ checkpoint(); stoneColours(); repaint(); applyLook(); };   // another draw from the same stone's palette rules   // the stone's own palette rules
+const legalRelief=()=>{ if(!(state.panel>0)&&state.numRaised){ state.numRaised=false; return true; } return false; };   // PD-142.38.51: the ONE rule: Raised numbers need a face panel (panel > 0). Every path that writes numRaised or panel runs this (Randomize, applyLook, undo/redo, Keep, load)
 function reliefSync(){ const on=state.panel>0, ns=$('numstyle'), pa=$('patina'); if(!on&&state.numRaised) state.numRaised=false;   /* PD-142.38.14: the selector and the die always match: Raised needs a panel, so with none the live state is Inset too */
   ns.options[1].disabled=!on; ns.value=(state.numRaised&&on)?'raised':'inset'; if(pa){ pa.disabled=!on; pa.title=on?'How worn the face panel looks':'Patina ages the face panel: raise Panel above 0 first'; } }   // PD-142.38.14/.15
 const panelRelief=()=>setTimeout(()=>{ if(state.panel<=0&&state.numRaised){ checkpoint(); state.numRaised=false; applyLook(); } reliefSync(); },0);   // lowering the panel to 0 writes Inset into the live design (undoable), not just the selector
@@ -1669,8 +1671,10 @@ function bagFileJSON(){ const b=bagToJSON();
 function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets:sets.map(({last,...r})=>r),characters,jail,draft:draft&&(({shape,notation,...r})=>r)(draft),name}); }   // the draft's shape and roll formula are the mat's, not the bag's
 function markBagSaved(){ try{ localStorage.setItem(BAG_SAVED,bagSig()); }catch{} }
 function bagDirty(){ if(!bag) return false; try{ const v=localStorage.getItem(BAG_SAVED); if(v===null){ markBagSaved(); return false; } return v!==bagSig(); }catch{ return false; } }
-function saveBagFile(){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagFileJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
-async function copyBagJSON(){ const txt=JSON.stringify(bagFileJSON(),null,2); let ok=false;
+/* PD-142.38.52: every path that writes the bag out (Save bag, the sheet's Save, Copy JSON, the "save first?" prompt) first commits every modified design with bagOps.save, the same as each design's own Save, so renames and slider edits are saved and no Modified dot is left behind */
+async function commitDesigns(){ if(!bag) return; syncLive(); for(const id of Object.keys(bag.pending)){ if(!entryOf(id)) continue; await bagOps.save(id); } }
+async function saveBagFile(){ await commitDesigns(); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(bagFileJSON(),null,2)],{type:'application/json'})); a.download=bagFileName(); a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); markBagSaved(); lastSig=''; renderBag(); }
+async function copyBagJSON(){ await commitDesigns(); const txt=JSON.stringify(bagFileJSON(),null,2); let ok=false;
   try{ await navigator.clipboard.writeText(txt); ok=true; }catch{ try{ const t=document.createElement('textarea'); t.value=txt; t.style.cssText='position:fixed;opacity:0;top:0'; document.body.append(t); t.select(); ok=document.execCommand('copy'); t.remove(); }catch{} }
   return ok; }
 $('sheetcopy').onclick=async()=>{ const b=$('sheetcopy'), ok=await copyBagJSON(); b.classList.toggle('ok',ok); setTimeout(()=>b.classList.remove('ok'),1500); };
@@ -1680,7 +1684,7 @@ $('bagsave').onclick=saveBagFile; $('sheetsave').onclick=saveBagFile;
 let bagReplace=false;
 const pickBag=replace=>{ bagReplace=replace; $('bagfile').click(); };
 $('sheetload').onclick=()=>{ if(!bagDirty()) return pickBag(true); $('bagask').hidden=false; $('baskSave').focus(); };   // Load bag replaces this bag, so unsaved changes are offered a save first
-$('baskSave').onclick=()=>{ $('bagask').hidden=true; saveBagFile(); pickBag(true); };
+$('baskSave').onclick=async()=>{ $('bagask').hidden=true; await saveBagFile(); pickBag(true); };
 $('baskDiscard').onclick=()=>{ $('bagask').hidden=true; pickBag(true); };
 $('baskCancel').onclick=()=>{ $('bagask').hidden=true; };
 $('bagfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) return;
@@ -2101,6 +2105,9 @@ $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 /* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
+  {id:'PD-142.38.52', rev:1, anchor:'#bagsave', text:'Saving the bag (Save bag, the Bag view Save, Copy JSON) now saves every edited or renamed design first, then writes the file; no design is left showing Modified. Check: rename or tweak a few designs without saving each, then Save bag and look at the Designs list.', card:'PD-142.38.52'},
+  {id:'PD-142.38.51', rev:1, anchor:'#numstyle', text:'Randomize no longer picks Raised numbers on a die with no face panel (it did about 3 times in 10). The rule everywhere: Raised needs Panel above 0; with Panel 0 the numbers are Inset. Check: Design, press Randomize several times and watch Numbers and Panel.', card:'PD-142.38.51'},
+  {id:'PD-142.38.50', rev:1, anchor:'#rollbox', text:'Picking another design for one die (long-press or right-click a die, then a design) works again; it did nothing when the dock box held a formula. Check: Play, roll 3d6 or 2d20 Adv, long-press a die, choose another design: only that die changes.', card:'PD-142.38.50'},
   {id:'PD-142.38.49', rev:1, anchor:'#stage', text:'The flick is back: in Play, press on the mat, drag and release to throw the dice in the drag direction, harder the faster you swipe (mouse and touch). Before, the dice were just dropped from above whenever the roll box had a formula. A plain tap still does nothing (a tap on a die holds it). Check: Play, flick in a few directions and speeds, on desktop and on a phone.', card:'PD-142.38.49'},
   {id:'PD-142.38.22', rev:1, anchor:'#modesw,#roomsw', text:'Design | Play: on desktop the switch is at the top of the panel, above the tabs. On a phone it is only in the corner cube menu, and the Design top strip shows just the title. Undo and Redo are now in the settings pane (see their own note). Check: both rooms, phone and desktop; nothing overlaps.', card:'PD-142.38.22'},
   {id:'PD-142.38.32', rev:1, anchor:'#notadv', text:'Custom set: Set is now Apply (it only applies the typed formula to the controls below). Adv and Dis work like the die chips: click REPLACES the formula with d20adv / d20dis, double-click or long press ADDS it. Check: Play > Table > Custom set; the dock box mirrors it.', card:'PD-142.38.32'},
@@ -2250,6 +2257,7 @@ function reskinDie(i,designId){
   const terms=[...p.terms.slice(0,ti),...(c?[{...t,count:c}]:[]),{...t,count:1,design:designId},...(after?[{...t,count:after}]:[]),...p.terms.slice(ti+1)];
   checkpoint(); const poses=bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})), res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed;
   state.notation=fmtNotation(terms,p.mod,1); state.shape='custom'; rollSetId=null; if(bag) bag.active.set=null;
+  { const bx=$('rollbox'); if(bx){ bx.value=state.notation; dockSeen=stateFormula(); } }   // PD-142.38.50: the dock box mirrors the new formula first; the rebuild below hops through the Design room, and roomFormulaSync used to write the OLD box text back over the per-die design (the pick did nothing)
   buildDice(); pendingLay={n:dice.length,poses}; startRoll(false,true);
   res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; syncUI(); save(); if(game) renderGame(); return true; }
 function dieMenu(i){
