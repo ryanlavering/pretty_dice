@@ -95,6 +95,9 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await expect.poll(() => app.run(pd => pd.state.shape)).toBe('d8');
   await app.nav.openBag();
   await expect(page.locator('#tiles .tile[data-id]')).toHaveCount(3);
+  // let the background picture pass finish first: each finished picture re-renders the tiles (renderBag), and one landing mid-drag
+  // dropped the tile in the wrong slot (run10 of the 4.1 baseline: gold, amethyst, bone -> amethyst, gold, bone)
+  await expect.poll(() => app.run(pd => !pd.thumbBusy && pd.bag.designs.every(e => e.id === pd.bag.active.design || pd.thumbs[pd.thumbKey(pd.bag.pending[e.id] || e.design)]))).toBe(true);
   // drag the last tile to the front
   const tiles = page.locator('#tiles .tile[data-id]'); await tiles.nth(2).scrollIntoViewIfNeeded(); const a = await tiles.nth(2).boundingBox(), b = await tiles.nth(0).boundingBox();
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2); await page.mouse.down(); await page.mouse.move(a.x + a.width / 2 - 20, a.y + a.height / 2, { steps: 4 });
