@@ -195,7 +195,7 @@ test('a die dropped by kh is faded with no ring; a kept one is untouched (.38.20
   expect(r2).toBe(0);
 });
 
-// PD-142.40.1 / .40.2: the dock is one scrollable row with a small formula box until focus; chips sit top-left.
+// PD-142.40.1 / .40.2: the dock is one scrollable row with a small formula box until focus; chips sit top-right (since .38.59.1).
 test('the dock is one row and its formula box grows on focus (.40.1)', async ({ app, page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await app.open(); await app.nav.toPlay();
@@ -208,11 +208,11 @@ test('the dock is one row and its formula box grows on focus (.40.1)', async ({ 
   expect((await bar.boundingBox()).height).toBeLessThan(60);
 });
 
-test('the leaning / held chips sit in the top-left corner (.40.2)', async ({ shared: app, page }) => {
+test('the leaning / held chips sit in the top-right corner (.40.2, .38.59.1)', async ({ shared: app, page }) => {
   await app.reset(1); await app.nav.toPlay();
-  const r = await app.run(pd => { pd.simRoll(); pd.toggleHold(0); const R = document.getElementById('result'); R.classList.add('on'); const c = R.querySelector('.relean'); if (!c) return null; const b = c.getBoundingClientRect(); const st = document.getElementById('stage').getBoundingClientRect(); return { x: b.x - st.x, y: b.y - st.y, vh: st.height, vis: getComputedStyle(R).opacity }; });
+  const r = await app.run(pd => { pd.simRoll(); pd.toggleHold(0); const R = document.getElementById('result'); R.classList.add('on'); const c = R.querySelector('.relean'); if (!c) return null; const b = c.getBoundingClientRect(); const st = document.getElementById('stage').getBoundingClientRect(); return { x: b.x - st.x, right: b.right - st.x, sw: st.width, y: b.y - st.y, vh: st.height, vis: getComputedStyle(R).opacity }; });
   expect(r, 'a held chip exists').not.toBeNull();
-  expect(r.x).toBeLessThan(120); expect(r.y).toBeLessThan(r.vh * .2);
+  expect(r.sw - r.right, 'right edge near the stage right').toBeLessThan(80); expect(r.y).toBeLessThan(r.vh * .2);
 });
 
 // PD-142.14.1.1.1: the Custom formula box keeps its full width after Adv/Dis, and the controls sit on the next line.
