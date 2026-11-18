@@ -46,10 +46,10 @@ test('the artifact build boots under a CDN-only script CSP and starts a game', a
   await navFor(page).roll();
   const st = await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state));
   expect(st).toMatchObject({ phase: 'roll', round: 1, rollsUsed: 0 });
-  await page.evaluate(() => window.__pd.simRoll());
-  // the artifact page has no ?seed, so now and then a die comes to rest cocked and the roll finishes a few live frames later
-  // (it failed once in the 4.1 baseline runs with rollsUsed 0 straight after simRoll): wait for the report, not for a fixed moment
-  await expect.poll(() => page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).rollsUsed), { timeout: 30_000 }).toBe(1);
+  // rerolls: the artifact page has no ?seed, so now and then a die rests leaning; a game waits until a leaning die is re-rolled
+  // before it counts the roll (run3 and run8 of the 4.1 baseline: rollsUsed stayed 0 with leans: 1), as the other game specs allow for
+  await page.evaluate(() => window.__pd.simRoll({ rerolls: 6 }));
+  expect(await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).rollsUsed)).toBe(1);
 });
 
 test('the offline build still boots from file:// with the engine in the import map', async ({ page }) => {
