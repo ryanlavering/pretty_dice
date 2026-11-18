@@ -19,6 +19,7 @@
   h1{font:800 22px Cinzel,serif;letter-spacing:.08em;margin:0 0 2px;color:var(--accent)}
   .sub{color:var(--dim);font-size:12px;margin-bottom:18px}
   h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:20px 0 8px;font-weight:600}
+  h2.cat{font-size:13px;color:var(--accent);margin:26px 0 4px;padding-top:12px;border-top:1px solid var(--accent)} h2.cat span{font-size:10px;letter-spacing:.06em;color:var(--dim);font-weight:500;margin-left:6px;text-transform:none}   /* PD-142.38.24: the Base (die body) and Numbers (numerals) category heads over the existing sub-sections */
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .grid.two{grid-template-columns:repeat(2,1fr)}
   button{font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:8px;padding:8px 4px;cursor:pointer}
@@ -389,14 +390,12 @@
       <div class="row" id="savesetrow"><input id="setname" type="text" maxlength="80" placeholder="Name this set" aria-label="Set name" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:#1d212c;border:1px solid var(--line);border-radius:6px;padding:6px"><button id="setsavebtn" type="button" title="Save these dice as a new set in the bag (find it under Bag, Sets)">Save as set</button></div>
     </div>
 
+    <h2 class="cat" id="cat-base">Base <span>the die body</span></h2>
     <h2>Substrate</h2>
     <div class="grid two" id="subs"></div>
 
     <h2>Colors</h2>
     <div class="row"><label>Base</label><input type="color" id="c1"><input type="color" id="c2"><input type="color" id="c3"><button id="colorrand" class="ico" type="button" title="Randomize the base colours only" aria-label="Randomize the base colours only"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button></div>
-    <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
-    <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
-    <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
     <div class="row"><label>Swirl scale</label><input type="range" id="scale" min="0.5" max="3.5" step="0.05"></div>
     <div class="row"><label>Edge radius</label><input type="range" id="radius" min="0" max="0.15" step="0.005"></div>
     <div class="row"><label>Finish</label><span class="slends"><input type="range" id="polish" min="0" max="1" step="0.01" title="matte ← → gloss"><span class="ends"><span>matte</span><span>gloss</span></span></span></div>
@@ -419,19 +418,9 @@
       </div>
     </div>
 
-    <h2>Numbers</h2>
-    <div class="row"><label>Font</label><select id="font"></select></div>
-    <div class="row"><label>d4 numbers</label><select id="d4style"><option value="tips">Corner tips (standard)</option><option value="center">Face centre</option></select></div>
-    <div class="row"><label>d6 faces</label><select id="d6style"><option value="numbers">Numbers</option><option value="pips">Pips</option></select></div>
-    <div class="row"><label>Size</label><input type="range" id="numsize" min="0" max="1" step="0.002"></div>
-    <div class="row"><label>Rotation <output id="numrotv" style="color:var(--dim);margin-left:4px"></output> <button type="button" id="numrotreset" class="rzero" title="Reset rotation to 0°" aria-label="Reset rotation to zero">0°</button></label><span class="slends"><input type="range" id="numrot" min="-180" max="180" step="1"><span class="ends"><span>-180</span><span>0</span><span>180</span></span></span></div>
-    <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
-    <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
-
-    <h2>Relief &amp; patina</h2>
+    <h2>Face panel &amp; patina</h2>
     <div class="row"><label>Face panel</label><input type="range" id="panel" min="0" max="0.3" step="0.01"></div>
     <div class="row"><label>Panel depth</label><input type="range" id="paneldepth" min="0" max="1" step="0.01"></div>
-    <div class="row"><label>Numbers</label><select id="numstyle"><option value="inset">Inset</option><option value="raised">Raised (embossed)</option></select></div>
     <div class="row"><label>Patina</label><input type="range" id="patina" min="0" max="1" step="0.01"></div>
     <button id="antique" style="width:100%;margin-bottom:6px">Antique relief preset</button>
 
@@ -440,6 +429,20 @@
     <div class="chk"><input type="checkbox" id="filifill"><span>Fill with enamel</span></div>
     <div class="chk"><input type="checkbox" id="enamelsame"><span>Enamel matches number paint</span></div>
     <div class="row"><label>Enamel</label><input type="color" id="enamel"></div>
+
+    <h2 class="cat" id="cat-numbers">Numbers <span>the numerals</span></h2>
+    <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
+    <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
+    <div class="row"><label>Paint mode</label><select id="paintmode"><option value="auto">Auto (contrast + harmony)</option><option value="random">Random</option><option value="custom">Custom</option></select></div>
+    <div class="row"><label>Font</label><select id="font"></select></div>
+    <div class="row"><label>d4 numbers</label><select id="d4style"><option value="tips">Corner tips (standard)</option><option value="center">Face centre</option></select></div>
+    <div class="row"><label>d6 faces</label><select id="d6style"><option value="numbers">Numbers</option><option value="pips">Pips</option></select></div>
+    <div class="row"><label>Size</label><input type="range" id="numsize" min="0" max="1" step="0.002"></div>
+    <div class="row"><label>Rotation <output id="numrotv" style="color:var(--dim);margin-left:4px"></output> <button type="button" id="numrotreset" class="rzero" title="Reset rotation to 0°" aria-label="Reset rotation to zero">0°</button></label><span class="slends"><input type="range" id="numrot" min="-180" max="180" step="1"><span class="ends"><span>-180</span><span>0</span><span>180</span></span></span></div>
+    <div class="row"><label>Depth</label><input type="range" id="numdepth" min="0" max="6" step="0.1"></div>
+    <div class="row"><label>Edge softness</label><input type="range" id="numsoft" min="0.5" max="10" step="0.1"></div>
+
+    <div class="row"><label>Number style</label><select id="numstyle"><option value="inset">Inset</option><option value="raised">Raised (embossed)</option></select></div>
 
     <section id="sec-showcase">
     <h2>Showcase</h2>
@@ -2107,6 +2110,7 @@ $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 /* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
+  {id:'PD-142.38.24', rev:1, anchor:'#cat-base', text:'The design controls are now sorted into two category sections. BASE (the die body): Substrate; Colors (base colours + Randomize, Swirl scale, Edge radius, Finish); Stone; Epoxy; Face panel & patina (Face panel, Panel depth, Patina, Antique relief preset); Filigree. NUMBERS (the numerals): Paint numbers, Number paint, Paint mode (Paint numbers comes first now), Font, d4 numbers, d6 faces, Size, Rotation, Depth, Edge softness, Number style (Inset / Raised; the old "Numbers" selector in Relief). Nothing else changed: same controls, ids and saved designs. Check: Design pane, scroll through Base then Numbers and say if any control belongs on the other side.', card:'PD-142.38.24'},
   {id:'PD-142.38.56', rev:1, anchor:'#undo', text:'On a phone the Undo / Redo strip now scrolls away with the Design pane instead of staying stuck at the top, which gives the controls about 56 px more room. Scroll back up to reach it; the keyboard shortcuts still work, and desktop keeps the strip in view. Check: on a phone, Design, scroll the pane down and back up.', card:'PD-142.38.56'},
   {id:'PD-142.38.55', rev:1, anchor:'#shapes', text:'On a phone, tapping a Shape button (or any other control in the settings pane) no longer jumps the pane back to the top: the pane stays where you scrolled it. The pane also scrolls up and down only now; a sideways drag does nothing. Check: on a phone, scroll the Design pane down, tap Shape buttons, Adv / Dis, the Custom +/- chips, then drag sideways.', card:'PD-142.38.55'},
   {id:'PD-142.38.54', rev:1, anchor:'#bagbtn', text:'The grey "UI paused" diagnostics note now appears at the top centre instead of over the round Bag button, so the Bag button stays tappable after a slow moment. Check: after the page has paused (a big bag loading), the Bag button opens the Bag view at once.', card:'PD-142.38.54'},

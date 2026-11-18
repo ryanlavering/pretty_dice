@@ -75,10 +75,17 @@ test('Raised numbers need a face panel; Patina is disabled without one (.38.14 .
   expect(ok).toBe(true);
 });
 
-test('Paint numbers sits with the colour controls (.38.13)', async ({ app, page }) => {
+test('Design controls are split into Base and Numbers sections; Paint numbers comes first in Numbers (.38.13, .38.24)', async ({ app, page }) => {
   await app.open(); await app.nav.toDesign();
-  const order = await page.evaluate(() => { const ids = [...document.querySelectorAll('#panes [id]')].map(e => e.id); return { a: ids.indexOf('paintmode'), n: ids.indexOf('numpaint'), r: ids.indexOf('panel') }; });
-  expect(order.n).toBeGreaterThan(order.a); expect(order.n - order.a).toBeLessThan(4); expect(order.n).toBeLessThan(order.r);
+  const r = await page.evaluate(() => {
+    const kids = [...document.querySelectorAll('#panes [id]')].map(e => e.id), at = id => kids.indexOf(id), nb = at('cat-numbers');
+    const base = ['subs', 'c1', 'colorrand', 'scale', 'radius', 'polish', 'stone', 'accent', 'glitter', 'bubbles', 'clarity', 'incl', 'inclsize', 'loadmodel', 'panel', 'paneldepth', 'patina', 'antique', 'filigree', 'filifill', 'enamelsame', 'enamel'];
+    const nums = ['numpaint', 'paint', 'paintmode', 'font', 'd4style', 'd6style', 'numsize', 'numrot', 'numdepth', 'numsoft', 'numstyle'];
+    return { baseOk: base.every(id => at(id) > at('cat-base') && at(id) < nb), numsOk: nums.every(id => at(id) > nb && at(id) < at('sec-showcase')), numOrder: nums.map(at), rawNums: nums.every(id => at(id) > -1) };
+  });
+  expect(r.rawNums).toBe(true); expect(r.baseOk, 'die-body controls sit between the Base and Numbers heads').toBe(true); expect(r.numsOk, 'numeral controls sit under the Numbers head').toBe(true);
+  expect(r.numOrder, 'Numbers order: Paint numbers, Number paint, Paint mode, Font ...').toEqual([...r.numOrder].sort((a, b) => a - b));
+  expect(await page.locator('#numstyle').evaluate(e => e.closest('.row').querySelector('label').textContent)).toBe('Number style');
 });
 
 for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 780 }]]) {
