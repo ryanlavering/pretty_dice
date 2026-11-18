@@ -58,7 +58,7 @@ const SHARED_VIEWPORT = { width: 960, height: 600 };
 const bootShared = async (page, again = false) => {
   if (again) await page.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
   await page.goto('/index.html?libs=local&seed=1'); await ready(page);
-  await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); });
+  await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); window.__pdGames = localStorage.getItem('prettydice.games'); });
 };
 
 export const test = base.extend({
@@ -103,8 +103,11 @@ export const test = base.extend({
       errors,
       async reset(seed = 1) {
         // 4.1 baseline: a test that reloaded or navigated the shared page (it lost __pdBoot) or left it at another size used to leak
-        // into every later test of the worker; boot it again from empty storage and put the viewport back
-        if (!(await page.evaluate(() => !!(window.__pdBoot && window.__pd)).catch(() => false))) await bootShared(page, true);
+        // into every later test of the worker; boot it again from empty storage and put the viewport back.
+        // the Games setup (game, player count, bot seats, options) lives in a module variable saved to localStorage, which pd.state
+        // does not cover: a test that changed it (Liar's Dice with a bot, two-player Pig) changed the next game test's setup
+        const fresh = await page.evaluate(() => !!(window.__pdBoot && window.__pd) && localStorage.getItem('prettydice.games') === window.__pdGames).catch(() => false);
+        if (!fresh) await bootShared(page, true);
         const vp = page.viewportSize(); if (!vp || vp.width !== SHARED_VIEWPORT.width || vp.height !== SHARED_VIEWPORT.height) await page.setViewportSize(SHARED_VIEWPORT);
         // overlays a test left open (the Bag view, a die's card menu, the utility drawer, Full view) covered the next test's controls
         for (let i = 0; i < 3 && await page.locator('#bagsheet:not([hidden])').count(); i++) await page.keyboard.press('Escape');   // the app's own Escape: card menu, then the sheet
