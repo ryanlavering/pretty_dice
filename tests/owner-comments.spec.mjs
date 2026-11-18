@@ -252,7 +252,6 @@ test('Adv <-> Dis, a modifier and an added die keep the pose of the dice that st
   const p0 = await pose(); expect(p0.length).toBe(2);
   const same = (a, b, what) => { const dot = Math.abs(a.reduce((s, v, k) => s + v * b[k], 0)); expect(dot, what).toBeGreaterThan(0.999); };
   for (const [f, n] of [['2d20kl1', 2], ['2d20kh1', 2], ['2d20kl1+3', 2], ['2d20kl1+3+1d6', 3]]) {
-    await page.locator('#paneltabs [data-pane=look]').click().catch(() => {});
     await page.locator('#notation').fill(f); await page.locator('#notapply').click(); await page.waitForTimeout(600);
     const p = await pose(); expect(p.length, f).toBe(n); same(p[0], p0[0], f + ' die 1'); same(p[1], p0[1], f + ' die 2');
   }
