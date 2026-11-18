@@ -51,7 +51,7 @@ const SHOTS = [
   ['03-substrates', { query: 'sub=metal' }, async p => { await panelAt(p, 'Substrate'); return side; }],
   ['04-colors', {}, async p => { await panelAt(p, 'Colors'); return side; }],
   ['05-numbers', {}, async p => { await panelAt(p, 'Numbers'); return side; }],
-  ['06-relief-filigree', {}, async p => { await panelAt(p, 'Face panel & patina'); return side; }],
+  ['06-relief-filigree', {}, async p => { await panelAt(p, 'Filigree'); return side; }],
   ['07-add-menu', {}, async p => { await p.click('#cards >> text=Add'); await p.waitForTimeout(500); }],
   ['08-bag-designs', {}, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
   ['09-bag-sets', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await p.waitForTimeout(600); }],

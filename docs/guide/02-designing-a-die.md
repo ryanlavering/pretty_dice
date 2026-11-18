@@ -1,6 +1,6 @@
 # Designing a die
 
-Everything here is in the **Look** tab of the side panel in the Design room. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look. The controls below the shape are sorted into two sections: **Base** (the die body: substrate, colours, stone, epoxy, face panel and patina, filigree) and **Numbers** (the numerals: paint, font, size, relief style).
+Everything here is in the **Look** tab of the side panel in the Design room. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look. The controls below the shape are sorted into three sections: **Base** (the die body: substrate, colours, stone, epoxy, face panel and patina), **Numbers** (the face decoration: numeral paint, font, size, relief style, then filigree) and **Showcase** (spin speed, then Save & export).
 
 ## Shape
 
@@ -33,13 +33,13 @@ The material the die is made of (choosing **Stone** gives you a random stone; th
 - **Size**, **Rotation**, **Depth** and **Edge softness** adjust the digits.
 - **Number style** (the last Numbers control): **Inset** or **Raised (embossed)**. Raised needs a face panel (see below).
 
-## Face panel, patina and filigree (Base)
+## Face panel and patina (Base), filigree (end of Numbers)
 
 ![Face panel, relief, patina and filigree options](img/06-relief-filigree.png)
 
 - **Face panel** and **Panel depth** sink or raise a panel behind the number. The panel is what lets the numbers be Raised.
 - **Patina** ages the die; **Antique relief preset** applies a worn look in one click.
-- **Filigree** adds ornament: Scrollwork, Beaded border or Art-deco lines. **Fill with enamel** colours it in; **Enamel matches number paint** keeps the two in step.
+- **Filigree** (the last controls in the Numbers section, after Number style) adds ornament: Scrollwork, Beaded border or Art-deco lines. **Fill with enamel** colours it in; **Enamel matches number paint** keeps the two in step.
 
 ## Naming and keeping a design
 
