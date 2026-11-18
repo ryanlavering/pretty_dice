@@ -46,6 +46,9 @@ for (const type of ['mouse', 'touch']) {
 }
 test('flick up the screen throws the dice away from the viewer, down toward', async ({ app }) => {
   await setup(app);
+  // stop the live loop: frames between the steps drew on the app RNG a timing-dependent number of times, so the random part of the
+  // throw changed from run to run and the mean 'down' speed landed near the limit (3.9 against > 4 in the 4.1 baseline runs)
+  await app.run(pd => pd.pause());
   const dir = async dy => { await app.run(pd => pd.simRoll()); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
   const up = await dir(-200), down = await dir(200);
   expect(up).toBeLessThan(-4); expect(down).toBeGreaterThan(4);
