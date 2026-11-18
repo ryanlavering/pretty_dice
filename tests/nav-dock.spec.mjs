@@ -113,3 +113,22 @@ test('Design Custom edits (Adv, dice +/-, modifier, shape) reach the dock box, a
   await expect(page.locator('#notation')).toHaveValue('3d8+2');
   await app.nav.toPlay(); await expect(box).toHaveValue('3d8+2');
 });
+
+// PD-142.38.48: a double-click on a dock chip adds one die however it arrives: a real dblclick, two quick clicks with no dblclick (touch), or a slow double-click.
+for (const [name, vp] of [['desktop', { width: 1280, height: 800 }], ['phone', { width: 390, height: 844 }]]) {
+  test(`${name}: dock chips add on a double-click, two quick clicks and a slow double-click, for the same and a different chip (.38.48)`, async ({ app, page }) => {
+    await page.setViewportSize(vp); await app.open(); await app.nav.toPlay(); await page.waitForTimeout(500);
+    const box = page.locator('#rollbox'), chip = n => page.locator(`#qbar .dchip[data-die="${n}"]`);
+    const fire = (n, gap, withDbl) => page.evaluate(async ([n, gap, withDbl]) => { const b = document.querySelector(`#qbar .dchip[data-die="${n}"]`), ev = (t, d) => b.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, detail: d }));
+      ev('click', 1); await new Promise(r => setTimeout(r, gap)); ev('click', 2); if (withDbl) ev('dblclick', 2); }, [n, gap, withDbl]);
+    const set = async v => { await page.waitForTimeout(400); await box.fill(v); await page.waitForTimeout(300); };
+    await chip(20).scrollIntoViewIfNeeded();
+    for (const [start, n, want] of [['1d20', 20, '2d20'], ['1d20', 6, '1d20+1d6'], ['2d6+3', 20, '2d6+1d20+3'], ['', 20, '1d20']]) {
+      await set(start); await chip(n).dblclick(); await page.waitForTimeout(400); await expect(box, `real dblclick ${start || 'empty'} + d${n}`).toHaveValue(want);
+      await set(start); await fire(n, 120, false); await page.waitForTimeout(500); await expect(box, `two quick clicks, no dblclick event, ${start || 'empty'} + d${n}`).toHaveValue(want);
+      await set(start); await fire(n, 120, true); await page.waitForTimeout(500); await expect(box, `quick clicks + dblclick ${start || 'empty'} + d${n}`).toHaveValue(want);
+      await set(start); await fire(n, 380, true); await page.waitForTimeout(500); await expect(box, `slow double-click ${start || 'empty'} + d${n}`).toHaveValue(want);
+    }
+    await set('1d20'); await chip(6).click(); await page.waitForTimeout(500); await expect(box, 'a single tap still replaces').toHaveValue('1d6');
+  });
+}
