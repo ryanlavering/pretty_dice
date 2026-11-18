@@ -79,11 +79,13 @@ test('Design controls are split into Base and Numbers sections; Paint numbers co
   await app.open(); await app.nav.toDesign();
   const r = await page.evaluate(() => {
     const kids = [...document.querySelectorAll('#panes [id]')].map(e => e.id), at = id => kids.indexOf(id), nb = at('cat-numbers');
-    const base = ['subs', 'c1', 'colorrand', 'scale', 'radius', 'polish', 'stone', 'accent', 'glitter', 'bubbles', 'clarity', 'incl', 'inclsize', 'loadmodel', 'panel', 'paneldepth', 'patina', 'antique', 'filigree', 'filifill', 'enamelsame', 'enamel'];
-    const nums = ['numpaint', 'paint', 'paintmode', 'font', 'd4style', 'd6style', 'numsize', 'numrot', 'numdepth', 'numsoft', 'numstyle'];
-    return { baseOk: base.every(id => at(id) > at('cat-base') && at(id) < nb), numsOk: nums.every(id => at(id) > nb && at(id) < at('sec-showcase')), numOrder: nums.map(at), rawNums: nums.every(id => at(id) > -1) };
+    const base = ['subs', 'c1', 'colorrand', 'scale', 'radius', 'polish', 'stone', 'accent', 'glitter', 'bubbles', 'clarity', 'incl', 'inclsize', 'loadmodel', 'panel', 'paneldepth', 'patina'];
+    const fili = ['filigree', 'filifill', 'enamelsame', 'enamel'];
+    const nums = ['numpaint', 'paint', 'paintmode', 'font', 'd4style', 'd6style', 'numsize', 'numrot', 'numdepth', 'numsoft', 'numstyle', ...fili];
+    return { baseOk: base.every(id => at(id) > at('cat-base') && at(id) < nb), numsOk: nums.every(id => at(id) > nb && at(id) < at('cat-showcase')), showOk: at('cat-showcase') > nb && at('sec-showcase') > at('cat-showcase') && at('expsize') > at('sec-showcase') && document.querySelector('#cat-showcase').textContent.startsWith('Showcase'), numOrder: nums.map(at), rawNums: nums.every(id => at(id) > -1) };
   });
   expect(r.rawNums).toBe(true); expect(r.baseOk, 'die-body controls sit between the Base and Numbers heads').toBe(true); expect(r.numsOk, 'numeral controls sit under the Numbers head').toBe(true);
+  expect(r.showOk, 'Showcase head follows Numbers (incl. Filigree) and precedes Spin and Save & export').toBe(true);
   expect(r.numOrder, 'Numbers order: Paint numbers, Number paint, Paint mode, Font ...').toEqual([...r.numOrder].sort((a, b) => a - b));
   expect(await page.locator('#numstyle').evaluate(e => e.closest('.row').querySelector('label').textContent)).toBe('Number style');
 });

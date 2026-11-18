@@ -200,12 +200,6 @@
     <div class="row"><label>Patina</label><input type="range" id="patina" min="0" max="1" step="0.01"></div>
     <button id="antique" style="width:100%;margin-bottom:6px">Antique relief preset</button>
 
-    <h2>Filigree</h2>
-    <div class="row"><label>Style</label><select id="filigree"><option value="none">None</option><option value="scroll">Scrollwork</option><option value="beads">Beaded border</option><option value="deco">Art-deco lines</option></select></div>
-    <div class="chk"><input type="checkbox" id="filifill"><span>Fill with enamel</span></div>
-    <div class="chk"><input type="checkbox" id="enamelsame"><span>Enamel matches number paint</span></div>
-    <div class="row"><label>Enamel</label><input type="color" id="enamel"></div>
-
     <h2 class="cat" id="cat-numbers">Numbers <span>the numerals</span></h2>
     <div class="chk"><input type="checkbox" id="numpaint"><span>Paint numbers</span></div>
     <div class="row"><label>Number paint</label><input type="color" id="paint"></div>
@@ -220,8 +214,15 @@
 
     <div class="row"><label>Number style</label><select id="numstyle"><option value="inset">Inset</option><option value="raised">Raised (embossed)</option></select></div>
 
+    <h2>Filigree</h2>
+    <div class="row"><label>Style</label><select id="filigree"><option value="none">None</option><option value="scroll">Scrollwork</option><option value="beads">Beaded border</option><option value="deco">Art-deco lines</option></select></div>
+    <div class="chk"><input type="checkbox" id="filifill"><span>Fill with enamel</span></div>
+    <div class="chk"><input type="checkbox" id="enamelsame"><span>Enamel matches number paint</span></div>
+    <div class="row"><label>Enamel</label><input type="color" id="enamel"></div>
+
+    <h2 class="cat" id="cat-showcase">Showcase <span>spin and export</span></h2>
     <section id="sec-showcase">
-    <h2>Showcase</h2>
+    <h2>Spin</h2>
     <div class="row"><label>Spin speed</label><input type="range" id="spin" min="0" max="1" step="0.01"></div>
   </section>
   <section id="sec-dice"><h2>Dice to roll</h2><div id="dicechips" role="toolbar" aria-label="Dice to roll: a tap loads the roll box, the Roll button throws"></div></section>

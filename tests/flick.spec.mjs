@@ -51,5 +51,28 @@ test('flick up the screen throws the dice away from the viewer, down toward', as
   await app.run(pd => pd.pause());
   const dir = async dy => { await app.run(pd => pd.simRoll()); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
   const up = await dir(-200), down = await dir(200);
-  expect(up).toBeLessThan(-4); expect(down).toBeGreaterThan(4);
+  expect(up).toBeLessThan(-2.5); expect(down).toBeGreaterThan(4);   // .38.65: up is biased toward "up the screen" so its depth is smaller (was about -6.3, now about -3.5)
+});
+
+// PD-142.38.65: an up flick is read as more "up" than "in": its toward-the-back component is smaller than a down flick's toward-the-viewer one,
+// sideways flicks are unchanged, and the dice stay in the tray whichever way they are thrown.
+test('flick up has a smaller depth component than flick down; sideways unchanged; dice stay in the tray; resting height like a Roll click', async ({ app, page }) => {
+  await setup(app);
+  const fv = (dx, dy) => app.run((pd, a) => { const v = pd.flickVel(a.dx, a.dy, 120); return [v.x, v.z]; }, { dx, dy });
+  const upV = await fv(0, -200), downV = await fv(0, 200), sideV = await fv(200, 0), diagV = await fv(200, -200);
+  console.log(`FLICK vel (x,z) up=${upV.map(v => v.toFixed(1))} down=${downV.map(v => v.toFixed(1))} side=${sideV.map(v => v.toFixed(1))} upright=${diagV.map(v => v.toFixed(1))}`);
+  const nrm = v => Math.hypot(v[0], v[1]);   // the camera may still be settling into the roll view (its yaw is not the point), so compare lengths on the mat
+  expect(nrm(upV), 'an up flick is throttled on the mat (less depth) compared with a down flick').toBeLessThan(nrm(downV) * 0.7);
+  expect(nrm(sideV), 'sideways keeps its full speed').toBeGreaterThan(nrm(downV) * 0.95); expect(nrm(downV)).toBeGreaterThan(12);
+  const depth = async dy => { await app.run(pd => pd.simRoll()); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
+  const up = await depth(-200);
+  expect(up).toBeLessThan(-2.5);   // still throws away from the viewer
+  await app.run(pd => pd.simRoll()); const side = await flickRun(app, 'mouse', 200, 0, 120); expect(side.mx).toBeGreaterThan(3);
+  for (const [dx, dy] of [[0, -250], [200, -200], [-200, -200], [0, 250], [250, 0]]) {
+    await app.run(pd => pd.simRoll()); await flickRun(app, 'mouse', dx, dy, 90);
+    const r = await app.run(pd => { pd.step(1500); pd.renderOnce(); return { half: pd.rollHalf, pos: pd.bodies.map(b => [b.position.x, b.position.z]), ys: pd.dice.map(d => ((d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera).y + 1) / 2) * 100), settled: pd.settled }; });
+    for (const [x, z] of r.pos) { expect(Math.abs(x), `x in tray (${dx},${dy})`).toBeLessThan(r.half.x + 0.5); expect(Math.abs(z), `z in tray (${dx},${dy})`).toBeLessThan(r.half.z + 0.5); }
+    const m = r.ys.reduce((a, b) => a + b, 0) / r.ys.length; console.log(`FLICK rest (${dx},${dy}): ${m.toFixed(1)}% from the bottom`);
+    expect(m, `resting height after flick (${dx},${dy})`).toBeGreaterThan(25); expect(m, 'on screen').toBeLessThan(75);
+  }
 });

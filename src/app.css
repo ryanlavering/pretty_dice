@@ -72,7 +72,7 @@
   #result .relean{pointer-events:auto;margin:6px 3px 0;font:600 12px Inter,sans-serif;letter-spacing:0;padding:4px 11px;border-radius:999px;border:1px solid #ff7a3a;background:rgba(20,18,24,.8);color:#ffb48a;cursor:pointer}
   #result .relean:hover{background:rgba(60,34,24,.9)}
   #result .heldnote{border-color:var(--hold-col,#f2c14e);color:var(--hold-col,#f2c14e)} #result .heldnote:hover{background:rgba(58,46,16,.9)}   /* PD-142.38.60: the held chip is the held ring's gold; --hold-col is set from RING_COLORS.hold */
-  #result .relean{position:absolute;left:10px;top:-36px;margin:0;text-align:left} #result .relean~.relean{top:-6px}
+  :root{--chip-l:auto;--chip-r:10px} #result .relean{position:absolute;left:var(--chip-l);right:var(--chip-r);top:-36px;margin:0;text-align:left} #result .relean~.relean{top:-6px}   /* PD-142.38.59.1: on desktop too the leaning / held chips stack at the right (same side as the phone), not the left */
   @media (max-width:760px){ #result .relean{top:calc(var(--peek-w) - 38px);left:var(--chip-l);right:var(--chip-r)} #result .relean~.relean{top:calc(var(--peek-w) - 10px)} }   /* PD-142.38.59: on the phone the leaning / held chips stack in the top-right corner under the look-from-above handle (PD-148 flips --chip-l / --chip-r with the --peek-* variables) */   /* the phone caption (#name) sits just above the result: keep the chips below it (PD-142.1.1) */   /* PD-142.40.2: the leaning / held chips sit in the top-left corner, off the middle where dice land; a second one stacks under the first */
   #result .brk.lean{color:#ffb48a} #result .brk .rt{white-space:normal;overflow-wrap:anywhere;text-align:left;margin:0 6px;display:inline} #result .brk .rt .chip{display:inline-block;vertical-align:middle;margin-right:4px}   /* PD-142.40: a long breakdown wraps inside the screen */
   #result .brk{font:500 14px Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:4px auto 0;max-width:min(92vw,560px);box-sizing:border-box;width:fit-content;padding:3px 12px;border-radius:999px;background:rgba(14,16,22,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);text-shadow:0 1px 8px #000}   /* PD-142.14.1.13: backing pill so the line reads over dice that land under it */
@@ -202,10 +202,10 @@
   #cardmenu button{border:0;background:none;text-align:left;padding:9px 10px;border-radius:6px} #cardmenu button:hover{background:#2a2f3d} #cardmenu .danger{color:#e07a7a} #cardmenu .mh{color:var(--dim);font-size:11px;padding:4px 10px}
   #topstrip{display:none}
   @media (max-width:760px){   /* slice 4c: the phone's top strip holds the Design | Play switch; the middle is the top-down hold handle */
-    #topstrip{display:flex;position:absolute;top:6px;left:8px;right:8px;z-index:6;gap:8px;align-items:center;pointer-events:none}
+    #topstrip{display:flex;position:absolute;top:calc(2px + env(safe-area-inset-top,0px));left:calc(max(10px,env(safe-area-inset-left,0px)) - 4px);right:calc(max(10px,env(safe-area-inset-right,0px)) - 4px);z-index:6;gap:8px;align-items:center;pointer-events:none}
     aside #modesw{display:none}   /* PD-142.38.22: no Design | Play switch on the phone mat; the corner menu button carries it */
     /* PD-142.38.58: the hold-to-look-from-above handle is a thumb-sized corner button (top right: a right-hand thumb does not cover the dice). The side lives in ONE place: --peek-l / --peek-r reserve its width, #topstrip's justify-content picks the corner (PD-148 can flip them for a left-hand mode) */
-    :root{--peek-w:52px;--peek-l:0px;--peek-r:var(--peek-w);--peek-end:flex-end;--chip-l:auto;--chip-r:8px}
+    :root{--peek-w:52px;--peek-l:0px;--peek-r:calc(var(--peek-w) + 2px);--peek-end:flex-end;--chip-l:auto;--chip-r:8px}
     #topstrip{justify-content:var(--peek-end)}
     #stripmid{flex:none;width:var(--peek-w);height:var(--peek-w);display:grid;place-items:center;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none} #stripmid::before{width:22px;height:22px;margin:0;vertical-align:baseline} body.inroll #stripmid{pointer-events:auto}
     #gamepanel.strip{left:calc(8px + var(--peek-l));right:calc(8px + var(--peek-r))}
