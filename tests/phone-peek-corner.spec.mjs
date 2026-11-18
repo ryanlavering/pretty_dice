@@ -55,3 +55,12 @@ for (const w of [360, 390]) test(`the leaning and held chips stack at the top ri
   await check('Play');
   await app.nav.fullView(true); await app.page.waitForTimeout(200); await check('Full view');
 });
+
+// PD-142.38.66: the eye's centre mirrors the centre of the menu button (top right vs bottom right): same distance from the right edge, and 28px from the top as the menu is from the bottom.
+test('the eye centre sits 32px from the right and 28px from the top, mirroring the menu button', async ({ app }) => {
+  await app.page.setViewportSize({ width: 390, height: 740 }); await app.open(); await app.nav.toPlay();
+  const r = await app.page.evaluate(() => { const c = id => { const b = document.getElementById(id).getBoundingClientRect(); return { fromRight: innerWidth - (b.left + b.right) / 2, fromTop: (b.top + b.bottom) / 2, fromBottom: innerHeight - (b.top + b.bottom) / 2 }; }; return { eye: c('stripmid'), menu: c('tr') }; });
+  expect(Math.abs(r.eye.fromRight - r.menu.fromRight), 'same offset from the right edge').toBeLessThanOrEqual(1);
+  expect(Math.abs(r.eye.fromTop - r.menu.fromBottom), 'top offset mirrors the menu bottom offset').toBeLessThanOrEqual(1);
+  expect(Math.abs(r.eye.fromRight - 32)).toBeLessThanOrEqual(1); expect(Math.abs(r.eye.fromTop - 28)).toBeLessThanOrEqual(1);
+});
