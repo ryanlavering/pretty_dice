@@ -115,3 +115,15 @@ Caveat: the machine was NOT quiet (load 19-37 from other sessions), so these are
 
 Build growth is the nine closure wrappers for the modules (`__pdm[...] = (() => {...})()`); S9 itself left both builds byte-identical to S8 (sha1 aff75a26 / 496505d4), which is the proof the boot path move changed nothing in the built files. `tests/golden/build.json` is deliberately NOT updated: it still records the pre-factor sizes, so `golden-build.mjs` reports the +3,313 byte wrapper delta as the one explained difference (update it only when the owner accepts the factoring).
 
+### After merging origin/v4 (f4cac79) into v4.1, at `b5e7536`
+
+The 4.0 fixes since 7503b05 (showcase rig, roll framing and flick bias, chips, Design pane Filigree/Showcase markup, PD-142.38.67 title centering) were re-applied by hand in `src/main.js`, `src/app.css` and the `index.html` markup (merge commits e1978bf, f0dfa95). Check: a line diff of a pure-v4 artifact build (843e915) against the merged v4.1 artifact showed only factoring differences (module wrappers and header comments, `liveState` for the stone palette, LOG_MAX moved).
+
+A/B golden: the golden set was re-recorded on a throwaway tree = pre-factor `d028972` + `git merge origin/v4` (monolithic index.html, clean merge), then v4.1 compared against it: all 9 golden tests pass. boot frame hashes and the screen DOM boxes changed versus the old recording on purpose (4.0 changes); rolls, looks, atlas and notation are unchanged. `tests/golden/build.json` now records that tree's sizes (artifact 942,585; offline 3,755,913); v4.1 is +3,313 bytes each (the same module wrappers).
+
+| Run | Commit | Load before | Result | Time |
+|---|---|---|---|---|
+| merged 1 | b5e7536 | ~13 (other lanes) | 408 passed, 1 failed (bagbrowser:87 tile-drag reorder), 10 skipped | 20.3 min |
+| merged 2 | b5e7536 | ~13 | **409 passed, 0 failed**, 10 skipped | 20.3 min |
+
+bagbrowser:87 passed 4 of 4 when repeated alone (`--repeat-each=4`); it is the same test that flaked in pre-factor run 10 (v4 has since changed it to wait for the picture pass), so it is read as the known timing flake, not a factoring regression. The count is 409 = v4's 400 + the 9 golden tests. Times are close to the quiet-box baseline (17.8 / 19.4 min) even at load ~13.
