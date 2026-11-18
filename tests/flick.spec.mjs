@@ -12,9 +12,12 @@ const flickRun = (app, type, dx, dy, ms) => app.run((pd, a) => {
   pd.canvas.setPointerCapture = () => {};
   const r = pd.canvas.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + r.height / 2;
   const ev = (t, x, y) => pd.canvas.dispatchEvent(new PointerEvent(t, { pointerId: 7, clientX: x, clientY: y, button: 0, bubbles: true, pointerType: a.type }));
-  const t0 = performance.now(); ev('pointerdown', x0, y0);
-  const w = performance.now(); while (performance.now() - w < a.ms) { /* hold the finger for the drag time */ }
-  ev('pointermove', x0 + a.dx / 2, y0 + a.dy / 2); ev('pointermove', x0 + a.dx, y0 + a.dy); ev('pointerup', x0 + a.dx, y0 + a.dy);
+  // the app times the swipe with performance.now(); a busy wait for the drag time was stretched whenever the CPU was busy (a slower
+  // swipe, a weaker throw: flick:44 read 2.7 and 3.9 against > 4 in the 4.1 baseline runs), so the clock is stepped instead
+  const now = performance.now, t0 = now.call(performance); let t = t0; performance.now = () => t;
+  try { ev('pointerdown', x0, y0); t = t0 + a.ms;   // the finger is held for the drag time
+    ev('pointermove', x0 + a.dx / 2, y0 + a.dy / 2); ev('pointermove', x0 + a.dx, y0 + a.dy); ev('pointerup', x0 + a.dx, y0 + a.dy); }
+  finally { performance.now = now; }
   const v = pd.bodies.map(b => [b.velocity.x, b.velocity.y, b.velocity.z]);
   return { rolling: pd.rolling, settled: pd.settled, v, mx: v.reduce((s, q) => s + q[0], 0) / v.length, my: v.reduce((s, q) => s + q[1], 0) / v.length };
 }, { type, dx, dy, ms });
