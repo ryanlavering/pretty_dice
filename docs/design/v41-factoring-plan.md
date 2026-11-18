@@ -111,13 +111,13 @@ Verification per step: `tests/golden.spec.mjs` (identical) + the specs that touc
 | Step | What | Risk | Verify | Status |
 |---|---|---|---|---|
 | S0 | build-static.py: src/ bundler with the rule checks; no module yet (output identical) | build only | golden-build sha identical, csp+offline | done a13c088 |
-| S1 | `src/util.js` (mulberry32, pick, range, PHI, V, signs; `SEED`/`rng` stay in main) | low | golden, logic, physics | todo |
-| S2 | `src/polyhedra.js` | low | golden (rolls, atlas), logic per-shape, physics | todo |
-| S3 | `src/atlas.js` | low (canvas fonts) | golden atlas hashes, shader, logic | todo |
+| S1 | `src/util.js` (mulberry32, pick, range, PHI, V, signs; `SEED`/`rng` stay in main) | low | golden, logic, physics | done afced1d |
+| S2 | `src/polyhedra.js` | low | golden (rolls, atlas), logic per-shape, physics | done 4414884 |
+| S3 | `src/atlas.js` | low (canvas fonts) | golden atlas hashes, shader, logic | done 64b2ecb |
 | gate 1 | broader set + merge origin/v4 | | | todo |
-| S4 | `src/geometry.js` | low | golden rolls/frames, shader, relief-rule | todo |
-| S5 | `src/material.js` | medium (shader strings) | golden frames, shader, smoke | todo |
-| S6 | `src/substrates.js` (`state.stone` via setter) | medium | golden looks, logic randomize | todo |
+| S4 | `src/geometry.js` | low | golden rolls/frames, shader, relief-rule | done 075df3e (with S5) |
+| S5 | `src/material.js` | medium (shader strings) | golden frames, shader, smoke | done 075df3e |
+| S6 | `src/substrates.js` (`state.stone` via setter) | medium | golden looks, logic randomize | done (S6 commit; golden, logic, shader, artifact-csp, offline: 29 passed) |
 | S7 | `src/app.css` (link + build inlining) | medium (cascade order) | golden screens (DOM boxes), nav/phone specs | todo |
 | gate 2 | broader set + merge origin/v4 | | | todo |
 | S8 | `src/bagmodel.js` (pure bag file model) | low | bag, bagsets, bagbrowser | todo |
