@@ -1,6 +1,6 @@
 # 4.1 regression baseline (pre- and post-factor)
 
-Status: in progress, 2026-11-18 (4.1 lane). Plan: [v41-factoring-plan.md](v41-factoring-plan.md).
+Status: **pre-factor baseline recorded** 2026-11-18: runs 11 and 12 at `d028972`, both 397 passed / 0 failed / 10 skipped (spec-level skips), `--retries=0`, 2 workers, load < 2 at start. Post-factor proof: section at the end (4.1 lane). Plan: [v41-factoring-plan.md](v41-factoring-plan.md).
 
 Definition: the full suite with `--retries=0` on a quiet machine passes completely, twice in a row, at one recorded commit, plus the golden set (`tests/golden.spec.mjs`, part of the suite) and `node scripts/golden-build.mjs`.
 
@@ -82,7 +82,10 @@ Recorded at `020101a` (machine-specific hashes: record and compare on this machi
 | 8 | 364e59c | 1.97 | 396 passed, 1 failed (artifact-csp:19) | 18.1 min |
 | 9 | 9e5c3b6 | 1.91 | 397 passed, 0 failed | 17.7 min |
 | 10 | 9e5c3b6 | 1.87 | 396 passed, 1 failed (bagbrowser:87) | 18.0 min |
-| 11 | (running) | | | |
+| **11** | **d028972** | 1.96 | **397 passed, 0 failed**, 10 skipped | 17.8 min |
+| **12** | **d028972** | 1.80 | **397 passed, 0 failed**, 10 skipped | 19.4 min |
+
+**Pre-factor baseline = runs 11 + 12 at `d028972`.** Golden set compared green inside both runs; `node scripts/golden-build.mjs` at `d028972`: artifact 938,441 bytes, offline 3,751,769 bytes, both identical to the recording. `index.html` at the baseline: 3,179 lines, 435,909 bytes.
 
 Timing, run 0 vs run 5: wall 52.2 -> 17.8 min; summed test time 85.5 -> 26.6 min. Slowest files run 5: bagbrowser 183 s, owner-comments 182 s, smoke 135 s, bagsets 108 s, nav-dock 94 s, golden 93 s, new-callouts 92 s, roll-framing 69 s (run 0: bagbrowser 691 s, roll-framing 622 s, owner-comments 567 s).
 
