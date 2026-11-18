@@ -210,7 +210,7 @@ test('Load bag replaces the bag and asks first when it has unsaved changes; Save
   expect(await app.run(pd => pd.bag.designs.length)).toBe(1);
 });
 
-test('Save bag writes the current state of edited designs; the session keeps them pending, and a loaded file is clean (PD-112)', async ({ app, page }) => {
+test('Save bag writes the current state of edited designs and saves them in the session too (PD-112, PD-142.38.52), and a loaded file is clean', async ({ app, page }) => {
   test.setTimeout(120_000);
   await app.open();
   await app.run(SETUP);
@@ -220,11 +220,9 @@ test('Save bag writes the current state of edited designs; the session keeps the
   expect(file.pending).toEqual({});
   expect(file.designs.find(d => d.id === 'gold').design.edge_radius).toBe(0.09);
   expect(file.designs.find(d => d.id === 'bone').design.edge_radius).toBe(0.11);
-  // the session: bag counts as saved, but the designs are still Modified and revert to their old state
-  await expect(page.locator('#bagdirty')).toBeHidden();
-  const s = await app.run(async pd => { const was = { gold: pd.isModified('gold'), bone: pd.isModified('bone') }; await pd.bagOps.revert('gold'); return { was, radiusAfter: pd.state.radius, goldMod: pd.isModified('gold') }; });
-  expect(s.was).toEqual({ gold: true, bone: true });
-  expect(s.goldMod).toBe(false); expect(s.radiusAfter).not.toBe(0.09);
+  // the session: Save bag committed the edits (PD-142.38.52), so nothing is Modified; a later change makes the bag dirty again
+  const s = await app.run(async pd => { const was = { gold: pd.isModified('gold'), bone: pd.isModified('bone') }; pd.bagOps.rename('bone', 'Bone 2'); return { was, radius: pd.bag.designs.find(d => d.id === 'gold').design.edge_radius }; });
+  expect(s.was).toEqual({ gold: false, bone: false }); expect(s.radius).toBe(0.09);
   // loading that file: the designs come in clean with the newer state
   await page.click('#sheetload');   // the revert above changed the bag, so it asks first
   const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('#baskDiscard')]);
