@@ -421,26 +421,6 @@
     "cls": "",
     "shown": false
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": false
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
@@ -509,6 +489,31 @@
    "numstyle": {
     "tag": "select",
     "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
     "shown": false
    },
    "sec-showcase": {
@@ -1368,7 +1373,7 @@
      18,
      137,
      273,
-     1969
+     2030
     ]
    },
    "actions": {
@@ -1485,7 +1490,7 @@
      18,
      286,
      273,
-     1820
+     1881
     ]
    },
    "shapehead": {
@@ -1825,63 +1830,13 @@
     ],
     "text": "Antique relief preset"
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": true,
-    "box": [
-     152,
-     1177,
-     140,
-     33
-    ],
-    "value": "scroll"
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1225,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1256,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     247,
-     1284,
-     44,
-     30
-    ],
-    "value": "#5df0f0"
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
     "shown": true,
     "box": [
      18,
-     1346,
+     1154,
      273,
      31
     ],
@@ -1893,7 +1848,7 @@
     "shown": true,
     "box": [
      22,
-     1391,
+     1198,
      13,
      13
     ],
@@ -1906,7 +1861,7 @@
     "shown": true,
     "box": [
      247,
-     1419,
+     1226,
      44,
      30
     ],
@@ -1918,7 +1873,7 @@
     "shown": true,
     "box": [
      152,
-     1461,
+     1268,
      140,
      33
     ],
@@ -1930,7 +1885,7 @@
     "shown": true,
     "box": [
      152,
-     1506,
+     1313,
      140,
      33
     ],
@@ -1942,7 +1897,7 @@
     "shown": true,
     "box": [
      152,
-     1551,
+     1358,
      140,
      33
     ],
@@ -1954,7 +1909,7 @@
     "shown": true,
     "box": [
      152,
-     1596,
+     1403,
      140,
      33
     ],
@@ -1966,7 +1921,7 @@
     "shown": true,
     "box": [
      159,
-     1643,
+     1450,
      131,
      16
     ],
@@ -1978,7 +1933,7 @@
     "shown": true,
     "box": [
      80,
-     1680,
+     1487,
      15,
      17
     ],
@@ -1991,7 +1946,7 @@
     "shown": true,
     "box": [
      103,
-     1681,
+     1488,
      26,
      19
     ],
@@ -2003,7 +1958,7 @@
     "shown": true,
     "box": [
      159,
-     1673,
+     1480,
      131,
      16
     ],
@@ -2015,7 +1970,7 @@
     "shown": true,
     "box": [
      159,
-     1720,
+     1528,
      131,
      16
     ],
@@ -2027,7 +1982,7 @@
     "shown": true,
     "box": [
      159,
-     1752,
+     1560,
      131,
      16
     ],
@@ -2039,11 +1994,73 @@
     "shown": true,
     "box": [
      152,
-     1782,
+     1590,
      140,
      33
     ],
     "value": "inset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1678,
+     140,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1726,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1757,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1785,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     1847,
+     273,
+     31
+    ],
+    "text": "Showcase"
    },
    "sec-showcase": {
     "tag": "section",
@@ -2051,7 +2068,7 @@
     "shown": true,
     "box": [
      18,
-     1821,
+     1882,
      273,
      69
     ]
@@ -2062,7 +2079,7 @@
     "shown": true,
     "box": [
      159,
-     1866,
+     1928,
      131,
      16
     ],
@@ -2184,7 +2201,7 @@
     "shown": true,
     "box": [
      152,
-     1940,
+     2001,
      140,
      33
     ],
@@ -2196,7 +2213,7 @@
     "shown": true,
     "box": [
      18,
-     1979,
+     2040,
      134,
      38
     ],
@@ -2208,7 +2225,7 @@
     "shown": true,
     "box": [
      158,
-     1979,
+     2040,
      134,
      38
     ],
@@ -2220,7 +2237,7 @@
     "shown": true,
     "box": [
      110,
-     2022,
+     2084,
      181,
      34
     ],
@@ -2232,7 +2249,7 @@
     "shown": true,
     "box": [
      18,
-     2068,
+     2129,
      134,
      38
     ],
@@ -2244,7 +2261,7 @@
     "shown": true,
     "box": [
      158,
-     2068,
+     2129,
      134,
      38
     ],
@@ -2823,7 +2840,7 @@
      18,
      137,
      273,
-     1969
+     2030
     ]
    },
    "actions": {
@@ -2940,7 +2957,7 @@
      18,
      286,
      273,
-     1820
+     1881
     ]
    },
    "shapehead": {
@@ -3280,63 +3297,13 @@
     ],
     "text": "Antique relief preset"
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": true,
-    "box": [
-     152,
-     1177,
-     140,
-     33
-    ],
-    "value": "scroll"
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1225,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1256,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     247,
-     1284,
-     44,
-     30
-    ],
-    "value": "#5df0f0"
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
     "shown": true,
     "box": [
      18,
-     1346,
+     1154,
      273,
      31
     ],
@@ -3348,7 +3315,7 @@
     "shown": true,
     "box": [
      22,
-     1391,
+     1198,
      13,
      13
     ],
@@ -3361,7 +3328,7 @@
     "shown": true,
     "box": [
      247,
-     1419,
+     1226,
      44,
      30
     ],
@@ -3373,7 +3340,7 @@
     "shown": true,
     "box": [
      152,
-     1461,
+     1268,
      140,
      33
     ],
@@ -3385,7 +3352,7 @@
     "shown": true,
     "box": [
      152,
-     1506,
+     1313,
      140,
      33
     ],
@@ -3397,7 +3364,7 @@
     "shown": true,
     "box": [
      152,
-     1551,
+     1358,
      140,
      33
     ],
@@ -3409,7 +3376,7 @@
     "shown": true,
     "box": [
      152,
-     1596,
+     1403,
      140,
      33
     ],
@@ -3421,7 +3388,7 @@
     "shown": true,
     "box": [
      159,
-     1643,
+     1450,
      131,
      16
     ],
@@ -3433,7 +3400,7 @@
     "shown": true,
     "box": [
      80,
-     1680,
+     1487,
      15,
      17
     ],
@@ -3446,7 +3413,7 @@
     "shown": true,
     "box": [
      103,
-     1681,
+     1488,
      26,
      19
     ],
@@ -3458,7 +3425,7 @@
     "shown": true,
     "box": [
      159,
-     1673,
+     1480,
      131,
      16
     ],
@@ -3470,7 +3437,7 @@
     "shown": true,
     "box": [
      159,
-     1720,
+     1528,
      131,
      16
     ],
@@ -3482,7 +3449,7 @@
     "shown": true,
     "box": [
      159,
-     1752,
+     1560,
      131,
      16
     ],
@@ -3494,11 +3461,73 @@
     "shown": true,
     "box": [
      152,
-     1782,
+     1590,
      140,
      33
     ],
     "value": "inset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     152,
+     1678,
+     140,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1726,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     1757,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     247,
+     1785,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     1847,
+     273,
+     31
+    ],
+    "text": "Showcase"
    },
    "sec-showcase": {
     "tag": "section",
@@ -3506,7 +3535,7 @@
     "shown": true,
     "box": [
      18,
-     1821,
+     1882,
      273,
      69
     ]
@@ -3517,7 +3546,7 @@
     "shown": true,
     "box": [
      159,
-     1866,
+     1928,
      131,
      16
     ],
@@ -3639,7 +3668,7 @@
     "shown": true,
     "box": [
      152,
-     1940,
+     2001,
      140,
      33
     ],
@@ -3651,7 +3680,7 @@
     "shown": true,
     "box": [
      18,
-     1979,
+     2040,
      134,
      38
     ],
@@ -3663,7 +3692,7 @@
     "shown": true,
     "box": [
      158,
-     1979,
+     2040,
      134,
      38
     ],
@@ -3675,7 +3704,7 @@
     "shown": true,
     "box": [
      110,
-     2022,
+     2084,
      181,
      34
     ],
@@ -3687,7 +3716,7 @@
     "shown": true,
     "box": [
      18,
-     2068,
+     2129,
      134,
      38
     ],
@@ -3699,7 +3728,7 @@
     "shown": true,
     "box": [
      158,
-     2068,
+     2129,
      134,
      38
     ],
@@ -4676,26 +4705,6 @@
     "cls": "",
     "shown": false
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": false
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
@@ -4764,6 +4773,31 @@
    "numstyle": {
     "tag": "select",
     "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
     "shown": false
    },
    "sec-showcase": {

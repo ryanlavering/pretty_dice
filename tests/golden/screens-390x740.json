@@ -401,26 +401,6 @@
     "cls": "",
     "shown": false
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": false
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
@@ -489,6 +469,31 @@
    "numstyle": {
     "tag": "select",
     "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
     "shown": false
    },
    "sec-showcase": {
@@ -815,9 +820,9 @@
     "cls": "",
     "shown": true,
     "box": [
-     8,
      6,
-     374,
+     2,
+     378,
      52
     ]
    },
@@ -826,8 +831,8 @@
     "cls": "peekh",
     "shown": true,
     "box": [
-     330,
-     6,
+     332,
+     2,
      52,
      52
     ]
@@ -1338,7 +1343,7 @@
      18,
      485,
      354,
-     1933
+     1994
     ]
    },
    "actions": {
@@ -1455,7 +1460,7 @@
      18,
      617,
      354,
-     1800
+     1862
     ]
    },
    "shapehead": {
@@ -1795,63 +1800,13 @@
     ],
     "text": "Antique relief preset"
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": true,
-    "box": [
-     192,
-     1489,
-     180,
-     33
-    ],
-    "value": "scroll"
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1537,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1568,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     328,
-     1596,
-     44,
-     30
-    ],
-    "value": "#5df0f0"
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
     "shown": true,
     "box": [
      18,
-     1658,
+     1466,
      354,
      31
     ],
@@ -1863,7 +1818,7 @@
     "shown": true,
     "box": [
      22,
-     1702,
+     1510,
      13,
      13
     ],
@@ -1876,7 +1831,7 @@
     "shown": true,
     "box": [
      328,
-     1730,
+     1538,
      44,
      30
     ],
@@ -1888,7 +1843,7 @@
     "shown": true,
     "box": [
      192,
-     1772,
+     1580,
      180,
      33
     ],
@@ -1900,7 +1855,7 @@
     "shown": true,
     "box": [
      192,
-     1817,
+     1625,
      180,
      33
     ],
@@ -1912,7 +1867,7 @@
     "shown": true,
     "box": [
      192,
-     1862,
+     1670,
      180,
      33
     ],
@@ -1924,7 +1879,7 @@
     "shown": true,
     "box": [
      192,
-     1907,
+     1715,
      180,
      33
     ],
@@ -1936,7 +1891,7 @@
     "shown": true,
     "box": [
      199,
-     1954,
+     1762,
      171,
      16
     ],
@@ -1948,7 +1903,7 @@
     "shown": true,
     "box": [
      80,
-     1991,
+     1799,
      15,
      17
     ],
@@ -1961,7 +1916,7 @@
     "shown": true,
     "box": [
      103,
-     1992,
+     1800,
      26,
      19
     ],
@@ -1973,7 +1928,7 @@
     "shown": true,
     "box": [
      199,
-     1984,
+     1792,
      171,
      16
     ],
@@ -1985,7 +1940,7 @@
     "shown": true,
     "box": [
      199,
-     2032,
+     1839,
      171,
      16
     ],
@@ -1997,7 +1952,7 @@
     "shown": true,
     "box": [
      199,
-     2064,
+     1871,
      171,
      16
     ],
@@ -2009,11 +1964,73 @@
     "shown": true,
     "box": [
      192,
-     2094,
+     1901,
      180,
      33
     ],
     "value": "inset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     192,
+     1990,
+     180,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     2038,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     2069,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     328,
+     2097,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     2159,
+     354,
+     31
+    ],
+    "text": "Showcase"
    },
    "sec-showcase": {
     "tag": "section",
@@ -2021,7 +2038,7 @@
     "shown": true,
     "box": [
      18,
-     2133,
+     2194,
      354,
      69
     ]
@@ -2032,7 +2049,7 @@
     "shown": true,
     "box": [
      199,
-     2178,
+     2239,
      171,
      16
     ],
@@ -2154,7 +2171,7 @@
     "shown": true,
     "box": [
      192,
-     2251,
+     2313,
      180,
      33
     ],
@@ -2166,7 +2183,7 @@
     "shown": true,
     "box": [
      18,
-     2290,
+     2352,
      174,
      38
     ],
@@ -2178,7 +2195,7 @@
     "shown": true,
     "box": [
      198,
-     2290,
+     2352,
      174,
      38
     ],
@@ -2190,7 +2207,7 @@
     "shown": true,
     "box": [
      137,
-     2334,
+     2395,
      235,
      34
     ],
@@ -2202,7 +2219,7 @@
     "shown": true,
     "box": [
      18,
-     2380,
+     2441,
      174,
      38
     ],
@@ -2214,7 +2231,7 @@
     "shown": true,
     "box": [
      198,
-     2380,
+     2441,
      174,
      38
     ],
@@ -2272,9 +2289,9 @@
     "cls": "",
     "shown": true,
     "box": [
-     8,
      6,
-     374,
+     2,
+     378,
      52
     ]
    },
@@ -2283,8 +2300,8 @@
     "cls": "peekh",
     "shown": true,
     "box": [
-     330,
-     6,
+     332,
+     2,
      52,
      52
     ]
@@ -2783,7 +2800,7 @@
      18,
      485,
      354,
-     1933
+     1994
     ]
    },
    "actions": {
@@ -2900,7 +2917,7 @@
      18,
      617,
      354,
-     1800
+     1862
     ]
    },
    "shapehead": {
@@ -3240,63 +3257,13 @@
     ],
     "text": "Antique relief preset"
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": true,
-    "box": [
-     192,
-     1489,
-     180,
-     33
-    ],
-    "value": "scroll"
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1537,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     22,
-     1568,
-     13,
-     13
-    ],
-    "value": "on",
-    "checked": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": true,
-    "box": [
-     328,
-     1596,
-     44,
-     30
-    ],
-    "value": "#5df0f0"
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
     "shown": true,
     "box": [
      18,
-     1658,
+     1466,
      354,
      31
     ],
@@ -3308,7 +3275,7 @@
     "shown": true,
     "box": [
      22,
-     1702,
+     1510,
      13,
      13
     ],
@@ -3321,7 +3288,7 @@
     "shown": true,
     "box": [
      328,
-     1730,
+     1538,
      44,
      30
     ],
@@ -3333,7 +3300,7 @@
     "shown": true,
     "box": [
      192,
-     1772,
+     1580,
      180,
      33
     ],
@@ -3345,7 +3312,7 @@
     "shown": true,
     "box": [
      192,
-     1817,
+     1625,
      180,
      33
     ],
@@ -3357,7 +3324,7 @@
     "shown": true,
     "box": [
      192,
-     1862,
+     1670,
      180,
      33
     ],
@@ -3369,7 +3336,7 @@
     "shown": true,
     "box": [
      192,
-     1907,
+     1715,
      180,
      33
     ],
@@ -3381,7 +3348,7 @@
     "shown": true,
     "box": [
      199,
-     1954,
+     1762,
      171,
      16
     ],
@@ -3393,7 +3360,7 @@
     "shown": true,
     "box": [
      80,
-     1991,
+     1799,
      15,
      17
     ],
@@ -3406,7 +3373,7 @@
     "shown": true,
     "box": [
      103,
-     1992,
+     1800,
      26,
      19
     ],
@@ -3418,7 +3385,7 @@
     "shown": true,
     "box": [
      199,
-     1984,
+     1792,
      171,
      16
     ],
@@ -3430,7 +3397,7 @@
     "shown": true,
     "box": [
      199,
-     2032,
+     1839,
      171,
      16
     ],
@@ -3442,7 +3409,7 @@
     "shown": true,
     "box": [
      199,
-     2064,
+     1871,
      171,
      16
     ],
@@ -3454,11 +3421,73 @@
     "shown": true,
     "box": [
      192,
-     2094,
+     1901,
      180,
      33
     ],
     "value": "inset"
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": true,
+    "box": [
+     192,
+     1990,
+     180,
+     33
+    ],
+    "value": "scroll"
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     2038,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     2069,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     328,
+     2097,
+     44,
+     30
+    ],
+    "value": "#5df0f0"
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
+    "shown": true,
+    "box": [
+     18,
+     2159,
+     354,
+     31
+    ],
+    "text": "Showcase"
    },
    "sec-showcase": {
     "tag": "section",
@@ -3466,7 +3495,7 @@
     "shown": true,
     "box": [
      18,
-     2133,
+     2194,
      354,
      69
     ]
@@ -3477,7 +3506,7 @@
     "shown": true,
     "box": [
      199,
-     2178,
+     2239,
      171,
      16
     ],
@@ -3599,7 +3628,7 @@
     "shown": true,
     "box": [
      192,
-     2251,
+     2313,
      180,
      33
     ],
@@ -3611,7 +3640,7 @@
     "shown": true,
     "box": [
      18,
-     2290,
+     2352,
      174,
      38
     ],
@@ -3623,7 +3652,7 @@
     "shown": true,
     "box": [
      198,
-     2290,
+     2352,
      174,
      38
     ],
@@ -3635,7 +3664,7 @@
     "shown": true,
     "box": [
      137,
-     2334,
+     2395,
      235,
      34
     ],
@@ -3647,7 +3676,7 @@
     "shown": true,
     "box": [
      18,
-     2380,
+     2441,
      174,
      38
     ],
@@ -3659,7 +3688,7 @@
     "shown": true,
     "box": [
      198,
-     2380,
+     2441,
      174,
      38
     ],
@@ -3717,9 +3746,9 @@
     "cls": "",
     "shown": true,
     "box": [
-     8,
      6,
-     374,
+     2,
+     378,
      52
     ]
    },
@@ -3728,8 +3757,8 @@
     "cls": "peekh",
     "shown": true,
     "box": [
-     330,
-     6,
+     332,
+     2,
      52,
      52
     ]
@@ -4626,26 +4655,6 @@
     "cls": "",
     "shown": false
    },
-   "filigree": {
-    "tag": "select",
-    "cls": "",
-    "shown": false
-   },
-   "filifill": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamelsame": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
-   "enamel": {
-    "tag": "input",
-    "cls": "",
-    "shown": false
-   },
    "cat-numbers": {
     "tag": "h2",
     "cls": "cat",
@@ -4714,6 +4723,31 @@
    "numstyle": {
     "tag": "select",
     "cls": "",
+    "shown": false
+   },
+   "filigree": {
+    "tag": "select",
+    "cls": "",
+    "shown": false
+   },
+   "filifill": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamelsame": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "enamel": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "cat-showcase": {
+    "tag": "h2",
+    "cls": "cat",
     "shown": false
    },
    "sec-showcase": {
@@ -4924,9 +4958,9 @@
     "cls": "",
     "shown": true,
     "box": [
-     8,
      6,
-     374,
+     2,
+     378,
      52
     ]
    },
@@ -4935,8 +4969,8 @@
     "cls": "peekh",
     "shown": true,
     "box": [
-     330,
-     6,
+     332,
+     2,
      52,
      52
     ]
