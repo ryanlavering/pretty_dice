@@ -19,7 +19,10 @@ export default defineConfig({
     viewport: { width: 960, height: 600 },   // fewer pixels for software WebGL; visual specs set their own size
     deviceScaleFactor: 1,
     trace: 'retain-on-failure',
-    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] },
+    // --disable-accelerated-2d-canvas (4.1 baseline, docs/design/v41-baseline.md): with software GL, Chrome rasterises every 2D canvas
+    // (the number atlases, design pictures) in the swiftshader GPU process too; that work queues up unseen while the page is paused
+    // (about 5 s per design build) and the next WebGL sync call waits for all of it, which froze tests for up to 90 s. On the CPU it takes milliseconds.
+    launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required', '--disable-accelerated-2d-canvas'] },
   },
   projects: [
     { name: 'fast', testIgnore: /slow\// },
