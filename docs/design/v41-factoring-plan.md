@@ -94,13 +94,23 @@ Rules for `src/` modules (checked by the build script, which refuses anything el
 
 Rejected: a real bundler (esbuild/rollup) — a new dev dependency and a build step for the dev server, for no gain at this size; concatenating script fragments — keeps the single scope, so it moves text without reducing coupling.
 
-## 5. Steps (each: one commit, app runnable, verified)
+## 5. Tools (scripts/factor/)
 
-Verification per step: `tests/golden.spec.mjs` (identical) + the specs that touch the area + `tests/artifact-csp.spec.mjs` and `tests/offline.spec.mjs` when the build changes; `node scripts/golden-build.mjs` (size change explained in the commit). Stage gates after S3, S7 and S10: broader set (smoke, logic, physics, shader, bag, bagbrowser, notation, games-ui, sound, offline, artifact-csp, golden) and `git merge origin/v4`.
+- `deps.mjs <file>`: per-section coupling (the table above), `--section N` for names, `--globals` for free names.
+- `extract.mjs <repo> <name> <a-b>[,c-d] [--dry] [--header "..."]`: moves those lines of the main module (index.html's `#main-src`, or `src/main.js` once it exists) into `src/<name>.js`, adds `export` to its column-0 declarations, imports what it needs from earlier `src/` modules and the externals, and adds the import line to main. It refuses (exit 2) when the block reads a name that stays in main, when main writes a block name, when a `let` would be shared, or when the block has top-level statements; it lists initialisers that call something at load for review.
+- `prune.mjs <repo>`: drops names main no longer uses from its `./src/` import lines.
+- `sec.sh <file> '<marker>' '<next marker>'`: line range of a section by its comment markers.
+- Install their parser once outside the repo: `npm i --no-save --prefix /tmp/pdfactor acorn eslint-scope`.
+
+Manual edits needed so far (each keeps behaviour): substrates read `state.stone` (marble palette) through `bindState(state)`, called right after `const state=` is created; `LOG_MAX` moved from main's `STORE` line into the bag model; the dev bootstrap waits for `src/app.css` to load before injecting the main module (the main module reads layout at start; the builds inline the CSS, so they do not need the wait).
+
+## 6. Steps (each: one commit, app runnable, verified)
+
+Verification per step: `tests/golden.spec.mjs` (identical) + the specs that touch the area + `tests/artifact-csp.spec.mjs` and `tests/offline.spec.mjs` when the build changes; `node scripts/golden-build.mjs` (size change explained in the commit). Pre-factor baseline first (v41-baseline.md). Stage gates after S3, S7 and S10: broader set (smoke, logic, physics, shader, bag, bagbrowser, notation, games-ui, sound, offline, artifact-csp, golden) and `git merge origin/v4`.
 
 | Step | What | Risk | Verify | Status |
 |---|---|---|---|---|
-| S0 | build-static.py: src/ bundler with the rule checks; no module yet (output identical) | build only | golden-build sha identical, csp+offline | todo |
+| S0 | build-static.py: src/ bundler with the rule checks; no module yet (output identical) | build only | golden-build sha identical, csp+offline | done a13c088 |
 | S1 | `src/util.js` (mulberry32, pick, range, PHI, V, signs; `SEED`/`rng` stay in main) | low | golden, logic, physics | todo |
 | S2 | `src/polyhedra.js` | low | golden (rolls, atlas), logic per-shape, physics | todo |
 | S3 | `src/atlas.js` | low (canvas fonts) | golden atlas hashes, shader, logic | todo |

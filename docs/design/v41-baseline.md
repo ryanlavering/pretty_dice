@@ -27,7 +27,15 @@ Runs 1-4 (after the fixes above; the suite now took 17 min instead of 52) expose
 | games-ui:4, games-phone:43, games-turn-ui:117 | Yacht round did not advance; Liar's Dice opened instead of Yacht; two bets after one click | the **Games setup** (game, player count, bot seats, options) is a module variable saved to `localStorage`, outside `pd.state`, so `shared.reset()` kept the previous test's two players / bot / game | `shared.reset()` re-boots the page from empty storage when the saved setup differs from the booted one |
 | flick:44 (up/down) | mean 'down' speed 2.7, 3.9, 3.9 against > 4 | (1) the spec busy-waited the drag time, stretched under load (slower swipe); (2) the live loop drew on the app RNG between steps a timing-dependent number of times (random part of the throw) | clock stepped instead of busy-waiting; loop paused for the up/down test (now reads 8.5-9.6) |
 | pane-scroll:12 (Play) | `#shapes [data-id=d20]: 30 -> 0` | entering a room resets the pane scroll on the **next animation frame** (`setPane`); with software GL a frame takes ~300 ms, so the reset landed after the spec had scrolled (traced with a `scrollTop` setter hook: the zeroing came from setPane's rAF, not from the tap) | wait two frames after the room switch. Not an app bug: a person cannot scroll and tap within one frame |
-| artifact-csp:19 | `rollsUsed` 0 right after `simRoll()` | the artifact page has no `?seed`; now and then a die rests cocked and the roll is reported a few live frames later | `expect.poll` on the report (30 s) |
+| artifact-csp:19 | `rollsUsed` 0 right after `simRoll()` | the artifact page has no `?seed` (see run 8 below for the real cause) | first fix (a poll) was wrong, replaced after run 8 |
+
+Runs 6-10 (quiet machine, baseline candidates) each found one more rare race:
+
+| Spec | Symptom | Cause | Fix |
+|---|---|---|---|
+| owner-comments:110 | Custom controls hidden after tapping a die shape then Custom | a die shape button waits out the 250 ms double-click window (tap = replace, double = add) before it applies; the spec clicked Custom inside that window and the pending tap then overrode it. A person tapping two shapes within 250 ms sees the same; reported on the board as a low-priority UX note | wait for the dock box to show the tapped die |
+| artifact-csp:19 (run 8) | `rollsUsed` stayed 0 for 30 s | the first fix was wrong: the unseeded artifact page sometimes leaves a die **leaning**, and a game waits for a lean re-roll before it counts the roll (trace: `leans: 1`) | `simRoll({ rerolls: 6 })`, as every other game spec does |
+| bagbrowser:87 (tile drag) | tile dropped in the wrong slot | each finished design picture re-renders the tiles (`renderBag`); one landed mid-drag. The app postpones the picture pass while the user is active, but a pass already in flight still re-renders after its `await` (reported on the board, low priority) | wait for the picture pass to finish before dragging |
 
 Also seen but not changed (documented for later): `tests/artifact-csp.spec.mjs` (second test) and `tests/offline.spec.mjs` both run `build-static.py`, which writes the same `dist/pretty-dice-offline.html`; with 2 workers they could race. Not observed failing.
 
@@ -38,7 +46,9 @@ Also seen but not changed (documented for later): `tests/artifact-csp.spec.mjs` 
 - `tests/games-resume.spec.mjs`: own page (it reloads).
 - `tests/flick.spec.mjs`: stepped clock; up/down test paused.
 - `tests/pane-scroll.spec.mjs`: waits for the room switch's frame.
-- `tests/artifact-csp.spec.mjs`: polls for the roll report.
+- `tests/artifact-csp.spec.mjs`: `simRoll({ rerolls: 6 })`.
+- `tests/owner-comments.spec.mjs`: :110 waits for the shape tap to apply.
+- `tests/bagbrowser.spec.mjs`: :87 waits for the picture pass before the drag.
 - `playwright.config.mjs`: `--disable-accelerated-2d-canvas`.
 - New: `tests/golden.spec.mjs` + `tests/golden/*.json`, `scripts/golden-build.mjs` + `tests/golden/build.json`.
 - No assertion weakened, nothing quarantined.
@@ -66,8 +76,13 @@ Recorded at `020101a` (machine-specific hashes: record and compare on this machi
 | 2 | a13c088 | ~13 (lagging, from run 1) | 393 passed, 4 failed (flick:44, games-phone:43, craps:117, pane-scroll:12) | 17.2 min |
 | 3 | 15d573e | ~15 (lagging) | 396 passed, 1 failed (artifact-csp:19) | 17.8 min |
 | 4 | cee3284 | lagging | 396 passed, 1 failed (flick:47) | 17.8 min |
-| 5 | **a55bc59** | 12.5 (lagging average from run 4; CPU idle) | **397 passed, 0 failed**, 10 skipped | 17.8 min |
-| 6 | **a55bc59** | < 2 (waited for it) | running | |
+| 5 | a55bc59 | 12.5 (lagging average from run 4; CPU idle) | 397 passed, 0 failed, 10 skipped | 17.8 min |
+| 6 | a55bc59 | < 2 | 396 passed, 1 failed (owner-comments:110) | 18.1 min |
+| 7 | 364e59c | 1.75 | 397 passed, 0 failed | 17.6 min |
+| 8 | 364e59c | 1.97 | 396 passed, 1 failed (artifact-csp:19) | 18.1 min |
+| 9 | 9e5c3b6 | 1.91 | 397 passed, 0 failed | 17.7 min |
+| 10 | 9e5c3b6 | 1.87 | 396 passed, 1 failed (bagbrowser:87) | 18.0 min |
+| 11 | (running) | | | |
 
 Timing, run 0 vs run 5: wall 52.2 -> 17.8 min; summed test time 85.5 -> 26.6 min. Slowest files run 5: bagbrowser 183 s, owner-comments 182 s, smoke 135 s, bagsets 108 s, nav-dock 94 s, golden 93 s, new-callouts 92 s, roll-framing 69 s (run 0: bagbrowser 691 s, roll-framing 622 s, owner-comments 567 s).
 
