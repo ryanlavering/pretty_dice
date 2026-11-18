@@ -1,7 +1,7 @@
 // PD-142.38.58: the hold-to-look-from-above handle sits in the top-right corner on a phone, clear of the title, status line and corner controls; a touch hold works.
 import { test, expect } from './helpers/app.mjs';
 test.use({ hasTouch: true, isMobile: true });
-const ids = ['name', 'drawerbtn', 'tl', 'tr', 'bagbtn', 'paneopen', 'paneclose'];
+const ids = ['drawerbtn', 'tl', 'tr', 'bagbtn', 'paneopen', 'paneclose'];
 for (const w of [360, 390]) test(`the look-from-above handle is top right and overlaps nothing at ${w}px (Design, Play, game, Full view)`, async ({ app }) => {
   await app.page.setViewportSize({ width: w, height: 740 }); await app.open();
   const check = async label => {
@@ -63,4 +63,25 @@ test('the eye centre sits 32px from the right and 28px from the top, mirroring t
   expect(Math.abs(r.eye.fromRight - r.menu.fromRight), 'same offset from the right edge').toBeLessThanOrEqual(1);
   expect(Math.abs(r.eye.fromTop - r.menu.fromBottom), 'top offset mirrors the menu bottom offset').toBeLessThanOrEqual(1);
   expect(Math.abs(r.eye.fromRight - 32)).toBeLessThanOrEqual(1); expect(Math.abs(r.eye.fromTop - 28)).toBeLessThanOrEqual(1);
+});
+
+// PD-142.38.67: the title is centred on the full width; a long one may run under the eye, and the eye hold still works there.
+for (const w of [360, 390]) test(`the title is centred on the full width and a long one runs under the eye without eating the touch at ${w}px`, async ({ app }) => {
+  await app.page.setViewportSize({ width: w, height: 740 }); await app.open();
+  const centre = () => app.page.evaluate(() => { const e = document.getElementById('name'), g = document.createRange(); g.selectNodeContents(e); const b = g.getBoundingClientRect(), eb = e.getBoundingClientRect(); return { mid: (b.left + b.right) / 2, w: b.width, l: eb.left, r: eb.right, vw: innerWidth, pe: getComputedStyle(e).pointerEvents }; });
+  for (const room of ['toDesign', 'toPlay']) {
+    await app.nav[room](); const r = await centre();
+    expect(Math.abs(r.mid - r.vw / 2), `${room}: short name centred`).toBeLessThanOrEqual(2); expect(r.pe).toBe('none');
+  }
+  await app.nav.toPlay();
+  await app.page.evaluate(() => { document.getElementById('name').textContent = 'A VERY LONG CUSTOM DIE NAME THAT KEEPS GOING AND GOING · MARBLE'; });
+  const r = await centre(), eye = await app.page.locator('#stripmid').boundingBox();
+  expect(r.l).toBeGreaterThanOrEqual(0); expect(r.r).toBeLessThanOrEqual(r.vw + 0.5); expect(r.r, 'long name reaches under the eye').toBeGreaterThan(eye.x + 10);
+  const x = eye.x + eye.width / 2, y = eye.y + eye.height / 2;
+  expect(await app.page.evaluate(([x, y]) => document.elementFromPoint(x, y).id, [x, y]), 'the eye, not the title, is hit').toBe('stripmid');
+  const cdp = await app.page.context().newCDPSession(app.page);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  await expect(app.page.locator('body')).toHaveClass(/peek/);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await expect(app.page.locator('body')).not.toHaveClass(/peek/);
 });
