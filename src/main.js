@@ -12,6 +12,7 @@ import { buildGeometry } from './geometry.js';
 import { U, makeMaterial, makeUniforms } from './material.js';
 import { STONES, STONE_KEYS, SUBSTRATES, bindState, hsl, pickPaint } from './substrates.js';
 import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId, uniqueName } from './bagmodel.js';
+import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
 
 /* ---------- utils ---------- */
 const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
@@ -1552,9 +1553,6 @@ function updateRolling(dt){ if(!state.rumble||!rolling||settled||!bodies.length|
      kenney  : samples, everything from the Kenney CC0 packs        (sounds/kenney/manifest.json)
      best    : samples, best clip per role from any library         (sounds/best/manifest.json)
    Sample backends fall back to proc for any role they have no clip for, so a missing or broken manifest never means silence. ---------- */
-// hardness: each material 0 (felt) .. 1 (glass). A pair is combined as 2ab/(a+b), so the softer partner dominates (plastic on felt is soft, stone on glass is hard).
-// The impact then asks for a clip of about that "clack" score (see scripts/build-sounds.mjs), a bit harder when the hit is harder, with random wobble. Rough on purpose.
-const MAT_HARD={ felt:.05, carpet:.08, leather:.15, cardboard:.25, plastic:.45, wood:.5, resin:.5, stone:.8, metal:.9, glass:.95 };
 const SURFACES=['felt','carpet','leather','cardboard','wood','plastic','stone','metal','glass'];
 const pairHard=(a,b)=>2*a*b/(a+b+1e-6);
 function hardnessFor(kind,speed){ const die=MAT_HARD[matClass(state.substrate)]||.45, other=kind==='dice'?die:(MAT_HARD[state.surfaceMat]||.05), g=Math.min(1,Math.pow(speed/14,.8));
@@ -1583,12 +1581,9 @@ const procBackend={ label:'Procedural synth', trim:1, activate(){},
 async function soundBytes(path){ const E=window.__SOUNDS; if(E){ if(!E[path]) throw new Error('not embedded: '+path); const bin=atob(E[path]), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u.buffer; }
   const r=await fetch('sounds/'+path); if(!r.ok) throw new Error('no '+path+' ('+r.status+')'); return r.arrayBuffer(); }
 // metal and glass ring: struck metal and glass sing, which brightness alone cannot give. A few decaying sine partials ride on top of the sample hit.
-// RING[material]=[base Hz, loudness, partial ratios, partial gains, partial decay seconds]. Metal uses free-bar ratios, glass uses wine-glass-like ratios. The pitch is fixed per material (+-3% per hit); upper partials only wake on hard hits.
-const RING={ metal:[1750,.2,[1,2.76,5.4,8.93],[1,.55,.3,.15],[.5,.28,.17,.1],12000,.0015], glass:[2500,.17,[1,2.32,4.25,6.63],[1,.3,.12,.05],[.38,.22,.14,.09],6000,.004] };
 // "ringLevel" 0..1 -> peak strength ringLevel*0.08 at full impact speed. The ring is always applied and its strength is proportional to impact speed (v = speed/14, capped at 1), so over a roll the average is about half the peak:
 // the range is doubled to compensate (50% = the sweet spot the owner found earlier, which used a sparser gate). Returns the total ring strength started (0 = none).
 // Glass is an FM voice (GLASS_FM); metal uses additive partials (RING).
-const GLASS_FM=[[2200,1.41,2.5,.08,.5,1],[3500,2.76,1.5,.05,.25,.5]];   // FM glass voices: [carrier Hz, modulator:carrier ratio, peak modulation index, index decay s, amplitude decay s, gain]. A bright inharmonic "tink" (index falls fast) that settles into a pure ring.
 function ringFM(strength,v,t){ if(sfx.rings>=8) return 0; const ctx=sfx.ctx, life=.6+.6*v; sfx.rings++; const out=ctx.createGain(), lp=ctx.createBiquadFilter(); out.gain.value=strength; lp.type='lowpass'; lp.frequency.value=7000; lp.Q.value=.5; out.connect(lp); lp.connect(sfx.spat||sfx.trim); let end=0;
   for(const [fc0,ratio,idx,idxDec,ampDec,gn] of GLASS_FM){ const fc=fc0*rndr(.97,1.03), car=ctx.createOscillator(), mod=ctx.createOscillator(), mg=ctx.createGain(), e=ctx.createGain(), depth=idx*fc*ratio*Math.min(1,v*1.4+.2);   // harder hits brighten the attack
     car.frequency.value=fc; mod.frequency.value=fc*ratio; mg.gain.setValueAtTime(depth,t); mg.gain.exponentialRampToValueAtTime(Math.max(1,depth*.02),t+idxDec); mod.connect(mg); mg.connect(car.frequency);
