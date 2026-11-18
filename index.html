@@ -1886,12 +1886,12 @@ function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
   for(const it of items){ const sp=el('span','rt'); if(it.sides){ const c=chipEl(it.sides,designChipJ(it.design),{label:null}), e=it.design&&entryOf(it.design); if(e) c.title=e.name; sp.append(c); } sp.append(it.text); f.append(sp); }
   if(modText) f.append(el('span','rt',modText)); return f; }
 /* the quick roll bar (PD-142.14.1.6): rolls a formula, a saved set or one plain die right at the table */
-function tableRoll(notation){ const p=parseNotation(notation,true); if(p.error) return p.error; checkpoint(); bag.active.set=null; rollSetId=null; const nn=fmtNotation(p.terms,p.mod,p.group), same=(rolling||placed)&&dice.length&&rollKey==='custom|'+nn; state.notation=nn; state.shape='custom'; closeSheet&&closeSheet(); if(!same) buildDice(); startRoll(false,false); syncUI(); save(); return null; }   // a formula equal to the dice on the mat reuses them, so held dice stay held (PD-142.1.1)
+function tableRoll(notation,launch=false,vel=null){ const p=parseNotation(notation,true); if(p.error) return p.error; checkpoint(); bag.active.set=null; rollSetId=null; const nn=fmtNotation(p.terms,p.mod,p.group), same=(rolling||placed)&&dice.length&&rollKey==='custom|'+nn; state.notation=nn; state.shape='custom'; closeSheet&&closeSheet(); if(!same) buildDice(); startRoll(launch&&same,false,vel); syncUI(); save(); return null; }   // a formula equal to the dice on the mat reuses them, so held dice stay held (PD-142.1.1)
 let qbarSig='';
 /* the dock (PD-142.38 slice 2; was the quick roll bar): a formula box and the one Roll button. dockRoll is the single way to throw in roll view: the button, Enter in the box, R, a flick and a shake all call it */
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
-function dockRoll(launch=false){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ startRoll(launch||(game?rolling:placed)); return; }
-  const err=tableRoll(v); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
+function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ startRoll(launch||(game?rolling:placed),false,vel); return; }
+  const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
@@ -2101,6 +2101,7 @@ $('dname').oninput=()=>save();
 $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry(), v=uniqueName(bag.designs.filter(d=>d!==e).map(d=>d.name),$('dname').value); if(v!==$('dname').value.trim()){ $('dname').value=v; save(); } };   // a name already used in the bag gets the next number   // a typed name is an edit: show Modified and keep it
 /* ---------- 'New' callouts (PD-142.38.3): review builds only (the artifact build sets __PD_REVIEW; ?new=1 turns it on anywhere). One line per user-visible landing: id = card id, rev re-arms an edited feature. ---------- */
 const NEW_FEATURES=[   // PD-142.38.31: only changes since artifact v19 that the owner has not accepted yet. Every landed user-visible change adds an entry here (id = card id, rev 1, anchor on the control); accepted ones are removed.
+  {id:'PD-142.38.49', rev:1, anchor:'#stage', text:'The flick is back: in Play, press on the mat, drag and release to throw the dice in the drag direction, harder the faster you swipe (mouse and touch). Before, the dice were just dropped from above whenever the roll box had a formula. A plain tap still does nothing (a tap on a die holds it). Check: Play, flick in a few directions and speeds, on desktop and on a phone.', card:'PD-142.38.49'},
   {id:'PD-142.38.22', rev:1, anchor:'#modesw,#roomsw', text:'Design | Play: on desktop the switch is at the top of the panel, above the tabs. On a phone it is only in the corner cube menu, and the Design top strip shows just the title. Undo and Redo are now in the settings pane (see their own note). Check: both rooms, phone and desktop; nothing overlaps.', card:'PD-142.38.22'},
   {id:'PD-142.38.32', rev:1, anchor:'#notadv', text:'Custom set: Set is now Apply (it only applies the typed formula to the controls below). Adv and Dis work like the die chips: click REPLACES the formula with d20adv / d20dis, double-click or long press ADDS it. Check: Play > Table > Custom set; the dock box mirrors it.', card:'PD-142.38.32'},
   {id:'PD-142.38.23', rev:4, anchor:'#rollbox', text:'Shape buttons work the same in Play and Design and never roll. Tap (it waits a moment for a possible double-click) = one die of that shape, the shape is selected and Custom set is collapsed. Double-click or long press = ADD one die to the formula and open Custom set with the full formula. The Custom set controls and the dock formula box mirror each other. Dock die chips follow the same rule, including a slow double-click and two quick taps on a phone (always previous + one die). Check: Play > Table and Design > Look, tap and double-click shapes; Play dock chips.', card:'PD-142.38.23 / .34 / .48'},
@@ -2176,9 +2177,14 @@ cv.addEventListener('pointerdown',e=>{ ptrs.set(e.pointerId,[e.clientX,e.clientY
   if(e.button===2){ orbiting=true; last=[e.clientX,e.clientY]; return; }
   flick=rolling&&e.button===0?{x:e.clientX,y:e.clientY,t:performance.now()}:null;
   if(rolling||e.button!==0) return; dragging=true; last=[e.clientX,e.clientY];});
+function flickVel(dx,dy,ms){        // screen swipe (px, ms) -> table-plane throw velocity: screen right/up become the camera's right/away directions on the mat
+  camera.updateMatrixWorld(); const m=camera.matrixWorld.elements, f=new THREE.Vector3(); camera.getWorldDirection(f);
+  let rx=m[0],rz=m[2],fx=f.x,fz=f.z; const rl=Math.hypot(rx,rz)||1, fl2=Math.hypot(fx,fz)||1; rx/=rl; rz/=rl; fx/=fl2; fz/=fl2;
+  const sp=THREE.MathUtils.clamp(Math.hypot(dx,dy)/ms*11,7,30), l=Math.hypot(dx,dy)||1, ux=dx/l, uy=-dy/l;   // 1 px/ms (a lazy swipe) is about 11 units/s, a hard flick saturates at 30
+  return {x:(rx*ux+fx*uy)*sp, z:(rz*ux+fz*uy)*sp}; }
 let flick=null;           // roll view: a quick one-finger swipe throws the dice again
 const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)<8&&performance.now()-fl.t<400){ const hi=pickDie(e.clientX,e.clientY); if(hi>=0&&toggleHold(hi)) { ptrs.delete(e.pointerId); return; } }   // a short tap on a settled die holds or releases it
-   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) dockRoll(true);
+   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) dockRoll(true,flickVel(e.clientX-fl.x,e.clientY-fl.y,Math.max(30,performance.now()-fl.t)));   // PD-142.38.49: the swipe's direction and speed carry into the throw
   ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{
@@ -2258,7 +2264,7 @@ cv.addEventListener('pointerdown',e=>{ dieLPclear(); if(e.button!==0||!rolling||
 cv.addEventListener('pointermove',e=>{ if(dieLP&&Math.hypot(e.clientX-dieLP.x,e.clientY-dieLP.y)>8) dieLPclear(); });
 for(const ev of ['pointerup','pointercancel']) cv.addEventListener(ev,dieLPclear);
 cv.addEventListener('contextmenu',e=>{ if(!rolling) return; const hi=pickDie(e.clientX,e.clientY); if(hi>=0) dieMenu(hi); });
-function startRoll(launch=false,place=false){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
+function startRoll(launch=false,place=false,vel=null){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(game&&!place&&!gameBeforeRoll()) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
   gameCallout=null; placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); designRoom=false; syncMode(); syncDock();
@@ -2290,7 +2296,7 @@ function startRoll(launch=false,place=false){        // launch: re-roll from the
     starts.push([px,pz]);
     if(prev){                                                                              // thrown up off the mat from where it lay
       const pp=prev[i]; b.position.set(pp.p.x,pp.p.y+.25,pp.p.z); b.quaternion.copy(pp.q); d.mesh.quaternion.set(pp.q.x,pp.q.y,pp.q.z,pp.q.w);
-      b.velocity.set(-pp.p.x*.5+R()*6,13+rng()*7,-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
+      b.velocity.set(vel?vel.x+R()*3:-pp.p.x*.5+R()*6,13+rng()*7,vel?vel.z+R()*3:-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
     } else {
     b.position.set(px,TABLE_Y+dropH+i*1.1+rng()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
