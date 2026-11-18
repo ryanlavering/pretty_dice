@@ -47,3 +47,22 @@ test('flick up the screen throws the dice away from the viewer, down toward', as
   const up = await dir(-200), down = await dir(200);
   expect(up).toBeLessThan(-4); expect(down).toBeGreaterThan(4);
 });
+
+// PD-142.38.65: an up flick is read as more "up" than "in": its toward-the-back component is smaller than a down flick's toward-the-viewer one,
+// sideways flicks are unchanged, and the dice stay in the tray whichever way they are thrown.
+test('flick up has a smaller depth component than flick down; sideways unchanged; dice stay in the tray; resting height like a Roll click', async ({ app, page }) => {
+  await setup(app);
+  const depth = async dy => { await app.run(pd => pd.simRoll()); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
+  const up = await depth(-200), down = await depth(200);
+  console.log(`FLICK depth up=${up.toFixed(2)} down=${down.toFixed(2)}`);
+  expect(Math.abs(up), 'up flick throws less toward the back wall than a down flick toward the viewer').toBeLessThan(Math.abs(down) * 0.8);
+  expect(up).toBeLessThan(-3);   // still throws away from the viewer
+  await app.run(pd => pd.simRoll()); const side = await flickRun(app, 'mouse', 200, 0, 120); expect(side.mx).toBeGreaterThan(8);
+  for (const [dx, dy] of [[0, -250], [200, -200], [-200, -200], [0, 250], [250, 0]]) {
+    await app.run(pd => pd.simRoll()); await flickRun(app, 'mouse', dx, dy, 90);
+    const r = await app.run(pd => { pd.step(1500); pd.renderOnce(); return { half: pd.rollHalf, pos: pd.bodies.map(b => [b.position.x, b.position.z]), ys: pd.dice.map(d => ((d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera).y + 1) / 2) * 100), settled: pd.settled }; });
+    for (const [x, z] of r.pos) { expect(Math.abs(x), `x in tray (${dx},${dy})`).toBeLessThan(r.half.x + 0.5); expect(Math.abs(z), `z in tray (${dx},${dy})`).toBeLessThan(r.half.z + 0.5); }
+    const m = r.ys.reduce((a, b) => a + b, 0) / r.ys.length; console.log(`FLICK rest (${dx},${dy}): ${m.toFixed(1)}% from the bottom`);
+    expect(m, `resting height after flick (${dx},${dy})`).toBeGreaterThan(25); expect(m, 'on screen').toBeLessThan(75);
+  }
+});
