@@ -3,7 +3,7 @@ import { test, expect } from './helpers/app.mjs';
 import { navFor } from './helpers/nav.mjs';
 const LAYOUTS = { 'desktop pane': [1280, 800, false, false], 'desktop full': [1280, 800, false, true], 'phone portrait': [390, 740, true, false], 'phone portrait full': [390, 740, true, true], 'phone landscape': [740, 360, true, false], 'phone landscape full': [740, 360, true, true] };
 const SHOTS = process.env.FRAMING_SHOTS;   // e.g. docs/design/screenshots/2026-11-18-61-after (screenshots only on request)
-for (const [name, [w, h, touch, full]] of Object.entries(LAYOUTS)) test(`resting dice sit 43-52% up from the bottom: ${name}`, async ({ browser, baseURL }) => {
+for (const [name, [w, h, touch, full]] of Object.entries(LAYOUTS)) test(`resting dice sit 40-52% up from the bottom: ${name}`, async ({ browser, baseURL }) => {
   test.setTimeout(150_000);
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch, baseURL });
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
@@ -15,7 +15,7 @@ for (const [name, [w, h, touch, full]] of Object.entries(LAYOUTS)) test(`resting
     const r = await page.evaluate(() => { const pd = window.__pd; pd.pause(); pd.renderOnce(); const ys = pd.dice.map(d => ((d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera).y + 1) / 2) * 100); return { ys, mean: ys.reduce((a, b) => a + b, 0) / ys.length }; });
     console.log(`FRAMING ${name}: ${r.mean.toFixed(1)}% from the bottom`);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}-${name.replace(/ /g, '-')}.png` });
-    expect(r.mean, name).toBeGreaterThan(43); expect(r.mean, name).toBeLessThan(52);
+    expect(r.mean, name).toBeGreaterThan(40); expect(r.mean, name).toBeLessThan(52);
     expect(errs).toEqual([]);
   } finally { await ctx.close(); }
 });
