@@ -93,6 +93,25 @@ The 10 skipped tests are skips in the specs themselves (`test.skip`/fixme, e.g. 
 
 ## Pre vs post factor
 
-(filled in at the end, after S9/S10 and the post-factor pair)
+Post-factor pair at `4c3e11e` (S1-S10 done), `PD_PORT=817x npm test -- --retries=0`, 2 workers, same command as the baseline:
 
-Progress so far (S8 at f904112): golden set identical at every step S1-S8. `node scripts/golden-build.mjs` vs the pre-factor recording: artifact 938,441 -> 941,406 bytes, offline 3,751,769 -> 3,754,734 (+2,965 each: the module closure wrappers of S1-S6 and S8; S7's CSS move is byte-identical). `build.json` deliberately not re-recorded, so the comparison stays against the pre-factor builds. `index.html` 3,179 lines -> 2,468 lines; `src/`: 7 JS modules + app.css.
+| Run | Commit | Load before | Result | Time |
+|---|---|---|---|---|
+| post 1 | 4c3e11e | ~19 (other lanes' runs on the box; queued on the test lock) | 397 passed, 0 failed, 10 skipped | 26.0 min |
+| post 2 | 4c3e11e | ~19, started right after post 1 | 397 passed, 0 failed, 10 skipped | 19.6 min |
+
+Caveat: the machine was NOT quiet (load 19-37 from other sessions), so these are not the "load < 2" runs the baseline used. The pass counts are the evidence (a loaded box tends to add failures, not remove them); the times are not comparable. The golden spec (inside both runs) is green: same golden set as the pre-factor recording. A third run on a quiet box would give comparable times; not done.
+
+| | Pre (`d028972`) | Post (`4c3e11e`) |
+|---|---|---|
+| index.html lines | 3,179 | 272 |
+| src/main.js lines | (in index.html) | 2,190 |
+| other modules (lines) | - | util 10, polyhedra 58, atlas 57, geometry 126, material 158, substrates 58, bagmodel 51, sound-tables 7, app.css 231 |
+| total lines (html+src) | 3,179 | 3,218 |
+| artifact build | 938,441 B | 941,754 B (+3,313) |
+| offline build | 3,751,769 B | 3,755,082 B (+3,313) |
+| passed / failed / skipped | 397 / 0 / 10 | 397 / 0 / 10 |
+| wall time | 17.8 / 19.4 min (quiet) | 26.0 / 19.6 min (loaded) |
+
+Build growth is the nine closure wrappers for the modules (`__pdm[...] = (() => {...})()`); S9 itself left both builds byte-identical to S8 (sha1 aff75a26 / 496505d4), which is the proof the boot path move changed nothing in the built files. `tests/golden/build.json` is deliberately NOT updated: it still records the pre-factor sizes, so `golden-build.mjs` reports the +3,313 byte wrapper delta as the one explained difference (update it only when the owner accepts the factoring).
+
