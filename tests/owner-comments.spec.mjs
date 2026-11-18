@@ -111,7 +111,11 @@ test('Table tab also has Shape and Custom set; Look still does; a game hides the
   await app.open(); await app.nav.toPlay(); await app.run(pd => pd.simRoll());
   await page.locator('#paneltabs [data-pane=table]').click();
   await expect(page.locator('#shapes')).toBeVisible(); await expect(page.locator('#shapehead')).toBeVisible();
-  await page.locator('#shapes button').nth(1).click();
+  const b1 = page.locator('#shapes button').nth(1), id1 = await b1.getAttribute('data-id');
+  await b1.click();
+  // a die shape waits out the double-click window (tap = replace, double = add) before it applies; a Custom click inside that window
+  // was overridden when the wait ran out (run6 of the 4.1 baseline), so wait for the shape to apply first
+  await expect(page.locator('#rollbox')).toHaveValue(new RegExp(`^1d${id1.replace(/^d/, '')}$`));   // the tap loaded one die of that shape into the dock box
   await expect(page.locator('#sec-dice')).toBeHidden();   // .38.23: the dock chips are enough
   await page.locator('#shapes button', { hasText: /custom/i }).click();
   await expect(page.locator('#customctl')).toBeVisible();
