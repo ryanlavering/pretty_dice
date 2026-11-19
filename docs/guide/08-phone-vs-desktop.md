@@ -15,7 +15,7 @@ The same page adapts to the screen. Both sizes have the same two rooms, the same
 
 On a phone, hide the panel with its arrow when you want the whole table; the dock keeps the formula box and **Roll** on one row with the chips scrolling beside it. While a game is running the Games tab becomes **Scorecard**, and the game's status line is at the top of the table; hold it for a top-down look.
 
-On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips at the top right of the table, beside the top-down eye on a phone.
+On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips.
 
 ![Showcase on a phone screen](img/15-phone-showcase.png)
 
