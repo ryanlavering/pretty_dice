@@ -2091,7 +2091,7 @@ function faceOrient(d,k,rot){   // the mesh rotation that turns face k to face +
 function storyFlyStart(st){
   const faces=st.dice, from=dice.map(d=>({p:d.mesh.position.clone(),q:d.mesh.quaternion.clone()}));
   const qf=dice.map((d,i)=>{ const k=Math.max(0,d.labs.indexOf(faces[i])); return faceOrient(d,k,(d.look||state).numRot); });
-  storyFly={t:0,from,qf}; }
+  storyFly={t:0,from,qf,k:dice.map(()=>1)}; }
 function tickStoryFly(dt){
   if(!storyFly||!storyTray.visible||!dice.length) return; storyFly.t+=dt; camera.updateMatrixWorld();
   const items=storyTray.tiles, sz=storyTray.size, r=stage.getBoundingClientRect(), fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion), D=camera.position.distanceTo(new THREE.Vector3(0,TABLE_Y,0))*.6;
@@ -2101,7 +2101,8 @@ function tickStoryFly(dt){
     const ray=new THREE.Vector3(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,D/ray.dot(fwd)); rig.worldToLocal(tmpP);
     tq.copy(rq).multiply(camera.quaternion).multiply(storyFly.qf[i]);
     const u=Math.min(1,Math.max(0,(storyFly.t-i*.07)/.75)), e=u*u*(3-2*u), f=storyFly.from[i], lift=2.2*Math.sin(Math.PI*u)*(d.r||1);
-    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); d.mesh.scale.setScalar(1+(sc-1)*e); }); }
+    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.25:1.5):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is bigger: 50% on desktop, 25% on a phone
+    d.mesh.scale.setScalar((1+(sc-1)*e)*storyFly.k[i]); }); }
 function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
   const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); storyFlyEnd(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
