@@ -242,7 +242,7 @@
 #storytray .stile svg{width:70%;height:70%;fill:#fbf6e6;filter:drop-shadow(0 1px 0 #0007)}
 #storytray .stile.alt svg{fill:#ffe3b3}
 #storytray .stile.drag{transition:none;z-index:9;cursor:grabbing;transform:scale(1.08)}
-#storytray .stile.ghost.drag{transform:scale(1.5)}
+#storytray .stile.ghost.drag{transform:scale(1.6)}
 .story-hints{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;font-size:12px;opacity:.85}
 .story-hints div{background:#00000030;border-radius:6px;padding:5px 7px}
 .story-sent{font:italic 17px/1.35 Georgia,serif;margin:8px 0}
