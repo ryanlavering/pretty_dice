@@ -13,6 +13,8 @@ import { U, makeMaterial, makeUniforms } from './material.js';
 import { STONES, STONE_KEYS, SUBSTRATES, bindState, hsl, pickPaint } from './substrates.js';
 import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId, uniqueName } from './bagmodel.js';
 import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
+import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
+import { createStoryTray } from './storyui.js';
 
 /* ---------- utils ---------- */
 const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
@@ -131,7 +133,7 @@ function specsFor(shape){
       if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,copy:cp,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,copy:cp,part:'ones',design:t.design}); }
       else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,copy:cp,design:t.design}); } });
     const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
-    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design}));
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,glyphs:storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null}));
   }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
@@ -252,17 +254,17 @@ function buildDice(keepRoll){
   specs.forEach(s=>{
     const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
-    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree].join('|');
+    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree,s.glyphs?s.glyphs.map(g=>g.id).join(','):''].join('|');
     let part=nextParts.get(key)||partCache.get(key);
     if(!part){
       const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
       if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
       let opts={};
-      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'){          // vertex value = label of the face opposite it
+      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'&&!s.glyphs){          // vertex value = label of the face opposite it
         const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
         opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
-      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
-      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
+      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips'&&!s.glyphs) opts={layout:'pips'};
+      const atlas=makeAtlas(faces.length,s.glyphs?labs.map(l=>s.glyphs[l-1]):labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
       part={faces,labs,atlas,geo};
     }
     nextParts.set(key,part);
@@ -337,6 +339,13 @@ function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); checkpoint();
   const tok=buildTok+1; buildTok=tok; ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); });
 }
+
+function plainLook(){   // Story dice start from the plain default design (what Blank opens, without the random seed): the glyphs read best on a plain die, and the player's own design stays saved in the bag
+  Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
+  state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.numSize=.9; repaint(); }   // numSize .9: glyphs must read on a phone
+let lookSnap=null;   // the player's look, kept while the story dice use the plain one (a snapshot, not a bag draft: no thumbnails to render, nothing to save or discard)
+function lookSwap(){ if(lookSnap) return; lookSnap=snapshot(); plainLook(); }
+function lookRestore(){ if(!lookSnap) return; const o=JSON.parse(lookSnap); lookSnap=null; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate); repaint(); }
 
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
@@ -994,7 +1003,7 @@ function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetI
 function logText(){ const pad=n=>String(n).padStart(2,'0'); return bag.log.map(e=>{ const t=new Date(e.ts); const head=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   if(e.note) return `${head}  ${e.note}`;
   const items=e.items?e.items.map(i=>i.text).join('  ·  ')+(e.modText?'  ·  '+e.modText:''):(e.detail||'');
-  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}`; }).join('\n'); }
+  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}${e.story?'  [story: '+e.story+']':''}`; }).join('\n'); }
 /* table lookup (PD-142.14.1.7): a set can carry a result table, one line per result: "3 Empty room", "4-8 Goblins", "9+ Boss" */
 function lookupTable(table,total){ const n=+total; if(!table||!Number.isFinite(n)) return null;
   for(const line of String(table).split('\n')){ const m=line.trim().match(/^(\d+)\s*(?:[-–]\s*(\d+)|(\+))?\s*[:=\-–]?\s*(.+)$/); if(!m) continue; const lo=+m[1], hi=m[3]?Infinity:m[2]!==undefined?+m[2]:lo; if(n>=lo&&n<=hi) return m[4].trim(); }
@@ -1045,6 +1054,7 @@ function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replac
     { const sid=e.set&&((e.setId&&setOps.find(e.setId))||bag.sets.find(x=>x.name===e.set)||{}).id; if(sid){ const tt=head.querySelector('.ttl'); tt.classList.add('go'); tt.title='Bring this set to the mat'; tt.setAttribute('role','button'); tt.tabIndex=0; const go=()=>{ p.hidden=true; setOps.open(sid); }; tt.onclick=go; tt.onkeydown=ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; } }
     { const ok=String(e.total).split(' · ').every(x=>x!==''&&Number.isFinite(+x)); if(ok){ const ib=el('button','ini','+ init'); ib.type='button'; ib.title='Add to the initiative order'; ib.onclick=()=>{ initOps.add(initOps.fromEntry(e)); renderLog(); }; head.append(ib); } }
     const rows=el('div','lr'); if(e.lookup) rows.append(el('div','llook','→ '+e.lookup)); if(e.items) rows.append(rollItemsEl(e.items,e.modText)); else if(e.detail) rows.append(e.detail);
+    if(e.story) rows.append(el('div','lstory','Story order: '+e.story));
     body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
   return [{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open',run:()=>setOps.open(id)},
@@ -1263,6 +1273,7 @@ let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
+let storyDeal=null, storyPrev=null;   // storyPrev: the setup preview (the story dice on the mat before Start), with what to restore   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
 let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
@@ -1768,6 +1779,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
       rr=L(r,Math.max(r,1.08*Math.max(wx/(tv*camera.aspect),wu/tv)/Math.sin(ph)),topBlend); }
     camera.position.set(tgt.x+rr*Math.cos(ph)*Math.sin(th),tgt.y+rr*Math.sin(ph),tgt.z+rr*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt);
     { const drop=ROLL_DROP*camBlend*(1-topBlend); if(drop>.0005){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion); camera.lookAt(tgt.clone().addScaledVector(up,drop*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*rr)); } } }   /* PD-142.38.61: aim the camera a little above the mat centre so the dice sit lower in the frame (resting dice ~40% up from the bottom instead of ~55%); the Design showcase and the top-down check are untouched */
+  tickStoryFly(dt);
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
 };
@@ -1930,7 +1942,7 @@ function placeSwitch(){ if(!stripReady) return; const ph=phoneUI(), tp=$('topstr
 peekHandle($('stripmid')); stripReady=true; placeSwitch(); phoneMq.addEventListener('change',placeSwitch); addEventListener('resize',placeSwitch);   // resize too: a viewport change must always re-place the strip contents
 addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
-function closeGamesUI(){ document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
+function closeGamesUI(){ storyPreviewOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
@@ -1938,7 +1950,7 @@ const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
-const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
+const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice','story'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
 // PD-162: Craps is hidden from the UI unless ?multipoop is in the URL (remembered for the browser session). All Craps code stays in place; this is a casual gate, not security.
 const SECRET_GAMES=['craps'];
 const secretOn=(()=>{ let on=new URLSearchParams(location.search).has('multipoop'); try{ if(on) sessionStorage.setItem('pd.multipoop','1'); else on=sessionStorage.getItem('pd.multipoop')==='1'; }catch{} return on; })();
@@ -1950,8 +1962,8 @@ function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.sta
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
   if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
-function gameBeforeRoll(){ whoopEnd(); gpv=null; const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
-  gsel.clear(); if(game.info.hidden) liveDiceOnly();
+function gameBeforeRoll(){ whoopEnd(); gpv=null; const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(game.id==='story') gameMsg=st.phase==='rate'?'Rate the story first':st.phase==='arrange'?'Put the dice in story order first':''; else if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
+  gsel.clear(); if(game.id==='story'){ storyTray.hide(); for(const d of dice) d.mesh.visible=true; storySalt=0; } if(game.info.hidden) liveDiceOnly();
   if(game.id==='craps'){ for(let k=0;k<12;k++){ const a=GAMES.botMove(game.state,{seed:++botN}); if(!a||a.type!=='bet') break; const b=GAMES.act(game.state,a); if(!b.ok) break; game.state=b.state; } }   // bots place their bets before the dice go
   if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
@@ -2006,9 +2018,10 @@ const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null');
 function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
-  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; whoopClear(); gpv=null; const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+  whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
+  if(id==='story'){ storyPrev=null; lookSwap(); }   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
+  state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
+function endGame(){ if(!game) return; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2034,7 +2047,7 @@ function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||whoop||(r
     if(spec.private){ const r=GAMES.act(S,{type:'roll',values:spec.slots.map(()=>1+Math.floor(rng()*6))}); if(r.ok){ game.state=r.state; hideDice(true); gameMsg=GAMES.status(game.state).phase==='roll'?nm+' rolled under the cup':''; } renderGame(); return; }   // a bot's secret dice are never thrown where the humans can see
     startRoll(rolling); return; }
   const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
-  gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
+  gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':game.id==='story'?'':nm+': '+a.type; gameSync(); renderGame(); }
 const cupPeek=(()=>{ const e=document.createElement('div'); e.id='cuppeek'; e.hidden=true; e.setAttribute('role','status'); $('stage').append(e); return e; })();   // big dice for old eyes: shown only while a finger is down on your own row
 let lastPeek={who:-1,at:0};
 function logPeek(who,name){ const now=Date.now(); if(lastPeek.who===who&&now-lastPeek.at<4000){ lastPeek.at=now; return; } lastPeek={who,at:now}; addLog({note:name+' peeked at their cup',total:'',notation:"Liar's Dice"}); }   // trust-based peeking, audited: one line per hold, the name only, never the dice (PD-142.14.3.1.15)
@@ -2071,12 +2084,77 @@ function renderLiars(S,st,over){
   const act=(a)=>{ const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=a.type==='bid'?nm(st.player)+' bid '+a.quantity+' × '+a.face+'s':''; lbid=null; renderGame(); };
   GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Bid '+lbid.q+' × '+lbid.f+'s',disabled:!st.canBid,onclick:()=>act({type:'bid',quantity:lbid.q,face:lbid.f})}),gel('button',{type:'button',textContent:'Challenge',disabled:!st.canChallenge,onclick:()=>act({type:'challenge'})})));
 }
+// ---- Story dice (PD-160 spike): glyph faces from the seeded deal, the ring tray, hints, the bot's sentence and manual bad/fair/good rating ----
+const storyTray=createStoryTray(stage); let storySalt=0;
+function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealGlyphs(dice,fp,poolFor(o.packs)).map(run=>run.map(id=>GLYPH_BY_ID.get(id)))}; }
+const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
+function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
+  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
+function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
+var storyFly=null, storyLogE=null;   // storyFly: the dice flying up into the line facing the player (3D arrangement view); storyLogE: this turn's roll-log entry, rewritten as the order changes
+function storyOrderText(st){ const g=storyGlyphs(st), names=st.order.filter(x=>x!==null).map(i=>g[i].n[0]); return names.length?names.join(' → ')+(names.length<st.order.length?' …':''):''; }
+function storyLogOrder(st){ if(!bag) return; const key=game.state.turn.round+':'+game.state.turn.player+':'+game.state.tellings.reduce((a,t)=>a+t.length,0);
+  if(!storyLogE||storyLogE.key!==key){ const e=bag.log[bag.log.length-1]; storyLogE=e&&!e.note&&!e.story?{key,e}:null; }   // the roll was logged when the dice settled, just before the arrange phase began
+  if(storyLogE){ const t=storyOrderText(st); if((storyLogE.e.story||'')===t) return; if(t) storyLogE.e.story=t; else delete storyLogE.e.story; save(); renderLog(); } }
+function storyFlyEnd(){ if(!storyFly) return; storyFly=null; for(const d of dice){ d.mesh.scale.setScalar(1); } storyTray.root.classList.remove('d3'); }
+function faceOrient(d,k,rot){   // the mesh rotation that turns face k to face +z (the viewer) with its glyph upright; mirrors the label basis in buildGeometry
+  const f=d.faces[k], P=f.pts||f.idx.map(v=>d.verts[v]), n=f.n, C=new THREE.Vector3(); P.forEach(p=>C.add(p)); C.multiplyScalar(1/P.length);
+  let far=P[0]; P.forEach(p=>{ if(p.distanceTo(C)>far.distanceTo(C)+1e-6) far=p; });
+  let up=new THREE.Vector3().subVectors(far,C).normalize(); const equi=P.every(p=>Math.abs(p.distanceTo(C)-far.distanceTo(C))<1e-4*far.distanceTo(C)+1e-6);
+  if(P.length===4&&equi) up.copy(new THREE.Vector3().subVectors(P[1],P[0]).cross(n).normalize());
+  up.applyAxisAngle(n,THREE.MathUtils.degToRad(rot)); const right=new THREE.Vector3().crossVectors(up,n);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,n)).invert(); }
+function storyFlyStart(st){
+  const faces=st.dice, from=dice.map(d=>({p:d.mesh.position.clone(),q:d.mesh.quaternion.clone()}));
+  const qf=dice.map((d,i)=>{ const k=Math.max(0,d.labs.indexOf(faces[i])); return faceOrient(d,k,(d.look||state).numRot); });
+  storyFly={t:0,from,qf,k:dice.map(()=>1)}; }
+function tickStoryFly(dt){
+  if(!storyFly||!storyTray.visible||!dice.length) return; storyFly.t+=dt; camera.updateMatrixWorld();
+  const items=storyTray.tiles, sz=storyTray.size, r=stage.getBoundingClientRect(), fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion), D=camera.position.distanceTo(new THREE.Vector3(0,TABLE_Y,0))*.6;
+  const upx=2*D*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/r.height;   // world units per screen pixel at depth D
+  const sc=sz*upx/2.1, tmpP=new THREE.Vector3(), tq=new THREE.Quaternion(), rq=rig.quaternion.clone().invert();
+  dice.forEach((d,i)=>{ const el=items[i]; if(!el) return; const b=el.getBoundingClientRect(), nx=((b.left+b.width/2-r.left)/r.width)*2-1, ny=-(((b.top+b.height/2-r.top)/r.height)*2-1);
+    const ray=new THREE.Vector3(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,D/ray.dot(fwd)); rig.worldToLocal(tmpP);
+    tq.copy(rq).multiply(camera.quaternion).multiply(storyFly.qf[i]);
+    const u=Math.min(1,Math.max(0,(storyFly.t-i*.07)/.75)), e=u*u*(3-2*u), f=storyFly.from[i], lift=2.2*Math.sin(Math.PI*u)*(d.r||1);
+    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.25:1.5):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is bigger: 50% on desktop, 25% on a phone
+    d.mesh.scale.setScalar((1+(sc-1)*e)*storyFly.k[i]); }); }
+function storySync(){
+  if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
+  const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); storyFlyEnd(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
+  const d3=gprefs.hivis!==true&&rolling&&!!bodies.length&&dice.length===st.dice.length;   // 3D: the real dice fly up into a line facing the player; hi-vis: the flat glyph tiles
+  if(!d3) storyFlyEnd();
+  for(const d of dice) d.mesh.visible=d3;   // hi-vis: the dice are swept off the mat while the tray is up
+  storyTray.show({glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyLogOrder(st);
+  if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
+}
+function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
+function storyFit(o){ const have=poolFor(o.packs).length; if(o.dice*o.sides<=have) return {ok:true,dice:o.dice,sides:o.sides};   // the closest dice set the packs can fill: keep the dice count and take the biggest die that fits, else fewer d6
+  for(const sd of [20,12,8,6]) if(sd<o.sides&&o.dice*sd<=have) return {ok:false,dice:o.dice,sides:sd};
+  const n=Math.floor(have/6); return n>=3?{ok:false,dice:Math.min(o.dice,n),sides:6}:{ok:false,dice:3,sides:6,short:true}; }
+function renderStory(S,st,over){
+  const res=over?GAMES.result(S):null;
+  if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':'the bot tells its story: rate it'):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
+  if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'})),gel('label',{className:'row'},gel('input',{type:'checkbox',checked:gprefs.hivis===true,onchange:ev=>{ gprefs.hivis=ev.target.checked; gsave(); renderGame(); }}),gel('span',{textContent:'Hi-vis: flat glyph tiles instead of the 3D dice'}))); }
+  if(!over&&st.phase==='rate'){
+    const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
+    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?(S.players[st.player]+"'s ad-lib. Rate it!"):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
+    GP.append(gel('div',{className:'story-rate'},...[['bad','Bad · 0'],['fair','Fair · 1'],['good','Good · 2']].map(([k,l])=>gel('button',{type:'button',className:'big',textContent:l,onclick:()=>storyRate(k)}))));
+  }
+  if(!over&&st.phase!=='roll'&&S.options.hints){ const ids=(st.phase==='rate'?st.order.map(i=>storyGlyphs(st)[i]):storyGlyphs(st).filter((_,i)=>!st.order.includes(i))).map(g=>g.id), box=gel('div',{className:'story-hints'});
+    for(const id of ids){ const h=hintFor(id); box.append(gel('div',{},gel('b',{textContent:h.nouns[0]}),gel('br'),'n: '+h.nouns.join(', '),gel('br'),'adj: '+h.adjectives.join(', '),gel('br'),'adv: '+h.adverbs.join(', '),gel('br'),'v: '+h.verbs.join(', '))); } GP.append(box); }
+  const tb=gel('table'), hr=gel('tr'); hr.append(gel('th',{textContent:'Story'})); S.players.forEach((nm,p)=>hr.append(gel('th',{textContent:nm,className:p===st.player&&!over?'cur':'',title:nm}))); tb.append(gel('thead',{},hr));
+  const body=gel('tbody'); for(let r=0;r<S.options.rounds;r++){ const tr=gel('tr'); tr.append(gel('td',{textContent:String(r+1)})); S.players.forEach((_,p)=>{ const e=S.tellings[p][r]; tr.append(gel('td',{textContent:e?e.points+' '+e.rating:'',className:p===st.player&&!over&&r+1===st.round?'cur':''})); }); body.append(tr); }
+  const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>tt.append(gel('td',{textContent:String(S.scores[p]),className:p===st.player&&!over?'cur':''}))); body.append(tt); tb.append(body); GP.append(tb);
+}
 function renderGame(){
   GP=SP;   // slice 6: the scorecard lives in the panel's Games tab on every size
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   { $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
   if(gflash){ for(const el of [GP.querySelector('.gstat'),GPstage.querySelector('.st')]) if(el){ el.classList.remove('fx-bust','fx-hot','fx-bank'); void el.offsetWidth; el.classList.add('fx-'+gflash); } gflash=null; }
-  renderDock(); gsaveGame(); botPump(); showCallout(); showcaseCount();
+  renderDock(); gsaveGame(); botPump(); showCallout(); showcaseCount(); storySync();
 }
 
 function renderStrip(){   // the phone's mat strip keeps one line: the status (Roll, Bank and Set aside live in the dock)
@@ -2096,18 +2174,28 @@ function renderGameBody(){
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers))}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
-    const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
+    const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!g.noBots&&!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,g.noBots?'':gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
     const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
       if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); }
-      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); } }
-    if(g.id!=='liarsdice'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
-    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
+      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); if(g.id==='story') renderGame(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); }
+      else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
+      else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
+        for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
+    const sfit=g.id==='story'?storyFit(opts):null;   // too many faces for the glyph pool: preview (and offer) the closest set that fits, never the plain d6s
+    if(!game){ if(sfit&&!sfit.short) storyPreviewOn(sfit.ok?opts:{...opts,dice:sfit.dice,sides:sfit.sides}); else storyPreviewOff(); }   // the story dice show on the mat while setting up
+    if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length;
+      if(sfit&&sfit.ok) GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'})));
+      else if(sfit) GP.append(gel('div',{className:'story-warn',role:'alert'},gel('b',{textContent:'Not enough glyphs for '+opts.dice+' × d'+opts.sides}),gel('span',{textContent:' needs '+need+' different faces, but the chosen packs have only '+have+'. '+(sfit.short?'Even 3 × d6 needs 18, so add a glyph pack.':'The mat shows '+sfit.dice+' × d'+sfit.sides+' ('+sfit.dice*sfit.sides+' faces), the closest set that fits. Add a glyph pack to keep your choice.')}),
+        sfit.short?'':gel('button',{type:'button',className:'big',textContent:'Use '+sfit.dice+' × d'+sfit.sides,onclick:()=>{ gprefs.opts['story.dice']=sfit.dice; gprefs.opts['story.sides']=sfit.sides; gsave(); renderGame(); }}))); }
+    if(g.id!=='liarsdice'&&g.id!=='story'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
+    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',disabled:g.id==='story'&&opts.dice*opts.sides>poolFor(opts.packs).length,onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
   const S=game.state, st=GAMES.status(S,gviewer()), sug=game.info.hidden?[]:GAMES.suggest(S), over=st.phase==='over';
   hd(game.info.name,()=>{ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); },'End game'); if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(game.id==='liarsdice'){ renderLiars(S,st,over); return; }
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }
+  if(game.id==='story'){ renderStory(S,st,over); return; }
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
@@ -2201,13 +2289,14 @@ function renderTurn(S,st,over){
   S.players.forEach((nm,p)=>{ const cur=p===st.player&&!over, tr=gel('tr'); tr.append(gel('td',{textContent:nm,className:cur?'cur':''}),gel('td',{textContent:String(st.scores[p]),className:cur?'cur':''})); body.append(tr); });
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(roomNow()==='design') goPlay(); paneAuto=true; renderGame(); });   // the Games tab belongs to the Play room
+{ const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
 window.__pd={ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
-  renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
+  renderOnce(dt=0){ camBlend=rolling?1:0; loop(0,dt); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
   simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
     for(;rr<rerolls&&leanDice.some(Boolean);rr++){ rerollLeans(); simSteps(maxSteps); }

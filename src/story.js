@@ -1,9 +1,15 @@
 // Story dice (spike, PD-160): a stable, seeded glyph deal for a set of dice, and a plausible-at-surface-level sentence generator. Pure ES module, no DOM.
 // The trick: two overlaid random picks from small pools (which glyph is on which face; which word and which pattern a glyph gets) read as "good enough for infinity".
-import { STORY_GLYPHS } from './story-glyph-data.js';
+import { PACKS } from './story-packs.js';
 
-export const GLYPHS=STORY_GLYPHS, GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
-export const MAX_DICE=9, MIN_DICE=3;
+/* Glyph packs (plug-in glyph sets, chosen a la carte at game setup). Every glyph id is 'pack:name' so packs never clash. A glyph has a path and a viewBox (vb); tier c/o/s is set only in the hand-written packs. */
+export const PACK_LIST=PACKS.map(({glyphs,...m})=>({...m,count:glyphs.length}));
+export const GLYPHS=PACKS.flatMap(p=>p.glyphs.map(g=>({...g,id:p.id+':'+g.id,pack:p.id,name:g.id})));   // one name per export const: build-static.py inlines only the first name of a multi-name declaration
+export const GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
+export const poolFor=(packIds)=>{ const want=new Set(packIds); return GLYPHS.filter(g=>want.has(g.pack)); };
+export const DEFAULT_PACKS=['noto'];
+export const MAX_DICE=9;
+export const MIN_DICE=3;
 
 /* ---- seeding ---- */
 export function hash32(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
@@ -12,11 +18,11 @@ const shuffled=(arr,r)=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ co
 const pick=(arr,r)=>arr[Math.floor(r()*arr.length)];
 
 /* The set fingerprint: the dice (face count and design id, in order) plus an optional salt (the set name). Same set -> same glyphs on the same faces, on every device. */
-export const fingerprint=(dice,salt='')=>'story1|'+salt+'|'+dice.map(d=>`${d.faces}${d.design?'@'+d.design:''}`).join(',');
+export const fingerprint=(dice,salt='',packIds=DEFAULT_PACKS)=>'story2|'+salt+'|'+[...packIds].sort().join('+')+'|'+dice.map(d=>`${d.faces}${d.design?'@'+d.design:''}`).join(',');
 
 /* Deal glyphs to faces: shuffle the whole pool with the fingerprint's seed, then hand out consecutive runs, so every face of every die has its own glyph.
    dice: [{faces}] -> [[glyphId x faces] per die]. Throws if the set needs more faces than the pool holds. */
-export function dealGlyphs(dice,fp=fingerprint(dice),pool=GLYPHS){
+export function dealGlyphs(dice,fp=fingerprint(dice),pool=poolFor(DEFAULT_PACKS)){
   if(dice.length<MIN_DICE||dice.length>MAX_DICE) throw new Error(`Story dice need ${MIN_DICE}-${MAX_DICE} dice`);
   const need=dice.reduce((s,d)=>s+d.faces,0); if(need>pool.length) throw new Error(`Set has ${need} faces; the glyph pool holds ${pool.length}`);
   const order=shuffled(pool.map(g=>g.id),rng(hash32(fp))); let at=0;
@@ -55,6 +61,21 @@ export function sentenceFor(ids,salt=0){
   let text=''; parts.forEach((t,i)=>{ const joined=/^(and|but|so|then|until|or maybe) /.test(t); if(i===0) text=cap(t); else if(joined) text+=', '+t; else text+='. '+cap(t); }); text+='.';
   return {text, clauses};
 }
+
+/* ---- the bot's ad-lib (Story dice with a bot player) ----
+   Same clause patterns, but every word class is borrowed from a random die in the arrangement (so the cat gets the dagger's adjectives and the moon's verbs), with a breathless opener, connectors, asides and a flat ending. Same arrangement and salt, same ad-lib. */
+const LIB_OPEN=['Okay so,','Listen.','Breaking news:','You will not believe this, but','As the prophecy foretold,','Hold my nachos,','Legend says that','Allegedly,','Plot twist:','So there I was,'], LIB_JOIN=['and then,','meanwhile,','but also,','so naturally,','suddenly,','and, plot twist,','which led to the fact that','and for some reason,'],
+  LIB_TAG=['obviously','as one does','for no reason','dramatically','which was extremely suspicious','and nobody asked','with alarming confidence','in a totally normal way','against all advice','twice'],
+  LIB_END=['The end. Roll credits.','And that is why we have rules.','Nobody was ever the same.','Thank you, I will be here all week.','To be continued, probably.','Moral of the story: always check the dice.','No refunds.'];
+export function adLibFor(ids,salt=0){
+  const gl=ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new Error('unknown glyph '+id); return g; }); if(!gl.length) return {text:'',clauses:[]};
+  const r=rng(hash32('adlib:'+ids.join(',')+'#'+salt)), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
+  for(const sz of sizes){ const chim=gl.slice(at,at+sz).map(g=>({...g,a:pick(gl,r).a,d:pick(gl,r).d,v:pick(gl,r).v})); at+=sz;
+    let t=pick(P[sz],r)(chim,r); if(r()<.55) t+=', '+pick(LIB_TAG,r); clauses.push({glyphs:chim.map(x=>x.id),text:t}); }
+  const text=cap(pick(LIB_OPEN,r)+' '+clauses.map((c,i)=>(i?pick(LIB_JOIN,r)+' ':'')+c.text).join(', '))+'. '+pick(LIB_END,r);
+  return {text,clauses};
+}
+
 /* Per-glyph hint (for the bot's hint display): up to 2 words of each kind. */
 export const hintFor=id=>{ const g=GLYPH_BY_ID.get(id); return g?{nouns:g.n.slice(0,2), adjectives:g.a.slice(0,2), adverbs:g.d.slice(0,2), verbs:g.v.map(v=>v.replace(/!$/,'')).slice(0,3)}:null; };
 

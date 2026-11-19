@@ -60,3 +60,31 @@ test('the offline build still boots from file:// with the engine in the import m
   expect(await page.evaluate(() => window.__pd.GAMES.listGames().map(g => g.id))).toContain('yahtzee');
   expect(errors).toEqual([]);
 });
+
+// PD-160: the single-file builds inline src/ modules, which only export the first name of a multi-name declaration (this broke Story Dice in the artifact only: GLYPH_BY_ID was undefined and the setup died mid-render).
+test('the artifact build runs Story Dice: setup preview, start, roll, ring tray, rating', async ({ page }) => {
+  execFileSync('python3', [path.join(root, 'scripts/build-static.py'), '--artifact'], { cwd: root });
+  const html = fs.readFileSync(path.join(root, 'dist/pretty-dice-artifact.html'), 'utf8');
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  page.on('console', m => { const benign = /fonts\.(googleapis|gstatic)\.com/.test(m.location().url || '') || /worker/i.test(m.text()); if (m.type() === 'error' && !benign) errors.push(m.text()); });
+  await page.route('https://artifact.test/', r => r.fulfill({ status: 200, contentType: 'text/html', headers: { 'Content-Security-Policy': CSP }, body: html }));
+  await page.route('https://cdn.jsdelivr.net/**', r => { const file = vendorFor(r.request().url()); if (!file || !fs.existsSync(file)) return r.fulfill({ status: 404, body: 'not vendored' }); r.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: fs.readFileSync(file) }); });
+  await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await page.addInitScript(() => { window.__PD_AUTOGAME = 'story'; });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('https://artifact.test/');
+  await page.waitForFunction(() => window.__ready === true && window.__pd, null, { timeout: 60_000 });
+  await expect(page.locator('#scorepane')).toContainText('Glyph packs');
+  await expect.poll(() => page.evaluate(() => window.__pd.state.shape), { timeout: 30_000 }).toBe('custom');   // the story dice are on the mat during setup
+  await page.click('#gamestab'); await page.click('#scorepane button.big');
+  expect(await page.evaluate(() => window.__pd.game.id)).toBe('story');
+  await page.evaluate(() => window.__pd.simRoll({ rerolls: 6 }));
+  expect(await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).phase)).toBe('arrange');
+  await expect(page.locator('#storytray .stile')).toHaveCount(5);
+  for (let i = 0; i < 5; i++) await page.locator(`#storytray .stile[data-i="${i}"]`).click();
+  await expect(page.locator('.story-sent')).toHaveText(/^[A-Z].*\.$/);
+  await page.click('text=Good · 2');
+  expect(await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).scores)).toEqual([2]);
+  expect(errors).toEqual([]);
+});

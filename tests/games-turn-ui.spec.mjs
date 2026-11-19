@@ -194,14 +194,14 @@ test('turn animations: a bust or a bank pulses the status line once (PD-142 anim
   await app.run(pd => pd.endGame());
 });
 
-test('games scope (PD-142.41): the picker offers the five kept games only; a saved game of a parked game is not offered', async ({ shared: app }) => {
+test('games scope (PD-142.41): the picker offers the kept games only (the five 4.0 games plus the Story Dice prototype); a saved game of a parked game is not offered', async ({ shared: app }) => {
   await app.reset(64); await app.run(pd => { if (pd.game) pd.endGame(); });
   await app.page.evaluate(() => localStorage.setItem('prettydice.games.game', JSON.stringify({ id: 'bunco', state: { players: ['A'], options: {} } })));
   await app.run(pd => pd.openGames());
   const opts = app.page.locator('#scorepane select >> nth=0').locator('option');
-  expect(await opts.evaluateAll(os => os.map(o => o.value))).toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice']);
+  expect(await opts.evaluateAll(os => os.map(o => o.value))).toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice', 'story']);
   const reg = await app.page.evaluate(() => Object.fromEntries(window.__pd.GAMES.listGames().map(g => [g.id, g.name])));
-  expect(await opts.allTextContents(), 'names come from the engine registry').toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice'].map(id => reg[id]));
+  expect(await opts.allTextContents(), 'names come from the engine registry').toEqual(['yahtzee', 'farkle', 'pig', 'craps', 'liarsdice', 'story'].map(id => reg[id]));
   await expect(app.page.locator('#scorepane button', { hasText: /^Resume/ })).toHaveCount(0);
   await app.page.evaluate(() => localStorage.removeItem('prettydice.games.game'));
 });

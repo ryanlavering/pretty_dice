@@ -87,6 +87,7 @@
   #gamepanel.strip{top:6px;bottom:auto;left:8px;right:8px;width:auto;max-height:none;padding:6px 8px;display:flex;gap:6px;align-items:center;overflow:hidden} #gamepanel.strip .st{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600} #gamepanel.strip button{padding:8px 12px;font-weight:600;white-space:nowrap} body.gstrip #name{display:none}
   #gamepanel[hidden]{display:none} :is(#gamepanel,#scorepane) h2{font:700 15px Cinzel,serif;letter-spacing:.06em;margin:0;color:var(--accent);flex:1} :is(#gamepanel,#scorepane) .gh{display:flex;align-items:center;gap:8px;margin-bottom:8px}
   :is(#gamepanel,#scorepane) .row{display:flex;gap:8px;align-items:center;margin:6px 0} :is(#gamepanel,#scorepane) input[type=text]{flex:1;min-width:0;background:#12151c;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px}
+  #scorepane .story-warn{margin:8px 0;padding:10px 12px;border:2px solid #e0a040;border-radius:10px;background:#3a2a10;color:#ffe0a8;font-size:13px;line-height:1.4} #scorepane .story-warn b{display:block;font-size:14px;color:#ffc766;margin-bottom:2px} #scorepane .story-warn .big{margin-top:8px}
   :is(#gamepanel,#scorepane) .gstat{font-weight:600;margin:4px 0 8px} :is(#gamepanel,#scorepane) .gstat small{display:block;color:var(--dim);font-weight:400}
   :is(#gamepanel,#scorepane) table{border-collapse:collapse;width:100%} :is(#gamepanel,#scorepane) td,:is(#gamepanel,#scorepane) th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:center} :is(#gamepanel,#scorepane) td:first-child,:is(#gamepanel,#scorepane) th:first-child{text-align:left}
   :is(#gamepanel,#scorepane) th{font-size:11px;color:var(--dim);font-weight:600;overflow:hidden;text-overflow:ellipsis;max-width:64px;white-space:nowrap} :is(#gamepanel,#scorepane) th.cur{color:var(--accent)} :is(#gamepanel,#scorepane) td.cur{background:#2a2619}
@@ -231,3 +232,21 @@
   }
 :is(#gamepanel,#scorepane) td.pick{touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none} :is(#gamepanel,#scorepane) td.prev{outline:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent);font-style:normal;font-weight:700}
 button.whoop{background:var(--accent);color:#000;font-weight:700;border-radius:8px}
+
+/* Story dice tray (PD-160 spike): glyph tiles swept to a pool row, rings 1..n above */
+#storytray{position:absolute;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,#0006,#000a)}
+#storytray[hidden]{display:none}
+#storytray .sring{position:absolute;width:var(--s);height:var(--s);border-radius:50%;border:3px dashed #ffffff80;display:grid;place-items:center;color:#ffffffa0;font:700 20px system-ui,sans-serif}
+#storytray .sring.hot{background:#ffffff30;border-style:solid}
+#storytray .stile{position:absolute;pointer-events:auto;width:var(--s);height:var(--s);border-radius:22%;background:radial-gradient(circle at 30% 25%,var(--hi),var(--lo));box-shadow:0 6px 12px #0008,inset 0 -4px 8px #0006,inset 0 3px 5px #fff5;display:grid;place-items:center;cursor:grab;transition:left .5s cubic-bezier(.3,.8,.3,1),top .5s cubic-bezier(.3,.8,.3,1);user-select:none;touch-action:none}
+#logpanel .lstory{color:var(--gold,#e8c45a);margin-top:2px}
+#storytray .stile.ghost{background:none;box-shadow:none;border-radius:50%}
+#storytray.d3{background:none}
+#storytray .stile svg{width:70%;height:70%;fill:#fbf6e6;filter:drop-shadow(0 1px 0 #0007)}
+#storytray .stile.alt svg{fill:#ffe3b3}
+#storytray .stile.drag{transition:none;z-index:9;cursor:grabbing;transform:scale(1.08)}
+#storytray .stile.ghost.drag{transform:scale(1.5)}
+.story-hints{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;font-size:12px;opacity:.85}
+.story-hints div{background:#00000030;border-radius:6px;padding:5px 7px}
+.story-sent{font:italic 17px/1.35 Georgia,serif;margin:8px 0}
+.story-rate{display:flex;gap:8px;margin:8px 0}.story-rate button{flex:1;padding:10px 4px}

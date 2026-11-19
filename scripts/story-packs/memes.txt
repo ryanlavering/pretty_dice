@@ -1,0 +1,51 @@
+# Memes pack: e|codepoint = Noto Emoji glyph (OFL), t|text = typeset text meme in DejaVu Sans Bold
+# in text glyphs ~ starts a new line
+# id|nouns|adjectives|adverbs|verbs (past tense, ! = intransitive only)
+e|1F5FF|moai|moai,stone face|stoic,unbothered|silently,gravely|judged,stared down,stood!
+e|1F480|dead|skull,dead meme|dead,hilarious|suddenly,silently|killed,finished,expired!
+e|1F921|clown|clown,fool|silly,painted|foolishly,loudly|fooled,honked at,juggled!
+e|1F62D|sob|sob,tears|soggy,dramatic|loudly,endlessly|drenched,moved,wailed!
+e|1F974|woozy|woozy one,daze|dizzy,goofy|unsteadily,oddly|confused,bumped into,wobbled!
+e|1FAE0|melt|puddle,melting face|melted,embarrassed|slowly,awkwardly|dissolved,embarrassed,oozed!
+e|1FAE1|salute|salute,soldier|crisp,respectful|smartly,gravely|honored,thanked,saluted!
+e|1F976|freeze|ice cube,cold snap|frozen,shivering|stiffly,icily|froze,chilled,shivered!
+e|1F975|sweat|heat wave,sweat|sweaty,overheated|damply,anxiously|wilted,melted,panted!
+e|1F60E|cool|cool kid,shades|cool,smug|smoothly,calmly|impressed,outshone,strolled!
+e|1F92F|mindblown|big idea,explosion|astonished,mind-blown|suddenly,wildly|blew away,amazed,exploded!
+e|1F643|upsidedown|fib,sarcasm|upside-down,fake|sarcastically,brightly|mocked,flipped,pretended!
+e|1F485|nails|manicure,sass|fabulous,unbothered|coolly,sassily|ignored,polished,shrugged!
+e|1F9E0|bigbrain|brain,big brain|enormous,wrinkled|cleverly,mentally|outsmarted,solved,pulsed!
+e|1F4C8|stonks|stonks,chart|rising,profitable|sharply,upward|boosted,enriched,soared!
+e|1F4C9|notstonks|crash,chart|falling,ruinous|sharply,downward|ruined,doomed,plunged!
+e|1F415|doge|doge,dog|very,wow|bravely,wonderfully|barked at,amazed,wagged!
+e|1F408|cat|cat,grumpy cat|grumpy,smug|coldly,lazily|ignored,knocked over,purred!
+e|1F440|eyes|eyes,popcorn watcher|nosy,wide|slyly,closely|watched,spotted,peeked!
+e|1F525|fire|fire,flames|raging,fine|merrily,calmly|burned,warmed,roared!
+e|1F4AF|hundred|perfect score,hundred|perfect,flawless|flawlessly,totally|graded,topped,gleamed!
+e|1F911|money|money,rich cat|rich,greedy|greedily,smugly|bought,bribed,cashed in!
+e|1F90C|pinch|chef kiss,pinch|italian,perfect|perfectly,delicately|praised,tasted,pinched!
+e|1F37F|popcorn|popcorn,drama|buttery,hot|eagerly,quietly|watched,enjoyed,popped!
+e|1F644|eyeroll|eye roll,sigh|bored,exasperated|wearily,heavily|ignored,dismissed,sighed!
+e|1F928|sus|suspect,eyebrow|suspicious,raised|doubtfully,warily|doubted,questioned,squinted!
+e|1F914|think|thinker,hmm|puzzled,thoughtful|carefully,slowly|pondered,questioned,mused!
+e|1F612|unamused|grump,flat look|unimpressed,flat|coldly,flatly|dismissed,ignored,sulked!
+e|1F60F|smirk|smirk,plan|smug,sly|slyly,knowingly|teased,tricked,smirked!
+e|1F979|tears|tear,brave face|pleading,trembling|bravely,tearfully|begged,touched,trembled!
+e|1F92B|hush|secret,hush|quiet,hidden|softly,secretly|kept,hid,whispered!
+e|1F973|party|party,hat|merry,loud|loudly,wildly|celebrated,cheered for,danced!
+e|1F9D0|monocle|fancy pants,monocle|posh,curious|stiffly,closely|examined,judged,peered!
+e|1F4A5|boom|boom,crash|sudden,loud|suddenly,loudly|smashed,shook,exploded!
+e|1F4A4|zzz|nap,snore|sleepy,snoring|softly,soundly|bored,lulled,snored!
+e|1F44D|thumbsup|thumbs up,approval|approving,cheerful|warmly,briefly|approved,backed,beamed!
+e|1F926|facepalm|facepalm,mistake|embarrassing,tired|slowly,heavily|regretted,groaned at,sighed!
+e|1F937|shrug|shrug,mystery|clueless,casual|casually,vaguely|ignored,confused,shrugged!
+e|1F64F|please|plea,favor|humble,hopeful|humbly,sincerely|begged,thanked,prayed!
+t|F|press F|respects,tribute|solemn,short|solemnly,quietly|honored,mourned,paused!
+t|L|the L|loss,L|total,humbling|sadly,publicly|took,suffered,lost!
+t|GG|gg|good game,gg|good,polite|politely,quickly|congratulated,ended,nodded!
+t|404|notfound|404,missing page|lost,empty|mysteriously,nowhere|lost,erased,vanished!
+t|XD|xd|giggle,xd|squinting,silly|helplessly,loudly|cracked up,delighted,giggled!
+t|UwU|uwu|cutie,uwu|sweet,bashful|shyly,sweetly|charmed,hugged,blushed!
+t|OwO|owo|notice,owo|curious,wide-eyed|eagerly,suddenly|noticed,studied,gasped!
+t|o_O|confused|puzzle,huh|baffled,lopsided|blankly,suddenly|baffled,startled,blinked!
+t|(╯°□°)╯~┻━┻|tableflip|table,tantrum|furious,flipped|furiously,dramatically|flipped,smashed,raged!
