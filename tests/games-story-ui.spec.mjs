@@ -34,6 +34,10 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   // click the tiles in order 4,2,0,1,3
   for (const i of [4, 2, 0, 1, 3]) { await app.page.locator(`#storytray .stile[data-i="${i}"]`).click(); await app.page.waitForTimeout(60); }
   expect((await app.run(pd => pd.GAMES.status(pd.game.state))).order).toEqual([4, 2, 0, 1, 3]);
+  // 3D arrangement: the real dice flew up (scaled, lifted) and the roll's log entry carries the chosen order
+  await app.run(pd => { for (let i = 0; i < 70; i++) pd.renderOnce(1 / 60); });
+  expect(await app.run(pd => ({ vis: pd.dice.every(d => d.mesh.visible), flown: pd.dice.every(d => d.mesh.position.y > 2) }))).toEqual({ vis: true, flown: true });
+  const logged = await app.run(pd => pd.bag.log[pd.bag.log.length - 1].story); expect(logged.split(' → ')).toHaveLength(5);
   await expect(app.page.locator('.story-sent')).toBeVisible(); await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*\.$/);
   const s1 = await app.page.locator('.story-sent').textContent(); await app.page.click('text=Re-word'); expect(await app.page.locator('.story-sent').textContent()).not.toBe(s1);
   await expect(app.page.locator('.story-hints > div')).toHaveCount(5);

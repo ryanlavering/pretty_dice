@@ -995,7 +995,7 @@ function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetI
 function logText(){ const pad=n=>String(n).padStart(2,'0'); return bag.log.map(e=>{ const t=new Date(e.ts); const head=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   if(e.note) return `${head}  ${e.note}`;
   const items=e.items?e.items.map(i=>i.text).join('  ·  ')+(e.modText?'  ·  '+e.modText:''):(e.detail||'');
-  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}`; }).join('\n'); }
+  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}${e.story?'  [story: '+e.story+']':''}`; }).join('\n'); }
 /* table lookup (PD-142.14.1.7): a set can carry a result table, one line per result: "3 Empty room", "4-8 Goblins", "9+ Boss" */
 function lookupTable(table,total){ const n=+total; if(!table||!Number.isFinite(n)) return null;
   for(const line of String(table).split('\n')){ const m=line.trim().match(/^(\d+)\s*(?:[-–]\s*(\d+)|(\+))?\s*[:=\-–]?\s*(.+)$/); if(!m) continue; const lo=+m[1], hi=m[3]?Infinity:m[2]!==undefined?+m[2]:lo; if(n>=lo&&n<=hi) return m[4].trim(); }
@@ -1046,6 +1046,7 @@ function renderLog(){ const p=$('logpanel'); if(p.hidden||!bag) return; p.replac
     { const sid=e.set&&((e.setId&&setOps.find(e.setId))||bag.sets.find(x=>x.name===e.set)||{}).id; if(sid){ const tt=head.querySelector('.ttl'); tt.classList.add('go'); tt.title='Bring this set to the mat'; tt.setAttribute('role','button'); tt.tabIndex=0; const go=()=>{ p.hidden=true; setOps.open(sid); }; tt.onclick=go; tt.onkeydown=ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); go(); } }; } }
     { const ok=String(e.total).split(' · ').every(x=>x!==''&&Number.isFinite(+x)); if(ok){ const ib=el('button','ini','+ init'); ib.type='button'; ib.title='Add to the initiative order'; ib.onclick=()=>{ initOps.add(initOps.fromEntry(e)); renderLog(); }; head.append(ib); } }
     const rows=el('div','lr'); if(e.lookup) rows.append(el('div','llook','→ '+e.lookup)); if(e.items) rows.append(rollItemsEl(e.items,e.modText)); else if(e.detail) rows.append(e.detail);
+    if(e.story) rows.append(el('div','lstory','Story order: '+e.story));
     body.append(head,rows); d.append(el('b','',e.total),body); p.append(d); } }
 function setItems(id){ const k=bag.sets.findIndex(x=>x.id===id), last=bag.sets.length-1, st=bag.sets[k];
   return [{label:'Edit…',run:()=>{ openSetEditor(id); }},{label:'Make a copy',run:()=>{ setOps.copy(id); renderSheet(); }},{label:'Open',run:()=>setOps.open(id)},
@@ -1788,6 +1789,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
       rr=L(r,Math.max(r,1.08*Math.max(wx/(tv*camera.aspect),wu/tv)/Math.sin(ph)),topBlend); }
     camera.position.set(tgt.x+rr*Math.cos(ph)*Math.sin(th),tgt.y+rr*Math.sin(ph),tgt.z+rr*Math.cos(ph)*Math.cos(th)); camera.lookAt(tgt);
     { const drop=ROLL_DROP*camBlend*(1-topBlend); if(drop>.0005){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion); camera.lookAt(tgt.clone().addScaledVector(up,drop*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*rr)); } } }   /* PD-142.38.61: aim the camera a little above the mat centre so the dice sit lower in the frame (resting dice ~40% up from the bottom instead of ~55%); the Design showcase and the top-down check are untouched */
+  tickStoryFly(dt);
   table.visible=camBlend>.01; table.material.opacity=camBlend;
   renderer.render(scene,camera);
 };
@@ -2073,18 +2075,49 @@ const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the gly
 function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
   if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
 function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
+var storyFly=null, storyLogE=null;   // storyFly: the dice flying up into the line facing the player (3D arrangement view); storyLogE: this turn's roll-log entry, rewritten as the order changes
+function storyOrderText(st){ const g=storyGlyphs(st), names=st.order.filter(x=>x!==null).map(i=>g[i].n[0]); return names.length?names.join(' → ')+(names.length<st.order.length?' …':''):''; }
+function storyLogOrder(st){ if(!bag) return; const key=game.state.turn.round+':'+game.state.turn.player+':'+game.state.tellings.reduce((a,t)=>a+t.length,0);
+  if(!storyLogE||storyLogE.key!==key){ const e=bag.log[bag.log.length-1]; storyLogE=e&&!e.note&&!e.story?{key,e}:null; }   // the roll was logged when the dice settled, just before the arrange phase began
+  if(storyLogE){ const t=storyOrderText(st); if((storyLogE.e.story||'')===t) return; if(t) storyLogE.e.story=t; else delete storyLogE.e.story; save(); renderLog(); } }
+function storyFlyEnd(){ if(!storyFly) return; storyFly=null; for(const d of dice){ d.mesh.scale.setScalar(1); } storyTray.root.classList.remove('d3'); }
+function faceOrient(d,k,rot){   // the mesh rotation that turns face k to face +z (the viewer) with its glyph upright; mirrors the label basis in buildGeometry
+  const f=d.faces[k], P=f.pts||f.idx.map(v=>d.verts[v]), n=f.n, C=new THREE.Vector3(); P.forEach(p=>C.add(p)); C.multiplyScalar(1/P.length);
+  let far=P[0]; P.forEach(p=>{ if(p.distanceTo(C)>far.distanceTo(C)+1e-6) far=p; });
+  let up=new THREE.Vector3().subVectors(far,C).normalize(); const equi=P.every(p=>Math.abs(p.distanceTo(C)-far.distanceTo(C))<1e-4*far.distanceTo(C)+1e-6);
+  if(P.length===4&&equi) up.copy(new THREE.Vector3().subVectors(P[1],P[0]).cross(n).normalize());
+  up.applyAxisAngle(n,THREE.MathUtils.degToRad(rot)); const right=new THREE.Vector3().crossVectors(up,n);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,n)).invert(); }
+function storyFlyStart(st){
+  const faces=st.dice, from=dice.map(d=>({p:d.mesh.position.clone(),q:d.mesh.quaternion.clone()}));
+  const qf=dice.map((d,i)=>{ const k=Math.max(0,d.labs.indexOf(faces[i])); return faceOrient(d,k,(d.look||state).numRot); });
+  storyFly={t:0,from,qf}; }
+function tickStoryFly(dt){
+  if(!storyFly||!storyTray.visible||!dice.length) return; storyFly.t+=dt; camera.updateMatrixWorld();
+  const items=storyTray.tiles, sz=storyTray.size, r=stage.getBoundingClientRect(), fwd=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion), D=camera.position.distanceTo(new THREE.Vector3(0,TABLE_Y,0))*.6;
+  const upx=2*D*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))/r.height;   // world units per screen pixel at depth D
+  const sc=sz*upx/2.1, tmpP=new THREE.Vector3(), tq=new THREE.Quaternion(), rq=rig.quaternion.clone().invert();
+  dice.forEach((d,i)=>{ const el=items[i]; if(!el) return; const b=el.getBoundingClientRect(), nx=((b.left+b.width/2-r.left)/r.width)*2-1, ny=-(((b.top+b.height/2-r.top)/r.height)*2-1);
+    const ray=new THREE.Vector3(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,D/ray.dot(fwd)); rig.worldToLocal(tmpP);
+    tq.copy(rq).multiply(camera.quaternion).multiply(storyFly.qf[i]);
+    const u=Math.min(1,Math.max(0,(storyFly.t-i*.07)/.75)), e=u*u*(3-2*u), f=storyFly.from[i], lift=2.2*Math.sin(Math.PI*u)*(d.r||1);
+    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); d.mesh.scale.setScalar(1+(sc-1)*e); }); }
 function storySync(){
-  if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); return; }
-  const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
-  for(const d of dice) d.mesh.visible=false;   // the dice are swept off the mat while the tray is up
-  storyTray.show({glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
+  const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); storyFlyEnd(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
+  const d3=gprefs.hivis!==true&&rolling&&!!bodies.length&&dice.length===st.dice.length;   // 3D: the real dice fly up into a line facing the player; hi-vis: the flat glyph tiles
+  if(!d3) storyFlyEnd();
+  for(const d of dice) d.mesh.visible=d3;   // hi-vis: the dice are swept off the mat while the tray is up
+  storyTray.show({glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyLogOrder(st);
+  if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
 function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
 function renderStory(S,st,over){
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':'the bot tells its story: rate it'):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
-  if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'}))); }
+  if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'})),gel('label',{className:'row'},gel('input',{type:'checkbox',checked:gprefs.hivis===true,onchange:ev=>{ gprefs.hivis=ev.target.checked; gsave(); renderGame(); }}),gel('span',{textContent:'Hi-vis: flat glyph tiles instead of the 3D dice'}))); }
   if(!over&&st.phase==='rate'){
     const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
     GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?(S.players[st.player]+"'s ad-lib. Rate it!"):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
@@ -2236,7 +2269,7 @@ window.__pd={ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,sta
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
-  renderOnce(){ camBlend=rolling?1:0; loop(0,0); },                                  // one frame with the camera fully in the current view and no time passing
+  renderOnce(dt=0){ camBlend=rolling?1:0; loop(0,dt); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
   simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
     for(;rr<rerolls&&leanDice.some(Boolean);rr++){ rerollLeans(); simSteps(maxSteps); }

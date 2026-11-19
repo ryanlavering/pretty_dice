@@ -6,7 +6,7 @@ const HUES=[200,20,140,280,50,170,330,100,240];
 export function createStoryTray(host){
   const root=document.createElement('div'); root.id='storytray'; root.hidden=true; host.append(root);
   let tiles=[], rings=[], key='', cur=null, drag=null;
-  const size=()=>Math.min(92,Math.max(46,root.clientWidth/((cur?cur.glyphs.length:5)+1.5))), W=()=>root.clientWidth, H=()=>root.clientHeight;
+  const size=()=>Math.min(cur&&cur.dice3d?120:92,Math.max(46,root.clientWidth/((cur?cur.glyphs.length:5)+1.5)*(cur&&cur.dice3d?1.15:1))), W=()=>root.clientWidth, H=()=>root.clientHeight;
   const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), tot=n*s+(n-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.2]; };
   const poolXY=(k,m)=>{ const s=size(), gap=10, tot=m*s+(m-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.62]; };
   const arr=()=>({n:cur.glyphs.length, rings:cur.order.slice()});
@@ -14,7 +14,8 @@ export function createStoryTray(host){
   function build(){ root.textContent=''; const n=cur.glyphs.length;
     rings=[...Array(n).keys()].map(i=>{ const r=document.createElement('div'); r.className='sring'; r.textContent=i+1; root.append(r); return r; });
     tiles=cur.glyphs.map((g,i)=>{ const e=document.createElement('div'), h=HUES[i%9]; e.className='stile'+(g.tier==='o'||g.pack!=='noto'?' alt':''); e.style.setProperty('--hi',`hsl(${h} 55% 45%)`); e.style.setProperty('--lo',`hsl(${h} 60% 24%)`); e.dataset.i=i; e.title=g.n[0];
-      e.innerHTML=`<svg viewBox="${g.vb}"><path d="${g.path}"/></svg>`; root.append(e); wire(e); return e; }); }
+      if(cur.dice3d) e.classList.add('ghost'); else e.innerHTML=`<svg viewBox="${g.vb}"><path d="${g.path}"/></svg>`;   // 3D mode: the tile is an invisible hit target; the real die is drawn under it by the scene
+      root.append(e); wire(e); return e; }); }
   function place(){ const n=cur.glyphs.length, s=size(), a=arr(), pool=poolOf(a); root.style.setProperty('--s',s+'px');
     rings.forEach((r,k)=>{ const [x,y]=ringXY(k,n); r.style.left=x+'px'; r.style.top=y+'px'; });
     tiles.forEach((e,i)=>{ if(drag&&drag.el===e) return; const k=a.rings.indexOf(i), [x,y]=k>=0?ringXY(k,n):poolXY(pool.indexOf(i),pool.length); e.style.left=x+'px'; e.style.top=y+'px'; e.classList.toggle('placed',k>=0); }); }
@@ -27,7 +28,7 @@ export function createStoryTray(host){
       e.classList.remove('drag'); drag=null; moved=false; change(next); place(); }); }
   return {
     /* o: {glyphs:[glyph objects per die], order:[ring -> die|null], onOrder(order), autoswap, locked} */
-    show(o){ cur=o; const k=o.glyphs.map(g=>g.id).join('|'); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); },
+    show(o){ cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); },
     hide(){ root.hidden=true; cur=null; key=''; root.textContent=''; tiles=[]; rings=[]; drag=null; },
-    get visible(){ return !root.hidden; }, root };
+    get visible(){ return !root.hidden; }, get size(){ return cur?size():0; }, get tiles(){ return tiles; }, get rings(){ return rings; }, root };
 }
