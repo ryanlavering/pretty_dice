@@ -56,6 +56,34 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   expect(errors).toEqual([]);
 });
 
+test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; tray is locked on its turn', async ({ shared: app }) => {
+  const errors = []; app.page.on('pageerror', e => errors.push(e.message));
+  await app.reset(77); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
+  await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '1'; e.dispatchEvent(new Event('change')); });
+  await app.page.check('#scorepane input[aria-label="Seat 2 is a computer player"]');
+  await app.nav.roll();
+  expect(await app.run(pd => pd.GAMES.status(pd.game.state).bots)).toEqual([1]);
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  for (const i of [0, 1, 2]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
+  await app.page.click('text=Fair · 1');
+  await expect.poll(() => app.run(pd => pd.GAMES.status(pd.game.state).botTurn), { timeout: 15000 }).toBe(true);
+  for (let i = 0; i < 40; i++) {   // the test page does not step physics by itself: settle the bot's throw by hand; the bot arranges on its own
+    const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate' || st.phase === 'over') break;
+    await app.page.waitForTimeout(900);
+    await app.run(pd => { const s = pd.GAMES.status(pd.game.state); if (s.botTurn && s.canRoll) pd.simRoll({ rerolls: 6 }); });
+  }
+  const st = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(st.phase).toBe('rate'); expect(st.botTurn).toBe(true); expect(st.order.every(x => x !== null)).toBe(true);
+  await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*[.]$/); await expect(app.page.locator('#scorepane')).toContainText("ad-lib. Rate it!");
+  await app.page.waitForTimeout(600);
+  await app.page.locator('#storytray .stile[data-i="0"]').click({ force: true }); expect((await app.run(pd => pd.GAMES.status(pd.game.state))).order).toEqual(st.order);   // locked on the bot's turn
+  const s1 = await app.page.locator('.story-sent').textContent(); await app.page.click('text=Re-word'); expect(await app.page.locator('.story-sent').textContent()).not.toBe(s1);
+  await app.page.click('text=Good · 2');
+  const fin = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(fin.phase).toBe('over'); expect(fin.scores).toEqual([1, 2]);
+  await app.run(pd => pd.endGame()); expect(errors).toEqual([]);
+});
+
 import { test as base, expect as bexpect } from '@playwright/test';
 base('story dice: ?game=story opens the Games setup on Story Dice', async ({ page }) => {
   await page.goto('/index.html?game=story');

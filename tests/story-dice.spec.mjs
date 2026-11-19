@@ -78,3 +78,15 @@ test('packs: each pack has valid glyphs with a path, viewBox and word banks; dea
   expect(S.fingerprint(d12x5, '', ['noto', 'hiero'])).toBe(S.fingerprint(d12x5, '', ['hiero', 'noto']));   // pack order does not matter
   expect(S.fingerprint(d12x5, '', ['noto'])).not.toBe(S.fingerprint(d12x5, '', ['noto', 'hiero']));
 });
+
+test('bot ad-lib: deterministic, re-wordable, wackier than the plain sentence, every time ends with a closing line @quick', () => {
+  const ids = S.dealGlyphs(d12x5).flat().slice(0, 7);
+  for (let n = 1; n <= 7; n++) {
+    const a = S.adLibFor(ids.slice(0, n), 0); expect(S.adLibFor(ids.slice(0, n), 0)).toEqual(a);
+    expect(a.text).toMatch(/^[A-Z].*[.]$/); expect(a.text).not.toMatch(/undefined|null|!/); expect(a.clauses.flatMap(c => c.glyphs)).toEqual(ids.slice(0, n));
+    expect(a.text).toMatch(/(The end|why we have rules|Nobody was ever|all week|continued|always check|No refunds)/);
+  }
+  expect(new Set([0, 1, 2, 3, 4, 5].map(k => S.adLibFor(ids.slice(0, 5), k).text)).size).toBeGreaterThan(3);
+  expect(S.adLibFor(ids.slice(0, 5), 0).text).not.toBe(S.sentenceFor(ids.slice(0, 5), 0).text);
+  expect(S.adLibFor([], 0).text).toBe('');
+});

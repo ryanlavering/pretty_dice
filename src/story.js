@@ -59,6 +59,21 @@ export function sentenceFor(ids,salt=0){
   let text=''; parts.forEach((t,i)=>{ const joined=/^(and|but|so|then|until|or maybe) /.test(t); if(i===0) text=cap(t); else if(joined) text+=', '+t; else text+='. '+cap(t); }); text+='.';
   return {text, clauses};
 }
+
+/* ---- the bot's ad-lib (Story dice with a bot player) ----
+   Same clause patterns, but every word class is borrowed from a random die in the arrangement (so the cat gets the dagger's adjectives and the moon's verbs), with a breathless opener, connectors, asides and a flat ending. Same arrangement and salt, same ad-lib. */
+const LIB_OPEN=['Okay so,','Listen.','Breaking news:','You will not believe this, but','As the prophecy foretold,','Hold my nachos,','Legend says that','Allegedly,','Plot twist:','So there I was,'], LIB_JOIN=['and then,','meanwhile,','but also,','so naturally,','suddenly,','and, plot twist,','which led to the fact that','and for some reason,'],
+  LIB_TAG=['obviously','as one does','for no reason','dramatically','which was extremely suspicious','and nobody asked','with alarming confidence','in a totally normal way','against all advice','twice'],
+  LIB_END=['The end. Roll credits.','And that is why we have rules.','Nobody was ever the same.','Thank you, I will be here all week.','To be continued, probably.','Moral of the story: always check the dice.','No refunds.'];
+export function adLibFor(ids,salt=0){
+  const gl=ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new Error('unknown glyph '+id); return g; }); if(!gl.length) return {text:'',clauses:[]};
+  const r=rng(hash32('adlib:'+ids.join(',')+'#'+salt)), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
+  for(const sz of sizes){ const chim=gl.slice(at,at+sz).map(g=>({...g,a:pick(gl,r).a,d:pick(gl,r).d,v:pick(gl,r).v})); at+=sz;
+    let t=pick(P[sz],r)(chim,r); if(r()<.55) t+=', '+pick(LIB_TAG,r); clauses.push({glyphs:chim.map(x=>x.id),text:t}); }
+  const text=cap(pick(LIB_OPEN,r)+' '+clauses.map((c,i)=>(i?pick(LIB_JOIN,r)+' ':'')+c.text).join(', '))+'. '+pick(LIB_END,r);
+  return {text,clauses};
+}
+
 /* Per-glyph hint (for the bot's hint display): up to 2 words of each kind. */
 export const hintFor=id=>{ const g=GLYPH_BY_ID.get(id); return g?{nouns:g.n.slice(0,2), adjectives:g.a.slice(0,2), adverbs:g.d.slice(0,2), verbs:g.v.map(v=>v.replace(/!$/,'')).slice(0,3)}:null; };
 

@@ -3,7 +3,7 @@
 import { range, rank } from './util.js';
 
 export const RATINGS = { bad: 0, fair: 1, good: 2 };   // owner: manual points, simple rating; the mapping is a design decision, see docs/design/story-dice-game.md
-export const info = { id: 'story', name: 'Story Dice', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 12 }, noBots: true, hints: true,
+export const info = { id: 'story', name: 'Story Dice', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 12 }, hints: true,
   options: [
     { id: 'dice', label: 'Dice', type: 'int', min: 3, max: 9, default: 5 },
     { id: 'sides', label: 'Faces per die', type: 'choice', choices: [{ value: 6, label: 'd6' }, { value: 8, label: 'd8' }, { value: 12, label: 'd12' }, { value: 20, label: 'd20' }], default: 12 },

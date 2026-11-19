@@ -42,8 +42,8 @@ export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2
   labels.forEach((lab,i)=>{
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
     if(lab&&typeof lab==='object'&&lab.path){            // story dice (PD-160): a glyph label {id,path} is a 100x100 SVG path painted like a numeral (same bump and mask passes)
-      const [vx,vy,gw,gh]=(lab.vb||'0 0 100 100').split(/[ ,]+/).map(Number), side=px*1.5, kk=side/Math.max(gw,gh), p2=lab._p2||(lab._p2=new Path2D(lab.path)); info.push({halfDiag:Math.hypot(side,side)/2});
-      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){ g.save(); g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none'; g.translate(cx-side/2+(side-gw*kk)/2,cy-side/2+(side-gh*kk)/2); g.scale(kk,kk); g.translate(-vx,-vy); g.fill(p2,'nonzero'); g.restore(); g.filter='none'; }
+      /* the stroke after the fill adds a little weight: thin outline glyphs have to read at phone size */ const [vx,vy,gw,gh]=(lab.vb||'0 0 100 100').split(/[ ,]+/).map(Number), side=px*1.5, kk=side/Math.max(gw,gh), p2=lab._p2||(lab._p2=new Path2D(lab.path)); info.push({halfDiag:Math.hypot(side,side)/2});
+      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){ g.save(); g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none'; g.translate(cx-side/2+(side-gw*kk)/2,cy-side/2+(side-gh*kk)/2); g.scale(kk,kk); g.translate(-vx,-vy); g.fill(p2,'nonzero'); g.lineJoin='round'; g.lineWidth=Math.max(gw,gh)*.035; g.strokeStyle=fill; g.stroke(p2); g.restore(); g.filter='none'; }
       return; }
     let txt=show(lab); if(!pad2&&(lab===6||lab===9)) txt+='.';
     mg.font=`${weight} ${px}px ${F.css}`; mg.textAlign='center'; const m=mg.measureText(txt);   // align must be set before measuring or the first label is off-centre

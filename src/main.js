@@ -13,7 +13,7 @@ import { U, makeMaterial, makeUniforms } from './material.js';
 import { STONES, STONE_KEYS, SUBSTRATES, bindState, hsl, pickPaint } from './substrates.js';
 import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId, uniqueName } from './bagmodel.js';
 import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
-import { GLYPH_BY_ID, PACK_LIST, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
+import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
 import { createStoryTray } from './storyui.js';
 
 /* ---------- utils ---------- */
@@ -342,7 +342,7 @@ function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does
 
 function plainLook(){   // Story dice start from the plain default design (what Blank opens, without the random seed): the glyphs read best on a plain die, and the player's own design stays saved in the bag
   Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
-  state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; repaint(); }
+  state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.numSize=.9; repaint(); }   // numSize .9: glyphs must read on a phone
 
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
@@ -2026,7 +2026,7 @@ function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&
     if(spec.private){ const r=GAMES.act(S,{type:'roll',values:spec.slots.map(()=>1+Math.floor(rng()*6))}); if(r.ok){ game.state=r.state; hideDice(true); gameMsg=GAMES.status(game.state).phase==='roll'?nm+' rolled under the cup':''; } renderGame(); return; }   // a bot's secret dice are never thrown where the humans can see
     startRoll(rolling); return; }
   const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state;
-  gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':nm+': '+a.type; gameSync(); renderGame(); }
+  gameMsg=a.type==='bid'?nm+' bids '+a.quantity+' × '+a.face+'s':a.type==='challenge'?nm+' challenges!':a.type==='bet'?nm+' bets '+a.amount+' on '+a.kind:a.type==='next'?'':game.id==='story'?'':nm+': '+a.type; gameSync(); renderGame(); }
 const cupPeek=(()=>{ const e=document.createElement('div'); e.id='cuppeek'; e.hidden=true; e.setAttribute('role','status'); $('stage').append(e); return e; })();   // big dice for old eyes: shown only while a finger is down on your own row
 let lastPeek={who:-1,at:0};
 function logPeek(who,name){ const now=Date.now(); if(lastPeek.who===who&&now-lastPeek.at<4000){ lastPeek.at=now; return; } lastPeek={who,at:now}; addLog({note:name+' peeked at their cup',total:'',notation:"Liar's Dice"}); }   // trust-based peeking, audited: one line per hold, the name only, never the dice (PD-142.14.3.1.15)
@@ -2071,17 +2071,17 @@ function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); return; }
   const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
   for(const d of dice) d.mesh.visible=false;   // the dice are swept off the mat while the tray is up
-  storyTray.show({glyphs:storyGlyphs(st),order:st.order,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyTray.show({glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
 }
 function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
 function renderStory(S,st,over){
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
-  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
-  if(!over&&st.phase==='arrange'){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'}))); }
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':'the bot tells its story: rate it'):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
+  if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'}))); }
   if(!over&&st.phase==='rate'){
-    const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=sentenceFor(ids,storySalt).text;
-    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
+    const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
+    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?(S.players[st.player]+"'s ad-lib. Rate it!"):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
     GP.append(gel('div',{className:'story-rate'},...[['bad','Bad · 0'],['fair','Fair · 1'],['good','Good · 2']].map(([k,l])=>gel('button',{type:'button',className:'big',textContent:l,onclick:()=>storyRate(k)}))));
   }
   if(!over&&st.phase!=='roll'&&S.options.hints){ const ids=(st.phase==='rate'?st.order.map(i=>storyGlyphs(st)[i]):storyGlyphs(st).filter((_,i)=>!st.order.includes(i))).map(g=>g.id), box=gel('div',{className:'story-hints'});
