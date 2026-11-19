@@ -3,7 +3,7 @@ id: PD-174
 title: >-
   Story Dice mobile: re-spread arrangement on full-view toggle/resize; one row
   on landscape phone (even 9 dice)
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T22:24:00Z'
 labels:

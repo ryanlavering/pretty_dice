@@ -3,7 +3,7 @@ id: PD-175
 title: >-
   Story Dice: ring numbers and rings are drawn in front of the dice (should be
   behind)
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T22:24:00Z'
 labels:

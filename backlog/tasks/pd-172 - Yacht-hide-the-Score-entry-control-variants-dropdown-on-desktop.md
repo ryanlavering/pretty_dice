@@ -1,7 +1,7 @@
 ---
 id: PD-172
 title: 'Yacht: hide the Score entry (control variants) dropdown on desktop'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T22:12:00Z'
 labels:
