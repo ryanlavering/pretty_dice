@@ -20,7 +20,7 @@ async function open(vpName, query = '', seed = 7) {
   const page = await ctx.newPage();
   page.on('pageerror', e => console.error('[pageerror]', e.message));
   await page.addInitScript(seedScript, seed);
-  await page.goto(`${base}/index.html?libs=local&seed=${seed}${query ? '&' + query : ''}`);
+  await page.goto(`${base}/index.html?libs=local&multipoop&seed=${seed}${query ? '&' + query : ''}`);
   await page.waitForFunction(() => window.__ready && window.__pd, null, { timeout: 120_000 });
   await page.addStyleTag({ content: '#lagtoast{display:none!important}' });
   await page.waitForTimeout(1500);   // let any intro pill animation finish

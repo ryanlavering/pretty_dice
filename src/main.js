@@ -1957,7 +1957,10 @@ const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
 const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
-const keptGames=()=>GAMES.listGames().filter(g=>KEPT_GAMES.includes(g.id)).sort((a,b)=>KEPT_GAMES.indexOf(a.id)-KEPT_GAMES.indexOf(b.id));
+// PD-162: Craps is hidden from the UI unless ?multipoop is in the URL (remembered for the browser session). All Craps code stays in place; this is a casual gate, not security.
+const SECRET_GAMES=['craps'];
+const secretOn=(()=>{ let on=new URLSearchParams(location.search).has('multipoop'); try{ if(on) sessionStorage.setItem('pd.multipoop','1'); else on=sessionStorage.getItem('pd.multipoop')==='1'; }catch{} return on; })();
+const keptGames=()=>GAMES.listGames().filter(g=>KEPT_GAMES.includes(g.id)&&(secretOn||!SECRET_GAMES.includes(g.id))).sort((a,b)=>KEPT_GAMES.indexOf(a.id)-KEPT_GAMES.indexOf(b.id));
 let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
 function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
   if(game.id==='farkle'){ if(!st.canScore||!settled){ gameMsg=st.canRoll?'Roll first':'Wait for the dice to stop'; renderGame(); return false; }
