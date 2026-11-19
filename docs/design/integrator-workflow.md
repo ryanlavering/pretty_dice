@@ -50,3 +50,6 @@ Sonnet default; set `model` explicitly on every Agent call (haiku lookups, sonne
 
 ## Release checklist artifact
 `python3 scripts/release-checklist.py <out.html>` builds the 4.1 checklist page (card statuses live from the backlog in this checkout and ../pretty_dice-v4.1; gates edited by hand in the script). Republish to the same artifact url after each landing, review OK or gate change: https://claude.ai/artifact/9stZVx8h5Pe58AfaR2LmGs
+
+## Lane hygiene (learned 2026-11-19)
+Two lanes sharing one checkout swept each other's uncommitted hunks into a commit (PD-167 carried PD-172 edits). Rule: one worktree per concurrently running lane (`git worktree add ../pretty_dice-v4.1-<lane> -b v4.1-<lane>` then merge/rebase to v4.1), or `git add -p`; never run a full suite in a checkout another lane is editing (use a clean detached worktree). Run suites with a free `PD_PORT` and a separate `--output` dir.
