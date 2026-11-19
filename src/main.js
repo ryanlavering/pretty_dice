@@ -1147,7 +1147,7 @@ $('dname').onchange=()=>{ if(!bag||bag.active.draft) return; const e=activeEntry
 // PD-163: the list holds only 4.1 changes the owner has not reviewed yet (id = card id, rev 1, anchor on the control, room = where the anchor lives). The page cannot read live comment state, so retirement happens at each republish:
 // scripts/build-static.py --artifact writes window.__PD_RETIRED (card ids that are Review Complete or Done on the board) and those entries are dropped here. Shipped entries are removed from this list by hand.
 const NF_ALL=[
-  {id:'PD-156', rev:1, room:'play', anchor:'#gamestab', text:'Yacht: a score is now entered deliberately, by double tap (or long press, your choice in the Score entry menu under the card), so a stray tap no longer scores. After scoring, a Whoopsie button shows for 2 seconds and undoes it. Check: Play > Games > Yacht, roll, double tap a category, then press Whoopsie within 2 s.', card:'PD-156'},
+  {id:'PD-156', rev:2, room:'play', anchor:'#gamestab', text:'Yacht: on a touch screen a score is entered deliberately, by double tap (or long press, your choice in the Score entry menu under the card), so a stray tap no longer scores; on desktop a single mouse click scores (PD-165). After scoring, a Whoopsie button shows for 3 seconds and undoes it. Check: Play > Games > Yacht, roll, click a category (desktop) or double tap it (phone), then press Whoopsie within 3 s.', card:'PD-156'},
   {id:'PD-158', rev:1, room:'play', anchor:'#bagbtn', text:'During a game you can change a die\'s design: the look only. The dice set (shape and count) stays fixed to what the game needs, and designs with another shape are not selectable. Check: start a game, open the Bag view and pick another design of the same shape: the look changes; a different shape does nothing.', card:'PD-158'},
   {id:'PD-159', rev:1, room:'play', anchor:'#gamestab', text:'Craps: when a bot shoots, every player gets a betting window first. Place or adjust your bets, then tap Ready to let the bot roll. Check: Games > Craps with a bot shooter: bets are open with a Ready button before the roll. (Craps needs ?multipoop in the URL, see PD-162.)', card:'PD-159'},
   {id:'PD-162', rev:1, room:'play', anchor:'#gamestab', text:'Craps is hidden from the Games list unless ?multipoop is in the URL (then it is remembered for the browser session). The game code is untouched; this is a casual gate, not security. Check: Games shows no Craps; reload with ?multipoop and it appears.', card:'PD-162'}
@@ -1978,8 +1978,9 @@ function gameSetAside(slots){ if(botLock()) return; const r=GAMES.act(game.state
   game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); if(hot) gflash='hot'; gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
 function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gflash='bank'; gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
-/* PD-156: scoring is deliberate (double tap / long press; a single tap previews) and a score can be taken back for 2 s ('Whoopsie'). prev is the engine state before the score; it is what a reload would see while the window is open (a pending score is never saved). Bots never get a window, and a bot's turn waits for it to close. */
-const WHOOP_MS=2000; let gpv=null, whoop=null, lpAt=0; addEventListener('pointerdown',()=>{ lpAt=0; },true);
+/* PD-156: scoring is deliberate (double tap / long press; a single tap previews) and a score can be taken back for 3 s ('Whoopsie'); PD-165: a mouse click scores at once on desktop, deliberate entry is for touch/pen. prev is the engine state before the score; it is what a reload would see while the window is open (a pending score is never saved). Bots never get a window, and a bot's turn waits for it to close. */
+const WHOOP_MS=3000; let gpv=null, whoop=null, lpAt=0, lastPtr='mouse'; addEventListener('pointerdown',e=>{ lpAt=0; lastPtr=e.pointerType||'mouse'; },true);
+const isTouchy=e=>{ const t=(e&&e.pointerType)||lastPtr; return t==='touch'||t==='pen'; };   // PD-165: by the pointer of the event, not the screen width
 const whoopLabel=()=>'Whoopsie! Undo ('+(Math.max(0,whoop.until-Date.now())/1000).toFixed(1)+'s)';
 function whoopTick(){ if(!whoop) return; document.querySelectorAll('[data-whoop]').forEach(b=>{ b.textContent=whoopLabel(); }); }
 function whoopEnd(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(whoop.iv); whoop=null; if(game&&!game.setup){ renderGame(); } }
@@ -1992,13 +1993,14 @@ function gameScore(cat){ if(botLock()) return; whoopEnd(); const prev=JSON.parse
   if(game.id==='yahtzee'&&!GAMES.status(prev).botTurn){ whoop={prev,until:Date.now()+WHOOP_MS,t:setTimeout(whoopEnd,WHOOP_MS),iv:setInterval(whoopTick,100)}; }
   gameSync(); renderGame(); }
 /* a tap on a scorecard box: the mode is a preference (double tap by default); a short tap always only previews unless the mode is 'single' */
-function scoreTap(cat,label,pts){ if(lpAt){ lpAt=0; return; }   // the click that ends a long press is not a tap
+function scoreTap(cat,label,pts,ev){ if(lpAt){ lpAt=0; return; }   // the click that ends a long press is not a tap
+  if(!isTouchy(ev)){ gameScore(cat); return; }   // PD-165: mouse (and keyboard) click scores; Whoopsie is the safety net
   const mode=gprefs.scoreMode||'double';
   if(mode==='single'){ gameScore(cat); return; }
   if(mode==='double'&&gpv&&gpv.cat===cat&&Date.now()-gpv.t<700){ gameScore(cat); return; }
   gpv={cat,t:Date.now(),pts,label,mode}; renderGame(); }   // the hint goes in the dock (no layout shift between the two taps)
 function scorePress(td,cat){ const mode=gprefs.scoreMode||'double'; if(mode!=='long') return; let t=0; const off=()=>{ clearTimeout(t); };
-  td.addEventListener('pointerdown',()=>{ off(); t=setTimeout(()=>{ lpAt=Date.now(); gameScore(cat); },450); }); for(const ev of ['pointerup','pointerleave','pointercancel']) td.addEventListener(ev,off); td.addEventListener('contextmenu',e=>e.preventDefault()); }
+  td.addEventListener('pointerdown',e=>{ off(); if(!isTouchy(e)) return; t=setTimeout(()=>{ lpAt=Date.now(); gameScore(cat); },450); }); for(const ev of ['pointerup','pointerleave','pointercancel']) td.addEventListener(ev,off); td.addEventListener('contextmenu',e=>e.preventDefault()); }
 const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
 const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
 function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
@@ -2116,7 +2118,7 @@ function renderGameBody(){
   cards[0].sections.forEach((sec,si)=>{ body.append(gel('tr',{className:'sec'},gel('td',{textContent:sec.label,colSpan:S.players.length+1})));
     sec.rows.forEach((row,ri)=>{ const tr=gel('tr'); tr.append(gel('td',{textContent:row.label}));
       S.players.forEach((_,p)=>{ const pt=cards[p].sections[si].rows[ri].points, cur=p===st.player&&!over; let txt=pt==null?'':String(pt), cls=cur?'cur':'', fn=null;
-        let cat=null; if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; cat=row.category; fn=()=>scoreTap(cat,row.label,sg.points); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; cat=row.category; fn=()=>scoreTap(cat,row.label,null); }
+        let cat=null; if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; cat=row.category; fn=e=>scoreTap(cat,row.label,sg.points,e); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; cat=row.category; fn=e=>scoreTap(cat,row.label,null,e); }
           if(cat&&gpv&&gpv.cat===cat){ cls+=' prev'; if(sg&&sg.points!=null) txt=String(sg.points); } }
         cell(tr,p,txt,cls.trim(),fn,cat); }); body.append(tr); });
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yacht bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });

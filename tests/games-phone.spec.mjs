@@ -25,7 +25,11 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     // roll from the strip, score from the pane
     await expect(app.page.locator('#rollbtn')).toBeEnabled();
     await expect(app.page.locator('#scorepane table')).toBeVisible();
-    await app.page.dblclick('#scorepane td.pick');
+    // touch emulation (PD-165): the click of a finger carries pointerType 'touch'; one tap only previews, two score
+    const tap = () => app.page.evaluate(() => { const el = document.querySelector('#scorepane td.pick'); el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true })); el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); });
+    await tap();
+    expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBeGreaterThan(0);
+    await tap();
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(0);
     // Settings tab shows the settings again; the game keeps running
     await app.page.click('#paneltabs button[data-pane=table]');
