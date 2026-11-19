@@ -42,6 +42,9 @@ const panelAt = async (page, heading) => {   // scroll the side panel so a secti
   await page.locator('#panes h2', { hasText: new RegExp('^' + heading + '(\\b|$)', 'i') }).first().evaluate(e => e.scrollIntoView({ block: 'start' }));
   await page.waitForTimeout(300);
 };
+// Screen position of die i (projected through the app's own camera), so a tap lands on the die whatever the physics did.
+const dieAt = (page, i) => page.evaluate(i => { const pd = window.__pd; pd.renderOnce(); const d = pd.dice[i], r = pd.canvas.getBoundingClientRect(); const v = d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, i);
+const holdDice = async (page, idx) => { for (const i of idx) { const { x, y } = await dieAt(page, i); await page.mouse.click(x, y); await page.waitForTimeout(900); } };
 const side = { x: 0, y: 0, width: 310, height: DESK.height };
 
 // name, options, steps(page) -> optional clip rect
@@ -58,15 +61,15 @@ const SHOTS = [
   ['10-custom-set', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+d20+3'); await p.click('#notapply'); await p.waitForTimeout(1200); await panelAt(p, 'Custom set'); return side; }],
   ['11-roll-settled', {}, async p => { await rollNow(p); }],
   ['12-roll-log', {}, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
-  ['13-roll-controls', {}, async p => { await navFor(p).toPlay(); await p.waitForTimeout(500); await panelAt(p, 'Roll feel & sound'); return side; }],
+  ['13-roll-controls', {}, async p => { await navFor(p).toPlay(); await p.waitForTimeout(500); await panelAt(p, 'Roll feel'); return side; }],
   ['14-save-export', {}, async p => { await panelAt(p, 'Save & export'); return side; }],
   ['15-phone-showcase', { vp: PHONE }, async () => undefined],
   ['16-phone-roll', { vp: PHONE }, async p => { await rollNow(p); }],
   ['18-games-setup', {}, async p => { await navFor(p).openGames(); await p.waitForTimeout(800); }],
-  ['19-yahtzee-hold', { seed: 7 }, async p => {   // seed 7 + software GL lands the same dice every run; tap two settled dice
+  ['19-yahtzee-hold', { seed: 7 }, async p => {   // tap two settled dice by their projected screen position: gold rings
     await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500);
     await navFor(p).roll(); await settle(p); await p.waitForTimeout(1000);
-    await p.mouse.click(512, 272); await p.waitForTimeout(900); await p.mouse.click(1025, 300); await p.waitForTimeout(1200); }],
+    await holdDice(p, [0, 1]); await p.waitForTimeout(600); }],
   ['20-phone-game', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.waitForTimeout(600); await p.click('text=Start game'); await p.waitForTimeout(3000); }],
   ['21-group-roll-initiative', {}, async p => {   // 4x d20+2 as four separate rolls, then add them to the initiative list
     await rollNow(p); await p.fill('#rollbox', '4x d20+2'); await p.keyboard.press('Enter'); await p.waitForTimeout(1000); await settle(p);
@@ -78,9 +81,16 @@ const SHOTS = [
     await p.click('button:text-is("✎")'); await p.waitForTimeout(900);
     await p.locator('textarea').first().fill('1-2 Locked door\n3 Empty room\n4-8 Goblins\n9+ Boss');
     await p.click('#setlist button.sesave2'); await p.waitForTimeout(800);
-    await navFor(p).toPlay(); await p.waitForTimeout(800);
-    await p.click('#dicechips >> text=Dungeon room'); await p.click('#rollbtn'); await p.waitForTimeout(1500); await settle(p);
+    await p.click('button:text-is("⚡")'); await p.waitForTimeout(2500);   // the set's quick roll records in the log
+    await p.click('#sheetclose'); await p.waitForTimeout(600);
     await navFor(p).openLog(); await p.waitForTimeout(600); }],
+  ['23-phone-design-pane', { vp: PHONE }, async p => { await panelAt(p, 'Substrate'); }],
+  ['24-phone-add-menu', { vp: PHONE }, async p => { await p.click('#cards >> text=Add'); await p.waitForTimeout(500); }],
+  ['25-phone-sets', { vp: PHONE, query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await p.waitForTimeout(600); }],
+  ['26-phone-hold', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(800); await holdDice(p, [0, 1]); await p.waitForTimeout(600); }],
+  ['27-phone-log', { vp: PHONE }, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
+  ['28-phone-drawer', { vp: PHONE }, async p => { await navFor(p).openDrawer(); }],
+  ['29-phone-scorecard', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(800); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
 ];
 
@@ -92,7 +102,7 @@ for (const [name, opt, steps] of SHOTS) {
     const clip = await steps(page);
     await page.screenshot({ path: `${OUT}${name}.png`, ...(clip ? { clip } : {}) });
     n++; console.log('shot', name);
-  } catch (e) { console.error('FAILED', name, e.message.split('\n')[0]); process.exitCode = 1; }
+  } catch (e) { console.error('FAILED', name, e.message.split('\n').slice(0, 3).join(' | ')); process.exitCode = 1; }
   await close();
 }
 await browser.close(); server?.kill();

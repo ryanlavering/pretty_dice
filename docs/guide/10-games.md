@@ -27,6 +27,8 @@ Switch to the Play room and open the **Games** tab. Choose a **Game** (the game 
 
 While a game runs the big total on the table is hidden: the status line at the top (with the eye icon) shows the turn, and holding it, or the eye button in the top-right corner on a phone, or holding the `t` key, gives a top-down look at the dice. The dock holds the game's actions (such as **Bank** or **Cash out**) beside the one gold Roll button; the preset chips are hidden until the game ends. You can visit the Design room mid-game; the game keeps going and Play shows a dot.
 
+![On a phone, a Yacht game with the Scorecard tab and the Roll button in the dock](img/29-phone-scorecard.png)
+
 ## The other games
 
 A quick tour of each; every game has its own rules and options in the Games panel.

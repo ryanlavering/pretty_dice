@@ -16,7 +16,7 @@ The material the die is made of (choosing **Stone** gives you a random stone; th
 
 ## Colours (Base)
 
-![Colour swatches, paint mode and finish](img/04-colors.png)
+![Colour swatches, swirl scale, edge radius and finish](img/04-colors.png)
 
 - **Base** holds up to three colour swatches. The dice button beside them picks a new set.
 - **Swirl scale** and **Edge radius** shape the pattern and how rounded the corners are.
@@ -40,6 +40,10 @@ The material the die is made of (choosing **Stone** gives you a random stone; th
 - **Face panel** and **Panel depth** sink or raise a panel behind the number. The panel is what lets the numbers be Raised.
 - **Patina** ages the die; **Antique relief preset** applies a worn look in one click.
 - **Filigree** (the last controls in the Numbers section, after Number style) adds ornament: Scrollwork, Beaded border or Art-deco lines. **Fill with enamel** colours it in; **Enamel matches number paint** keeps the two in step.
+
+![On a phone: the Look panel below the table, scrolled to Substrate](img/23-phone-design-pane.png)
+
+On a phone the Look panel is the strip below the table; scroll it for the same sections.
 
 ## Naming and keeping a design
 

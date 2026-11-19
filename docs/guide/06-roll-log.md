@@ -6,6 +6,8 @@ Every roll is recorded. Open the **Log** tab in the Play room to see it. If the 
 
 Each entry shows the total, the time and what was rolled. A roll typed into the dock or a notation box shows its formula (for example `d20` or `4x 1d20+2`); a roll of a saved set shows the set's name, and a ⚡ after it when you used the set's quick roll (⚡) button. For rolls of several dice or a group roll, the entry lists each die or each roll.
 
+![On a phone: the Log tab in the panel below the table](img/27-phone-log.png)
+
 ## Name who is rolling
 
 Type a name in **Who is rolling?** at the top and the entries that follow carry it. Useful when several people share a device.

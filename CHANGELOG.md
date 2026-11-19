@@ -2,6 +2,56 @@
 
 User-facing changes. Versions are git tags.
 
+## 4.0 (2026-11-18)
+
+### New: the game table
+- **Games tab.** Pick a game in the Play room's **Games** tab, set the players, and press **Start game**. The game puts its own dice on the table and your dice come back when it ends. Five games ship: **Yacht** (1 to 6 players, joker rules, a scorecard that suggests what each box would score), **Ten Thousand** (the Farkle-style game: set aside scoring dice, bank, hot dice), **Pig**, **Craps** (play money, line, come, numbers, hardways, props and one-roll bets, odds, a **Rules** help and **Cash out**) and **Liar's Dice** (hidden dice per player, bidding, a **Pass the device** screen).
+- **Computer players.** Tick **Bot** next to any name and that seat plays itself.
+- **Hold dice.** Tap a settled die to hold it (gold ring); the next roll throws only the rest. A held die that gets bumped is lifted and set back on its face. Leaning dice cannot be held until they settle flat.
+- **Scorecard and status.** While a game runs, the Games tab becomes **Scorecard** and the big total is hidden; the status line shows whose turn it is. Bust, hot dice and bank have small animations. Hold the status line (on a phone, the eye in the top-right corner) or the `t` key for a top-down look. Liar's Dice peeks are noted in the roll log, by name only.
+- **Resume.** A game in progress is saved on your device and **Resume** restores it after a reload.
+- **Change a die's design in play.** Long-press a die on the mat to give it a different design (the look only; it does not change the rules).
+
+### New: roll notation and the quick roll bar
+- **Advantage and disadvantage** (`d20adv`, `d20dis`, with a modifier such as `d20+5 adv`) with **Adv** and **Dis** buttons. The dropped die is marked, and a dropped natural 20 or 1 triggers no effect.
+- **Keep highest / lowest and drop** (`4d6kh3`, `kl`, `dh`, `dl`; the number defaults to 1).
+- **Group rolls**: `4x d20+2` rolls each die separately with the modifier on each; saved sets keep it.
+- **Quick roll bar** (the dock along the bottom of the table): type a formula, pick a saved set or a plain die, and roll. A formula that does not parse shows the reason as text.
+- **Result tables.** A set can carry a result table that is shown on the roll, in the log and in the text export.
+- **Roll log.** Entries have notation titles, per-roll labels and the roller's name; **Copy** and **Save as text** export it. **Initiative tracker**: add a roll to an ordered initiative list with turn and round, or add a named entry with a score by hand.
+
+### New: navigation (two rooms)
+- **Design | Play.** One switch changes between the **Design** room (the die floats and turns; the **Look** settings, Undo and Redo) and the **Play** room (dice on the table; tabs **Table**, **Games** and **Log**). Switching never throws the dice.
+- **One Roll button.** The gold **Roll** in the dock along the bottom of the table is the only control that throws dice. The dock holds the formula box and chips for d4 to d%, **Adv** and **Dis**; tap a chip to replace, double-click or long-press to add. Games put their actions (Bank, Set aside, Cash out) in the dock.
+- **Utilities drawer** with sound, Reset view, Full view, Hints, Pause spin and the Design | Play switch. **Full view** hides the panel; on a phone its handle sits in the tab row.
+- **Bag view and Log.** The Log is a tab in the Play room's panel. One round **Bag** button, bottom left, opens the Bag view (Designs and Sets), which is also where the bag is saved, loaded and copied.
+- **Set editor is draft-first.** Nothing joins the bag until **Save**; **Close** discards. **New set** opens an empty draft.
+- **Undo and Redo** moved to a strip at the top of the Design panel.
+- **Phone layout.** The Design | Play switch lives in the Utilities drawer; the leaning and held chips and the look-from-above handle sit at the top right; the dock keeps the formula box and Roll on one row while the chips scroll; long breakdown lines wrap.
+- **Shape buttons** work the same in Design and Play and never roll: tap picks one die, double-click or long-press adds one to the formula.
+
+### New: design and feel
+- **Base and Numbers.** The Design pane is split into **Base** (substrate, colours, stone, epoxy, face panel, patina), **Numbers** (paint numbers first, font, size, relief, then Filigree) and **Showcase** (spin and Save & export).
+- **Flick to roll.** A flick on the mat throws the dice in the direction you flicked, at the speed you let go.
+- **Filigree** now runs out to the face edges, including the d20 corners; etched lines go dull like the rest of the surface.
+- **Rhombic d12** is available as a d12 shape option.
+- **Dropped dice** are shown faded and translucent with no ring.
+- **Sliders** Finish and Rotation line up with the Colors sliders; Rotation has -180/0/180 hints.
+- Resting dice sit lower in the Play view, and shape or formula changes keep the dice you already have in pose.
+
+### New: loading and diagnostics
+- **Boot progress screen** with a tumbling die, the step name, "step N of M" and the elapsed time, so a slow first load is no longer a blank page.
+- **Lag monitor** reports long freezes in a toast with copyable diagnostics; it sits clear of the Bag button.
+- **"New" callouts.** New or changed controls carry a pulsing dot with a short note; **Got it** dismisses one and **Seen all** the rest on screen.
+
+### Changed
+- **Showcase | Roll** is replaced by **Design | Play**; the round mode button is gone.
+- **Reset to defaults** is removed from the utilities drawer.
+- The game picker offers the five games above; Shut the Box, Ship Captain and Crew and Bunco are not in 4.0.
+- Dice that are placed but not rolled no longer leave the Roll button disabled; **End game** stays in the Play room.
+- The artifact and offline builds inline the games engine.
+- Liar's Dice odds and suggested bids are off by default; turn them on with **Show odds and suggested bids (practice)** in the game's setup.
+
 ## 3.0 (2026-11-13)
 
 ### New: the dice bag

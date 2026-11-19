@@ -8,7 +8,10 @@ Pretty Dice generates random polyhedral "DnD" dice renders using a synthetic 3D 
 - **Numbers**: inset or embossed, with choice of font, size, rotation, depth and edge softness.
 - **Substrates**: solid or swirled plastic, metallic plastic, metal, clear/dyed epoxy and marble.
 - **Paint**: auto-picked for contrast and harmony with the base, random, or custom.
-- **Rolling**: a tray sized to the dice, adjustable bounce and friction, and leaning dice that are flagged and re-rolled in one tap.
+- **Rolling**: a tray sized to the dice, adjustable bounce and friction, flick to roll, and leaning dice that are flagged and re-rolled in one tap.
+- **Roll notation**: `4d6kh3`, `4d6dl1`, advantage/disadvantage (`d20adv`), group rolls (`4x d20+2`), saved sets with result tables, a roll log with an initiative tracker.
+- **Games**: Yacht, Ten Thousand, Pig, Craps and Liar's Dice with scorecards, hold dice, computer players and resume.
+- **Sound**: recordings of real dice, per-surface and stereo.
 
 See [CHANGELOG.md](CHANGELOG.md) for what is new.
 
@@ -29,36 +32,28 @@ Online, the page loads three.js, cannon-es and fonts from cdn.jsdelivr.net and G
 
 ## Designing Dice
 
-The controls sit in a settings pane beside the dice (above them on a phone). The round buttons along the bottom of the view show or hide the settings, turn sound on or off, pause the spin, show the control hints (ⓘ) and switch between Showcase and Roll.
+Two rooms, switched with **Design | Play** (the switch never throws the dice). In the **Design** room the die floats and turns and the side panel (below the table on a phone) holds the look settings, with **Undo / Redo** (Ctrl+Z, Ctrl+Y) in a strip at its top. The utilities drawer (paired-circles button, bottom right) has sound, Reset view, Full view, Hints, Pause spin and the Design | Play switch (the only place for it on a phone).
 
-- **Randomize** (or press Space) rerolls the look; the arrows beside it are **Undo / Redo** (Ctrl+Z, Ctrl+Y), including randomizes. "Also randomize" chooses whether the substrate and the shape change too.
-- **Shape**: pick a die, or build a **Custom set** (see below).
-- **Substrate** and **Colors**: the three base colors are shared by every substrate and stone type, so switching substrate keeps your colors. Only Randomize and the two buttons beside the swatches make new ones: the shuffle button re-rolls just the base colors, and for stone the paintbrush paints in the chosen stone's natural colors.
-- **Swirl scale, Edge radius, Finish** (matte to gloss), **Paint mode** (Auto, Random or Custom for the numbers).
-- **Stone**: the type changes only the texture, not the colors.
-- **Numbers**: font, **size** (0.45 to 5 times the face, on a log scale; large sizes are cropped by the face edges on purpose), rotation, depth and edge softness. The d4 can show corner-tip or face numbers; the d6 can use numbers or pips.
-- **Relief & patina**: recessed face panels with a sloped rim, raised or inset numbers, darker patina in recesses, and an Antique relief preset.
-- **Filigree**: scroll, beaded or art-deco etching filled with enamel (not available on d4 corner-tip dice).
-- **Epoxy**: clarity, bubbles, glitter, and an **inclusion**, either a built-in rubber duck or your own glb/obj/stl miniature cast inside the die.
-- **Showcase**: spin speed. The pause button is on the view itself.
-- **Reset to defaults** clears everything.
+- **Randomize** (or press Space) rerolls the look; "Also randomize" chooses whether the substrate and the shape change too.
+- **Shape**: pick a die, or build a **Custom set** (see below). A tap picks one die; a double-click or long press adds one to the formula.
+- The look controls are in three sections. **Base**: substrate, the three shared **Colors** (switching substrate keeps them; the shuffle and paintbrush buttons beside the swatches make new ones), swirl scale, edge radius, finish, stone, epoxy (clarity, bubbles, glitter, a rubber duck or your own glb/obj/stl **inclusion**), face panel and patina. **Numbers**: paint numbers and mode (Auto, Random or Custom), font, **size** (0.45 to 5 times the face; large sizes are cropped by the face edges on purpose), rotation, depth, edge softness, inset or raised style, and **Filigree** etching (scroll, beaded or art-deco, filled with enamel; not on d4 corner-tip dice). **Showcase**: spin speed, then Save & export.
 
-Drag to orbit, scroll or pinch to zoom, double-click to reset the view. Showcase and Roll keep their own camera angle and zoom.
+Drag to orbit, scroll or pinch to zoom, double-click to reset the view. Design and Play keep their own camera angle and zoom.
 
 ## The Dice Bag
 
-The shelf along the bottom holds your designs as cards; tap one to select it, wheel or drag to scroll. Each card's menu copies, renames, moves and deletes it, and a changed design shows **Modified** with Save, Revert and Save as copy.
+The round **Bag** button (bottom left) opens the Bag view with **Designs** and **Sets** tabs; it is also where you save, load and copy the whole bag. In the Design room the shelf along the bottom shows your designs; tap one to select it. A changed design shows **Modified** with Save, Revert and Save as copy.
 
-The **Sets** tab holds named rolls (like `2d6+3`, or a mix of designs). **Quick roll** logs a total without leaving the screen; **Open and roll now** puts the dice on the mat. Edit a set with its menu, the ✎ button on wide screens, or a long press on a phone; ✕ asks before dropping unsaved edits. The **roll log** keeps the last 200 rolls; tap a set name to bring it to the mat without rolling.
+A **set** is a named roll (like `2d6+3`, or a mix of designs). The set editor is draft-first: nothing joins the bag until you press **Save**. **Quick roll** (the bolt) logs a total without leaving the screen; **Open** puts the dice on the mat without throwing. A set can carry a result table. The **Log** tab keeps the last 200 rolls, copies or saves them as text, and tracks initiative.
 
 ## Rolling Dice
 
-Press **Roll** (or `r`) to throw the dice onto a table using rigid-body physics (cannon-es). Flick the table (or click it) to roll again. Natural 20s and natural 1s get their own effects: a glow and fireworks, or a greyed die and a dimmed room.
+In the **Play** room, the gold **Roll** button in the dock (or `r`) is the only control that throws the dice, using rigid-body physics (cannon-es). Type a formula in the dock's box, or tap its chips (d4 to d%, Adv, Dis), then Roll. Flick the table to throw again in the direction you flicked. Natural 20s and natural 1s get their own effects: a glow and fireworks, or a greyed die and a dimmed room.
 
 - **The tray** is sized from the dice (how many and how big), not from the screen, and the camera starts far enough back to show all of it. Zoom is yours to change.
 - **Roll feel & sound** (it moves to the top of the pane while you roll): **Bounciness**, **Dice friction** and **Mat friction** change how the dice behave; the defaults are slippery enough that dice slide apart instead of snagging.
 - **Leaning dice** are never hidden. A die that comes to rest propped on another, or balanced on an edge, gets an orange ring on the mat and a warning. **Re-roll leaning** drops only those dice in again from above. If one of them later tips over, the result and any natural 20 effect are read again.
-- **Sound** is off until you turn it on (the speaker button on the view, or the checkbox); see [Sound](#sound) below. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** plays a blip and shows what the browser says about audio, which helps when a phone stays quiet.
+- **Sound** is off until you turn it on (the Sound item in the utilities drawer, or the Rolling sound checkbox in the Table tab); see [Sound](#sound) below. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** plays a blip and shows what the browser says about audio, which helps when a phone stays quiet.
 
 ### Sound
 
@@ -77,11 +72,11 @@ How it works and how to tune it: [sounds/README.md](sounds/README.md).
 ### Rolling Multiple Dice
 
 - **Standard 7** shows and rolls the full set together.
-- **Custom set** takes dice notation such as `4d6+2d10+3`, or use the steppers. It supports d4 to d20, d14, d16, d%, a +/- modifier and up to 24 dice, and shows the total with a per-term breakdown. The cross button next to **Set** clears it back to a single d20.
+- **Custom set** takes dice notation such as `4d6+2d10+3`, `4d6kh3` (keep highest 3), `d20adv` or `4x d20+2`, or use the steppers. It supports d4 to d20, d14, d16, d%, a +/- modifier and up to 24 dice, and shows the total with a per-term breakdown. The cross button next to **Set** clears it back to a single d20.
 
 ## Desktop vs. Mobile
 
-The layout fits any window: the settings pane sits beside the view on a wide screen and below it on a narrow one. The button at the bottom left of the view hides the settings for a full-screen view and brings them back. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Text fields are 16 px so iOS Safari does not zoom in when you tap them. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
+The layout fits any window: the settings pane sits beside the view on a wide screen and below it on a narrow one. **Full view** (the pane's arrow, `h`, or the drawer) hides the settings for a full-screen view. On a phone the Design | Play switch is in the utilities drawer and the look-from-above eye is at the top right. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Text fields are 16 px so iOS Safari does not zoom in when you tap them. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
 
 ## Saving and Loading
 
@@ -92,7 +87,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 
 ## Other Features
 
-- Keyboard: Space randomizes, `r` rolls, Ctrl+Z / Ctrl+Y undo and redo.
+- Keyboard: Space randomizes, `r` rolls, `h` hides the panel, `t` looks from above, Ctrl+Z / Ctrl+Y undo and redo.
 - Opposite faces always sum to N+1.
 
 # Design
@@ -110,6 +105,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 # Development
 
 - Work is tracked in `backlog/` using [backlog.md](https://github.com/MrLesk/Backlog.md) (task prefix `pd`; `backlog board`).
+- A boot progress screen and a lag monitor (`window.__lag`) help diagnose slow loads.
 - Tests: `npm install` once (dev-only; the app itself still needs no install), then `npm test`. `npm run test:docker` runs the same suite in the pinned Playwright image, including the visual baselines. See [docs/design/testing.md](docs/design/testing.md).
 - `?seed=N` makes the look and the rolls reproducible. `?full=1` starts with the settings pane hidden.
 - Clear localStorage when testing defaults.
@@ -124,7 +120,7 @@ The layout fits any window: the settings pane sits beside the view on a wide scr
 
 # Known gaps
 
-- Roll feel presets (wood, felt, glass...), a drawn tray, characters and a dice jail are planned (see `backlog/`).
+- Roll feel presets (wood, felt, glass...), a drawn tray, characters, a dice jail, a quality setting for slow devices and a 2D fallback are planned (see `backlog/`).
 - Epoxy lacks internal depth.
 - Sound: no recordings yet for stone, metal or glass hits, and the nat 20 / nat 1 effects are synthesised.
 - No d24 or d30 yet.
