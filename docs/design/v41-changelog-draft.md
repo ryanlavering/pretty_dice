@@ -1,3 +1,5 @@
 # 4.1 changelog (draft, user-facing wording)
 
 - **Yacht: no more accidental scores (PD-156).** Tapping a box on the scorecard now only previews it; double tap (or long press, your choice under the scorecard) to enter the score. After a score there is a 2-second "Whoopsie! Undo" button with a countdown that puts back your dice, rolls and turn; after 2 seconds the score is locked in. Computer players wait for the window to close.
+- **Change a die's design during a game (PD-158).** In a running game you can now pick another design from the Bag, a set with the same dice, or press Randomize: only the look changes. Dice, their values and holds stay as they are. A design or set with different dice (another shape or count) is still refused, with a message.
+- **Craps: bet while a computer player shoots (PD-159).** When a bot is the shooter it places its bets, then waits. Place or change your bets (choose who you bet as), then tap Ready and the bot rolls. Tables with only computer players play on by themselves.
