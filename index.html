@@ -2949,7 +2949,8 @@ function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st
   if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
   gameAwaiting=true; gameMsg=''; renderGame(); return true; }
-function gameOnSettled(parts){ if(!gameAwaiting||!game||leanDice.some(Boolean)) return;
+function gameOnSettled(parts){ if(!gameAwaiting||!game) return;
+  if(leanDice.some(Boolean)){ if(botLock()) setTimeout(rerollLeans,0); return; }   // PD-157: a bot never taps the 'Fix leaning dice' chip, so it re-rolls the leaning dice itself and the turn goes on
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   const prevPoint=game.state.point; const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
   if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; if(spec.private){ gameMsg=''; setTimeout(()=>{ if(game&&game.info.hidden&&!gameAwaiting) hideDice(true); },700); }   // the throw stays in view a moment, then the set goes back to the showcase
