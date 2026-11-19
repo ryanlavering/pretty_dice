@@ -1,10 +1,10 @@
 ---
 id: PD-160
 title: 'Story dice: seeded glyph sets plus a hint and sentence generator'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T08:21:00Z'
-updated_date: '2026-11-19T08:21:00Z'
+updated_date: '2026-11-19T08:59:00Z'
 labels:
   - feature
   - v4.1
@@ -40,6 +40,5 @@ Choosing and ordering the dice needs new UI:
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Filed 2026-11-19 for 4.1 consideration. Do not start before 4.0 ships (scope freeze).
-Spike 2026-11-19: glyph pool (154, Noto Emoji mono + DejaVu odd style), seeded deal, sentence generator, ring arrangement model, atlas glyph labels and a standalone demo (tools/story-dice-spike.html) are in. Findings and remaining work: docs/design/story-dice-spike.md. Real-die wiring, 3D mat flow and bot hints are not done.
+Spike 2026-11-19: glyph packs (5, 443 glyphs), seeded deal, sentence generator, real 3D glyph dice, Story Dice game in the Games table (ring tray, hints, bad/fair/good rating). Decisions and gaps: docs/design/story-dice-game.md. Worktree pretty_dice-story, branch story-dice-spike. Artifacts: playable https://claude.ai/artifact/8z5hMjPSZAK8pxr5M47i6L, glyph dice https://claude.ai/artifact/BubM2F4kfPn9Puoe7SpMsj
 <!-- SECTION:NOTES:END -->
