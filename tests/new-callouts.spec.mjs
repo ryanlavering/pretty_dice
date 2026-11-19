@@ -43,12 +43,7 @@ test('the overlay stays inside the phone viewport', async ({ app, page }) => {
   const b = await page.locator('.nfbox').boundingBox();
   expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x + b.width).toBeLessThanOrEqual(390); expect(b.y).toBeGreaterThanOrEqual(0); expect(b.y + b.height).toBeLessThanOrEqual(780);
 });
-test('only the post-v19 entries remain; the owner-reviewed ones are retired (PD-142.38.31)', async ({ app, page }) => {
-  await app.open({ query: 'new=1' });
-  const ids = (await page.evaluate(() => window.__nf.unseen())).map(k => k.split('@')[0]);
-  for (const gone of ['PD-142.38.s4', 'PD-142.38.s5', 'PD-142.38.s6', 'PD-142.38.s7', 'PD-142.38.s8', 'PD-142.38.4', 'PD-142.38.5', 'PD-142.33.1', 'PD-142.39.1', 'PD-142.38.drawer']) expect(ids).not.toContain(gone);
-  for (const here of ['PD-142.38.22', 'PD-142.38.23', 'PD-142.38.32', 'PD-142.38.35', 'PD-142.38.37', 'PD-142.38.17', 'PD-142.38.21', 'PD-142.38.14', 'PD-142.38.25', 'PD-142.38.28', 'PD-142.38.42', 'PD-142.38.41', 'PD-142.38.43', 'PD-142.38.46']) expect(ids).toContain(here);
-});
+// PD-163: the list is reset to the unreviewed 4.1 changes; see tingles.spec.mjs
 // PD-142.38.42: every unseen entry must have a dot somewhere (some room/tab/state, phone and desktop), none covered, and the drawer label explains the rest.
 for (const [w, h] of [[390, 740], [1280, 800]]) test(`every unseen callout has a findable dot somewhere, and the count label says how many are here (${w})`, async ({ app, page }) => {
   test.setTimeout(150_000);
@@ -84,9 +79,9 @@ for (const [w, h] of [[390, 740], [1280, 800]]) test(`every unseen callout has a
   expect(covered, 'dots covered by another element').toEqual([]);
 });
 test('the drawer label counts the dots on this screen separately', async ({ app, page }) => {
-  await app.open({ query: 'new=1' }); await app.nav.toPlay();
+  await app.open({ query: 'new=1' }); await app.nav.toDesign();
   await app.nav.openDrawer();
   const un = (await page.evaluate(() => window.__nf.unseen())).length, here = await page.locator('.nfdot:not([hidden])').count();
-  expect(here).toBeLessThan(un);   // Design-only entries are on the other room
+  expect(here).toBeLessThan(un);   // the 4.1 entries all live in Play, so none is on the Design screen
   await expect(page.locator('#nfall')).toHaveText(`Seen all (${un} new, ${here} on this screen)`);
 });

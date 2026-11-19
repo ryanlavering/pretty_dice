@@ -11,6 +11,18 @@ b64 = lambda data, mime: f"data:{mime};base64," + base64.b64encode(data).decode(
 js = lambda p: b64(p.read_bytes(), 'text/javascript')
 
 ARTIFACT = '--artifact' in sys.argv
+def retired_cards(tasks=None):   # PD-163: card ids whose board card is Review Complete or Done; the 'New' callouts for them are dropped from the artifact.
+    # The page cannot read live comment state, so retirement happens at each republish. Fails soft (empty list) when the board is missing.
+    import pathlib
+    ids = []
+    try:
+        d = pathlib.Path(tasks) if tasks else pathlib.Path(__file__).resolve().parent.parent.parent / 'pretty_dice-v4' / 'backlog' / 'tasks'
+        for f in d.glob('*.md'):
+            m = re.match(r'(pd-[\w.]+)\s', f.name, re.I)
+            st = re.search(r'^status:\s*(.+?)\s*$', f.read_text(errors='replace')[:2000], re.M)
+            if m and st and st.group(1).strip('\'"') in ('Review Complete', 'Done'): ids.append(m.group(1).upper())
+    except Exception as e: print('retired_cards: skipped (' + str(e) + ')')
+    return sorted(ids)
 def games_imports():   # games/*.js as data: URLs: index.js is 'pd-games', the rest 'pd-games/<file>'; relative imports become those bare names (offline build only: data: scripts are blocked by the artifact CSP)
     out = {}
     for f in sorted((root / 'games').glob('*.js')):
@@ -112,7 +124,7 @@ if ARTIFACT:
     marker = "import * as GAMES from 'pd-games';"
     assert html.count(marker) == 1, 'index.html must import the engine with exactly: ' + marker
     html = html.replace(marker, games_bundle())
-    out = html.replace(m.group(0), '<script>window.__PD_REVIEW=1;</script>\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
+    out = html.replace(m.group(0), '<script>window.__PD_REVIEW=1;window.__PD_RETIRED=' + json.dumps(retired_cards()) + ';</script>\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
     (root / 'dist').mkdir(exist_ok=True)
     p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
 
