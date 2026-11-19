@@ -25,7 +25,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     // roll from the strip, score from the pane
     await expect(app.page.locator('#rollbtn')).toBeEnabled();
     await expect(app.page.locator('#scorepane table')).toBeVisible();
-    await app.page.click('#scorepane td.pick');
+    await app.page.dblclick('#scorepane td.pick');
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(0);
     // Settings tab shows the settings again; the game keeps running
     await app.page.click('#paneltabs button[data-pane=table]');

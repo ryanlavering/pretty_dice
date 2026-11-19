@@ -22,7 +22,7 @@ test('yahtzee: engine gets the real dice, holds keep dice, scoring advances the 
   expect([b.dice[0], b.dice[2]]).toEqual([d1[0], d1[2]]);   // held dice keep their values
   // tap the best suggestion on the scorecard
   const before = await app.run(pd => pd.GAMES.status(pd.game.state).round);
-  await app.page.click('#scorepane td.pick.best, #scorepane td.pick');
+  await app.page.dblclick('#scorepane td.pick.best, #scorepane td.pick');
   const c = await app.run(pd => ({ st: pd.GAMES.status(pd.game.state), held: pd.held }));
   expect(c.st.rollsUsed).toBe(0); expect(c.held).toEqual([]);
   expect(c.st.round).toBe(before + 1);
@@ -56,7 +56,7 @@ for (const rolls of [1, 2]) {
     await app.run(pd => pd.simRoll({ rerolls: 6 }));
     if (rolls === 2) { await app.run(pd => { pd.toggleHold(0); pd.toggleHold(1); pd.simRoll({ rerolls: 6 }); }); }
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBe(rolls);
-    await app.page.click('#scorepane td.pick');
+    await app.page.dblclick('#scorepane td.pick');
     const a = await app.run(pd => ({ st: pd.GAMES.status(pd.game.state), held: pd.held, rings: pd.holdRings }));
     expect(a.st.rollsUsed, 'fresh toss 1').toBe(0); expect(a.st.canRoll).toBe(true); expect(a.held).toEqual([]); expect(a.rings).toBe(0);
     expect(await app.page.locator('#scorepane .gstat small').textContent()).not.toMatch(/roll \d of 3/);

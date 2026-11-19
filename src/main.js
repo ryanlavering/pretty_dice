@@ -947,7 +947,7 @@ function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint
     hint.textContent=st.botTurn?S.players[st.player]+' is thinking…':st.phase==='reveal'?'Next round':st.phase==='roll'?'':'Bid or challenge'; return; }
   const n=GAMES.rollSpec(S).slots.length; go.disabled=!st.canRoll||busy;
   if(id==='craps'){ btn('Cash out',gameCashOut,betsLocked(),'cashout'); return; }
-  if(id==='yahtzee'){ go.textContent=st.canRoll&&st.rollsUsed?'Roll '+n+(n>1?' dice':' die'):'Roll'; if(!st.canRoll) hint.textContent='Pick a box'; return; }
+  if(id==='yahtzee'){ if(whoop) act.append(whoopBtn()); if(gpv&&!whoop) hint.textContent=(gpv.mode==='long'?'Hold ':'Double tap ')+gpv.label+(gpv.pts!=null?' ('+gpv.pts+')':'')+' to score it'; go.textContent=st.canRoll&&st.rollsUsed?'Roll '+n+(n>1?' dice':' die'):'Roll'; if(!st.canRoll&&!hint.textContent) hint.textContent='Pick a box'; return; }
   go.textContent=st.canRoll&&farkle&&st.turnTotal?'Roll '+n+(n>1?' dice':' die'):'Roll'; if(!st.canRoll) hint.textContent=farkle?'Set aside first':'Close tiles first';
   if(['farkle','pig','shipcaptain'].includes(id)) btn('Bank '+(id==='shipcaptain'?st.cargo:st.turnTotal),gameBank,!st.canBank||gameAwaiting,'bank');
   if(farkle&&st.canScore) btn(gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',()=>gameSetAside(gsel),!gsel.size||!settled,'aside'); }
@@ -1957,7 +1957,7 @@ function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.sta
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
   if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
-function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
+function gameBeforeRoll(){ whoopEnd(); gpv=null; const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
   gsel.clear(); if(game.info.hidden) liveDiceOnly();
   if(game.id==='craps'){ for(let k=0;k<12;k++){ const a=GAMES.botMove(game.state,{seed:++botN}); if(!a||a.type!=='bet') break; const b=GAMES.act(game.state,a); if(!b.ok) break; game.state=b.state; } }   // bots place their bets before the dice go
   if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
@@ -1985,17 +1985,35 @@ function gameSetAside(slots){ if(botLock()) return; const r=GAMES.act(game.state
   game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); if(hot) gflash='hot'; gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
 function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gflash='bank'; gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
-function gameScore(cat){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
-  game.state=r.state; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
-  gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds(); gameSync(); renderGame(); }
+/* PD-156: scoring is deliberate (double tap / long press; a single tap previews) and a score can be taken back for 2 s ('Whoopsie'). prev is the engine state before the score; it is what a reload would see while the window is open (a pending score is never saved). Bots never get a window, and a bot's turn waits for it to close. */
+const WHOOP_MS=2000; let gpv=null, whoop=null, lpAt=0; addEventListener('pointerdown',()=>{ lpAt=0; },true);
+const whoopLabel=()=>'Whoopsie! Undo ('+(Math.max(0,whoop.until-Date.now())/1000).toFixed(1)+'s)';
+function whoopTick(){ if(!whoop) return; document.querySelectorAll('[data-whoop]').forEach(b=>{ b.textContent=whoopLabel(); }); }
+function whoopEnd(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(whoop.iv); whoop=null; if(game&&!game.setup){ renderGame(); } }
+function whoopClear(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(whoop.iv); whoop=null; }
+function whoopBtn(){ const b=gel('button',{type:'button',className:'whoop',textContent:whoopLabel(),onclick:gameWhoops}); b.dataset.whoop='1'; return b; }
+function gameWhoops(){ if(!whoop||!game) return; const w=whoop; whoopClear(); game.state=w.prev; gpv=null; gameMsg='Score taken back'; gameSync(); renderGame(); }
+function gameScore(cat){ if(botLock()) return; whoopEnd(); const prev=JSON.parse(JSON.stringify(game.state)), r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+  game.state=r.state; gpv=null; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
+  gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds();
+  if(game.id==='yahtzee'&&!GAMES.status(prev).botTurn){ whoop={prev,until:Date.now()+WHOOP_MS,t:setTimeout(whoopEnd,WHOOP_MS),iv:setInterval(whoopTick,100)}; }
+  gameSync(); renderGame(); }
+/* a tap on a scorecard box: the mode is a preference (double tap by default); a short tap always only previews unless the mode is 'single' */
+function scoreTap(cat,label,pts){ if(lpAt){ lpAt=0; return; }   // the click that ends a long press is not a tap
+  const mode=gprefs.scoreMode||'double';
+  if(mode==='single'){ gameScore(cat); return; }
+  if(mode==='double'&&gpv&&gpv.cat===cat&&Date.now()-gpv.t<700){ gameScore(cat); return; }
+  gpv={cat,t:Date.now(),pts,label,mode}; renderGame(); }   // the hint goes in the dock (no layout shift between the two taps)
+function scorePress(td,cat){ const mode=gprefs.scoreMode||'double'; if(mode!=='long') return; let t=0; const off=()=>{ clearTimeout(t); };
+  td.addEventListener('pointerdown',()=>{ off(); t=setTimeout(()=>{ lpAt=Date.now(); gameScore(cat); },450); }); for(const ev of ['pointerup','pointerleave','pointercancel']) td.addEventListener(ev,off); td.addEventListener('contextmenu',e=>e.preventDefault()); }
 const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
 const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
-function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!=='over') localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:game.state})); else if(game&&!game.setup) localStorage.removeItem(GSAVE); }catch{} }
+function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
+  whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
   state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+function endGame(){ if(!game) return; whoopClear(); gpv=null; const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2009,9 +2027,9 @@ function showcaseCount(){   // PD-142.39.1: between rolls the showcase shows exa
 function liveDiceOnly(){ const live=new Set(GAMES.rollSpec(game.state).slots); dice.forEach((d,i)=>{ d.mesh.visible=live.has(i); }); }   // while throwing, only the dice the engine rolls are drawn: no rings on spares
 let botTimer=null, botN=0, lbid=null, gflash=null;   // gflash: 'bust' | 'hot' | 'bank' plays once on the next render (a short colour pulse on the status line)
 const BOT_MS=+new URLSearchParams(location.search).get('botms')||900;
-function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
+function botPump(){ clearTimeout(botTimer); botTimer=null; if(!game||game.setup||gameAwaiting||whoop||(rolling&&!settled)) return;
   const st=GAMES.status(game.state); if(st.phase==='over'||!st.botTurn) return; botTimer=setTimeout(botStep,BOT_MS); }
-function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||(rolling&&!settled)) return;
+function botStep(){ botTimer=null; if(!game||game.setup||gameAwaiting||whoop||(rolling&&!settled)) return;
   const S=game.state, st=GAMES.status(S); if(st.phase==='over'||!st.botTurn) return;
   const a=GAMES.botMove(S,{seed:++botN}); if(!a) return; const nm=S.players[a.player??st.player];
   if(a.type==='roll'){ const spec=GAMES.rollSpec(S);
@@ -2098,14 +2116,16 @@ function renderGameBody(){
   if(gcollapsed){ GP.append(gel('div',{className:'gstat'},S.players.map((n,p)=>n+' '+GAMES.scorecard(S,p).total).join(' · '))); return; }
   const cards=S.players.map((_,p)=>GAMES.scorecard(S,p)), tb=gel('table'), hr=gel('tr'); hr.append(gel('th'));
   S.players.forEach((nm,p)=>hr.append(gel('th',{textContent:nm,className:p===st.player&&!over?'cur':'',title:nm}))); tb.append(gel('thead',{},hr));
-  const body=gel('tbody'); const cell=(tr,p,txt,cls,fn)=>{ const td=gel('td',{textContent:txt,className:cls}); if(fn) td.onclick=fn; tr.append(td); };
+  const body=gel('tbody'); const cell=(tr,p,txt,cls,fn,cat)=>{ const td=gel('td',{textContent:txt,className:cls}); if(fn){ td.onclick=fn; if(cat) scorePress(td,cat); } tr.append(td); };
   cards[0].sections.forEach((sec,si)=>{ body.append(gel('tr',{className:'sec'},gel('td',{textContent:sec.label,colSpan:S.players.length+1})));
     sec.rows.forEach((row,ri)=>{ const tr=gel('tr'); tr.append(gel('td',{textContent:row.label}));
       S.players.forEach((_,p)=>{ const pt=cards[p].sections[si].rows[ri].points, cur=p===st.player&&!over; let txt=pt==null?'':String(pt), cls=cur?'cur':'', fn=null;
-        if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; fn=()=>gameScore(row.category); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; fn=()=>gameScore(row.category); } }
-        cell(tr,p,txt,cls.trim(),fn); }); body.append(tr); });
+        let cat=null; if(cur&&pt==null){ const sg=sug.find(r=>r.category===row.category); if(st.canScore&&sg&&sg.open&&sg.points!=null){ cls+=' pick'; cat=row.category; fn=()=>scoreTap(cat,row.label,sg.points); if(gprefs.suggest){ txt=String(sg.points); cls+=sg.best?' sug best':' sug'; } } else if(st.canScore&&sg&&sg.open&&!gprefs.suggest){ cls+=' pick'; cat=row.category; fn=()=>scoreTap(cat,row.label,null); }
+          if(cat&&gpv&&gpv.cat===cat){ cls+=' prev'; if(sg&&sg.points!=null) txt=String(sg.points); } }
+        cell(tr,p,txt,cls.trim(),fn,cat); }); body.append(tr); });
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yacht bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
-  const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); GP.append(tb);
+  const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); if(whoop) GP.append(gel('div',{className:'row'},whoopBtn())); GP.append(tb);
+  { const ms=gel('select',{ariaLabel:'Score entry',onchange:()=>{ gprefs.scoreMode=ms.value; gpv=null; gsave(); renderGame(); }}); for(const [v,t] of [['double','Double tap to score'],['long','Long press to score'],['single','Single tap scores']]) ms.append(gel('option',{value:v,textContent:t,selected:(gprefs.scoreMode||'double')===v})); GP.append(gel('div',{className:'row'},gel('label',{textContent:'Score entry'}),ms)); }
 }
 let cbet={chip:null,who:null,rules:false,n:1};   // n: how many of the chosen chip (or units) one tap adds; drag a chip up or down to change it (PD-142.33.1)
 const betsLocked=()=>gameAwaiting||(rolling&&!settled)||!!(game&&GAMES.status(game.state).rolling);   // owner rule: no betting while the dice are rolling, until the roll settles and is reported
