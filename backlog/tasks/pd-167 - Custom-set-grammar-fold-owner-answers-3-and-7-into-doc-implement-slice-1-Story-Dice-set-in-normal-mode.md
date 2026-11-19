@@ -3,9 +3,10 @@ id: PD-167
 title: >-
   Custom-set grammar: fold owner answers 3 and 7 into doc, implement slice 1
   (Story Dice set in normal mode)
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T20:11:00Z'
+updated_date: '2026-11-19T22:18:00Z'
 labels:
   - v4.1
 dependencies: []
