@@ -5,16 +5,18 @@ import { newArrangement, fillNext, removeDie, dropDie, poolOf } from './story.js
 const HUES=[200,20,140,280,50,170,330,100,240];
 export function createStoryTray(host){
   const root=document.createElement('div'); root.id='storytray'; root.hidden=true;
+  let ro=null;   // PD-174: lay out again whenever the stage changes size (full-view toggle, rotate, resize)
   let tiles=[], rings=[], key='', cur=null, drag=null;
-  const NN=()=>cur?cur.glyphs.length:5, per=n=>n>5?Math.ceil(n/2):n;   // more than 5 dice: the rings and the pool each split into two roughly even rows, so they stay on screen on a phone
-  const size=()=>{ const n=NN(), m=per(n), w=(root.clientWidth*.97-(m-1)*12)/m, hcap=n>5?(root.clientHeight*.88-60)/4.5:root.clientHeight*.3;
+  const NN=()=>cur?cur.glyphs.length:5, two=n=>n>5&&root.clientWidth<root.clientHeight*1.1, per=n=>two(n)?Math.ceil(n/2):n;   // PD-174: two rows only in portrait / narrow; a landscape screen keeps one row even for 9 dice
+     // more than 5 dice: the rings and the pool each split into two roughly even rows, so they stay on screen on a phone
+  const size=()=>{ const n=NN(), m=per(n), w=(root.clientWidth*.97-(m-1)*12)/m, hcap=two(n)?(root.clientHeight*.88-60)/4.5:root.clientHeight*.3;
     return cur&&cur.dice3d?Math.min(210,hcap,Math.max(40,w)):Math.min(92,hcap,Math.max(40,root.clientWidth/(m+1.5))); },   // 3D dice are shown large (up to 210 px), limited by the row width and the tray height
   W=()=>root.clientWidth, H=()=>root.clientHeight;
   const rowOf=(k,t)=>{ const a=Math.ceil(t/2); return k<a?{row:0,i:k,c:a}:{row:1,i:k-a,c:t-a}; };   // position k of t items -> row, index in row, items in that row
-  const ringY=()=>H()*(NN()>5?.12:.2);
-  const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), r=n>5?rowOf(k,n):{row:0,i:k,c:n}, tot=r.c*s+(r.c-1)*gap; return [(W()-tot)/2+r.i*(s+gap), ringY()+r.row*s*1.08]; };
-  const poolXY=(k,m)=>{ const s=size(), gap=10, n=NN(), r=n>5&&m>per(n)?rowOf(k,m):{row:0,i:k,c:m}, tot=r.c*s+(r.c-1)*gap;
-    const base=n>5?ringY()+2*s*1.08+s*.2:(cur&&cur.dice3d?Math.max(H()*.2+s*1.1,Math.min(H()*.62,H()-s-80)):H()*.62);
+  const ringY=()=>H()*(two(NN())?.12:.2);
+  const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), r=two(n)?rowOf(k,n):{row:0,i:k,c:n}, tot=r.c*s+(r.c-1)*gap; return [(W()-tot)/2+r.i*(s+gap), ringY()+r.row*s*1.08]; };
+  const poolXY=(k,m)=>{ const s=size(), gap=10, n=NN(), r=two(n)&&m>per(n)?rowOf(k,m):{row:0,i:k,c:m}, tot=r.c*s+(r.c-1)*gap;
+    const base=two(n)?ringY()+2*s*1.08+s*.2:(cur&&cur.dice3d?Math.max(H()*.2+s*1.1,Math.min(H()*.62,H()-s-80)):H()*.62);
     return [(W()-tot)/2+r.i*(s+gap), base+r.row*s*1.08]; };
   const arr=()=>({n:cur.glyphs.length, rings:cur.order.slice()});
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
@@ -35,7 +37,7 @@ export function createStoryTray(host){
       e.classList.remove('drag'); drag=null; moved=false; change(next); place(); }); }
   return {
     /* o: {glyphs:[glyph objects per die], order:[ring -> die|null], onOrder(order), autoswap, locked} */
-    show(o){ if(!root.isConnected) host.append(root); cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); },
+    show(o){ if(!root.isConnected) host.append(root); if(!ro&&window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(cur&&!root.hidden&&!drag) place(); }); ro.observe(root); } cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); },
     hide(){ root.hidden=true; cur=null; key=''; root.textContent=''; tiles=[]; rings=[]; drag=null; },
     get visible(){ return !root.hidden; }, get size(){ return cur?size():0; }, get tiles(){ return tiles; }, get rings(){ return rings; }, root };
 }

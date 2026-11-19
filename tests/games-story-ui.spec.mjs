@@ -97,7 +97,10 @@ test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; 
     await app.run(pd => { const s = pd.GAMES.status(pd.game.state); if (s.botTurn && s.canRoll) pd.simRoll({ rerolls: 6 }); });
   }
   const st = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(st.phase).toBe('rate'); expect(st.botTurn).toBe(true); expect(st.order.every(x => x !== null)).toBe(true);
-  await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*[.]$/); await expect(app.page.locator('#scorepane')).toContainText("ad-lib. Rate it!");
+  await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*[.]$/); await expect(app.page.locator('#scorepane')).toContainText("Judge ");
+  await app.page.waitForTimeout(4000);   // PD-173: the bot's story never advances on its own; it waits for the human to judge it
+  expect(await app.run(pd => { const s = pd.GAMES.status(pd.game.state); return [s.phase, s.botTurn, s.round]; })).toEqual(['rate', true, st.round]);
+  await expect(app.page.locator('.story-rate button')).toHaveCount(3);
   await app.page.waitForTimeout(600);
   await app.page.locator('#storytray .stile[data-i="0"]').click({ force: true }); expect((await app.run(pd => pd.GAMES.status(pd.game.state))).order).toEqual(st.order);   // locked on the bot's turn
   const s1 = await app.page.locator('.story-sent').textContent(); await app.page.click('text=Re-word'); expect(await app.page.locator('.story-sent').textContent()).not.toBe(s1);
@@ -117,6 +120,44 @@ test('story dice: more than 5 dice split into two rows and stay inside the scree
   await app.page.waitForTimeout(800);
   const box = await app.page.evaluate(() => { const r = document.querySelector('#storytray').getBoundingClientRect(); const f = e => { const b = e.getBoundingClientRect(); return b.left >= r.left - 1 && b.right <= r.right + 1 && b.top >= r.top - 1 && b.bottom <= r.bottom + 1; }; const rows = new Set([...document.querySelectorAll('#storytray .sring')].map(e => Math.round(e.getBoundingClientRect().top))); return { tiles: [...document.querySelectorAll('#storytray .stile')].every(f), rings: [...document.querySelectorAll('#storytray .sring')].every(f), ringRows: rows.size }; });
   expect(box).toEqual({ tiles: true, rings: true, ringRows: 2 });
+});
+
+test('story dice: a dragged die grows only a little and its screen bounds stay clear of its neighbours (PD-171)', async ({ shared: app }) => {
+  await app.reset(11); await app.page.waitForTimeout(300);
+  await app.run(pd => { pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.nav.roll();
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  await app.run(pd => pd.resume()); await app.page.waitForTimeout(2200);   // let the dice fly up into the line
+  const bounds = () => app.run(pd => {   // each die as a screen circle (projected bounding sphere), page px
+    const r = pd.canvas.getBoundingClientRect(), cam = pd.camera; cam.updateMatrixWorld(); const out = [];
+    for (const d of pd.dice) { d.mesh.updateMatrixWorld(true); const g = d.mesh.geometry; if (!g.boundingSphere) g.computeBoundingSphere();
+      const c = g.boundingSphere.center.clone().applyMatrix4(d.mesh.matrixWorld), rad = g.boundingSphere.radius * d.mesh.scale.x, V = c.constructor;
+      const right = new V(1, 0, 0).applyQuaternion(cam.quaternion).multiplyScalar(rad), p0 = c.clone().project(cam), p1 = c.clone().add(right).project(cam);
+      out.push({ x: r.left + (p0.x + 1) / 2 * r.width, y: r.top + (1 - p0.y) / 2 * r.height, rad: Math.abs(p1.x - p0.x) / 2 * r.width }); }
+    return out; });
+  const rest = await bounds(), t2 = await app.page.locator('#storytray .stile[data-i="2"]').boundingBox();
+  await app.page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2); await app.page.mouse.down(); await app.page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2 + 30, { steps: 5 });
+  await app.page.waitForTimeout(700);
+  const held = await bounds(), w = b => b.rad;
+  await app.page.mouse.up();
+  expect(w(held[2]) / w(rest[2])).toBeLessThan(1.35);
+  const hit = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) < (a.rad + b.rad) * 0.62;   // 0.62: a cube fills about that much of its bounding sphere
+  held.forEach((b, i) => { if (i !== 2) expect(hit(held[2], b), `dragged die overlaps die ${i}`).toBe(false); });
+});
+
+test('story dice: landscape phone keeps one row for 9 dice, and the layout follows a resize (PD-174)', async ({ shared: app }) => {
+  await app.reset(7); await app.page.setViewportSize({ width: 844, height: 390 }); await app.page.waitForTimeout(400);
+  await app.run(pd => { pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
+  await app.nav.roll();
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  await app.page.waitForTimeout(800);
+  const rows = () => app.page.evaluate(() => new Set([...document.querySelectorAll('#storytray .sring')].map(e => Math.round(e.getBoundingClientRect().top))).size);
+  expect(await rows()).toBe(1);
+  await app.page.setViewportSize({ width: 390, height: 844 }); await expect.poll(rows, { timeout: 5000 }).toBe(2);   // portrait: two rows, laid out again after the resize
+  await app.page.setViewportSize({ width: 844, height: 390 }); await expect.poll(rows, { timeout: 5000 }).toBe(1);
 });
 
 base('story dice: ?game=story opens the Games setup on Story Dice', async ({ page }) => {

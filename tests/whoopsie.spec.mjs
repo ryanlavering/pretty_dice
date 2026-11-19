@@ -71,17 +71,17 @@ test('after 3 s the score is locked in', async ({ shared: app }) => {
 test('long press scores; single-tap mode scores at once', async ({ shared: app }) => {
   await start(app, 54);
   const a = await st(app);
-  await app.page.selectOption('#scorepane select[aria-label="Score entry"]', 'long');
+  await app.run(pd => { pd.gprefs.scoreMode = 'long'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly
   const ev = (type, ms) => app.page.evaluate(([type]) => { const el = document.querySelector('#scorepane td.pick.best, #scorepane td.pick'); if (!el) return; el.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', bubbles: true })); if (type === 'pointerup') el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); }, [type]);
   await ev('pointerdown'); await app.page.waitForTimeout(150); await ev('pointerup');   // a short touch press only previews
   expect((await st(app)).round).toBe(a.round);
   await ev('pointerdown'); await app.page.waitForTimeout(700); await ev('pointerup');
   expect((await st(app)).round).toBe(a.round + 1);
   await app.page.click('#scorepane [data-whoop]');   // take it back, then try single-tap mode
-  await app.page.selectOption('#scorepane select[aria-label="Score entry"]', 'single');
+  await app.run(pd => { pd.gprefs.scoreMode = 'single'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly
   await touchTap(app, '#scorepane td.pick.best, #scorepane td.pick');
   expect((await st(app)).round).toBe(a.round + 1);
-  await app.page.selectOption('#scorepane select[aria-label="Score entry"]', 'double');   // leave the shared page on the default
+  await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly   // leave the shared page on the default
 });
 
 test('a bot turn waits out the window and a bot score has no whoopsie', async ({ shared: app }) => {
@@ -101,3 +101,21 @@ test('a bot turn waits out the window and a bot score has no whoopsie', async ({
   await expect.poll(() => app.run(pd => !pd.settled), { timeout: 8000 }).toBe(true);   // then the bot starts its roll
   await app.run(pd => pd.endGame());
 });
+
+// PD-172: the Score entry menu is for touch screens only; a mouse click scores directly.
+import { navFor } from './helpers/nav.mjs';
+import { test as ptest, expect as pexpect } from '@playwright/test';
+for (const touch of [false, true]) {
+  ptest(`Yacht Score entry menu is ${touch ? 'shown on a touch device' : 'hidden with a mouse'} (PD-172)`, async ({ browser, baseURL }) => {
+    const ctx = await browser.newContext({ baseURL, viewport: { width: 1100, height: 760 }, hasTouch: touch, isMobile: touch });
+    const page = await ctx.newPage();
+    await page.goto('/index.html?libs=local&seed=5');
+    await page.waitForFunction(() => window.__ready === true && window.__pd, null, { timeout: 60_000 });
+    await page.evaluate(() => window.__pd.openGames());
+    await page.selectOption('#scorepane select >> nth=0', 'yahtzee');
+    await navFor(page).roll();   // Start game
+    if (await page.locator('#scorepane td').count() === 0) await page.click('text=Scorecard');
+    pexpect(await page.locator('#scorepane select[aria-label="Score entry"]').count()).toBe(touch ? 1 : 0);
+    await ctx.close();
+  });
+}
