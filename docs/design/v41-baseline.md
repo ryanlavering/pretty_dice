@@ -127,3 +127,9 @@ A/B golden: the golden set was re-recorded on a throwaway tree = pre-factor `d02
 | merged 2 | b5e7536 | ~13 | **409 passed, 0 failed**, 10 skipped | 20.3 min |
 
 bagbrowser:87 passed 4 of 4 when repeated alone (`--repeat-each=4`); it is the same test that flaked in pre-factor run 10 (v4 has since changed it to wait for the picture pass), so it is read as the known timing flake, not a factoring regression. The count is 409 = v4's 400 + the 9 golden tests. Times are close to the quiet-box baseline (17.8 / 19.4 min) even at load ~13.
+
+## 4.0.1 port
+
+Merged `origin/v4` (tag v4.0.1 @9ded17c) into v4.1 at `c1499c9`. Docs, tests and backlog merged cleanly; `index.html` kept as v4.1's thin shell and the five `index.html` hunks (PD-154 `gameDiceFixed` and its three call sites, PD-157 split early return in `gameOnSettled`) were hand-applied to `src/main.js`. All the names live in main.js, so no bindState or module injection was needed.
+
+Results: `tests/hotfix-401.spec.mjs` 8/8, artifact-csp (artifact and offline builds boot) green. Golden set passes unchanged: the hunks alter no recorded value, so nothing was re-recorded (`tests/golden/*.json` as before). `golden-build.mjs`: build sizes are +3,861 bytes each versus the recording (was +3,313: +548 is the hunk text; the rest is the module wrappers), sha differs as expected; `build.json` not updated. Full suite `--retries=0` twice: 417 passed, 10 skipped, 0 failed (21.1 and 21.0 min).
