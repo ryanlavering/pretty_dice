@@ -32,15 +32,18 @@ Companion: `story-dice-spike.md` (glyph and sentence findings).
 
 ## Glyph packs
 
-Pulled everything usable; all are safe to share with credit (the owner chose "shared, safe packs only"). Packs are plug-ins: a manifest in `scripts/story-packs/` or `scripts/story-glyph-manifest.txt`, built by `scripts/build-story-packs.mjs` into `src/story-pack-<id>.js`.
+Pulled everything usable (six packs); all are safe to share with credit (the owner chose "shared, safe packs only"). Packs are plug-ins: a manifest in `scripts/story-packs/` or `scripts/story-glyph-manifest.txt`, built by `scripts/build-story-packs.mjs` into `src/story-pack-<id>.js`.
 
 | Pack | Glyphs | Licence | Source |
 |---|---|---|---|
 | Everyday pictures (`noto`) | 141 (101 common, 40 oddball) | OFL 1.1 | Noto Emoji monochrome |
 | Unicode symbols (`symbols`) | 13 | Bitstream Vera / public domain | DejaVu Sans |
+| Memes (`memes`) | 48 | OFL 1.1 / Bitstream Vera | Meme-staple emoji from Noto Emoji (moai, clown, melting face, stonks, doge, eyes, sus...) plus text memes typeset in DejaVu Sans Bold (F, L, GG, 404, XD, UwU, OwO, table flip) |
 | Fantasy and adventure (`gameicons`) | 121 | CC BY 3.0 | game-icons.net (Lorc, Delapouite and others) |
 | Plain icons (`fontawesome`) | 119 | CC BY 4.0 | Font Awesome Free solid |
 | Hieroglyphs (`hiero`) | 49 | OFL 1.1 | Noto Sans Egyptian Hieroglyphs (descriptions hand-assigned from the Gardiner list; check) |
+
+Memes: the famous meme images (Distracted Boyfriend, Grumpy Cat, Doge photo, Trollface and other rage comics) are copyrighted photos or art and do not survive monochrome, so the pack uses emoji and typeset text only. Pepe is left out on purpose. Wide text such as a shrug kaomoji came out too small on a square face and was dropped; the table flip is set on two lines. Hand-drawn original meme icons would be the next step if more are wanted.
 
 Not pulled, and why: OpenMoji (CC BY-SA 4.0, stroke-based multi-element SVGs, not a single fill path), ARASAAC, Sclera and Mulberry (coloured pictograms, and non-commercial or share-alike licences). A credits screen listing each pack's `credit` string is still to do; the strings are in every pack file.
 Missing from the first wish list (not found under that name in game-icons): kraken, phoenix, yeti, hot-air-balloon, pickaxe, shovel, wand; Font Awesome `ladder-water`.

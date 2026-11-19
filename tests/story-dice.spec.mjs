@@ -14,7 +14,7 @@ test('glyph pool: unique ids, a path each, word banks present, all three tiers @
   }
   expect(new Set(S.GLYPHS.filter(g => g.pack === 'noto').map(g => g.tier))).toEqual(new Set(['c', 'o']));
   expect(S.poolFor(['noto', 'symbols']).length).toBeGreaterThanOrEqual(9 * 12);   // nine d12 fit
-  expect(S.PACK_LIST.map(p => p.id)).toEqual(['noto', 'symbols', 'gameicons', 'fontawesome', 'hiero']);
+  expect(S.PACK_LIST.map(p => p.id)).toEqual(['noto', 'symbols', 'memes', 'gameicons', 'fontawesome', 'hiero']);
 });
 
 test('deal is stable for a fingerprint, unique across all faces, different for another set @quick', () => {
