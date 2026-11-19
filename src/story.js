@@ -4,10 +4,12 @@ import { PACKS } from './story-packs.js';
 
 /* Glyph packs (plug-in glyph sets, chosen a la carte at game setup). Every glyph id is 'pack:name' so packs never clash. A glyph has a path and a viewBox (vb); tier c/o/s is set only in the hand-written packs. */
 export const PACK_LIST=PACKS.map(({glyphs,...m})=>({...m,count:glyphs.length}));
-export const GLYPHS=PACKS.flatMap(p=>p.glyphs.map(g=>({...g,id:p.id+':'+g.id,pack:p.id,name:g.id}))), GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
+export const GLYPHS=PACKS.flatMap(p=>p.glyphs.map(g=>({...g,id:p.id+':'+g.id,pack:p.id,name:g.id})));   // one name per export const: build-static.py inlines only the first name of a multi-name declaration
+export const GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
 export const poolFor=(packIds)=>{ const want=new Set(packIds); return GLYPHS.filter(g=>want.has(g.pack)); };
 export const DEFAULT_PACKS=['noto'];
-export const MAX_DICE=9, MIN_DICE=3;
+export const MAX_DICE=9;
+export const MIN_DICE=3;
 
 /* ---- seeding ---- */
 export function hash32(str){ let h=2166136261>>>0; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619)>>>0; } return h>>>0; }
