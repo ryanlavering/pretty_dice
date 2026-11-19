@@ -25,6 +25,7 @@ Companion: `story-dice-spike.md` (glyph and sentence findings).
 | Uniqueness | Every face of every die has a different glyph. Pool must hold dice x faces glyphs; setup disables Start and says so when it does not | 5 x d12 = 60 needs 60 glyphs; the default pack has 141. |
 | Packs | Chosen a la carte at setup (default: Everyday pictures). Any mix; the pool is the union | See table below. |
 | Word banks | Hand written for the Everyday and Unicode packs; the others take their noun from the glyph's name and frozen seeded picks from shared category pools (`scripts/story-category-words.mjs`) | Fast to extend; quality is "plausible", owner review pending. |
+| Look | The game starts from the plain default design (the off-white Blank die, no random seed), so glyphs read clearly. The live look moves to a draft for the game and ending the game discards it, returning the design the player had | Plain dice make glyphs legible; change `plainLook` in `src/main.js`. |
 | Tray | DOM tiles over the mat (glyph on a coloured tile), not the 3D dice | A 3D sweep and rings (physics-free animation of the real dice) is the follow-up. The 3D dice are hidden while the tray is up and return on the next roll. |
 | Sentence | Same arrangement and re-word number give the same text; ordering matters | `sentenceFor` in `src/story.js`. |
 | Saving | The engine state (including options) is plain JSON like other games; a resumed game re-deals the same glyphs | `gsaveGame` unchanged. |

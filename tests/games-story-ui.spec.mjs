@@ -19,7 +19,9 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   await app.page.selectOption('#scorepane select >> nth=2', '12'); await setDice(5);
   await app.page.locator('#scorepane label:has-text("Fantasy and adventure") input').uncheck();
   await app.page.locator('#scorepane label:has-text("Hieroglyphs") input').check();
+  const before = await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }));
   await app.nav.roll();   // Start game
+  expect(await app.run(pd => ({ sub: pd.state.substrate, colors: pd.state.colors, draft: pd.bag.active.draft }))).toEqual({ sub: 'solid', colors: ['#efe9dc', '#efe9dc', '#efe9dc'], draft: true });   // starts from the plain default design
   const info = await app.run(pd => ({ n: pd.state.notation, game: pd.game.id, packs: pd.game.state.options.packs }));
   expect(info).toEqual({ n: '5d12', game: 'story', packs: ['noto', 'hiero'] });
   if (shot) { await app.page.waitForTimeout(800); await app.page.screenshot({ path: `${shot}/story-app-1-dice.png` }); }
@@ -48,6 +50,9 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   for (const i of [0, 1, 2, 3, 4]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
   await app.page.click('text=Fair · 1');
   expect((await app.run(pd => pd.GAMES.status(pd.game.state))).phase).toBe('over'); await expect(app.page.locator('#scorepane')).toContainText('Game over');
+  // ending the game puts the player's own design back
+  await app.run(pd => pd.endGame()); await app.page.waitForTimeout(500);
+  expect(await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);
   expect(errors).toEqual([]);
 });
 

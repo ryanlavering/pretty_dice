@@ -340,6 +340,10 @@ function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does
   const tok=buildTok+1; buildTok=tok; ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); });
 }
 
+function plainLook(){   // Story dice start from the plain default design (what Blank opens, without the random seed): the glyphs read best on a plain die, and the player's own design stays saved in the bag
+  Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
+  state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; repaint(); }
+
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
 const snapshot=()=>JSON.stringify(Object.fromEntries(DESIGN_KEYS.map(k=>[k,state[k]])));
@@ -1997,8 +2001,9 @@ function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
   gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
+  if(id==='story'){ gameSnap.undraft=!bag.active.draft; enterDraft(); plainLook(); }   // the live look becomes a plain draft for the game; ending the game discards it
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+function endGame(){ if(!game) return; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; const undraft=gameSnap.undraft; gameSnap=null; buildDice(); syncUI(); if(undraft&&bag&&bag.active.draft) bagOps.discard(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
