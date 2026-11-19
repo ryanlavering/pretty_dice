@@ -41,4 +41,5 @@ Choosing and ordering the dice needs new UI:
 
 <!-- SECTION:NOTES:BEGIN -->
 Filed 2026-11-19 for 4.1 consideration. Do not start before 4.0 ships (scope freeze).
+Spike 2026-11-19: glyph pool (154, Noto Emoji mono + DejaVu odd style), seeded deal, sentence generator, ring arrangement model, atlas glyph labels and a standalone demo (tools/story-dice-spike.html) are in. Findings and remaining work: docs/design/story-dice-spike.md. Real-die wiring, 3D mat flow and bot hints are not done.
 <!-- SECTION:NOTES:END -->

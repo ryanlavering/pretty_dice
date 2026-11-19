@@ -1,0 +1,161 @@
+# Story dice glyph manifest. One glyph per line:
+#   font | codepoint (hex) | id | nouns | adjectives | adverbs | verbs (past tense; "!" = intransitive only)
+# font: e = Noto Emoji monochrome (the base style, OFL 1.1), d = DejaVu Sans (odd style: Unicode symbols, Bitstream Vera licence)
+# Sections: [common] everyday story words (Dolch / Fry style picture-book vocabulary), [odd] oddballs (UFOs, radiation ...), [style] out-of-sync art
+[common]
+e|2600|sun|sun,daylight|bright,golden|brightly,warmly|warmed,lit,shone!
+e|1F319|moon|moon,night light|pale,silver|softly,quietly|watched,followed,glowed!
+e|2B50|star|star,wish|tiny,twinkling|faintly,far away|guided,winked at,sparkled!
+e|2601|cloud|cloud,puff|fluffy,gray|slowly,gently|covered,hid,drifted!
+e|1F327|rain|rain,storm|cold,heavy|loudly,all night|soaked,washed,poured!
+e|1F332|tree|tree,forest|tall,old|proudly,patiently|sheltered,shaded,swayed!
+e|1F337|flower|flower,blossom|pretty,red|sweetly,shyly|tickled,charmed,bloomed!
+e|1F344|mushroom|mushroom,toadstool|spotted,little|oddly,quietly|surprised,fed,sprouted!
+e|1F3E0|house|house,home|cozy,little|snugly,happily|sheltered,welcomed,stood!
+e|1F6AA|door|door,gate|creaky,wooden|slowly,suddenly|blocked,opened,creaked!
+e|1F511|key|key,secret|shiny,tiny|carefully,secretly|unlocked,opened,jingled!
+e|26F5|boat|boat,sail|small,bobbing|bravely,gently|carried,crossed,floated!
+e|1F697|car|car,wheels|fast,red|noisily,quickly|carried,chased,zoomed!
+e|26BD|ball|ball,game|round,bouncy|happily,high|kicked,tossed,bounced!
+e|1F4D6|book|book,story|old,thick|quietly,carefully|taught,told,fell open!
+e|1F3A9|hat|hat,top hat|silly,tall|proudly,crookedly|covered,hid,tipped!
+e|1F45F|shoe|shoe,boot|muddy,new|swiftly,noisily|kicked,carried,squeaked!
+e|1F431|cat|cat,kitten|sleepy,sly|softly,slyly|chased,watched,purred!
+e|1F436|dog|dog,puppy|happy,loyal|eagerly,loudly|followed,fetched,barked!
+e|1F426|bird|bird,song|small,quick|sweetly,high|carried,woke,sang!
+e|1F41F|fish|fish,splash|shiny,silent|swiftly,deep down|dodged,followed,swam!
+e|1F434|horse|horse,pony|strong,wild|swiftly,proudly|carried,raced,galloped!
+e|1F42E|cow|cow,calf|gentle,spotted|slowly,calmly|nudged,watched,mooed!
+e|1F437|pig|pig,piglet|pink,muddy|happily,greedily|ate,chased,rolled!
+e|1F438|frog|frog,pond|green,bouncy|suddenly,loudly|startled,leapt over,croaked!
+e|1F43B|bear|bear,cub|big,fuzzy|heavily,hungrily|chased,hugged,growled!
+e|1F42D|mouse|mouse,whisker|tiny,clever|quietly,nervously|nibbled,fooled,squeaked!
+e|1F430|rabbit|rabbit,bunny|fluffy,quick|swiftly,nervously|outran,startled,hopped!
+e|1F34E|apple|apple,snack|red,juicy|sweetly,crisply|fed,tempted,rolled!
+e|1F35E|bread|bread,loaf|warm,crusty|freshly,gently|fed,shared,rose!
+e|1F382|cake|cake,party|sweet,huge|happily,carefully|surprised,fed,wobbled!
+e|1F95A|egg|egg,nest|round,speckled|gently,carefully|hatched,hid,cracked!
+e|1F95B|milk|milk,glass|cold,creamy|slowly,quietly|spilled,fed,splashed!
+e|1F6CF|bed|bed,pillow|soft,cozy|sleepily,softly|rested,hid,creaked!
+e|23F0|clock|clock,time|loud,old|steadily,slowly|warned,woke,ticked!
+e|1F514|bell|bell,ring|loud,silver|clearly,suddenly|called,warned,rang!
+e|2764|heart|heart,love|warm,kind|gladly,dearly|warmed,won,fluttered!
+e|1F441|eye|eye,glance|wide,watchful|closely,silently|watched,spotted,blinked!
+e|1F590|hand|hand,wave|small,gentle|softly,quickly|held,waved to,reached!
+e|1F463|footprints|footprints,trail|muddy,tiny|slowly,quietly|led,followed,wandered!
+e|1F442|ear|ear,whisper|big,sharp|carefully,closely|heard,caught,twitched!
+e|1F9B7|tooth|tooth,smile|sharp,wobbly|widely,sharply|bit,chewed,wiggled!
+e|1F9B4|bone|bone,treasure|old,dry|quietly,deeply|buried,fetched,rattled!
+e|1F451|crown|crown,king|golden,heavy|proudly,grandly|crowned,honored,gleamed!
+e|1F5E1|dagger|dagger,blade|sharp,rusty|swiftly,silently|stabbed,threatened,gleamed!
+e|1F6E1|shield|shield,guard|sturdy,round|bravely,firmly|saved,blocked,clanged!
+e|1F3F0|castle|castle,tower|grand,gloomy|high up,proudly|protected,ruled,loomed!
+e|26F0|mountain|mountain,peak|tall,snowy|high up,silently|blocked,watched,rose!
+e|1F525|fire|fire,flame|hot,roaring|fiercely,brightly|burned,warmed,crackled!
+e|1F4A7|drop|drop,puddle|cool,clear|quietly,slowly|soaked,filled,dripped!
+e|2744|snowflake|snowflake,winter|cold,white|softly,gently|covered,chilled,fell!
+e|26A1|lightning|lightning,flash|sudden,fierce|suddenly,loudly|struck,startled,flashed!
+e|2602|umbrella|umbrella,shelter|bright,leaky|snugly,quickly|sheltered,saved,popped open!
+e|1F56F|candle|candle,wax|small,flickering|gently,dimly|lit,warmed,melted!
+e|1F4A1|bulb|idea,light bulb|bright,clever|suddenly,brightly|lit,solved,buzzed!
+e|1F381|gift|gift,surprise|shiny,mysterious|carefully,excitedly|surprised,delighted,waited!
+e|1F388|balloon|balloon,party|red,floaty|gently,high up|lifted,carried,popped!
+e|1F3B5|music|song,music|merry,gentle|sweetly,loudly|cheered,charmed,echoed!
+e|1F941|drum|drum,beat|loud,deep|loudly,steadily|woke,led,thundered!
+e|1FA81|kite|kite,string|colorful,high|freely,high up|lifted,tugged,danced!
+e|1F680|rocket|rocket,blast off|fast,shiny|swiftly,boldly|launched,carried,zoomed!
+e|2708|plane|airplane,sky|fast,loud|swiftly,high up|carried,crossed,soared!
+e|1F682|train|train,track|long,noisy|steadily,noisily|carried,chased,rumbled!
+e|1F6B2|bicycle|bicycle,wheel|old,wobbly|wobbly,fast|carried,raced,rattled!
+e|2693|anchor|anchor,harbor|heavy,rusty|firmly,deeply|held,stopped,sank!
+e|1F512|lock|lock,secret|old,stubborn|firmly,tightly|blocked,guarded,clicked!
+e|2702|scissors|scissors,snip|sharp,shiny|quickly,neatly|cut,trimmed,snipped!
+e|1F528|hammer|hammer,fix|heavy,sturdy|loudly,steadily|mended,smashed,banged!
+e|1F50D|magnifier|magnifying glass,clue|curious,big|closely,carefully|found,studied,gleamed!
+e|1F5FA|map|map,treasure map|old,torn|carefully,clearly|guided,showed,unfolded!
+e|1F6A9|flag|flag,banner|bright,tattered|proudly,loudly|marked,showed,waved!
+e|1F48E|gem|gem,jewel|sparkling,rare|brilliantly,deeply|dazzled,tempted,glittered!
+e|1FA99|coin|coin,penny|shiny,lucky|brightly,quickly|bought,tempted,rolled!
+e|1F577|spider|spider,web|hairy,sneaky|silently,sneakily|trapped,startled,crept!
+e|1F40C|snail|snail,shell|slow,sticky|slowly,patiently|carried,followed,crawled!
+e|1F98B|butterfly|butterfly,wing|colorful,delicate|gracefully,lightly|charmed,followed,fluttered!
+e|1F41D|bee|bee,honey|busy,fuzzy|busily,loudly|stung,followed,buzzed!
+e|1F422|turtle|turtle,shell|old,wise|slowly,steadily|outlasted,carried,plodded!
+e|1F40D|snake|snake,coil|long,sly|silently,slyly|startled,tricked,slithered!
+e|1F989|owl|owl,hoot|wise,watchful|quietly,knowingly|watched,warned,hooted!
+e|1F409|dragon|dragon,scales|fierce,ancient|fiercely,mightily|guarded,scared,roared!
+e|1F433|whale|whale,ocean|enormous,gentle|slowly,deeply|carried,swallowed,sang!
+e|1F419|octopus|octopus,tentacle|clever,slippery|cleverly,sneakily|grabbed,tricked,squirmed!
+e|1F980|crab|crab,claw|grumpy,sideways|sideways,sharply|pinched,dodged,scuttled!
+e|1F427|penguin|penguin,ice|chubby,funny|clumsily,happily|followed,amused,waddled!
+e|1F418|elephant|elephant,trunk|huge,gentle|heavily,gently|carried,remembered,trumpeted!
+e|1F981|lion|lion,mane|proud,mighty|proudly,mightily|ruled,scared,roared!
+e|1F3D5|camp|camp,tent|small,cozy|snugly,quietly|sheltered,welcomed,flapped!
+e|1F309|bridge|bridge,river|old,narrow|carefully,slowly|crossed,joined,creaked!
+e|1F3D6|beach|beach,sand|sunny,warm|slowly,lazily|welcomed,warmed,glittered!
+e|1F30A|wave|wave,sea|big,salty|loudly,suddenly|carried,splashed,crashed!
+e|1FAA3|bucket|bucket,pail|old,full|heavily,carefully|filled,spilled,clattered!
+e|1F9F8|teddy|teddy bear,toy|soft,lost|gently,sadly|comforted,hugged,waited!
+e|1F3A8|paint|paint,color|bright,messy|boldly,messily|painted,splashed,dripped!
+e|1F4F7|camera|camera,picture|small,old|quickly,quietly|captured,surprised,clicked!
+e|1F3AD|masks|mask,play|funny,secret|cleverly,secretly|fooled,hid,laughed!
+e|1F9E9|puzzle|puzzle,piece|tricky,missing|slowly,carefully|fit,fooled,waited!
+e|1F9F5|thread|thread,yarn|long,tangled|neatly,slowly|tied,led,unraveled!
+e|1FA91|chair|chair,seat|wobbly,little|quietly,firmly|held,tripped,creaked!
+e|1F6C1|bath|bathtub,bubbles|warm,soapy|happily,loudly|soaked,washed,splashed!
+e|1F5FF|statue|statue,stone|silent,huge|silently,still|watched,guarded,loomed!
+[odd]
+e|1F6F8|ufo|UFO,flying saucer|strange,glowing|silently,mysteriously|abducted,followed,hovered!
+e|1F47D|alien|alien,visitor|green,curious|oddly,politely|befriended,studied,beamed!
+e|2622|radiation|radiation,glow|dangerous,glowing|slowly,secretly|changed,warned,hummed!
+e|2623|biohazard|biohazard,warning|toxic,sticky|quietly,dangerously|infected,warned,oozed!
+e|1F480|skull|skull,bones|grinning,ancient|silently,eerily|scared,warned,grinned!
+e|1F47B|ghost|ghost,spirit|pale,lonely|eerily,softly|haunted,scared,floated!
+e|1F916|robot|robot,machine|clunky,loyal|stiffly,obediently|helped,fixed,beeped!
+e|1F9D9|wizard|wizard,spell|ancient,wise|mysteriously,wisely|enchanted,guided,muttered!
+e|1F9DA|fairy|fairy,dust|tiny,sparkling|lightly,cheekily|helped,tricked,fluttered!
+e|1F9DE|genie|genie,wish|grand,smoky|grandly,smoothly|granted,tricked,appeared!
+e|1F9DC|mermaid|mermaid,song|shimmering,shy|gracefully,shyly|rescued,charmed,swam!
+e|1F9DF|zombie|zombie,groan|slow,hungry|slowly,hungrily|chased,startled,shuffled!
+e|1F9EC|dna|DNA,code|twisted,tiny|secretly,quietly|changed,built,spiraled!
+e|1F9EA|potion|potion,test tube|bubbling,odd|oddly,suddenly|changed,fizzed,exploded!
+e|269B|atom|atom,energy|tiny,buzzing|endlessly,quickly|powered,split,spun!
+e|1F9F2|magnet|magnet,pull|strong,sticky|firmly,suddenly|pulled,stuck to,clicked!
+e|1F52E|crystal|crystal ball,fortune|glowing,foggy|mysteriously,clearly|showed,warned,glowed!
+e|1F30B|volcano|volcano,lava|fiery,rumbling|angrily,suddenly|buried,burned,erupted!
+e|2604|comet|comet,tail|bright,fast|swiftly,brilliantly|crossed,lit,blazed!
+e|1FA90|planet|planet,rings|distant,ringed|slowly,silently|circled,watched,spun!
+e|1F4E1|dish|satellite dish,signal|distant,crackly|faintly,patiently|called,heard,crackled!
+e|1F573|hole|hole,pit|deep,dark|suddenly,deeply|swallowed,hid,yawned!
+e|1F996|dinosaur|dinosaur,fossil|enormous,ancient|heavily,fiercely|chased,crushed,roared!
+e|1F984|unicorn|unicorn,horn|magical,shy|gracefully,shyly|healed,guided,pranced!
+e|1FA84|wand|wand,magic|sparkly,old|brightly,mysteriously|enchanted,changed,fizzed!
+e|1F4A3|bomb|bomb,fuse|round,ticking|loudly,suddenly|blasted,scared,fizzled!
+e|1F9FF|charm|charm,evil eye|lucky,blue|watchfully,quietly|protected,watched,gleamed!
+e|1FAA6|grave|gravestone,graveyard|old,mossy|silently,coldly|marked,haunted,leaned!
+e|1F4A9|poop|pile,mess|stinky,funny|loudly,suddenly|stunk up,fooled,plopped!
+e|1F9A0|microbe|germ,microbe|tiny,wriggly|sneakily,quickly|infected,tickled,wriggled!
+e|1F9AB|beaver|beaver,dam|busy,sturdy|busily,cleverly|built,chewed,slapped!
+e|1F9A5|sloth|sloth,branch|slow,sleepy|very slowly,lazily|hugged,ignored,dangled!
+e|1F9AD|seal|seal,flipper|sleek,playful|playfully,loudly|clapped for,splashed,barked!
+e|1F47E|invader|space invader,pixel|blocky,retro|stiffly,endlessly|invaded,zapped,descended!
+e|1F52D|telescope|telescope,sky|long,curious|patiently,far away|spotted,studied,pointed!
+e|1F9BE|arm|robot arm,machine|strong,metal|stiffly,powerfully|lifted,crushed,whirred!
+e|1F9A4|dodo|dodo,old bird|silly,lost|clumsily,sadly|tripped,followed,waddled!
+e|1F9CC|troll|troll,bridge guard|grumpy,huge|grumpily,loudly|blocked,scared,grumbled!
+e|1F9DB|vampire|vampire,cape|pale,hungry|silently,hungrily|haunted,bit,swooped!
+e|1F9DD|elf|elf,forest folk|graceful,sly|lightly,cleverly|guided,tricked,vanished!
+[style]
+d|265E|knight|knight,chess knight|brave,wooden|boldly,sideways|challenged,jumped over,galloped!
+d|265B|queen|queen,royal|grand,cold|grandly,coldly|ruled,outwitted,smiled!
+d|269C|lily|fleur-de-lis,emblem|royal,golden|nobly,proudly|marked,honored,gleamed!
+d|2696|scales|scales,justice|fair,balanced|fairly,carefully|weighed,judged,tipped!
+d|262F|yinyang|balance,yin and yang|calm,twinned|calmly,perfectly|balanced,joined,turned!
+d|2668|steam|hot spring,steam|steamy,warm|slowly,lazily|warmed,soaked,bubbled!
+d|2318|place|place of interest,loop|curious,knotted|oddly,neatly|marked,tangled,looped!
+d|2620|crossbones|pirate,danger|grim,wicked|grimly,wickedly|plundered,threatened,laughed!
+d|2721|hexstar|hexagram,seal|ancient,glowing|mysteriously,brightly|sealed,summoned,shone!
+d|2766|leaf|floral heart,garden|leafy,tender|gently,lovingly|decorated,charmed,grew!
+d|2740|blossom|white flower,garden|pale,delicate|softly,sweetly|charmed,decorated,bloomed!
+d|2709|letter|letter,envelope|sealed,secret|secretly,quickly|warned,delivered,arrived!
+d|260E|phone|telephone,call|old,ringing|loudly,suddenly|called,woke,rang!

@@ -40,8 +40,12 @@ export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2
   const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), info=[];
   const show=l=>pad2?String(l).padStart(2,'0'):String(l), px=labels.some(l=>show(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
   labels.forEach((lab,i)=>{
-    let txt=show(lab); if(!pad2&&(lab===6||lab===9)) txt+='.';
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
+    if(lab&&typeof lab==='object'&&lab.path){            // story dice (PD-160): a glyph label {id,path} is a 100x100 SVG path painted like a numeral (same bump and mask passes)
+      const side=px*1.15, k=side/100, p2=lab._p2||(lab._p2=new Path2D(lab.path)); info.push({halfDiag:Math.hypot(side,side)/2});
+      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){ g.save(); g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none'; g.translate(cx-side/2,cy-side/2); g.scale(k,k); g.fill(p2,'nonzero'); g.restore(); g.filter='none'; }
+      return; }
+    let txt=show(lab); if(!pad2&&(lab===6||lab===9)) txt+='.';
     mg.font=`${weight} ${px}px ${F.css}`; mg.textAlign='center'; const m=mg.measureText(txt);   // align must be set before measuring or the first label is off-centre
     const w=m.actualBoundingBoxLeft+m.actualBoundingBoxRight, h=m.actualBoundingBoxAscent+m.actualBoundingBoxDescent;
     info.push({halfDiag:Math.hypot(w,h)/2});            // text box half-diagonal in atlas px, used to fit it inside the face

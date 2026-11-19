@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Story dice spike</title>
+<style>
+:root{--mat:#17382f;--ink:#f4efe0;--dim:#9db8ad}
+*{box-sizing:border-box} body{margin:0;background:#0d211b;color:var(--ink);font:15px/1.4 system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 16px;background:#0a1914}
+header label{color:var(--dim);font-size:13px} select,button,input{font:inherit;background:#1f4a3d;color:var(--ink);border:1px solid #3a7563;border-radius:6px;padding:5px 10px} button{cursor:pointer} button:hover{background:#2a6150}
+#mat{position:relative;margin:12px auto;max-width:980px;height:min(62vh,520px);background:radial-gradient(ellipse at center,#1f5243,var(--mat));border-radius:18px;box-shadow:inset 0 0 40px #000a;overflow:hidden;touch-action:none}
+#mat.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;padding:10px;align-content:start;height:auto;min-height:60vh;overflow:auto}
+.die{position:absolute;width:var(--s);height:var(--s);border-radius:22%;background:radial-gradient(circle at 30% 25%,var(--hi),var(--lo));box-shadow:0 6px 12px #0008,inset 0 -4px 8px #0006,inset 0 3px 5px #fff5;display:grid;place-items:center;cursor:grab;transition:left .55s cubic-bezier(.3,.8,.3,1),top .55s cubic-bezier(.3,.8,.3,1),transform .3s;user-select:none}
+.die svg{width:70%;height:70%;fill:#fbf6e6;filter:drop-shadow(0 1px 0 #0007)} .die.odd svg{fill:#ffd9a0} .die.drag{transition:none;z-index:9;cursor:grabbing;transform:scale(1.08)} .die.roll{transition:none}
+.ring{position:absolute;width:var(--s);height:var(--s);border-radius:50%;border:3px dashed #7fb5a2;display:grid;place-items:center;color:#7fb5a2;font-weight:700;font-size:20px;opacity:.9}
+.ring.hot{background:#7fb5a233;border-style:solid}
+#out{max-width:980px;margin:0 auto;padding:0 16px 24px} #sent{font-size:22px;font-family:Georgia,serif;min-height:3em;margin:6px 0 10px} #hints{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;color:var(--dim);font-size:13px} #hints div{background:#0a1914;border-radius:8px;padding:8px} #hints b{color:var(--ink)}
+.note{color:var(--dim);font-size:13px}
+</style>
+<header><b>Story dice (spike)</b>
+<label>Dice <select id="nd"></select></label><label>Faces <select id="nf"><option>6<option>8<option selected>12<option>20</select></label><label>Set name <input id="nm" value="Fireside" size="10"></label>
+<button id="roll">Roll</button><label><input type="checkbox" id="swap" checked> autoswap</label><button id="reword" disabled>Re-word</button><button id="sheet">Glyph sheet</button></header>
+<div id="mat"></div>
+<div id="out"><div id="sent"></div><div id="hints"></div><p class="note" id="info"></p></div>
+<script type="module">
+import * as S from '../src/story.js';
+const $=id=>document.getElementById(id), mat=$('mat'); for(let i=3;i<=9;i++) $('nd').add(new Option(i,i,i===5,i===5));
+const HUES=[200,20,140,280,50,170,330,100,240]; let st=null;
+const svg=g=>`<svg viewBox="0 0 100 100"><path d="${g.path}"/></svg>`, W=()=>mat.clientWidth, H=()=>mat.clientHeight, SZ=()=>Math.min(96,Math.max(54,W()/(+$('nd').value+1.6)));
+function newSet(){ const n=+$('nd').value, f=+$('nf').value, dice=Array(n).fill({faces:f}); try{ const fp=S.fingerprint(dice,$('nm').value), deal=S.dealGlyphs(dice,fp); st={n,f,fp,deal,salt:0,arr:S.newArrangement(n),face:null,els:[],rings:[]}; $('info').textContent=`${fp}  ·  ${n*f} unique glyphs dealt from a pool of ${S.GLYPHS.length}`; }catch(e){ st=null; $('info').textContent=e.message; } }
+function build(){ mat.className=''; mat.innerHTML=''; if(!st) return; const s=SZ(); mat.style.setProperty('--s',s+'px');
+  st.rings=[...Array(st.n).keys()].map(i=>{ const r=document.createElement('div'); r.className='ring'; r.textContent=i+1; r.style.display='none'; mat.append(r); return r; });
+  st.els=[...Array(st.n).keys()].map(i=>{ const e=document.createElement('div'),h=HUES[i%9]; e.className='die'; e.style.setProperty('--hi',`hsl(${h} 55% 45%)`); e.style.setProperty('--lo',`hsl(${h} 60% 24%)`); e.dataset.i=i; e.style.display='none'; mat.append(e); drag(e); return e; }); }
+const ringXY=k=>{ const s=SZ(), gap=Math.min(12,s*.15), tot=st.n*s+(st.n-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.22]; };
+const poolXY=(k,m)=>{ const s=SZ(), gap=10, tot=m*s+(m-1)*gap; return [(W()-tot)/2+k*(s+gap), H()-s-18]; };
+function layout(){ if(!st||!st.face) return; const pool=S.poolOf(st.arr);
+  st.rings.forEach((r,k)=>{ const [x,y]=ringXY(k); r.style.display=''; r.style.left=x+'px'; r.style.top=y+'px'; });
+  st.els.forEach((e,i)=>{ if(e.classList.contains('drag')) return; const k=st.arr.rings.indexOf(i), [x,y]=k>=0?ringXY(k):poolXY(pool.indexOf(i),pool.length); e.style.left=x+'px'; e.style.top=y+'px'; }); sentence(); }
+function roll(){ newSet(); build(); if(!st) return; const s=SZ(); st.face=[]; st.els.forEach((e,i)=>{ const f=Math.floor(Math.random()*st.f), g=S.GLYPH_BY_ID.get(st.deal[i][f]); st.face.push(g.id); e.innerHTML=svg(g); e.classList.toggle('odd',g.style===1||g.tier==='o'); e.style.display='';
+    e.classList.add('roll'); e.style.left=(W()/2-s/2+(Math.random()-.5)*W()*.5)+'px'; e.style.top=(H()/2-s/2+(Math.random()-.5)*H()*.3)+'px'; e.style.transform=`rotate(${(Math.random()-.5)*90}deg)`; });
+  $('sent').textContent='Rolled. Sweeping the dice aside...'; $('hints').innerHTML=''; $('reword').disabled=true;
+  setTimeout(()=>{ st.els.forEach(e=>{ e.classList.remove('roll'); e.style.transform=''; }); layout(); },900); }   // "swept": the dice slide, un-rotated, from where they landed to the pool row; rings appear above
+function sentence(){ if(!st||!st.face) return; const done=S.complete(st.arr); $('reword').disabled=!done; $('hints').innerHTML=(done?st.arr.rings:S.poolOf(st.arr)).map(i=>{ const h=S.hintFor(st.face[i]); return `<div><b>${st.face[i]}</b><br>n: ${h.nouns.join(', ')}<br>adj: ${h.adjectives.join(', ')}<br>adv: ${h.adverbs.join(', ')}<br>v: ${h.verbs.join(', ')}</div>`; }).join('');
+  $('sent').textContent=done?S.sentenceFor(st.arr.rings.map(i=>st.face[i]),st.salt).text:`Click the dice in story order (${st.arr.rings.filter(x=>x!==null).length}/${st.n} placed), or drag them onto the rings.`; }
+function drag(e){ let moved=false,ox=0,oy=0,sx=0,sy=0;
+  e.addEventListener('pointerdown',ev=>{ if(!st||!st.face||e.classList.contains('roll')) return; e.setPointerCapture(ev.pointerId); moved=false; sx=ev.clientX; sy=ev.clientY; const b=e.getBoundingClientRect(); ox=ev.clientX-b.left; oy=ev.clientY-b.top; });
+  e.addEventListener('pointermove',ev=>{ if(!e.hasPointerCapture(ev.pointerId)) return; if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; moved=true; e.classList.add('drag'); const m=mat.getBoundingClientRect(); e.style.left=(ev.clientX-ox-m.left)+'px'; e.style.top=(ev.clientY-oy-m.top)+'px';
+    const k=hit(e); st.rings.forEach((r,j)=>r.classList.toggle('hot',j===k)); });
+  e.addEventListener('pointerup',ev=>{ if(!st||!st.face||e.classList.contains('roll')) return; const i=+e.dataset.i; st.rings.forEach(r=>r.classList.remove('hot'));
+    if(!moved){ st.arr=st.arr.rings.includes(i)?S.removeDie(st.arr,i):S.fillNext(st.arr,i); }          // click: pool -> next free ring; click a placed die -> back to the pool
+    else { const k=hit(e); e.classList.remove('drag'); st.arr=k>=0?S.dropDie(st.arr,i,k,{autoswap:$('swap').checked}):S.removeDie(st.arr,i); }
+    e.classList.remove('drag'); moved=false; layout(); }); }
+function hit(e){ const s=SZ(), cx=parseFloat(e.style.left)+s/2, cy=parseFloat(e.style.top)+s/2; let best=-1,bd=s*.6; st.rings.forEach((r,j)=>{ const [x,y]=ringXY(j), d=Math.hypot(cx-(x+s/2),cy-(y+s/2)); if(d<bd){ bd=d; best=j; } }); return best; }
+$('roll').onclick=roll; $('reword').onclick=()=>{ st.salt++; sentence(); };
+$('sheet').onclick=()=>{ st=null; mat.className='sheet'; mat.removeAttribute('style'); mat.innerHTML=S.GLYPHS.map(g=>`<div title="${g.id} (${g.tier})" style="text-align:center;font-size:10px;color:#9db8ad"><div style="width:56px;height:56px;margin:auto;background:#1c4a3c;border-radius:12px;display:grid;place-items:center"><svg viewBox="0 0 100 100" style="width:44px;height:44px;fill:${g.style||g.tier==='o'?'#ffd9a0':'#fbf6e6'}"><path d="${g.path}"/></svg></div>${g.id}</div>`).join(''); $('sent').textContent=`${S.GLYPHS.length} glyphs: common cream, oddball and out-of-style tinted`; $('hints').innerHTML=''; };
+addEventListener('resize',()=>{ if(st&&st.face){ const f=st.face, arr=st.arr; build(); st.face=f; st.arr=arr; st.els.forEach((e,i)=>{ e.innerHTML=svg(S.GLYPH_BY_ID.get(f[i])); e.style.display=''; }); layout(); } });
+window.__story={get st(){ return st; }, roll};
+roll();
+</script></html>
