@@ -15,7 +15,10 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   await expect(app.page.locator('#scorepane')).toContainText('60 faces from 141 glyphs');
   // too many faces for the pool: start is disabled until another pack is added
   await app.page.selectOption('#scorepane select >> nth=2', '20'); await setDice(9);
-  await expect(app.page.locator('#scorepane')).toContainText('too many'); await expect(app.page.locator('#scorepane button.big')).toBeDisabled();
+  await expect(app.page.locator('.story-warn')).toContainText('Not enough glyphs for 9 × d20'); await expect(app.page.locator('#scorepane button.big:has-text("Start game")')).toBeDisabled();
+  expect(await app.run(pd => ({ n: pd.state.notation, shape: pd.state.shape }))).toEqual({ n: '9d12', shape: 'custom' });   // the mat shows the closest set that fits (glyph dice), not plain d6s
+  await app.page.locator('.story-warn button').click(); await expect(app.page.locator('.story-warn')).toHaveCount(0); await expect(app.page.locator('#scorepane button.big:has-text("Start game")')).toBeEnabled();
+  await app.page.selectOption('#scorepane select >> nth=2', '20'); await setDice(9); await expect(app.page.locator('.story-warn')).toHaveCount(1);
   await app.page.locator('#scorepane label:has-text("Fantasy and adventure") input').check();
   await expect(app.page.locator('#scorepane button.big')).toBeEnabled();
   await app.page.selectOption('#scorepane select >> nth=2', '12'); await setDice(5);

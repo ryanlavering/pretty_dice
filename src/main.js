@@ -2114,6 +2114,9 @@ function storySync(){
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
 function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
+function storyFit(o){ const have=poolFor(o.packs).length; if(o.dice*o.sides<=have) return {ok:true,dice:o.dice,sides:o.sides};   // the closest dice set the packs can fill: keep the dice count and take the biggest die that fits, else fewer d6
+  for(const sd of [20,12,8,6]) if(sd<o.sides&&o.dice*sd<=have) return {ok:false,dice:o.dice,sides:sd};
+  const n=Math.floor(have/6); return n>=3?{ok:false,dice:Math.min(o.dice,n),sides:6}:{ok:false,dice:3,sides:6,short:true}; }
 function renderStory(S,st,over){
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
@@ -2162,8 +2165,12 @@ function renderGameBody(){
       else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
       else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
         for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
-    if(!game){ if(g.id==='story'&&opts.dice*opts.sides<=poolFor(opts.packs).length) storyPreviewOn(opts); else storyPreviewOff(); }   // the story dice show on the mat while setting up
-    if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length; GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'+(need>have?': too many, pick more packs or fewer dice':'')}))); }
+    const sfit=g.id==='story'?storyFit(opts):null;   // too many faces for the glyph pool: preview (and offer) the closest set that fits, never the plain d6s
+    if(!game){ if(sfit&&!sfit.short) storyPreviewOn(sfit.ok?opts:{...opts,dice:sfit.dice,sides:sfit.sides}); else storyPreviewOff(); }   // the story dice show on the mat while setting up
+    if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length;
+      if(sfit&&sfit.ok) GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'})));
+      else if(sfit) GP.append(gel('div',{className:'story-warn',role:'alert'},gel('b',{textContent:'Not enough glyphs for '+opts.dice+' × d'+opts.sides}),gel('span',{textContent:' needs '+need+' different faces, but the chosen packs have only '+have+'. '+(sfit.short?'Even 3 × d6 needs 18, so add a glyph pack.':'The mat shows '+sfit.dice+' × d'+sfit.sides+' ('+sfit.dice*sfit.sides+' faces), the closest set that fits. Add a glyph pack to keep your choice.')}),
+        sfit.short?'':gel('button',{type:'button',className:'big',textContent:'Use '+sfit.dice+' × d'+sfit.sides,onclick:()=>{ gprefs.opts['story.dice']=sfit.dice; gprefs.opts['story.sides']=sfit.sides; gsave(); renderGame(); }}))); }
     if(g.id!=='liarsdice'&&g.id!=='story'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
     GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',disabled:g.id==='story'&&opts.dice*opts.sides>poolFor(opts.packs).length,onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
