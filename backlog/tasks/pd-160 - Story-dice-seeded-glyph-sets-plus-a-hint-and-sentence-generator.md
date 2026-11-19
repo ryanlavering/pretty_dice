@@ -42,3 +42,6 @@ Choosing and ordering the dice needs new UI:
 <!-- SECTION:NOTES:BEGIN -->
 Spike 2026-11-19: glyph packs (5, 443 glyphs), seeded deal, sentence generator, real 3D glyph dice, Story Dice game in the Games table (ring tray, hints, bad/fair/good rating). Decisions and gaps: docs/design/story-dice-game.md. Worktree pretty_dice-story, branch story-dice-spike. Artifacts: playable https://claude.ai/artifact/8z5hMjPSZAK8pxr5M47i6L, glyph dice https://claude.ai/artifact/BubM2F4kfPn9Puoe7SpMsj
 <!-- SECTION:NOTES:END -->
+
+## Notes 2026-11-19
+3D arrangement view, hi-vis option, story order in roll log committed on branch story-dice-spike; grammar design in docs/design/custom-set-grammar.md; follow-up PD-161 (custom glyph controls).

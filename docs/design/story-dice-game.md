@@ -58,3 +58,9 @@ Missing from the first wish list (not found under that name in game-icons): krak
 - Glyph size on the die is set by the atlas fit, not by the glyph; the Numbers size slider scales it. Dense glyphs (game-icons) read small on d20s.
 - Mobile layout of the tray and panel was not tuned; the existing phone strip shows the status line.
 - 3D sweep/rings, per-listener rating, a credits screen, and word-bank review are the next steps.
+
+## 3D arrangement view (2026-11-19)
+- After the roll settles the real dice fly up into two rows facing the camera (pool below, numbered rings above), each turned so its rolled glyph is upright. They are drawn up to 210 px (limited by row width and tray height; about 175 px with the pane open on a 1280 px screen). A picked-up die grows 50% on desktop, 25% on a phone.
+- Click or drag works through invisible DOM hit-targets (`.stile.ghost` in `src/storyui.js`) laid over the dice; `tickStoryFly` in `src/main.js` moves each mesh to its tile's screen position every frame. The flat glyph tiles remain as the "Hi-vis" option (`gprefs.hivis`).
+- The roll's log entry gets `story: "a → b → c"`, rewritten as the order changes (`storyLogOrder`), shown in the Roll log and the copied/saved text.
+- Not done: the PD-149 overhead glare (not reproduced in this view), a two-row pool for narrow phones (dice are width-limited to about 66 px at 390 px).

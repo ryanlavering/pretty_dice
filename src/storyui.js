@@ -6,9 +6,10 @@ const HUES=[200,20,140,280,50,170,330,100,240];
 export function createStoryTray(host){
   const root=document.createElement('div'); root.id='storytray'; root.hidden=true; host.append(root);
   let tiles=[], rings=[], key='', cur=null, drag=null;
-  const size=()=>Math.min(cur&&cur.dice3d?120:92,Math.max(46,root.clientWidth/((cur?cur.glyphs.length:5)+1.5)*(cur&&cur.dice3d?1.15:1))), W=()=>root.clientWidth, H=()=>root.clientHeight;
+  const size=()=>{ const n=cur?cur.glyphs.length:5; return cur&&cur.dice3d?Math.min(210,root.clientHeight*.3,Math.max(46,(root.clientWidth*.97-(n-1)*12)/n)):Math.min(92,Math.max(46,root.clientWidth/(n+1.5))); },   // 3D dice are shown large (up to 210px, limited by the width of the row and the height of the tray)
+  W=()=>root.clientWidth, H=()=>root.clientHeight;
   const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), tot=n*s+(n-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.2]; };
-  const poolXY=(k,m)=>{ const s=size(), gap=10, tot=m*s+(m-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.62]; };
+  const poolXY=(k,m)=>{ const s=size(), gap=10, tot=m*s+(m-1)*gap, y=cur&&cur.dice3d?Math.max(H()*.2+s*1.1,Math.min(H()*.62,H()-s-80)):H()*.62; return [(W()-tot)/2+k*(s+gap), y]; };
   const arr=()=>({n:cur.glyphs.length, rings:cur.order.slice()});
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
   function build(){ root.textContent=''; const n=cur.glyphs.length;

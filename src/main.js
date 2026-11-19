@@ -2101,7 +2101,7 @@ function tickStoryFly(dt){
     const ray=new THREE.Vector3(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,D/ray.dot(fwd)); rig.worldToLocal(tmpP);
     tq.copy(rq).multiply(camera.quaternion).multiply(storyFly.qf[i]);
     const u=Math.min(1,Math.max(0,(storyFly.t-i*.07)/.75)), e=u*u*(3-2*u), f=storyFly.from[i], lift=2.2*Math.sin(Math.PI*u)*(d.r||1);
-    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.4:1.6):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is bigger: 60% on desktop, 40% on a phone
+    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.25:1.5):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is bigger: 50% on desktop, 25% on a phone
     d.mesh.scale.setScalar((1+(sc-1)*e)*storyFly.k[i]); }); }
 function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
