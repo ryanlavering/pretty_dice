@@ -3,9 +3,10 @@ id: PD-163
 title: >-
   Tingles (New-callout dots): reset to 4.1 changes, prev/next, retire with
   resolved comments
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T17:51:00Z'
+updated_date: '2026-11-19T17:56:00Z'
 labels:
   - v4.1
 dependencies: []
