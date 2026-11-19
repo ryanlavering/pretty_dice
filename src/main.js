@@ -13,6 +13,7 @@ import { U, makeMaterial, makeUniforms } from './material.js';
 import { STONES, STONE_KEYS, SUBSTRATES, bindState, hsl, pickPaint } from './substrates.js';
 import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId, uniqueName } from './bagmodel.js';
 import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
+import { FACE_SIDES, dealError, dealTerms, faceName, fmtFaces, parseFaceBlock } from './faces.js';
 import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
 import { createStoryTray } from './storyui.js';
 
@@ -101,27 +102,31 @@ function parseNotation(str,strict=false){
   if(!toks.length) return {error:'Enter some dice, e.g. 4d6+2d10+3'};
   for(const t of toks){
     let m;
-    if((m=t.match(/^(\d*)d(\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const sides=m[2]==='%'?100:+m[2]; let design=null, keep=null;
+    if((m=t.match(/^(\d*)d(\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:\{([^{}]*)\})?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const sides=m[2]==='%'?100:+m[2]; let design=null, keep=null;
       if(m[5]){ if(count>1||sides!==20) return {error:`"${m[5]}" goes on a single d20, e.g. d20${m[5]}`}; count=2; keep={mode:m[5]==='adv'?'h':'l',n:1}; }   /* PD-142.2: d20adv = 2d20kh1, d20dis = 2d20kl1 */
       else if(m[3]){ const q=m[4]===''?1:+m[4], dropping=m[3][0]==='d', n=dropping?count-q:q;
         if(q<1||n<1||n>count) return {error:dropping?`Can't drop ${q} of ${count} dice`:`Can't keep ${q} of ${count} dice`};
         keep=n===count?null:{mode:(m[3][1]==='h')===!dropping?'h':'l',n}; }   // kh3 keeps the highest 3; dl1 drops the lowest 1 = keeps the highest count-1
-      if(m[6]){ const e=designByRef(m[6]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[6]}" in the bag`}; }
+      if(m[7]){ const e=designByRef(m[7]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[7]}" in the bag`}; }
+      let faces=null;   /* PD-167: a face block {pack#n!flags} puts glyphs from a pack on the faces (docs/design/custom-set-grammar.md) */
+      if(m[6]!==undefined){ if(sides===100) return {error:"Custom faces don't work on d% (two dice); use d10"}; if(!FACE_SIDES.includes(sides)) return {error:`Custom faces are not supported on d${sides} yet (use d6, d8, d12 or d20)`};
+        const fb=parseFaceBlock(m[6]); if(fb.error) return fb; faces=fb.faces; }
       if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
-      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(keep?{keep}:{})}); }
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(keep?{keep}:{}),...(faces?{faces}:{})}); }
     else if(/^-?\d+$/.test(t)) mod+=+t;
     else return {error:`Can't read "${t}"`};
   }
   if(!terms.length) return {error:'Add at least one die'};
   if(n*group>MAXDICE) return {error:`Too many dice (${n*group}); max ${MAXDICE}`};
+  { const de=dealError(terms); if(de) return {error:de}; }
   return group>1?{terms,mod,group}:{terms,mod};
 }
 const keepTxt=t=>t.keep?`k${t.keep.mode}${t.keep.n}`:'';
-const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}${t.faces?fmtFaces(t.faces):''}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
 /* keep-highest / keep-lowest (PD-142.2): the dice that count and the ones set aside; ties keep the earlier die */
 function keepSum(vals,keep){ const idx=vals.map((_,i)=>i); if(keep&&keep.n<vals.length) idx.sort((a,b)=>keep.mode==='h'?vals[b]-vals[a]||a-b:vals[a]-vals[b]||a-b);
   const kept=new Set(keep&&keep.n<vals.length?idx.slice(0,keep.n):idx); return {sum:vals.reduce((a,v,i)=>a+(kept.has(i)?v:0),0),kept}; }
-const keepLine=(t,vals,ks)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>ks.kept.has(i)?v:`(${v})`).join('+')}${vals.length>1?' = '+ks.sum:''}`;
+const keepLine=(t,vals,ks,names)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:v; return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1?' = '+ks.sum:''}`;   // names: glyph names beside the values (PD-167)
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -129,11 +134,12 @@ function specsFor(shape){
   if(shape==='custom'){
     const p=parseNotation(state.notation), list=[];
     if(p.error) return specsFor('d20');
+    const dealt=dealTerms(p.terms);   // PD-167: glyph faces from the set's face blocks (a group's copies share them)
     for(let cp=0;cp<(p.group||1);cp++) p.terms.forEach((t,ti)=>{ for(let c=0;c<t.count;c++){
       if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,copy:cp,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,copy:cp,part:'ones',design:t.design}); }
-      else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,copy:cp,design:t.design}); } });
+      else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,copy:cp,design:t.design,setGlyphs:dealt[ti]?dealt[ti][c]:null}); } });
     const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
-    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,glyphs:storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null}));
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,glyphs:d.setGlyphs||(storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null)}));
   }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
@@ -270,7 +276,7 @@ function buildDice(keepRoll){
     nextParts.set(key,part);
     const {faces,labs,atlas,geo}=part, mat=makeMaterial(atlas,own?foreign.get(s.design).uni:U);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh);
-    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,copy:s.copy,part:s.part,design:s.design,look:own,inradius:Math.min(...faces.map(f=>f.d))};
+    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,copy:s.copy,part:s.part,design:s.design,glyphs:s.glyphs||null,look:own,inradius:Math.min(...faces.map(f=>f.d))};
     if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
@@ -422,7 +428,7 @@ for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('but
     if(playRoom()){ dockLoad(sides,true); forceCustom=$('rollbox').value; shapeSelSync(); return; }
     checkpoint();
     const base=state.shape==='custom'?state.notation:(/^d\d+$/.test(state.shape)?'1'+state.shape:state.notation), pp=parseNotation(base,true), terms=pp.error?[]:pp.terms.map(t=>({...t}));
-    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.design); if(t) t.count++; else terms.push({count:1,sides});
+    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.design&&!t.faces); if(t) t.count++; else terms.push({count:1,sides});
     state.notation=fmtNotation(terms,pp.error?0:pp.mod,pp.error?1:pp.group); state.shape='custom'; rebuildKeepMode(); };
   const single=()=>{ if(playRoom()){
       if(!sides){ state.shape=id; forceCustom=id==='custom'?$('rollbox').value:null; if(id!=='custom') $('rollbox').value=''; const was=rolling; holdRoom=was&&!designRoom; try{ buildDice(); } finally { holdRoom=false; } if(was) startRoll(false,true); syncUI(); formulaSync(); return; }   // rebuild and put the dice down unrolled: it never throws
@@ -440,15 +446,15 @@ const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
 const playRoom=()=>!document.body.classList.contains('design')&&!!$('rollbox');   // PD-142.38.23: in Play the Custom set control and the dock formula box are two views of one formula
 let forceCustom=null;   // PD-142.38.34: after a double-click / long press the Custom set stays selected for as long as the formula is the one it produced
 const selShape=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(forceCustom!==null&&v===forceCustom.trim()) return 'custom';
-    if(v){ const p=parseNotation(v,true); if(!p.error&&p.terms.length===1&&!p.mod&&!(p.group>1)){ const t=p.terms[0]; if(t.count===1&&!t.keep&&!t.design&&document.querySelector(`#shapes [data-id="d${t.sides}"]`)) return 'd'+t.sides; } return 'custom'; } }
+    if(v){ const p=parseNotation(v,true); if(!p.error&&p.terms.length===1&&!p.mod&&!(p.group>1)){ const t=p.terms[0]; if(t.count===1&&!t.keep&&!t.design&&!t.faces&&document.querySelector(`#shapes [data-id="d${t.sides}"]`)) return 'd'+t.sides; } return 'custom'; } }
   return state.shape; };
 function shapeSelSync(){ const sel=selShape(); document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===sel)); $('customctl').hidden=sel!=='custom'; }
 const curNotation=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(v&&!parseNotation(v,true).error) return v; } return state.notation; };
 let stepDesign=null;   // the design the + / − buttons add dice of (null = the live design)
 const sameDesign=(a,b)=>(a||null)===(b||null);
-function counts(){ const p=parseNotation(curNotation()), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.filter(t=>sameDesign(t.design,stepDesign)).forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
-function setCounts(c,mod){ const play=playRoom(); if(!play) checkpoint(); const p=parseNotation(curNotation()), others=p.error?[]:p.terms.filter(t=>!sameDesign(t.design,stepDesign));
-  const oldKeep=t=>{ const o=p.error?null:p.terms.find(x=>x.sides===t&&sameDesign(x.design,stepDesign)&&x.keep); return o&&o.keep.n<c[t]?{keep:o.keep}:{}; };   // the + / − buttons keep an existing keep-highest/lowest while it still makes sense
+function counts(){ const p=parseNotation(curNotation()), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.filter(t=>!t.faces&&sameDesign(t.design,stepDesign)).forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
+function setCounts(c,mod){ const play=playRoom(); if(!play) checkpoint(); const p=parseNotation(curNotation()), others=p.error?[]:p.terms.filter(t=>t.faces||!sameDesign(t.design,stepDesign));
+  const oldKeep=t=>{ const o=p.error?null:p.terms.find(x=>x.sides===t&&!x.faces&&sameDesign(x.design,stepDesign)&&x.keep); return o&&o.keep.n<c[t]?{keep:o.keep}:{}; };   // the + / − buttons keep an existing keep-highest/lowest while it still makes sense
   const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign,...oldKeep(t)}:{count:c[t],sides:t,...oldKeep(t)}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
   const n=fmtNotation(terms,mod,p.error?1:p.group); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   if(play){ $('rollbox').value=n; $('rollbox').classList.remove('bad'); formulaSync(); return; }   // Play: edit the formula only; Roll throws it
@@ -922,7 +928,7 @@ const setOps={
   quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
     if(st.group>1){ const g=rollGroup(st.terms,st.mod||0,st.group,()=>rng()), shown=g.totals.join(' · '); st.last={total:shown,at:Date.now()};
       addLog({set:st.name,notation:setNotation(st),total:shown,items:g.items,modText:'',quick:true}); showQuick(st.name,shown,g.items,''); return shown; }
-    const items=st.terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
+    const dealt=dealTerms(st.terms), items=st.terms.map((t,ti)=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks,dealt[ti]?r.map((v,i)=>faceName(dealt[ti][i][v-1])):null).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
     const look=st.table?lookupTable(st.table,total):null; addLog({set:st.name,notation:setNotation(st),total:String(total),detail,items,modText,quick:true,...(look?{lookup:look}:{})}); showQuick(st.name,total,items,modText,look); return total; }
 };
@@ -948,7 +954,7 @@ function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?i
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
-function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; formulaSync(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
+function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; formulaSync(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design&&!t.faces); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
 function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const one={count:2,sides:20,keep:{mode,n:1}};   // PD-142.38.46: like the Custom set Adv/Dis chips: a tap REPLACES the box with d20adv / d20dis; double-click or long press ADDS that term to the formula (never modifies an existing die)
   if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value=fmtNotation([one],0,1); formulaSync(); return; }
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }
@@ -995,10 +1001,10 @@ document.addEventListener('pointerdown',e=>{ const b=$('rollbox'); if(b&&documen
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText,look){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); if(look) q.append(el('div','qn look','→ '+look)); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...(bag.roller?{roller:bag.roller}:{}),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
-function logRoll(total,detail,items,modText){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
+function logRoll(total,detail,items,modText,story){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
   if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
   const look=st&&st.table?lookupTable(st.table,total):null;
-  addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{}),...(look?{lookup:look}:{})}); return look; }
+  addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{}),...(story?{story}:{}),...(look?{lookup:look}:{})}); return look; }
 /* the log as plain text, oldest first, for pasting into notes (PD-142.14.1.5) */
 function logText(){ const pad=n=>String(n).padStart(2,'0'); return bag.log.map(e=>{ const t=new Date(e.ts); const head=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   if(e.note) return `${head}  ${e.note}`;
@@ -1298,7 +1304,7 @@ function dieScreen(i){ const r=cv.getBoundingClientRect(), v=new THREE.Vector3()
 function dieSwapOK(i){ const d=dice[i]; if(!d||!rolling||!settled||!bodies[i]||!d.mesh.visible) return false; if(game&&game.info&&game.info.allowDesignSwap===false) return false; return !!bag&&bag.designs.length>0; }
 function dieTerms(i){   // the notation split so die i can carry its own design: {terms, mod, at} or null when this layout is not supported
   const d=dice[i]; let p; if(state.shape==='custom'){ p=parseNotation(state.notation); if(p.error) return null; } else { const m=/^d(\d+)$/.exec(state.shape); if(!m||!SIDES[+m[1]]) return null; p={terms:[{count:1,sides:+m[1]}],mod:0,group:1}; }
-  if((p.group||1)>1||d.part) return null; const ti=state.shape==='custom'?d.term:0, t=p.terms[ti]; if(!t||t.keep||t.sides===100) return null;
+  if((p.group||1)>1||d.part) return null; const ti=state.shape==='custom'?d.term:0, t=p.terms[ti]; if(!t||t.keep||t.faces||t.sides===100) return null;
   const c=state.shape==='custom'?dice.slice(0,i).filter(x=>x.term===ti).length:0; return {p,ti,t,c}; }
 function dieDesignOf(i){ return dice[i].design||(bag&&!bag.active.draft?bag.active.design:null); }
 function reskinDie(i,designId){
@@ -1424,7 +1430,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   settled=true; showLeans();
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   droppedDice=new Set();
-  let main, sub='', subItems=null, subMod='';
+  let main, sub='', subItems=null, subMod='', storyText='';
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), G=P.group||1;
     if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[])), perI=Array.from({length:G},()=>P.terms.map(()=>[]));
@@ -1433,12 +1439,13 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
       const ls=per.map((v,c)=>groupLine(P.terms,P.mod,v,c+1)); main=ls.map(l=>l.total).join(' · '); subItems=ls.map(l=>l.item); sub=subItems.map(i=>i.text).join('  ·  '); }
     else {
     const groups=P.terms.map(()=>[]);
-    const gI=P.terms.map(()=>[]);
-    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); } });
+    const gI=P.terms.map(()=>[]), gN=P.terms.map(()=>[]);
+    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); gN[d.term].push(null); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); gN[d.term].push(d.glyphs&&P.terms[d.term].faces?faceName(d.glyphs[parts[i].label-1]):null); } });
     const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     ks.forEach((k,ti)=>gI[ti].forEach((di,j)=>{ if(!k.kept.has(j)) droppedDice.add(di); }));   // dice dropped by keep/drop/adv/dis: they do not count, so no nat 20 / nat 1 effect for them
     main=String(total);
-    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i])})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||P.terms.length>1?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
+    if(P.terms.some(t=>t.faces)){ const ids=[]; dice.forEach((d,i)=>{ if(d.glyphs&&P.terms[d.term].faces&&!droppedDice.has(i)) ids.push(d.glyphs[parts[i].label-1].id); }); if(ids.length) storyText=sentenceFor(ids,0).text; }   // PD-167: a set with glyph faces reads as a sentence
+    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep||P.terms.some(t=>t.faces)){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i],gN[i].some(Boolean)?gN[i]:null)})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||P.terms.length>1?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
     }
   }
@@ -1450,7 +1457,8 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('pointerdown',e=>{ e.stopPropagation(); try{m.setPointerCapture(e.pointerId);}catch{} holdTop(true); });
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
-  document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); { const look=logRoll(main,sub,subItems,subMod); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
+  document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); if(storyText){ const d4=document.createElement('div'); d4.className='brk look'; d4.textContent=storyText; R.append(d4); }
+  { const look=logRoll(main,sub,subItems,subMod,storyText); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
   showDropped();
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
@@ -2117,7 +2125,7 @@ function tickStoryFly(dt){
     const ray=new THREE.Vector3(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,D/ray.dot(fwd)); rig.worldToLocal(tmpP);
     tq.copy(rq).multiply(camera.quaternion).multiply(storyFly.qf[i]);
     const u=Math.min(1,Math.max(0,(storyFly.t-i*.07)/.75)), e=u*u*(3-2*u), f=storyFly.from[i], lift=2.2*Math.sin(Math.PI*u)*(d.r||1);
-    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.25:1.5):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is bigger: 50% on desktop, 25% on a phone
+    d.mesh.position.lerpVectors(f.p,tmpP,e); d.mesh.position.y+=lift; if(storyFly.k[i]>1.001){ const lv=new THREE.Vector3().copy(fwd).applyQuaternion(rq).multiplyScalar(-(storyFly.k[i]-1)*3*sc*(d.r||1)); d.mesh.position.add(lv); } d.mesh.quaternion.copy(f.q).slerp(tq,e); const want=el.classList.contains('drag')?(matchMedia('(max-width:760px)').matches?1.12:1.25):1; storyFly.k[i]+=(want-storyFly.k[i])*(1-Math.exp(-dt*14)); if(dt===0) storyFly.k[i]=want;   // a die picked up is a little bigger (25% desktop, 12% phone; PD-171) and lifted toward the camera so it never cuts through neighbours
     d.mesh.scale.setScalar((1+(sc-1)*e)*storyFly.k[i]); }); }
 function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
@@ -2211,7 +2219,7 @@ function renderGameBody(){
         cell(tr,p,txt,cls.trim(),fn,cat); }); body.append(tr); });
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yacht bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); if(whoop) GP.append(gel('div',{className:'row'},whoopBtn())); GP.append(tb);
-  { const ms=gel('select',{ariaLabel:'Score entry',onchange:()=>{ gprefs.scoreMode=ms.value; gpv=null; gsave(); renderGame(); }}); for(const [v,t] of [['double','Double tap to score'],['long','Long press to score'],['single','Single tap scores']]) ms.append(gel('option',{value:v,textContent:t,selected:(gprefs.scoreMode||'double')===v})); GP.append(gel('div',{className:'row'},gel('label',{textContent:'Score entry'}),ms)); }
+  { const ms=gel('select',{ariaLabel:'Score entry',onchange:()=>{ gprefs.scoreMode=ms.value; gpv=null; gsave(); renderGame(); }}); for(const [v,t] of [['double','Double tap to score'],['long','Long press to score'],['single','Single tap scores']]) ms.append(gel('option',{value:v,textContent:t,selected:(gprefs.scoreMode||'double')===v})); if(navigator.maxTouchPoints>0||matchMedia('(any-pointer:coarse)').matches) GP.append(gel('div',{className:'row'},gel('label',{textContent:'Score entry'}),ms)); }   // PD-172: touch devices only; a mouse click scores directly
 }
 let cbet={chip:null,who:null,rules:false,n:1,ready:false};   // n: how many of the chosen chip (or units) one tap adds; drag a chip up or down to change it (PD-142.33.1)
 const betsLocked=()=>gameAwaiting||(rolling&&!settled)||!!(game&&GAMES.status(game.state).rolling);   // owner rule: no betting while the dice are rolling, until the roll settles and is reported
