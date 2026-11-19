@@ -21,11 +21,13 @@ Switch to the Play room and open the **Games** tab. Choose a **Game** (the game 
 1. Press the dock's **Roll** button (it reads **Roll** or, with dice held, **Roll 3 dice**). The dice are thrown and the scorecard fills with what each box would score: **italic** numbers are suggestions and the best one is **bold gold**.
 2. **Tap a settled die to hold it**; a gold ring shows. The dock button now says how many will be thrown, for example **Roll 3 dice**.
 
-![Two dice held with gold rings, the scorecard showing suggestions](img/19-yahtzee-hold.png)
+![A Yacht turn on a desktop: the scorecard with suggestions beside the dice (tap a settled die to hold it)](img/19-yahtzee-hold.png)
 
 3. Roll again (up to three throws), then tap a scorecard box to score it. After 13 rounds the game ends. **End game** quits early and returns you to the Games setup, still in the Play room. While a game runs, the Games tab becomes the **Scorecard** tab.
 
 While a game runs the big total on the table is hidden: the status line at the top (with the eye icon) shows the turn, and holding it, or the eye button in the top-right corner on a phone, or holding the `t` key, gives a top-down look at the dice. The dock holds the game's actions (such as **Bank** or **Cash out**) beside the one gold Roll button; the preset chips are hidden until the game ends. You can visit the Design room mid-game; the game keeps going and Play shows a dot.
+
+![On a phone, a Yacht game with the Scorecard tab and the Roll button in the dock](img/29-phone-scorecard.png)
 
 ## The other games
 

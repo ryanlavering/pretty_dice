@@ -9,7 +9,7 @@ The **Roll** button is the only control that throws dice. Switching rooms, tappi
 ## Ways to roll again
 
 - Press **Roll**, press `r`, or press Enter in the formula box.
-- **Flick** the dice on the table.
+- **Flick** the dice on the table: they are thrown the way you flicked, at the speed you let go.
 - On a phone, **shake** the phone if the Shake option (Table tab) is on; it only appears on devices that can sense motion.
 
 ## The dock
@@ -22,7 +22,7 @@ A group roll shows its results side by side with a breakdown per roll, and a nat
 
 ## Holding dice
 
-Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yacht-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip at the top left of the table says **⚠ Fix N leaning dice** (tap it to re-roll just those); a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
+Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yacht-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip at the top right of the table says **⚠ Fix N leaning dice** (tap it to re-roll just those); a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
 
 ## Change one die's design
 
@@ -32,7 +32,7 @@ Press and hold a settled die for about half a second (or right-click it) to open
 
 ![Bounciness, friction and sound controls](img/13-roll-controls.png)
 
-In the **Table** tab, **Bounciness**, **Dice friction** and **Mat friction** change how the dice move. Sound settings are in the same tab; see [Sound](09-sound.md).
+In the **Table** tab, under **Roll feel**, **Bounciness**, **Dice friction** and **Mat friction** change how the dice move (on a phone, also the **Shake phone to roll** option). The **Sound** settings are further down the same tab; see [Sound](09-sound.md).
 
 ## Looking at the result
 

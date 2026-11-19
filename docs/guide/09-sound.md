@@ -2,7 +2,7 @@
 
 Sound on or off is in the Utilities drawer (the paired-circles button at the bottom right of the table). Sound starts off.
 
-In **Roll feel & sound** (the **Table** tab in the Play room) you can set:
+In the **Sound** section of the **Table** tab in the Play room (with **Advanced sound** below it) you can set:
 
 - **Rolling sound** (soft ticks while dice tumble), and **Volume**.
 - **Sound set**: Classic synth, Procedural synth, Blend (Best + Kenney), Kenney samples or Best-of samples. **Audition** plays an example. For a blend, a slider and **Per hit / Layered / Auto** choose how the two are mixed.

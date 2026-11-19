@@ -58,7 +58,7 @@ const SHOTS = [
   ['10-custom-set', { query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+d20+3'); await p.click('#notapply'); await p.waitForTimeout(1200); await panelAt(p, 'Custom set'); return side; }],
   ['11-roll-settled', {}, async p => { await rollNow(p); }],
   ['12-roll-log', {}, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
-  ['13-roll-controls', {}, async p => { await navFor(p).toPlay(); await p.waitForTimeout(500); await panelAt(p, 'Roll feel & sound'); return side; }],
+  ['13-roll-controls', {}, async p => { await navFor(p).toPlay(); await p.waitForTimeout(500); await panelAt(p, 'Roll feel'); return side; }],
   ['14-save-export', {}, async p => { await panelAt(p, 'Save & export'); return side; }],
   ['15-phone-showcase', { vp: PHONE }, async () => undefined],
   ['16-phone-roll', { vp: PHONE }, async p => { await rollNow(p); }],
@@ -81,6 +81,12 @@ const SHOTS = [
     await navFor(p).toPlay(); await p.waitForTimeout(800);
     await p.click('#dicechips >> text=Dungeon room'); await p.click('#rollbtn'); await p.waitForTimeout(1500); await settle(p);
     await navFor(p).openLog(); await p.waitForTimeout(600); }],
+  ['23-phone-design-pane', { vp: PHONE }, async p => { await panelAt(p, 'Substrate'); }],
+  ['24-phone-add-menu', { vp: PHONE }, async p => { await p.click('#cards >> text=Add'); await p.waitForTimeout(500); }],
+  ['25-phone-sets', { vp: PHONE, query: 'shape=custom' }, async p => { await p.fill('#notation', '2d6+3'); await p.click('#notapply'); await p.waitForTimeout(800); await p.fill('#setname', 'Thorn axe'); await p.click('button:text-is("Save as set")'); await p.waitForTimeout(600); await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await p.waitForTimeout(600); }],
+  ['27-phone-log', { vp: PHONE }, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
+  ['28-phone-drawer', { vp: PHONE }, async p => { await navFor(p).openDrawer(); }],
+  ['29-phone-scorecard', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(800); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
 ];
 

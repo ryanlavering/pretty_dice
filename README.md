@@ -32,7 +32,7 @@ Online, the page loads three.js, cannon-es and fonts from cdn.jsdelivr.net and G
 
 ## Designing Dice
 
-Two rooms, switched with **Design | Play** (the switch never throws the dice). In the **Design** room the die floats and turns and the side panel (below the table on a phone) holds the look settings, with **Undo / Redo** (Ctrl+Z, Ctrl+Y) in a strip at its top. The utilities drawer (paired-circles button, bottom right) has sound, Reset view, Full view, Hints and Pause spin.
+Two rooms, switched with **Design | Play** (the switch never throws the dice). In the **Design** room the die floats and turns and the side panel (below the table on a phone) holds the look settings, with **Undo / Redo** (Ctrl+Z, Ctrl+Y) in a strip at its top. The utilities drawer (paired-circles button, bottom right) has sound, Reset view, Full view, Hints, Pause spin and the Design | Play switch (the only place for it on a phone).
 
 - **Randomize** (or press Space) rerolls the look; "Also randomize" chooses whether the substrate and the shape change too.
 - **Shape**: pick a die, or build a **Custom set** (see below). A tap picks one die; a double-click or long press adds one to the formula.
@@ -53,7 +53,7 @@ In the **Play** room, the gold **Roll** button in the dock (or `r`) is the only 
 - **The tray** is sized from the dice (how many and how big), not from the screen, and the camera starts far enough back to show all of it. Zoom is yours to change.
 - **Roll feel & sound** (it moves to the top of the pane while you roll): **Bounciness**, **Dice friction** and **Mat friction** change how the dice behave; the defaults are slippery enough that dice slide apart instead of snagging.
 - **Leaning dice** are never hidden. A die that comes to rest propped on another, or balanced on an edge, gets an orange ring on the mat and a warning. **Re-roll leaning** drops only those dice in again from above. If one of them later tips over, the result and any natural 20 effect are read again.
-- **Sound** is off until you turn it on (the speaker button on the view, or the checkbox); see [Sound](#sound) below. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** plays a blip and shows what the browser says about audio, which helps when a phone stays quiet.
+- **Sound** is off until you turn it on (the Sound item in the utilities drawer, or the Rolling sound checkbox in the Table tab); see [Sound](#sound) below. On an iPhone the sound plays even when the ring/silent switch is on silent. **Test sound** plays a blip and shows what the browser says about audio, which helps when a phone stays quiet.
 
 ### Sound
 
@@ -76,7 +76,7 @@ How it works and how to tune it: [sounds/README.md](sounds/README.md).
 
 ## Desktop vs. Mobile
 
-The layout fits any window: the settings pane sits beside the view on a wide screen and below it on a narrow one. **Full view** (the pane's arrow, `h`, or the drawer) hides the settings for a full-screen view. On a phone the Design | Play switch is at the top left and the look-from-above eye at the top right. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Text fields are 16 px so iOS Safari does not zoom in when you tap them. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
+The layout fits any window: the settings pane sits beside the view on a wide screen and below it on a narrow one. **Full view** (the pane's arrow, `h`, or the drawer) hides the settings for a full-screen view. On a phone the Design | Play switch is in the utilities drawer and the look-from-above eye is at the top right. On touch devices, drag to orbit, pinch to zoom, and flick to roll again. Text fields are 16 px so iOS Safari does not zoom in when you tap them. Optionally, shake the phone to roll (needs motion sensors; the browser may ask permission).
 
 ## Saving and Loading
 

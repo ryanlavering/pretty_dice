@@ -1,10 +1,10 @@
 # Phone versus desktop
 
-The same page adapts to the screen. Both sizes have the same two rooms, the same tabs and the same one **Roll** button.
+The same page adapts to the screen. Both sizes have the same two rooms, the same tabs and the same one **Roll** button. The Utilities drawer (sound, Reset view, Full view, Hints, Pause spin, and on a phone the room switch) is the button at the right edge of the table, bottom right.
 
 |  | Desktop | Phone |
 |---|---|---|
-| Design \| Play switch | Just under the tabs in the side panel | Top left |
+| Design \| Play switch | Top of the side panel | In the Utilities drawer (**Switch to Play** / **Switch to Design**) |
 | Panel | Side panel on the left | A strip below the table that scrolls |
 | Turn the die | Drag | Drag |
 | Zoom, orbit | Scroll, right-drag | Pinch, two fingers |
@@ -15,7 +15,7 @@ The same page adapts to the screen. Both sizes have the same two rooms, the same
 
 On a phone, hide the panel with its arrow when you want the whole table; the dock keeps the formula box and **Roll** on one row with the chips scrolling beside it. While a game is running the Games tab becomes **Scorecard**, and the game's status line is at the top of the table; hold it for a top-down look.
 
-On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips.
+On small screens the long breakdown line wraps instead of running off the edge, and the leaning and held notices are small chips at the top right of the table (beside the top-down eye on a phone).
 
 ![Showcase on a phone screen](img/15-phone-showcase.png)
 
@@ -24,3 +24,5 @@ On small screens the long breakdown line wraps instead of running off the edge, 
 ![The bag sheet on a phone](img/17-phone-bag.png)
 
 ![A Yacht game on a phone, with the Scorecard tab](img/20-phone-game.png)
+
+![The Utilities drawer on a phone, with Switch to Play at the bottom](img/28-phone-drawer.png)

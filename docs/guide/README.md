@@ -15,9 +15,9 @@ Read the pages in order the first time; later they work as reference.
 9. [Sound](09-sound.md)
 10. [Games](10-games.md): Yacht, Ten Thousand, Pig, Craps, Liar's Dice
 
-## Which pages depend on today's layout
+## Phone pictures
 
-The app's navigation was redesigned into Two rooms (PD-142.38). These pages are written around tasks, not positions, but their screenshots and the sentences naming a button's place are tied to the current layout and will need a refresh: 01 First steps, 03 Bag and shelf, 05 Rolling, 06 Roll log, 08 Phone versus desktop, 10 Games. Pages 02, 04, 07 and 09 are mostly about controls that keep their names.
+Pages 02, 03, 06, 08 and 10 carry a few phone-sized screenshots (390 x 844) next to the desktop ones, where the phone layout differs.
 
 ## About the pictures
 

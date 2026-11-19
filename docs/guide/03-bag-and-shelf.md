@@ -12,6 +12,10 @@ Tap **+ Add** at the end of the shelf. You can choose:
 - **Random draft**: a fresh random look. In the Look tab a block under Randomize shows its thumbnail and name with **Keep** and **Discard**. When you change a design that is already in the bag, the same block shows **Save**, **Save as copy** and **Revert** (the same actions as in the Bag view)
 - **From a file…**: add a design saved earlier
 
+![On a phone: the Add menu above the shelf](img/24-phone-add-menu.png)
+
+On a phone the shelf sits at the bottom of the table, with **+ Add** at its end.
+
 ## The Bag view
 
 ![The bag sheet showing the Designs tab](img/08-bag-designs.png)
@@ -30,5 +34,7 @@ The **Sets** tab of the Bag view has two buttons at the top: **Save the current 
 - **⚡** quick roll: rolls that set straight away and records it in the log.
 - **✎** edit: opens the set's editor in the tab (presets, formula, modifier and an optional result table).
 - **⋯** menu: Edit, Make a copy, Open (loads the set and goes to the Play room without throwing), Move up, Move down, Delete.
+
+![On a phone: the Sets tab of the Bag view](img/25-phone-sets.png)
 
 See [Sets and the editor](04-sets-and-editor.md) for building and saving sets.

@@ -16,7 +16,7 @@ User-facing changes. Versions are git tags.
 - **Advantage and disadvantage** (`d20adv`, `d20dis`, with a modifier such as `d20+5 adv`) with **Adv** and **Dis** buttons. The dropped die is marked, and a dropped natural 20 or 1 triggers no effect.
 - **Keep highest / lowest and drop** (`4d6kh3`, `kl`, `dh`, `dl`; the number defaults to 1).
 - **Group rolls**: `4x d20+2` rolls each die separately with the modifier on each; saved sets keep it.
-- **Quick roll bar** at the table: type a formula, pick a saved set or a plain die, and roll. A formula that does not parse shows the reason as text.
+- **Quick roll bar** (the dock along the bottom of the table): type a formula, pick a saved set or a plain die, and roll. A formula that does not parse shows the reason as text.
 - **Result tables.** A set can carry a result table that is shown on the roll, in the log and in the text export.
 - **Roll log.** Entries have notation titles, per-roll labels and the roller's name; **Copy** and **Save as text** export it. **Initiative tracker**: add a roll to an ordered initiative list with turn and round, or add a named entry with a score by hand.
 
@@ -24,10 +24,10 @@ User-facing changes. Versions are git tags.
 - **Design | Play.** One switch changes between the **Design** room (the die floats and turns; the **Look** settings, Undo and Redo) and the **Play** room (dice on the table; tabs **Table**, **Games** and **Log**). Switching never throws the dice.
 - **One Roll button.** The gold **Roll** in the dock along the bottom of the table is the only control that throws dice. The dock holds the formula box and chips for d4 to d%, **Adv** and **Dis**; tap a chip to replace, double-click or long-press to add. Games put their actions (Bank, Set aside, Cash out) in the dock.
 - **Utilities drawer** with sound, Reset view, Full view, Hints, Pause spin and the Design | Play switch. **Full view** hides the panel; on a phone its handle sits in the tab row.
-- **Bag, Sets and Log** open inside the panel tabs. One round **Bag** button, bottom left, opens the Bag view (Designs and Sets), which is also where the bag is saved, loaded and copied.
+- **Bag view and Log.** The Log is a tab in the Play room's panel. One round **Bag** button, bottom left, opens the Bag view (Designs and Sets), which is also where the bag is saved, loaded and copied.
 - **Set editor is draft-first.** Nothing joins the bag until **Save**; **Close** discards. **New set** opens an empty draft.
 - **Undo and Redo** moved to a strip at the top of the Design panel.
-- **Phone layout.** The top strip holds the Design | Play switch; the leaning and held chips and the look-from-above handle sit at the top right; the dock keeps the formula box and Roll on one row while the chips scroll; long breakdown lines wrap.
+- **Phone layout.** The Design | Play switch lives in the Utilities drawer; the leaning and held chips and the look-from-above handle sit at the top right; the dock keeps the formula box and Roll on one row while the chips scroll; long breakdown lines wrap.
 - **Shape buttons** work the same in Design and Play and never roll: tap picks one die, double-click or long-press adds one to the formula.
 
 ### New: design and feel
