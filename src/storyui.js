@@ -6,10 +6,16 @@ const HUES=[200,20,140,280,50,170,330,100,240];
 export function createStoryTray(host){
   const root=document.createElement('div'); root.id='storytray'; root.hidden=true; host.append(root);
   let tiles=[], rings=[], key='', cur=null, drag=null;
-  const size=()=>{ const n=cur?cur.glyphs.length:5; return cur&&cur.dice3d?Math.min(210,root.clientHeight*.3,Math.max(46,(root.clientWidth*.97-(n-1)*12)/n)):Math.min(92,Math.max(46,root.clientWidth/(n+1.5))); },   // 3D dice are shown large (up to 210px, limited by the width of the row and the height of the tray)
+  const NN=()=>cur?cur.glyphs.length:5, per=n=>n>5?Math.ceil(n/2):n;   // more than 5 dice: the rings and the pool each split into two roughly even rows, so they stay on screen on a phone
+  const size=()=>{ const n=NN(), m=per(n), w=(root.clientWidth*.97-(m-1)*12)/m, hcap=n>5?(root.clientHeight*.88-60)/4.5:root.clientHeight*.3;
+    return cur&&cur.dice3d?Math.min(210,hcap,Math.max(40,w)):Math.min(92,hcap,Math.max(40,root.clientWidth/(m+1.5))); },   // 3D dice are shown large (up to 210 px), limited by the row width and the tray height
   W=()=>root.clientWidth, H=()=>root.clientHeight;
-  const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), tot=n*s+(n-1)*gap; return [(W()-tot)/2+k*(s+gap), H()*.2]; };
-  const poolXY=(k,m)=>{ const s=size(), gap=10, tot=m*s+(m-1)*gap, y=cur&&cur.dice3d?Math.max(H()*.2+s*1.1,Math.min(H()*.62,H()-s-80)):H()*.62; return [(W()-tot)/2+k*(s+gap), y]; };
+  const rowOf=(k,t)=>{ const a=Math.ceil(t/2); return k<a?{row:0,i:k,c:a}:{row:1,i:k-a,c:t-a}; };   // position k of t items -> row, index in row, items in that row
+  const ringY=()=>H()*(NN()>5?.12:.2);
+  const ringXY=(k,n)=>{ const s=size(), gap=Math.min(12,s*.15), r=n>5?rowOf(k,n):{row:0,i:k,c:n}, tot=r.c*s+(r.c-1)*gap; return [(W()-tot)/2+r.i*(s+gap), ringY()+r.row*s*1.08]; };
+  const poolXY=(k,m)=>{ const s=size(), gap=10, n=NN(), r=n>5&&m>per(n)?rowOf(k,m):{row:0,i:k,c:m}, tot=r.c*s+(r.c-1)*gap;
+    const base=n>5?ringY()+2*s*1.08+s*.2:(cur&&cur.dice3d?Math.max(H()*.2+s*1.1,Math.min(H()*.62,H()-s-80)):H()*.62);
+    return [(W()-tot)/2+r.i*(s+gap), base+r.row*s*1.08]; };
   const arr=()=>({n:cur.glyphs.length, rings:cur.order.slice()});
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
   function build(){ root.textContent=''; const n=cur.glyphs.length;

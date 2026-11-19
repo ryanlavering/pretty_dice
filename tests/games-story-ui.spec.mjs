@@ -104,6 +104,18 @@ test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; 
 });
 
 import { test as base, expect as bexpect } from '@playwright/test';
+test('story dice: more than 5 dice split into two rows and stay inside the screen on a phone', async ({ shared: app }) => {
+  await app.reset(7); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
+  await app.run(pd => { pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
+  await app.nav.roll();
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  await app.page.waitForTimeout(800);
+  const box = await app.page.evaluate(() => { const r = document.querySelector('#storytray').getBoundingClientRect(); const f = e => { const b = e.getBoundingClientRect(); return b.left >= r.left - 1 && b.right <= r.right + 1 && b.top >= r.top - 1 && b.bottom <= r.bottom + 1; }; const rows = new Set([...document.querySelectorAll('#storytray .sring')].map(e => Math.round(e.getBoundingClientRect().top))); return { tiles: [...document.querySelectorAll('#storytray .stile')].every(f), rings: [...document.querySelectorAll('#storytray .sring')].every(f), ringRows: rows.size }; });
+  expect(box).toEqual({ tiles: true, rings: true, ringRows: 2 });
+});
+
 base('story dice: ?game=story opens the Games setup on Story Dice', async ({ page }) => {
   await page.goto('/index.html?game=story');
   await bexpect(page.locator('#scorepane')).toContainText('Glyph packs', { timeout: 30000 });
