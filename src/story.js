@@ -1,8 +1,12 @@
 // Story dice (spike, PD-160): a stable, seeded glyph deal for a set of dice, and a plausible-at-surface-level sentence generator. Pure ES module, no DOM.
 // The trick: two overlaid random picks from small pools (which glyph is on which face; which word and which pattern a glyph gets) read as "good enough for infinity".
-import { STORY_GLYPHS } from './story-glyph-data.js';
+import { PACKS } from './story-packs.js';
 
-export const GLYPHS=STORY_GLYPHS, GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
+/* Glyph packs (plug-in glyph sets, chosen a la carte at game setup). Every glyph id is 'pack:name' so packs never clash. A glyph has a path and a viewBox (vb); tier c/o/s is set only in the hand-written packs. */
+export const PACK_LIST=PACKS.map(({glyphs,...m})=>({...m,count:glyphs.length}));
+export const GLYPHS=PACKS.flatMap(p=>p.glyphs.map(g=>({...g,id:p.id+':'+g.id,pack:p.id,name:g.id}))), GLYPH_BY_ID=new Map(GLYPHS.map(g=>[g.id,g]));
+export const poolFor=(packIds)=>{ const want=new Set(packIds); return GLYPHS.filter(g=>want.has(g.pack)); };
+export const DEFAULT_PACKS=['noto'];
 export const MAX_DICE=9, MIN_DICE=3;
 
 /* ---- seeding ---- */
@@ -12,11 +16,11 @@ const shuffled=(arr,r)=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ co
 const pick=(arr,r)=>arr[Math.floor(r()*arr.length)];
 
 /* The set fingerprint: the dice (face count and design id, in order) plus an optional salt (the set name). Same set -> same glyphs on the same faces, on every device. */
-export const fingerprint=(dice,salt='')=>'story1|'+salt+'|'+dice.map(d=>`${d.faces}${d.design?'@'+d.design:''}`).join(',');
+export const fingerprint=(dice,salt='',packIds=DEFAULT_PACKS)=>'story2|'+salt+'|'+[...packIds].sort().join('+')+'|'+dice.map(d=>`${d.faces}${d.design?'@'+d.design:''}`).join(',');
 
 /* Deal glyphs to faces: shuffle the whole pool with the fingerprint's seed, then hand out consecutive runs, so every face of every die has its own glyph.
    dice: [{faces}] -> [[glyphId x faces] per die]. Throws if the set needs more faces than the pool holds. */
-export function dealGlyphs(dice,fp=fingerprint(dice),pool=GLYPHS){
+export function dealGlyphs(dice,fp=fingerprint(dice),pool=poolFor(DEFAULT_PACKS)){
   if(dice.length<MIN_DICE||dice.length>MAX_DICE) throw new Error(`Story dice need ${MIN_DICE}-${MAX_DICE} dice`);
   const need=dice.reduce((s,d)=>s+d.faces,0); if(need>pool.length) throw new Error(`Set has ${need} faces; the glyph pool holds ${pool.length}`);
   const order=shuffled(pool.map(g=>g.id),rng(hash32(fp))); let at=0;

@@ -22,8 +22,8 @@ header label{color:var(--dim);font-size:13px} select,button,input{font:inherit;b
 import * as S from '../src/story.js';
 const $=id=>document.getElementById(id), mat=$('mat'); for(let i=3;i<=9;i++) $('nd').add(new Option(i,i,i===5,i===5));
 const HUES=[200,20,140,280,50,170,330,100,240]; let st=null;
-const svg=g=>`<svg viewBox="0 0 100 100"><path d="${g.path}"/></svg>`, W=()=>mat.clientWidth, H=()=>mat.clientHeight, SZ=()=>Math.min(96,Math.max(54,W()/(+$('nd').value+1.6)));
-function newSet(){ const n=+$('nd').value, f=+$('nf').value, dice=Array(n).fill({faces:f}); try{ const fp=S.fingerprint(dice,$('nm').value), deal=S.dealGlyphs(dice,fp); st={n,f,fp,deal,salt:0,arr:S.newArrangement(n),face:null,els:[],rings:[]}; $('info').textContent=`${fp}  ·  ${n*f} unique glyphs dealt from a pool of ${S.GLYPHS.length}`; }catch(e){ st=null; $('info').textContent=e.message; } }
+const svg=g=>`<svg viewBox="${g.vb}"><path d="${g.path}"/></svg>`, W=()=>mat.clientWidth, H=()=>mat.clientHeight, SZ=()=>Math.min(96,Math.max(54,W()/(+$('nd').value+1.6)));
+function newSet(){ const n=+$('nd').value, f=+$('nf').value, dice=Array(n).fill({faces:f}); try{ const fp=S.fingerprint(dice,$('nm').value), deal=S.dealGlyphs(dice,fp,S.poolFor(['noto'])); st={n,f,fp,deal,salt:0,arr:S.newArrangement(n),face:null,els:[],rings:[]}; $('info').textContent=`${fp}  ·  ${n*f} unique glyphs dealt from a pool of ${S.GLYPHS.length}`; }catch(e){ st=null; $('info').textContent=e.message; } }
 function build(){ mat.className=''; mat.innerHTML=''; if(!st) return; const s=SZ(); mat.style.setProperty('--s',s+'px');
   st.rings=[...Array(st.n).keys()].map(i=>{ const r=document.createElement('div'); r.className='ring'; r.textContent=i+1; r.style.display='none'; mat.append(r); return r; });
   st.els=[...Array(st.n).keys()].map(i=>{ const e=document.createElement('div'),h=HUES[i%9]; e.className='die'; e.style.setProperty('--hi',`hsl(${h} 55% 45%)`); e.style.setProperty('--lo',`hsl(${h} 60% 24%)`); e.dataset.i=i; e.style.display='none'; mat.append(e); drag(e); return e; }); }
@@ -32,7 +32,7 @@ const poolXY=(k,m)=>{ const s=SZ(), gap=10, tot=m*s+(m-1)*gap; return [(W()-tot)
 function layout(){ if(!st||!st.face) return; const pool=S.poolOf(st.arr);
   st.rings.forEach((r,k)=>{ const [x,y]=ringXY(k); r.style.display=''; r.style.left=x+'px'; r.style.top=y+'px'; });
   st.els.forEach((e,i)=>{ if(e.classList.contains('drag')) return; const k=st.arr.rings.indexOf(i), [x,y]=k>=0?ringXY(k):poolXY(pool.indexOf(i),pool.length); e.style.left=x+'px'; e.style.top=y+'px'; }); sentence(); }
-function roll(){ newSet(); build(); if(!st) return; const s=SZ(); st.face=[]; st.els.forEach((e,i)=>{ const f=Math.floor(Math.random()*st.f), g=S.GLYPH_BY_ID.get(st.deal[i][f]); st.face.push(g.id); e.innerHTML=svg(g); e.classList.toggle('odd',g.style===1||g.tier==='o'); e.style.display='';
+function roll(){ newSet(); build(); if(!st) return; const s=SZ(); st.face=[]; st.els.forEach((e,i)=>{ const f=Math.floor(Math.random()*st.f), g=S.GLYPH_BY_ID.get(st.deal[i][f]); st.face.push(g.id); e.innerHTML=svg(g); e.classList.toggle('odd',g.tier==='o'); e.style.display='';
     e.classList.add('roll'); e.style.left=(W()/2-s/2+(Math.random()-.5)*W()*.5)+'px'; e.style.top=(H()/2-s/2+(Math.random()-.5)*H()*.3)+'px'; e.style.transform=`rotate(${(Math.random()-.5)*90}deg)`; });
   $('sent').textContent='Rolled. Sweeping the dice aside...'; $('hints').innerHTML=''; $('reword').disabled=true;
   setTimeout(()=>{ st.els.forEach(e=>{ e.classList.remove('roll'); e.style.transform=''; }); layout(); },900); }   // "swept": the dice slide, un-rotated, from where they landed to the pool row; rings appear above
@@ -48,7 +48,7 @@ function drag(e){ let moved=false,ox=0,oy=0,sx=0,sy=0;
     e.classList.remove('drag'); moved=false; layout(); }); }
 function hit(e){ const s=SZ(), cx=parseFloat(e.style.left)+s/2, cy=parseFloat(e.style.top)+s/2; let best=-1,bd=s*.6; st.rings.forEach((r,j)=>{ const [x,y]=ringXY(j), d=Math.hypot(cx-(x+s/2),cy-(y+s/2)); if(d<bd){ bd=d; best=j; } }); return best; }
 $('roll').onclick=roll; $('reword').onclick=()=>{ st.salt++; sentence(); };
-$('sheet').onclick=()=>{ st=null; mat.className='sheet'; mat.removeAttribute('style'); mat.innerHTML=S.GLYPHS.map(g=>`<div title="${g.id} (${g.tier})" style="text-align:center;font-size:10px;color:#9db8ad"><div style="width:56px;height:56px;margin:auto;background:#1c4a3c;border-radius:12px;display:grid;place-items:center"><svg viewBox="0 0 100 100" style="width:44px;height:44px;fill:${g.style||g.tier==='o'?'#ffd9a0':'#fbf6e6'}"><path d="${g.path}"/></svg></div>${g.id}</div>`).join(''); $('sent').textContent=`${S.GLYPHS.length} glyphs: common cream, oddball and out-of-style tinted`; $('hints').innerHTML=''; };
+$('sheet').onclick=()=>{ st=null; mat.className='sheet'; mat.removeAttribute('style'); mat.innerHTML=S.GLYPHS.map(g=>`<div title="${g.id} (${g.tier})" style="text-align:center;font-size:10px;color:#9db8ad"><div style="width:56px;height:56px;margin:auto;background:#1c4a3c;border-radius:12px;display:grid;place-items:center"><svg viewBox="${g.vb}" style="width:44px;height:44px;fill:${g.pack==='noto'&&g.tier!=='o'?'#fbf6e6':'#ffd9a0'}"><path d="${g.path}"/></svg></div>${g.id}</div>`).join(''); $('sent').textContent=`${S.GLYPHS.length} glyphs: noto common cream; oddballs and other packs tinted`; $('hints').innerHTML=''; };
 addEventListener('resize',()=>{ if(st&&st.face){ const f=st.face, arr=st.arr; build(); st.face=f; st.arr=arr; st.els.forEach((e,i)=>{ e.innerHTML=svg(S.GLYPH_BY_ID.get(f[i])); e.style.display=''; }); layout(); } });
 window.__story={get st(){ return st; }, roll};
 roll();
