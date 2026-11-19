@@ -24,6 +24,8 @@ A group roll shows its results side by side with a breakdown per roll, and a nat
 
 Tap a settled die to **hold** it: a gold ring appears and it stays put when you roll again. Tap it again to let go. Games use this for Yacht-style turns. A held die that a re-roll bumps is lifted and turned back to its face. A pink ring marks a die that is leaning (cocked), and a small chip at the top right of the table says **⚠ Fix N leaning dice** (tap it to re-roll just those); a leaning die cannot be held until it settles flat. The chip for held dice reads **N held · release**.
 
+![On a phone: two held dice with gold rings, the dock reading Roll 3 dice](img/26-phone-hold.png)
+
 ## Change one die's design
 
 Press and hold a settled die for about half a second (or right-click it) to open a menu of the bag's designs. Pick one and just that die takes the new skin; its number and place stay and nothing is thrown. It only offers designs of the same die type. For layouts that cannot carry a per-die design (a group roll such as `4x d20`, kept or dropped dice such as `4d6kh3`, d% dice) the menu says **This layout cannot mix designs**. It is a shortcut: the **Sets** tab does the same job.
