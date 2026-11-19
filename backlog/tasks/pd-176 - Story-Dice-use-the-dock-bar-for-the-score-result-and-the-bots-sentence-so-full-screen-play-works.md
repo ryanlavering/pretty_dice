@@ -3,7 +3,7 @@ id: PD-176
 title: >-
   Story Dice: use the dock bar for the score/result and the bot's sentence so
   full-screen play works
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T22:26:00Z'
 labels:
