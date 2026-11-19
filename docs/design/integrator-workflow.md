@@ -47,3 +47,6 @@ Sonnet default; set `model` explicitly on every Agent call (haiku lookups, sonne
 
 ## Standing owner decisions
 4.0 and 4.0.1 shipped; everything since is 4.1+. Golden set is sufficient (no re-record). Conserve weekly budget: no Opus without a go. 4.1 = Story Dice (PD-160/161/166/167) plus carried items; everything else is v4.2.
+
+## Release checklist artifact
+`python3 scripts/release-checklist.py <out.html>` builds the 4.1 checklist page (card statuses live from the backlog in this checkout and ../pretty_dice-v4.1; gates edited by hand in the script). Republish to the same artifact url after each landing, review OK or gate change: https://claude.ai/artifact/9stZVx8h5Pe58AfaR2LmGs
