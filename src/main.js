@@ -343,6 +343,9 @@ function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does
 function plainLook(){   // Story dice start from the plain default design (what Blank opens, without the random seed): the glyphs read best on a plain die, and the player's own design stays saved in the bag
   Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.numSize=.9; repaint(); }   // numSize .9: glyphs must read on a phone
+let lookSnap=null;   // the player's look, kept while the story dice use the plain one (a snapshot, not a bag draft: no thumbnails to render, nothing to save or discard)
+function lookSwap(){ if(lookSnap) return; lookSnap=snapshot(); plainLook(); }
+function lookRestore(){ if(!lookSnap) return; const o=JSON.parse(lookSnap); lookSnap=null; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate); repaint(); }
 
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
@@ -1279,7 +1282,7 @@ let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
-let storyDeal=null;   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
+let storyDeal=null, storyPrev=null;   // storyPrev: the setup preview (the story dice on the mat before Start), with what to restore   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
 let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
@@ -1947,7 +1950,7 @@ function placeSwitch(){ if(!stripReady) return; const ph=phoneUI(), tp=$('topstr
 peekHandle($('stripmid')); stripReady=true; placeSwitch(); phoneMq.addEventListener('change',placeSwitch); addEventListener('resize',placeSwitch);   // resize too: a viewport change must always re-place the strip contents
 addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
-function closeGamesUI(){ document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
+function closeGamesUI(){ storyPreviewOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
@@ -2001,9 +2004,9 @@ function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
   gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
-  if(id==='story'){ gameSnap.undraft=!bag.active.draft; enterDraft(); plainLook(); }   // the live look becomes a plain draft for the game; ending the game discards it
+  if(id==='story'){ storyPrev=null; lookSwap(); }   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; const undraft=gameSnap.undraft; gameSnap=null; buildDice(); syncUI(); if(undraft&&bag&&bag.active.draft) bagOps.discard(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+function endGame(){ if(!game) return; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2067,6 +2070,9 @@ function renderLiars(S,st,over){
 const storyTray=createStoryTray(stage); let storySalt=0;
 function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealGlyphs(dice,fp,poolFor(o.packs)).map(run=>run.map(id=>GLYPH_BY_ID.get(id)))}; }
 const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
+function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
+  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
+function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
 function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); return; }
   const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
@@ -2122,6 +2128,7 @@ function renderGameBody(){
       else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
       else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
         for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
+    if(!game){ if(g.id==='story'&&opts.dice*opts.sides<=poolFor(opts.packs).length) storyPreviewOn(opts); else storyPreviewOff(); }   // the story dice show on the mat while setting up
     if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length; GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'+(need>have?': too many, pick more packs or fewer dice':'')}))); }
     if(g.id!=='liarsdice'&&g.id!=='story'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
     GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',disabled:g.id==='story'&&opts.dice*opts.sides>poolFor(opts.packs).length,onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));

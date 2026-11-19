@@ -6,8 +6,10 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   const errors = []; app.page.on('pageerror', e => errors.push(e.message));
   const setDice = n => app.page.locator('#scorepane input[type=number]').first().evaluate((e, v) => { e.value = v; e.dispatchEvent(new Event('change')); }, String(n));
   await app.reset(7);
+  const before = await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }));
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, dice: pd.dice.length, sub: pd.state.substrate }))).toEqual({ shape: 'custom', n: '5d12', dice: 5, sub: 'solid' });   // the story dice are on the mat during setup
   await expect(app.page.locator('#scorepane')).toContainText('Glyph packs');
   await expect(app.page.locator('#scorepane')).toContainText('Everyday pictures'); await expect(app.page.locator('#scorepane')).toContainText('Hieroglyphs');
   await expect(app.page.locator('#scorepane')).toContainText('60 faces from 141 glyphs');
@@ -19,9 +21,8 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   await app.page.selectOption('#scorepane select >> nth=2', '12'); await setDice(5);
   await app.page.locator('#scorepane label:has-text("Fantasy and adventure") input').uncheck();
   await app.page.locator('#scorepane label:has-text("Hieroglyphs") input').check();
-  const before = await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }));
   await app.nav.roll();   // Start game
-  expect(await app.run(pd => ({ sub: pd.state.substrate, colors: pd.state.colors, draft: pd.bag.active.draft }))).toEqual({ sub: 'solid', colors: ['#efe9dc', '#efe9dc', '#efe9dc'], draft: true });   // starts from the plain default design
+  expect(await app.run(pd => ({ sub: pd.state.substrate, colors: pd.state.colors }))).toEqual({ sub: 'solid', colors: ['#efe9dc', '#efe9dc', '#efe9dc'] });   // starts from the plain default design
   const info = await app.run(pd => ({ n: pd.state.notation, game: pd.game.id, packs: pd.game.state.options.packs }));
   expect(info).toEqual({ n: '5d12', game: 'story', packs: ['noto', 'hiero'] });
   if (shot) { await app.page.waitForTimeout(800); await app.page.screenshot({ path: `${shot}/story-app-1-dice.png` }); }
@@ -54,6 +55,20 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   await app.run(pd => pd.endGame()); await app.page.waitForTimeout(500);
   expect(await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);
   expect(errors).toEqual([]);
+});
+
+test('story dice setup preview: picking Story Dice shows the dice, another game or Close puts the old look back', async ({ shared: app }) => {
+  await app.reset(79); await app.run(pd => { if (pd.game) pd.endGame(); });
+  const before = await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }));
+  await app.run(pd => pd.openGames());
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  expect(await app.run(pd => pd.state.notation)).toBe('5d12');
+  await app.page.selectOption('#scorepane select >> nth=2', '20'); expect(await app.run(pd => pd.state.notation)).toBe('5d20');   // an option change rebuilds the preview
+  await app.page.selectOption('#scorepane select >> nth=0', 'pig'); await app.page.waitForTimeout(500);
+  expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);
+  await app.page.selectOption('#scorepane select >> nth=0', 'story'); expect(await app.run(pd => pd.state.shape)).toBe('custom');
+  await app.page.click('#scorepane button:has-text("Close")'); await app.page.waitForTimeout(500);
+  expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);
 });
 
 test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; tray is locked on its turn', async ({ shared: app }) => {
