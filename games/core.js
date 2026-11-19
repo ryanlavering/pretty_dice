@@ -4,11 +4,12 @@ import * as Farkle from './farkle.js';
 import * as Pig from './pig.js';
 import * as Craps from './craps.js';
 import * as Liars from './liarsdice.js';
+import * as Story from './story.js';
 import * as Bots from './bots.js';
 
 const GAMES = { yahtzee: { info: Y.info, mod: yahtzeeEngine() }, farkle: { info: Farkle.info, mod: Farkle.engine }, pig: { info: Pig.info, mod: Pig.engine }, craps: { info: Craps.info, mod: Craps.engine },
   // Parked for v4.0 (PD-142.41): shutbox.js, shipcaptain.js, bunco.js stay in games/ but are not registered; re-add the import and a line here to bring one back.
-  liarsdice: { info: Liars.info, mod: Liars.engine } };
+  liarsdice: { info: Liars.info, mod: Liars.engine }, story: { info: Story.info, mod: Story.engine } };
 
 export const listGames = () => Object.values(GAMES).map(g => JSON.parse(JSON.stringify(g.info)));
 const eng = s => { const g = GAMES[s.game]; if (!g) throw new Error('unknown game ' + s.game); return g.mod; };

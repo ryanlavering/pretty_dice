@@ -14,7 +14,7 @@ export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2
   if(opts.big&&opts.numSize&&!opts.layout){      // PD-142.38.16: the filigree reaches the face corners (triangle circumradius = 2 x inradius); small print makes the face large in atlas px, so grow the cell until the corner fits
     const m=document.createElement('canvas').getContext('2d'), pxm=labels.some(l=>(pad2?String(l).padStart(2,'0'):String(l)).length>1)?112:136, wt=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
     m.font=`${wt} ${pxm}px ${F.css}`; m.textAlign='center';
-    let hd=1; for(const l of labels){ const t=(pad2?String(l).padStart(2,'0'):String(l))+(!pad2&&(l===6||l===9)?'.':''), b=m.measureText(t); hd=Math.max(hd,Math.hypot(b.actualBoundingBoxLeft+b.actualBoundingBoxRight,b.actualBoundingBoxAscent+b.actualBoundingBoxDescent)/2); }
+    let hd=1; for(const l of labels){ if(l&&typeof l==='object'){ hd=Math.max(hd,80); continue; } const t=(pad2?String(l).padStart(2,'0'):String(l))+(!pad2&&(l===6||l===9)?'.':''), b=m.measureText(t); hd=Math.max(hd,Math.hypot(b.actualBoundingBoxLeft+b.actualBoundingBoxRight,b.actualBoundingBoxAscent+b.actualBoundingBoxDescent)/2); }
     const need=2*2.1*hd/opts.numSize;                       // cell side so the farthest corner (2.1 x inradius, a little margin) stays inside
     cell=Math.min(Math.floor(4096/cols), 768, Math.max(384, Math.ceil(need/32)*32)); }
   if(opts.layout){
@@ -42,8 +42,8 @@ export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2
   labels.forEach((lab,i)=>{
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
     if(lab&&typeof lab==='object'&&lab.path){            // story dice (PD-160): a glyph label {id,path} is a 100x100 SVG path painted like a numeral (same bump and mask passes)
-      const side=px*1.15, k=side/100, p2=lab._p2||(lab._p2=new Path2D(lab.path)); info.push({halfDiag:Math.hypot(side,side)/2});
-      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){ g.save(); g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none'; g.translate(cx-side/2,cy-side/2); g.scale(k,k); g.fill(p2,'nonzero'); g.restore(); g.filter='none'; }
+      const [vx,vy,gw,gh]=(lab.vb||'0 0 100 100').split(/[ ,]+/).map(Number), side=px*1.5, kk=side/Math.max(gw,gh), p2=lab._p2||(lab._p2=new Path2D(lab.path)); info.push({halfDiag:Math.hypot(side,side)/2});
+      for(const [g,fill,blur] of [[bg,'#000',soft],[mg,'#fff',0.6]]){ g.save(); g.fillStyle=fill; g.filter=blur?`blur(${blur}px)`:'none'; g.translate(cx-side/2+(side-gw*kk)/2,cy-side/2+(side-gh*kk)/2); g.scale(kk,kk); g.translate(-vx,-vy); g.fill(p2,'nonzero'); g.restore(); g.filter='none'; }
       return; }
     let txt=show(lab); if(!pad2&&(lab===6||lab===9)) txt+='.';
     mg.font=`${weight} ${px}px ${F.css}`; mg.textAlign='center'; const m=mg.measureText(txt);   // align must be set before measuring or the first label is off-centre

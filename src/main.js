@@ -13,6 +13,8 @@ import { U, makeMaterial, makeUniforms } from './material.js';
 import { STONES, STONE_KEYS, SUBSTRATES, bindState, hsl, pickPaint } from './substrates.js';
 import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId, uniqueName } from './bagmodel.js';
 import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
+import { GLYPH_BY_ID, PACK_LIST, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
+import { createStoryTray } from './storyui.js';
 
 /* ---------- utils ---------- */
 const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
@@ -131,7 +133,7 @@ function specsFor(shape){
       if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,copy:cp,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,copy:cp,part:'ones',design:t.design}); }
       else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,copy:cp,design:t.design}); } });
     const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
-    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design}));
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,glyphs:storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null}));
   }
   const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
@@ -252,17 +254,17 @@ function buildDice(keepRoll){
   specs.forEach(s=>{
     const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
-    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree].join('|');
+    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree,s.glyphs?s.glyphs.map(g=>g.id).join(','):''].join('|');
     let part=nextParts.get(key)||partCache.get(key);
     if(!part){
       const faces=hull(s.verts), labs=assignLabels(faces,s.labels);
       if(faces.length!==s.labels.length) console.warn(`${s.name}: hull has ${faces.length} faces, expected ${s.labels.length}`);
       let opts={};
-      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'){          // vertex value = label of the face opposite it
+      if(s.labels.length===4&&faces.length===4&&L.d4Style==='tips'&&!s.glyphs){          // vertex value = label of the face opposite it
         const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
         opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
-      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips') opts={layout:'pips'};
-      const atlas=makeAtlas(faces.length,labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
+      } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips'&&!s.glyphs) opts={layout:'pips'};
+      const atlas=makeAtlas(faces.length,s.glyphs?labs.map(l=>s.glyphs[l-1]):labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
       part={faces,labs,atlas,geo};
     }
     nextParts.set(key,part);
@@ -1273,6 +1275,7 @@ let diceMat,matMat,ccDD,ccDM;
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
+let storyDeal=null;   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
 let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
@@ -1948,7 +1951,7 @@ const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
 const TURN_GAMES=['farkle','pig','shutbox','shipcaptain','bunco'];   // dice-and-bank games: no scorecard, a running turn total
-const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
+const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice','story'];   // PD-142.41: the games offered in 4.0 (ids kept from before the Yacht / Ten Thousand renames so saved games load); Shut the Box, Ship Captain and Crew and Bunco are parked
 const keptGames=()=>GAMES.listGames().filter(g=>KEPT_GAMES.includes(g.id)).sort((a,b)=>KEPT_GAMES.indexOf(a.id)-KEPT_GAMES.indexOf(b.id));
 let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
 function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice
@@ -1957,8 +1960,8 @@ function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.sta
     if(gsel.has(i)) gsel.delete(i); else gsel.add(i); gameMsg=''; held=new Set([...st.held.map((h,k)=>h?k:-1).filter(k=>k>=0),...gsel]); renderGame(); return true; }
   if(!st.canHold){ gameMsg='Roll first, then tap dice to keep them'; renderGame(); return false; }
   const r=GAMES.act(game.state,{type:'hold',slot:i}); if(!r.ok){ gameMsg=r.error; renderGame(); return false; } game.state=r.state; gameMsg=''; const sh=GAMES.status(game.state).held; held=new Set(sh.map((h,k)=>h?k:-1).filter(k=>k>=0)); renderGame(); return true; }
-function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
-  gsel.clear(); if(game.info.hidden) liveDiceOnly();
+function gameBeforeRoll(){ const st=GAMES.status(game.state); if(!st.canRoll||st.phase==='over'){ if(game.id==='story') gameMsg=st.phase==='rate'?'Rate the story first':st.phase==='arrange'?'Put the dice in story order first':''; else if(st.canScore) gameMsg=TURN_GAMES.includes(game.id)?'Set aside scoring dice first':'Pick a box on the scorecard'; renderGame(); return false; }
+  gsel.clear(); if(game.id==='story'){ storyTray.hide(); for(const d of dice) d.mesh.visible=true; storySalt=0; } if(game.info.hidden) liveDiceOnly();
   if(game.id==='craps'){ for(let k=0;k<12;k++){ const a=GAMES.botMove(game.state,{seed:++botN}); if(!a||a.type!=='bet') break; const b=GAMES.act(game.state,a); if(!b.ok) break; game.state=b.state; } }   // bots place their bets before the dice go
   if(game.id==='craps'){ const rs=GAMES.act(game.state,{type:'rollStart'}); if(rs.ok) game.state=rs.state; }   // the engine locks betting from the throw until the roll is reported
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
@@ -1993,9 +1996,9 @@ const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null');
 function gsaveGame(){ try{ if(game&&!game.setup&&GAMES.status(game.state).phase!=='over') localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:game.state})); else if(game&&!game.setup) localStorage.removeItem(GSAVE); }catch{} }
 async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
-  gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
-  state.shape='custom'; state.notation=info.dice.count+'d'+info.dice.sides; buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+  gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null;
+  state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
+function endGame(){ if(!game) return; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2055,12 +2058,39 @@ function renderLiars(S,st,over){
   const act=(a)=>{ const r=GAMES.act(S,a); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; gameMsg=a.type==='bid'?nm(st.player)+' bid '+a.quantity+' × '+a.face+'s':''; lbid=null; renderGame(); };
   GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Bid '+lbid.q+' × '+lbid.f+'s',disabled:!st.canBid,onclick:()=>act({type:'bid',quantity:lbid.q,face:lbid.f})}),gel('button',{type:'button',textContent:'Challenge',disabled:!st.canChallenge,onclick:()=>act({type:'challenge'})})));
 }
+// ---- Story dice (PD-160 spike): glyph faces from the seeded deal, the ring tray, hints, the bot's sentence and manual bad/fair/good rating ----
+const storyTray=createStoryTray(stage); let storySalt=0;
+function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealGlyphs(dice,fp,poolFor(o.packs)).map(run=>run.map(id=>GLYPH_BY_ID.get(id)))}; }
+const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
+function storySync(){
+  if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); return; }
+  const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
+  for(const d of dice) d.mesh.visible=false;   // the dice are swept off the mat while the tray is up
+  storyTray.show({glyphs:storyGlyphs(st),order:st.order,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+}
+function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
+function renderStory(S,st,over){
+  const res=over?GAMES.result(S):null;
+  if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
+  if(!over&&st.phase==='arrange'){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'}))); }
+  if(!over&&st.phase==='rate'){
+    const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=sentenceFor(ids,storySalt).text;
+    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
+    GP.append(gel('div',{className:'story-rate'},...[['bad','Bad · 0'],['fair','Fair · 1'],['good','Good · 2']].map(([k,l])=>gel('button',{type:'button',className:'big',textContent:l,onclick:()=>storyRate(k)}))));
+  }
+  if(!over&&st.phase!=='roll'&&S.options.hints){ const ids=(st.phase==='rate'?st.order.map(i=>storyGlyphs(st)[i]):storyGlyphs(st).filter((_,i)=>!st.order.includes(i))).map(g=>g.id), box=gel('div',{className:'story-hints'});
+    for(const id of ids){ const h=hintFor(id); box.append(gel('div',{},gel('b',{textContent:h.nouns[0]}),gel('br'),'n: '+h.nouns.join(', '),gel('br'),'adj: '+h.adjectives.join(', '),gel('br'),'adv: '+h.adverbs.join(', '),gel('br'),'v: '+h.verbs.join(', '))); } GP.append(box); }
+  const tb=gel('table'), hr=gel('tr'); hr.append(gel('th',{textContent:'Story'})); S.players.forEach((nm,p)=>hr.append(gel('th',{textContent:nm,className:p===st.player&&!over?'cur':'',title:nm}))); tb.append(gel('thead',{},hr));
+  const body=gel('tbody'); for(let r=0;r<S.options.rounds;r++){ const tr=gel('tr'); tr.append(gel('td',{textContent:String(r+1)})); S.players.forEach((_,p)=>{ const e=S.tellings[p][r]; tr.append(gel('td',{textContent:e?e.points+' '+e.rating:'',className:p===st.player&&!over&&r+1===st.round?'cur':''})); }); body.append(tr); }
+  const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>tt.append(gel('td',{textContent:String(S.scores[p]),className:p===st.player&&!over?'cur':''}))); body.append(tt); tb.append(body); GP.append(tb);
+}
 function renderGame(){
   GP=SP;   // slice 6: the scorecard lives in the panel's Games tab on every size
   renderGameBody(); document.body.classList.toggle('game',!!game&&!game.setup); peekHandle(GP.querySelector('.gstat'));
   { $('gamestab').textContent=game&&!game.setup?'Scorecard':'Games'; if(paneAuto){ setPane('games'); paneAuto=false; } renderStrip(); }
   if(gflash){ for(const el of [GP.querySelector('.gstat'),GPstage.querySelector('.st')]) if(el){ el.classList.remove('fx-bust','fx-hot','fx-bank'); void el.offsetWidth; el.classList.add('fx-'+gflash); } gflash=null; }
-  renderDock(); gsaveGame(); botPump(); showCallout(); showcaseCount();
+  renderDock(); gsaveGame(); botPump(); showCallout(); showcaseCount(); storySync();
 }
 
 function renderStrip(){   // the phone's mat strip keeps one line: the status (Roll, Bank and Set aside live in the dock)
@@ -2080,18 +2110,23 @@ function renderGameBody(){
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers))}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
-    const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
+    const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!g.noBots&&!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,g.noBots?'':gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
     const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
       if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); }
-      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); } }
-    if(g.id!=='liarsdice'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
-    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
+      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); if(g.id==='story') renderGame(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); }
+      else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
+      else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
+        for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
+    if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length; GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'+(need>have?': too many, pick more packs or fewer dice':'')}))); }
+    if(g.id!=='liarsdice'&&g.id!=='story'){ const sg=gel('input',{type:'checkbox',checked:gprefs.suggest,onchange:()=>{ gprefs.suggest=sg.checked; gsave(); }}); GP.append(gel('label',{className:'row'},sg,gel('span',{textContent:'Suggest scores'}))); }
+    GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:game?'Back to game':'Start game',disabled:g.id==='story'&&opts.dice*opts.sides>poolFor(opts.packs).length,onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
   const S=game.state, st=GAMES.status(S,gviewer()), sug=game.info.hidden?[]:GAMES.suggest(S), over=st.phase==='over';
   hd(game.info.name,()=>{ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); },'End game'); if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(game.id==='liarsdice'){ renderLiars(S,st,over); return; }
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }
+  if(game.id==='story'){ renderStory(S,st,over); return; }
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
   else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.canRoll?(st.rollsUsed?'roll again or pick a box':'roll the dice'):'pick a box'),gel('small',{textContent:'Round '+st.round+' of '+st.rounds+(st.rollsUsed?' · roll '+st.rollsUsed+' of 3':'')+(gameMsg?' · '+gameMsg:'')})));
