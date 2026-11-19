@@ -2,6 +2,13 @@
 
 User-facing changes. Versions are git tags.
 
+## 4.0.1 (2026-11-18)
+
+Fixes from live play of 4.0.
+
+- **Computer players no longer get stuck on a leaning die.** A bot now re-rolls the leaning die itself and carries on with its turn.
+- **Picking a design or set in the Bag during a game no longer changes the game's dice.** The game declines the pick ("The game fixes the dice: end it to pick another design or set") until it ends. Long-press design swaps on a single die still work (look only).
+
 ## 4.0 (2026-11-18)
 
 ### New: the game table
