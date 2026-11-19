@@ -1,9 +1,10 @@
 ---
 id: PD-165
 title: 'Yacht score entry: single click on desktop, Whoopsie timer 3 s'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T19:43:00Z'
+updated_date: '2026-11-19T19:50:00Z'
 labels:
   - v4.1
 dependencies: []
