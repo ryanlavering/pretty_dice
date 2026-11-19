@@ -50,3 +50,10 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   expect((await app.run(pd => pd.GAMES.status(pd.game.state))).phase).toBe('over'); await expect(app.page.locator('#scorepane')).toContainText('Game over');
   expect(errors).toEqual([]);
 });
+
+import { test as base, expect as bexpect } from '@playwright/test';
+base('story dice: ?game=story opens the Games setup on Story Dice', async ({ page }) => {
+  await page.goto('/index.html?game=story');
+  await bexpect(page.locator('#scorepane')).toContainText('Glyph packs', { timeout: 30000 });
+  await bexpect(page.locator('#scorepane select').first()).toHaveValue('story');
+});
