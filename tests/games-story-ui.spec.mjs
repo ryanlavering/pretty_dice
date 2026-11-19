@@ -166,7 +166,7 @@ base('story dice: ?game=story opens the Games setup on Story Dice', async ({ pag
   await bexpect(page.locator('#scorepane select').first()).toHaveValue('story');
 });
 
-test('story dice: full view with the pane closed, the dock carries the sentence, rating and result (PD-176)', async ({ shared: app }) => {
+test('story dice: full view with the pane closed, the mat shows the sentence, the dock the rating and result (PD-176)', async ({ shared: app }) => {
   for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) {
     await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
     await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
@@ -181,13 +181,17 @@ test('story dice: full view with the pane closed, the dock carries the sentence,
     if (shot) await app.page.screenshot({ path: `${shot}/story-${vp.width}-arrange.png` });
     for (const i of [0, 1, 2]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
     const sent = (await app.page.locator('.story-sent').textContent()).trim();
-    await expect(app.page.locator('#dockhint')).toBeVisible();
-    await expect(app.page.locator('#dockhint')).toContainText("Tell your own");
-    await expect(app.page.locator('#dockhint')).toContainText(sent);
+    await expect(app.page.locator('#storytray .ssent')).toBeVisible();
+    await expect(app.page.locator('#storytray .ssent')).toContainText(sent);
+    await expect(app.page.locator('#storytray .ssent')).toContainText('Tell your own');
+    const geo = await app.page.evaluate(() => { const q = s => document.querySelector(s).getBoundingClientRect(), t = q('#storytray .ssent'), d = q('#qbar'), rs = [...document.querySelectorAll('#storytray .sring')].map(e => e.getBoundingClientRect());
+      return { inside: t.left >= 0 && t.right <= innerWidth && t.top >= 0 && t.bottom <= innerHeight, clearOfRings: rs.every(r => t.top >= r.bottom - 1), clearOfDock: t.bottom <= d.top + 1, dockHasSentence: document.querySelector('#dockhint').textContent.includes(document.querySelector('#storytray .ssent').textContent.slice(-12)) }; });
+    expect(geo).toEqual({ inside: true, clearOfRings: true, clearOfDock: true, dockHasSentence: false });
+    await expect(app.page.locator('#dockhint')).toContainText('Tell it, then rate it');
     await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible();
     const inView = await app.page.evaluate(() => { const r = document.querySelector('#qbar').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; });
     expect(inView).toBe(true);
-    if (shot) await app.page.screenshot({ path: `${shot}/story-${vp.width}-rate.png` });
+    if (shot) { await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(600); await app.page.screenshot({ path: `${shot}/story-${vp.width}-rate.png` }); }
     await app.page.locator('#qbar [data-act=rate-good]').click();
     expect((await app.run(pd => pd.GAMES.status(pd.game.state))).scores[0]).toBe(2);
     await expect(app.page.locator('#dockhint')).toContainText('Last story +2');

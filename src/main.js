@@ -980,8 +980,8 @@ function renderStoryDock(S,st,over,go,btn,hint,qb){   // PD-176
   if(qb) qb.classList.add('storyq'); go.disabled=true; go.textContent='Roll';
   if(over){ const res=GAMES.result(S); hint.textContent='Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total; return; }
   const who=S.players.length>1?S.players[st.player]:'';
-  if(st.phase==='rate'){ const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
-    const pre=document.createElement('b'); pre.textContent=st.botTurn?'Judge '+who+"'s story: ":'Tell your own: '; hint.append(pre,document.createTextNode(txt)); hint.title=txt; hint.classList.add('sent');
+  if(st.phase==='rate'){
+    hint.textContent=st.botTurn?'Judge '+who+"'s story":'Tell it, then rate it';   // the sentence itself is drawn on the mat (storyui .ssent)
     for(const [k,l] of [['bad','Bad 0'],['fair','Fair 1'],['good','Good 2']]) btn(l,()=>storyRate(k),false,'rate-'+k); return; }
   hint.classList.remove('sent');
   go.disabled=!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled);
@@ -2153,13 +2153,14 @@ function tickStoryFly(dt){
     const num=new THREE.Mesh(new THREE.PlaneGeometry(.4,.4),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,opacity:.65,depthWrite:false,toneMapped:false})); ring.renderOrder=num.renderOrder=-1; g.add(ring,num); storyRings.add(g); }); par.add(storyRings); }
   if(storyRings){ const Dr=D*1.12, up2=new THREE.Vector3(); storyRings.children.forEach((g,k)=>{ const el=rs[k], b=el.getBoundingClientRect(), nx=((b.left+b.width/2-r.left)/r.width)*2-1, ny=-(((b.top+b.height/2-r.top)/r.height)*2-1);
     const ray=up2.set(nx,ny,.5).unproject(camera).sub(camera.position); tmpP.copy(camera.position).addScaledVector(ray,Dr/ray.dot(fwd)); rig.worldToLocal(tmpP); g.position.copy(tmpP); g.quaternion.copy(rq).multiply(camera.quaternion); g.scale.setScalar(b.width*upx*Dr/D); g.children[0].material.opacity=el.classList.contains('hot')?.95:.55; }); } }
+function storySentence(st){ if(st.phase!=='rate') return ''; const ids=st.order.map(i=>storyGlyphs(st)[i].id); return st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text; }   // PD-176: shown on the mat once every die is placed
 function storySync(){
   if(!game||game.setup||game.id!=='story'||!storyDeal){ storyTray.hide(); storyFlyEnd(); return; }
   const st=GAMES.status(game.state); if(st.phase==='roll'||st.phase==='over'||!st.dice||(rolling&&!settled&&gameAwaiting)){ storyTray.hide(); storyFlyEnd(); if(!gameAwaiting) for(const d of dice) d.mesh.visible=true; return; }
   const d3=gprefs.hivis!==true&&rolling&&!!bodies.length&&dice.length===st.dice.length;   // 3D: the real dice fly up into a line facing the player; hi-vis: the flat glyph tiles
   if(!d3) storyFlyEnd();
   for(const d of dice) d.mesh.visible=d3;   // hi-vis: the dice are swept off the mat while the tray is up
-  storyTray.show({glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyTray.show({sentence:storySentence(st),sentencePre:st.botTurn?'Judge '+game.state.players[st.player]+"'s story: ":'Tell your own: ',glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
   storyLogOrder(st);
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }

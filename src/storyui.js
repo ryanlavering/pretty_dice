@@ -20,6 +20,9 @@ export function createStoryTray(host){
     return [(W()-tot)/2+r.i*(s+gap), base+r.row*s*1.08]; };
   const arr=()=>({n:cur.glyphs.length, rings:cur.order.slice()});
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
+  let sent=null;   // PD-176: the finished story's sentence is drawn in the pool zone (where the unplaced dice were)
+  function placeSent(){ if(!cur||!cur.sentence){ if(sent) sent.hidden=true; return; } if(!sent||!sent.isConnected){ sent=document.createElement('div'); sent.className='ssent'; root.append(sent); }
+    const pool=poolOf(arr()), top=Math.round(poolXY(0,1)[1]), room=H()-top-76; sent.hidden=pool.length>0||room<30; sent.replaceChildren(); const b=document.createElement('b'); b.textContent=cur.sentencePre||''; sent.append(b,document.createTextNode(cur.sentence)); sent.style.top=top+'px'; sent.style.maxHeight=room+'px'; sent.style.fontSize=(W()<520?15:19)+'px'; }
   function build(){ root.textContent=''; const n=cur.glyphs.length;
     rings=[...Array(n).keys()].map(i=>{ const r=document.createElement('div'); r.className='sring'; r.textContent=i+1; root.append(r); return r; });
     tiles=cur.glyphs.map((g,i)=>{ const e=document.createElement('div'), h=HUES[i%9]; e.className='stile'+(g.tier==='o'||g.pack!=='noto'?' alt':''); e.style.setProperty('--hi',`hsl(${h} 55% 45%)`); e.style.setProperty('--lo',`hsl(${h} 60% 24%)`); e.dataset.i=i; e.title=g.n[0];
@@ -37,7 +40,7 @@ export function createStoryTray(host){
       e.classList.remove('drag'); drag=null; moved=false; change(next); place(); }); }
   return {
     /* o: {glyphs:[glyph objects per die], order:[ring -> die|null], onOrder(order), autoswap, locked} */
-    show(o){ if(!root.isConnected) host.append(root); if(!ro&&window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(cur&&!root.hidden&&!drag) place(); }); ro.observe(root); } cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); },
-    hide(){ root.hidden=true; cur=null; key=''; root.textContent=''; tiles=[]; rings=[]; drag=null; },
+    show(o){ if(!root.isConnected) host.append(root); if(!ro&&window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(cur&&!root.hidden&&!drag){ place(); placeSent(); } }); ro.observe(root); } cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); placeSent(); },
+    hide(){ root.hidden=true; sent=null; cur=null; key=''; root.textContent=''; tiles=[]; rings=[]; drag=null; },
     get visible(){ return !root.hidden; }, get size(){ return cur?size():0; }, get tiles(){ return tiles; }, get rings(){ return rings; }, root };
 }
