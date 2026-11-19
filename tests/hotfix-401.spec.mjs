@@ -27,3 +27,45 @@ for (const [id, opts] of [['yahtzee', {}], ['farkle', { opening: 0, target: 1000
     await expect.poll(() => app.run(pd => JSON.stringify(pd.game.state)), { timeout: 30_000 }).not.toBe(before);   // the leaning die was re-rolled and the roll read
   });
 }
+
+// PD-154: a design (or set) swap while a game runs may only change the look. The game keeps its dice (shape and count) and plays on.
+const VIEWS = { desktop: { width: 960, height: 600 }, phone: { width: 390, height: 780 } };
+for (const [vname, vp] of Object.entries(VIEWS)) {
+  const setup = async app => {
+    await app.page.setViewportSize(vp); await app.open();
+    await app.run(async pd => {   // a bag with a d20 design and a 2d20 set, then Yacht with its five d6
+      await pd.bagOps.addBlank(); const b = pd.bagToJSON(); b.designs.push({ id: 'twenty', name: 'Twenty', preview_shape: 'd20', design: { ...pd.designToJSON(), shape: 'd20', notation: '1d20', name: 'Twenty' } });
+      await pd.importBag(b, { replace: true }); pd.setOps.create({ name: 'Twenties', terms: [{ count: 2, sides: 20 }], mod: 0 });
+      await pd.startGame('yahtzee', ['P1'], {}, []); pd.pause(); pd.simRoll(); pd.renderOnce();
+    });
+  };
+  const dice = app => app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length, sides: pd.dice.map(d => d.name), rolling: pd.rolling, game: pd.game && pd.game.id }));
+  const playsOn = async app => {   // the next roll is a normal five-d6 Yacht roll that the engine reads
+    await app.run(pd => { pd.simRoll(); }); const r = await app.run(pd => ({ vals: pd.GAMES.status(pd.game.state).dice, n: pd.dice.length, rolls: pd.GAMES.status(pd.game.state).rollsUsed }));
+    expect(r.n).toBe(5); expect(r.vals).toHaveLength(5); expect(r.vals.every(v => v >= 1 && v <= 6)).toBe(true);
+  };
+
+  test(`PD-154 ${vname}: choosing a design in the Bag during a game keeps the game's dice`, async ({ app }) => {
+    await setup(app); const before = await dice(app);
+    await app.nav.openBag(); await app.page.locator('#tiles .tile[data-id="twenty"]').click(); await app.page.waitForTimeout(800);
+    expect(await dice(app)).toEqual(before); await playsOn(app);
+  });
+
+  test(`PD-154 ${vname}: opening a set during a game keeps the game's dice`, async ({ app }) => {
+    await setup(app); const before = await dice(app), id = await app.run(pd => pd.bag.sets[0].id);
+    await app.run(pd => pd.setOps.open(pd.bag.sets[0].id)); await app.page.waitForTimeout(800);
+    expect(await dice(app)).toEqual(before); await playsOn(app);
+  });
+
+  test(`PD-154 ${vname}: the long-press design swap on one die is look-only; holds and the game carry on`, async ({ app }) => {
+    await setup(app); const before = await dice(app);
+    await app.run(pd => pd.toggleHold(0));
+    const pt = await app.run(pd => pd.dieScreen(1)); const page = app.page;
+    await page.mouse.move(pt.x, pt.y); await page.mouse.down(); await page.waitForTimeout(650); await expect(page.locator('#cardmenu')).toBeVisible(); await page.mouse.up();
+    await page.locator('#cardmenu button', { hasText: 'Twenty' }).click(); await page.waitForTimeout(500);
+    const after = await dice(app); expect(after.n).toBe(5); expect(after.sides).toEqual(before.sides); expect(after.game).toBe('yahtzee');
+    expect(await app.run(pd => pd.dice.map(d => d.design || null))).toEqual([null, 'twenty', null, null, null]);
+    expect(await app.run(pd => pd.GAMES.status(pd.game.state).held), 'the game still holds die 1').toEqual([true, false, false, false, false]);
+    await playsOn(app);
+  });
+}

@@ -1607,6 +1607,7 @@ async function loadSlot(json,name){ bagLoading++; try{ await loadDesign(name!=nu
 /* An unmodified design is stored in the normal form the app writes (clamped numbers, defaults filled in), so imported files do not read as Modified. */
 function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag.pending[e.id]){ const dj=designToJSON(); e.design={...dj,name:e.name}; e.preview_shape=dj.shape; } }
 let actBusy=false, actNext=null;
+function gameDiceFixed(){ if(!game||game.setup) return false; gameMsg='The game fixes the dice: end it to pick another design or set'; renderGame(); return true; }   // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
   try{ if(!skipSync) syncLive();
@@ -1806,7 +1807,7 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   const cancel=()=>clearTimeout(t); b.addEventListener('pointerup',cancel); b.addEventListener('pointerleave',cancel); b.addEventListener('pointercancel',cancel);
   b.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
   b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
-  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on) activate(x.id==='draft'?'draft':x.id); }; }   // tapping a card selects it without moving the strip
+  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on&&!gameDiceFixed()) activate(x.id==='draft'?'draft':x.id); }; }   // tapping a card selects it without moving the strip
 /* shelf: scrolling only browses; a tap picks the design (owner decision 2026-11-11). Rotating the phone or resizing re-centres the strip on the active card. */
 new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
 
@@ -1851,7 +1852,7 @@ function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs but
   const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}${sl.some(x=>x.draft)?' + draft':''}`);
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
-      const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
+      const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); if(!gameDiceFixed()) activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
 let sheetTab='designs';
 for(const b of document.querySelectorAll('#sheettabs button')) b.onclick=()=>{ sheetTab=b.dataset.tab; closeMenu(); renderSheet(); };
@@ -1880,7 +1881,7 @@ const setOps={
   remove(id){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; bag.sets.splice(k,1); if(bag.active.set===id) bag.active.set=null; if(rollSetId===id) rollSetId=null; save(); },
   move(id,to){ const k=bag.sets.findIndex(x=>x.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.sets.length-1,to)); const [x]=bag.sets.splice(k,1); bag.sets.splice(to,0,x); save(); },
   /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
-  open(id,{roll=false}={}){ const st=this.find(id); if(!st) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(false,!roll); syncUI(); save(); return true; },
+  open(id,{roll=false}={}){ const st=this.find(id); if(!st||gameDiceFixed()) return false; checkpoint(); state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
   quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
     if(st.group>1){ const g=rollGroup(st.terms,st.mod||0,st.group,()=>rng()), shown=g.totals.join(' · '); st.last={total:shown,at:Date.now()};
