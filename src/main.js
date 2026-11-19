@@ -959,11 +959,13 @@ function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const
   if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value=fmtNotation([one],0,1); formulaSync(); return; }
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }
 /* PD-142.38 slice 3: in a game the dock is the game's one Roll button plus the turn actions (Bank, Set aside, Cash out) and a short hint; the panel keeps picks, bids and scorecards. The conditions are the ones the panel buttons used */
-function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent='';
+function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent=''; hint.classList.remove('sent'); hint.removeAttribute('title');
   if(!game||game.setup){ go.textContent='Roll'; go.disabled=false; return; }
   const S=game.state, st=GAMES.status(S,gviewer()), over=st.phase==='over', id=game.id, farkle=id==='farkle', pass=needPass(), busy=st.botTurn||pass||gameAwaiting||(rolling&&!settled);
   const btn=(txt,fn,dis,cls)=>{ const b=el('button','',txt); b.type='button'; b.disabled=!!dis; if(cls) b.dataset.act=cls; b.onclick=fn; act.append(b); };
   go.title='Roll the dice (R)'; go.disabled=true; go.textContent='Roll';
+  const qb=$('qbar'); if(qb) qb.classList.remove('storyq');
+  if(id==='story'&&!pass) return renderStoryDock(S,st,over,go,btn,hint,qb);   // PD-176: the story sentence, rating and result live in the dock so the side pane can stay closed
   if(over){ return; }
   if(pass){ hint.textContent='Pass the device'; return; }
   if(id==='liarsdice'){ const n=GAMES.rollSpec(S).slots.length; go.textContent=n>0&&st.phase==='roll'?'Roll '+n+(n>1?' dice':' die')+' under the cup':'Roll'; go.disabled=busy||st.phase!=='roll';
@@ -974,6 +976,16 @@ function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint
   go.textContent=st.canRoll&&farkle&&st.turnTotal?'Roll '+n+(n>1?' dice':' die'):'Roll'; if(!st.canRoll) hint.textContent=farkle?'Set aside first':'Close tiles first';
   if(['farkle','pig','shipcaptain'].includes(id)) btn('Bank '+(id==='shipcaptain'?st.cargo:st.turnTotal),gameBank,!st.canBank||gameAwaiting,'bank');
   if(farkle&&st.canScore) btn(gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',()=>gameSetAside(gsel),!gsel.size||!settled,'aside'); }
+function renderStoryDock(S,st,over,go,btn,hint,qb){   // PD-176
+  if(qb) qb.classList.add('storyq'); go.disabled=true; go.textContent='Roll';
+  if(over){ const res=GAMES.result(S); hint.textContent='Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total; return; }
+  const who=S.players.length>1?S.players[st.player]:'';
+  if(st.phase==='rate'){ const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
+    const pre=document.createElement('b'); pre.textContent=st.botTurn?'Judge '+who+"'s story: ":'Tell your own: '; hint.append(pre,document.createTextNode(txt)); hint.title=txt; hint.classList.add('sent');
+    for(const [k,l] of [['bad','Bad 0'],['fair','Fair 1'],['good','Good 2']]) btn(l,()=>storyRate(k),false,'rate-'+k); return; }
+  hint.classList.remove('sent');
+  go.disabled=!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled);
+  hint.textContent=(gameMsg?'Last story '+gameMsg+' · ':'')+(st.botTurn?(st.phase==='roll'?'The bot is rolling':'The bot is arranging the dice'):st.phase==='roll'?'Roll the dice':'Put the dice in story order'); }
 function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar) return; const sig=bag.sets.map(s=>s.id+'|'+s.name).join('\n'); if(sig===qbarSig&&bar.firstChild){ bar.hidden=false; syncDock(); return; } qbarSig=sig;
   const old=$('rollbox'), inp=el('input'); inp.id='rollbox'; inp.type='text'; inp.spellcheck=false; inp.value=old?old.value:''; inp.setAttribute('aria-label','Roll a formula'); inp.enterKeyHint='done'; inp.setAttribute('autocapitalize','off'); inp.setAttribute('autocomplete','off'); inp.title=DOCK_TIP;
   inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') dockRoll(); }; inp.oninput=()=>dockFail(inp,null);

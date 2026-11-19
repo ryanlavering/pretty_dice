@@ -165,3 +165,43 @@ base('story dice: ?game=story opens the Games setup on Story Dice', async ({ pag
   await bexpect(page.locator('#scorepane')).toContainText('Glyph packs', { timeout: 30000 });
   await bexpect(page.locator('#scorepane select').first()).toHaveValue('story');
 });
+
+test('story dice: full view with the pane closed, the dock carries the sentence, rating and result (PD-176)', async ({ shared: app }) => {
+  for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) {
+    await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+    await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+    await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
+    await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
+    await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '2'; e.dispatchEvent(new Event('change')); });
+    await app.nav.roll();
+    await app.run(pd => pd.simRoll({ rerolls: 6 }));
+    await app.page.waitForTimeout(900);
+    await app.run(pd => { pd.setFull(true); });
+    await expect(app.page.locator('#dockhint')).toContainText('Put the dice in story order');
+    if (shot) await app.page.screenshot({ path: `${shot}/story-${vp.width}-arrange.png` });
+    for (const i of [0, 1, 2]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
+    const sent = (await app.page.locator('.story-sent').textContent()).trim();
+    await expect(app.page.locator('#dockhint')).toBeVisible();
+    await expect(app.page.locator('#dockhint')).toContainText("Tell your own");
+    await expect(app.page.locator('#dockhint')).toContainText(sent);
+    await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible();
+    const inView = await app.page.evaluate(() => { const r = document.querySelector('#qbar').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; });
+    expect(inView).toBe(true);
+    if (shot) await app.page.screenshot({ path: `${shot}/story-${vp.width}-rate.png` });
+    await app.page.locator('#qbar [data-act=rate-good]').click();
+    expect((await app.run(pd => pd.GAMES.status(pd.game.state))).scores[0]).toBe(2);
+    await expect(app.page.locator('#dockhint')).toContainText('Last story +2');
+  }
+});
+
+for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) test(`story dice: shots of the arrangement with the pane open, ${vp.width} wide (PD-175 visual check, STORY_SHOT only)`, async ({ shared: app }) => {
+  test.skip(!shot, 'screenshots only'); {
+    await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+    await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+    await app.page.selectOption('#scorepane select >> nth=0', 'story');
+    await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); await app.page.waitForTimeout(500); await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(700); 
+    await app.page.screenshot({ path: `${shot}/story-${vp.width}-arrange-pane.png` });
+    for (const i of [0, 1]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
+    await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(700); await app.page.screenshot({ path: `${shot}/story-${vp.width}-partial-pane.png` });
+  }
+});
