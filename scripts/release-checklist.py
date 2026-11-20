@@ -15,21 +15,21 @@ ROOTS = [os.path.join(HERE, '..', '..', 'pretty_dice-v4.1'), os.path.join(HERE, 
 GROUPS = [
   ('Story Dice review tweaks', ['PD-171', 'PD-172', 'PD-173', 'PD-174', 'PD-175', 'PD-176']),
   ('Story Dice features', ['PD-160', 'PD-167', 'PD-166']),
-  ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169']),
+  ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169', 'PD-178']),
   ('Reviewed and landed (4.1 so far)', ['PD-154', 'PD-157', 'PD-156', 'PD-158', 'PD-159', 'PD-162', 'PD-163', 'PD-165']),
 ]
 
 # (gate, done, note)
 GATES = [
   ('Story Dice review tweaks landed and reviewed (PD-171 to PD-176)', False, 'owner threads on the v4.1 Dev artifact resolve one by one'),
-  ('Grammar slice 1 (PD-167) landed', True, 'c3c514d: NdS{pack#seed} faces in normal rolls; owner review and 3 small decisions pending'),
-  ('PD-166 Story Dice set editor (Games menu) landed; PD-161 glyph controls moved to 4.2', False, 'owner decided 2026-11-19; PD-166 lane running'),
-  ('PD-155 bad-6 check: add the read-face vs scored-value self-check, or close as not reproducible', False, ''),
-  ('PD-168 factoring pass S10 (main.js split) done before the final regression', False, 'mechanical; golden must stay unchanged'),
+  ('Grammar slice 1 (PD-167) landed', True, 'owner grammar answers recorded; review pending'),
+  ('PD-166 Story Dice set editor (Games menu) landed; PD-161 glyph controls moved to 4.2', True, 'landed bf9c717; owner review pending'),
+  ('PD-155 bad-6 self-check as backup', True, 'landed; card stays open as a watch item'),
+  ('PD-168 sound extracted from main.js (rest of factoring moved to 4.2 as PD-177)', True, 'golden unchanged'),
   ('PD-164 release tingles: owner picks the 5 to 10 highlights', False, 'needs the final feature list'),
   ('Owner round with no new change requests (4.1 settled)', False, 'comment-free review of a normal Dev artifact'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', False, 'about 21 min each; take the test lock'),
-  ('Golden set unchanged (no re-record)', True, 'held through the Story Dice merge'),
+  ('Test suite faster (PD-178, target 15 min) and green on the release candidate (two clean runs, --retries=0)', False, 'CHECKPOINT 41-2 at d145efc was running; PD-178 speed lane active'),
+  ('Golden set stable', True, 're-baselined only for the owner-approved Antique removal and gravity row'),
   ('Artifact CSP spec and single-file build boot clean', True, 'rechecked at each publish'),
   ('Guide review and update (Story Dice, Whoopsie, desktop click, Craps secret, gravity if in)', False, 'guide lane; desktop and phone shots'),
   ('CHANGELOG 4.1 (from docs/design/v41-changelog-draft.md) and README', False, ''),
@@ -42,11 +42,9 @@ GATES = [
 ]
 
 OWNER_QS = [
-  'Antique relief preset: under Base or Numbers?',
-  'Adopt the CI v5 bump on branch feat/pd-20.7-ci?',
-  'Discard the stale uncommitted edits in ~/code/pretty_dice and fast-forward its main?',
-  'PD-127 label; Save and export own head.',
-  'PD-152 (software rendering profile, needs Opus) and PD-142.42.1 are moved to 4.2: keep there?',
+  'Review the v4.1 Dev artifact threads: PD-165, 171-176 (incl. all-bot pause), 156, 166, 169.',
+  'PD-164 release tingles: pick the 5 to 10 highlights once the feature list settles.',
+  'Stale ~/code/pretty_dice checkout: now fast-forwarded to main; remove it or keep it?',
 ]
 
 
