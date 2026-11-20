@@ -24,7 +24,7 @@ Switch to the Play room and open the **Games** tab. Choose a **Game** (the game 
 
 ![Two dice held with gold rings, the scorecard showing suggestions](img/19-yahtzee-hold.png)
 
-3. Roll again (up to three throws), then score a box (see below). After 13 rounds the game ends. **End game** quits early and returns you to the Games setup, still in the Play room (Story Dice asks first: **End the game? Scores will be lost.**). While a game runs, the Games tab becomes the **Scorecard** tab.
+3. Roll again (up to three throws), then score a box (see below). After 13 rounds the game ends. **End game** quits early and returns you to the Games setup, still in the Play room (Story Dice asks first: **End the game? Scores will be lost.** with **End game** and **Keep playing** buttons). While a game runs, the Games tab becomes the **Scorecard** tab.
 
 ### Scoring a box, and Whoopsie
 
@@ -61,25 +61,32 @@ Story Dice is a party game for 1 to 6 people (a seat can be a **Bot**). The dice
 1. **Roll.** The dice tumble, settle, then fly up into two rows facing you: the pool at the bottom and numbered rings (1, 2, 3 ...) above.
 2. **Arrange.** Tap the dice in story order to fill the rings, or drag them onto a ring. A picked-up die grows a little. Tap a placed die to send it back to the pool. **Autoswap when dropping on a filled ring** swaps two dice instead of refusing; **Hi-vis** swaps the 3D dice for flat picture tiles.
 3. **The sentence.** When every ring is filled, the story sentence appears on the mat where the unplaced dice were, and wraps onto more lines if it is long. On your own turn it is a prompt: tell your own story, and **Re-word** gives another sample (Re-word is only there on your own turn; a bot's sentence is what it said). With **Show word hints** on, the panel lists nouns, adjectives, adverbs and verbs for each picture.
-4. **Rate.** The dock shows five buttons: **Bad 0**, **Weak 3**, **Fair 5**, **Good 7** and **Great 10**, and a one-line hint says the same scale ("Rate the story: Bad 0 · Weak 3 · ..."). Press one. One rating per story, and it is the **others** at the table who judge: after your story the status line reads "Everyone else judges". Playing solo (or with only bots) you rate your own story. After everyone has told their stories each, the highest total wins.
+4. **Rate.** The dock shows five buttons: **Bad 0**, **Weak 3**, **Fair 5**, **Good 7** and **Great 10**, with the status hint above them. The same five buttons are in the panel, under a one-line scale reminder ("Rate the story: Bad 0 · Weak 3 · Fair 5 · Good 7 · Great 10"). Press one. One rating per story, and it is the **other people** at the table who judge: when another person is seated, the status line and the dock hint read "Player 1: tell it. Everyone else judges". Bots never rate. Playing solo, or with only bots as the other seats, the hint reads "Tell it, then rate your own story" and you rate your own story. After everyone has told their stories each, the highest total wins.
 
 ![A Story Dice game on desktop: arranged dice, the sentence on the mat and the rating buttons in the dock](img/31-story-arrange.png)
 
 The dice stay movable while you arrange, and even after the rings are full, until you press a rating; then they are **locked** until the next roll. A bot seat rolls, arranges its dice and tells a silly ad-lib story, borrowing words from its own dice; the status line says "Bot told a story: rate it". Its story **always waits for a human rating**, even if every player is a bot, so nothing rates or advances by itself. Because the pictures and sentence sit on the mat and the buttons are in the dock, you can play with the side panel closed (Full view). The Roll log keeps each roll's story.
 
-**When the game ends** the panel shows a game over screen: the winner and their total ("Game over: Ann wins with 24"), or just your total when you played alone, then everyone's scores, and two buttons. **Play again** starts a new game with the same players and options (and a fresh set number, so a new deal); **Done** goes back to the Games setup. The dock goes back to its normal one-row layout, with the preset chips, once the game is over.
+**When the game ends** the panel shows a game over screen: the winner and their total ("Game over: Ann wins with 24"; tied players are joined with "&"), or "Game over: your total: 17" when you played alone, then everyone's scores, and two buttons. **Play again** starts a new game with the same players and options (and a fresh set number, so a new deal); **Done** goes back to the Games setup. The dock goes back to its normal one-row height once the game is over (it is a little taller only while you rate).
+
+![The game over screen: the winner, the scores, Play again and Done](img/34-story-over.png)
+
+![Story Dice: End game asks for confirmation, with End game and Keep playing](img/35-story-end-confirm.png)
 
 ### Look and your designs
 
 Story Dice uses a temporary **game look**: plain white dice with the pictures on them, so the glyphs read clearly. It never overwrites your designs. While the game look is on screen:
 
-- The Bag shows your own design's picture, plus a dashed **Story Dice look (draft)** tile for the temporary one.
+- The Bag shows your own design's picture, plus a dashed **Story Dice look (draft)** tile for the temporary one (the name is cut short in the tile).
+
+![The Bag during a Story Dice game: your own design and the dashed Story Dice look (draft) tile](img/36-story-bag.png)
+
 - Your design, any unsaved edits, your sets and Undo are untouched.
 - If you deliberately pick a design from the Bag, or press Randomize, mid-game, that choice is kept as your look afterwards. (Only the look changes; a running game keeps its dice.)
 
 The game look stays on the table for as long as you are on the **Games** tab: after a game ends, or with a paused game and **Resume** after a reload. It is released, and your own dice and design come back exactly, when you pick another game or leave the Games tab (Table, Log, Design, or hide the panel). A game that is running keeps its dice wherever you go.
 
-If you press **Roll** in the dock while Story Dice is only selected and not started, the preview is released and you roll your own dice. The selection stays, and opening the Games tab shows the preview again.
+If you type a formula in the dock (say `2d6`) and press **Roll** while Story Dice is only selected and not started, the preview is released and that formula rolls on your own dice. The selection stays, and opening the Games tab shows the preview again. (Known issue: with the roll box left empty, **Roll** throws the five preview glyph dice instead and the preview stays; the log then names the pictures.)
 
 On a phone see [Phone versus desktop](08-phone-vs-desktop.md).
 
@@ -95,4 +102,4 @@ Under Games > Story Dice, **Story Dice sets...** opens a list of your Story sets
 
 ## Resume a game
 
-A game in progress is saved on your device. Reload the page, open the Games tab, and a **Resume** button restores it exactly.
+A game in progress is saved on your device. Reload the page, open the Games tab, and a **Resume** button (it reads, for example, **Resume Story Dice**) restores it exactly.
