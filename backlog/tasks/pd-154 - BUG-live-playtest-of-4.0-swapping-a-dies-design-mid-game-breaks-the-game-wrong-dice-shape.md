@@ -3,10 +3,10 @@ id: PD-154
 title: >-
   BUG (live playtest of 4.0): swapping a die's design mid-game breaks the game;
   wrong dice shape
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T02:39:00Z'
-updated_date: '2026-11-19T05:41:00Z'
+updated_date: '2026-11-20T06:49:00Z'
 labels:
   - v4.1
 dependencies: []
