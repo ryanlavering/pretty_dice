@@ -1,4 +1,4 @@
-// Story Dice in the app (PD-160 spike): glyph faces on the 3D dice, pack picker, tray ordering, rating and scoring.
+// Story Dice in the app (PD-160 spike): picture faces on the 3D dice, pack picker, tray ordering, rating and scoring.
 import { test, expect } from './helpers/app.mjs';
 const shot = process.env.STORY_SHOT;
 

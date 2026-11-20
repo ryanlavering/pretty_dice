@@ -89,7 +89,7 @@ On a phone see [Phone versus desktop](08-phone-vs-desktop.md).
 
 Under Games > Story Dice, **Story Dice sets...** opens a list of your Story sets. A Story set is an ordinary saved set, so each one also appears in the Bag's **Sets** tab and as a chip at the table.
 
-- **New Story set** starts a draft. Pick the **Glyph packs**, the number of **Dice** (3 to 9), **Faces per die**, a **Seed** (**Reroll seed** picks one at random), **Faces on the dice** (different on every die, or the same on every die) and **Glyph order** (shuffled by seed, or in pack order). A live preview shows each die's faces and a sample sentence, and **Set text** shows the formula the set is saved as, with a **Copy** button (see [Sets and the editor](04-sets-and-editor.md#glyph-faces)).
+- **New Story set** starts a draft. Pick the **Glyph packs**, the number of **Dice** (3 to 9), **Faces per die**, a **Seed** (**Reroll seed** picks one at random), **Faces on the dice** (different on every die, or the same on every die) and **Glyph order** (shuffled by seed, or in pack order). A live preview shows each die's faces and a sample sentence, and **Set text** shows the formula the set is saved as, with a **Copy** button (see [Sets and the editor](04-sets-and-editor.md#picture-faces)).
 - **Save** puts it in the bag. Close, with a confirmation if you changed anything, throws the draft away.
 - Each list row has ✎ to edit and **...** for **Edit**, **Roll it** (puts the set on the table), **Use in game**, **Make a copy** and **Delete**. **Use in game** loads the packs, dice, faces and seed into the Story Dice setup; the game only deals shuffled sets with different dice on each die, so other sets can be rolled but not used in a game.
 

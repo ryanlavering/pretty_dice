@@ -37,7 +37,7 @@ When dice are dropped (by keep, drop, `adv` or `dis`) the table marks them with 
 
 Put a count and `x` in front to make separate rolls: `4x d20+2` throws four d20s, adds the +2 to **each**, and shows the results side by side (for example `22 · 7 · 16 · 17`) with a breakdown per roll (`#1: 20 + 2 = 22`). Use it for a pack of goblins attacking or everyone rolling initiative. It works in the notation box here and in the dock at the table ([Rolling](05-rolling.md)). Each group member can be added to the initiative list: see [The roll log](06-roll-log.md).
 
-### Glyph faces
+### Picture faces
 
 A die can carry small pictures instead of numbers. Add a **face block** in curly braces right after the die (and after any keep or `adv`), before an optional `@design`:
 

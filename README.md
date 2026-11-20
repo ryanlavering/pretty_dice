@@ -9,7 +9,7 @@ Pretty Dice generates random polyhedral "DnD" dice renders using a synthetic 3D 
 - **Substrates**: solid or swirled plastic, metallic plastic, metal, clear/dyed epoxy and marble.
 - **Paint**: auto-picked for contrast and harmony with the base, random, or custom.
 - **Rolling**: a tray sized to the dice, adjustable bounce, friction and gravity, flick to roll, and leaning dice that are flagged and re-rolled in one tap.
-- **Roll notation**: `4d6kh3`, `4d6dl1`, advantage/disadvantage (`d20adv`), group rolls (`4x d20+2`), saved sets with result tables, a roll log with an initiative tracker, and glyph faces (`5d12{noto#1}`).
+- **Roll notation**: `4d6kh3`, `4d6dl1`, advantage/disadvantage (`d20adv`), group rolls (`4x d20+2`), saved sets with result tables, a roll log with an initiative tracker, and picture faces (`5d12{noto#1}`).
 - **Games**: Yacht, Ten Thousand, Pig, Liar's Dice and Story Dice with scorecards, hold dice, computer players and resume.
 - **Sound**: recordings of real dice, per-surface and stereo.
 

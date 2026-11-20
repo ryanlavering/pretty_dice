@@ -7,7 +7,7 @@ Read the pages in order the first time; later they work as reference.
 1. [First steps](01-first-steps.md): what you see, the two modes, your first roll
 2. [Designing a die](02-designing-a-die.md): shape, substrate, colours, numbers, relief and filigree
 3. [The bag and shelf](03-bag-and-shelf.md): keeping several designs and switching between them
-4. [Sets and the editor](04-sets-and-editor.md): rolling several dice at once, dice notation, glyph faces, saving sets
+4. [Sets and the editor](04-sets-and-editor.md): rolling several dice at once, dice notation, picture faces, saving sets
 5. [Rolling](05-rolling.md): roll feel and gravity, flicking, shaking, holding the total, top-down look
 6. [The roll log](06-roll-log.md)
 7. [Saving and loading](07-save-load.md): designs, bags, images
