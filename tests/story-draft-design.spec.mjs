@@ -133,7 +133,7 @@ const setupStory = async app => { await app.run(pd => { pd.openGames(); }); awai
 test('PD-187: a never-edited design is not Modified after a Story round (End game button)', async ({ app, page }) => {
   await app.open({ seed: 7, plain: true });
   await setupStory(app);
-  await page.getByRole('button', { name: 'End game' }).first().click(); await page.waitForTimeout(1500);
+  await page.getByRole('button', { name: 'End game' }).first().click(); await page.locator('#endyes').click(); await page.waitForTimeout(1500);   // PD-192: a game in progress asks first
   expect(await app.run(pd => Object.keys(pd.bag.pending))).toEqual([]);
 });
 test('PD-187: Bag > Add > Blank mid-game keeps the game\'s dice and does not leak them into the new design', async ({ app, page }) => {

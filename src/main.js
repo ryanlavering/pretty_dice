@@ -990,12 +990,12 @@ function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }
 /* PD-142.38 slice 3: in a game the dock is the game's one Roll button plus the turn actions (Bank, Set aside, Cash out) and a short hint; the panel keeps picks, bids and scorecards. The conditions are the ones the panel buttons used */
 function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent=''; hint.classList.remove('sent'); hint.removeAttribute('title');
-  { const q0=$('qbar'); if(q0) q0.classList.remove('storyq'); }   // PD-186: leaving a story game (end, setup, other game) must give the one-row dock back
+  { const q0=$('qbar'); if(q0) q0.classList.remove('storyq','rating'); }   // PD-186: leaving a story game (end, setup, other game) must give the one-row dock back
   if(!game||game.setup){ go.textContent='Roll'; go.disabled=false; return; }
   const S=game.state, st=GAMES.status(S,gviewer()), over=st.phase==='over', id=game.id, farkle=id==='farkle', pass=needPass(), busy=st.botTurn||pass||gameAwaiting||(rolling&&!settled);
-  const btn=(txt,fn,dis,cls)=>{ const b=el('button','',txt); b.type='button'; b.disabled=!!dis; if(cls) b.dataset.act=cls; b.onclick=fn; act.append(b); };
+  const btn=(txt,fn,dis,cls)=>{ const b=el('button','',txt); b.type='button'; b.disabled=!!dis; if(cls) b.dataset.act=cls; b.onclick=fn; act.append(b); return b; };
   go.title='Roll the dice (R)'; go.disabled=true; go.textContent='Roll';
-  const qb=$('qbar'); if(qb) qb.classList.remove('storyq');
+  const qb=$('qbar'); if(qb) qb.classList.remove('storyq','rating');
   if(id==='story'&&!pass) return renderStoryDock(S,st,over,go,btn,hint,qb);   // PD-176: the story sentence, rating and result live in the dock so the side pane can stay closed
   if(over){ return; }
   if(pass){ hint.textContent='Pass the device'; return; }
@@ -1008,13 +1008,23 @@ function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint
   if(['farkle','pig','shipcaptain'].includes(id)) btn('Bank '+(id==='shipcaptain'?st.cargo:st.turnTotal),gameBank,!st.canBank||gameAwaiting,'bank');
   if(farkle&&st.canScore) btn(gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',()=>gameSetAside(gsel),!gsel.size||!settled,'aside'); }
 const judgeLabel=n=>n&&String(n).trim()?'Judge '+String(n).trim()+"'s story":'Judge this story';   // PD-184: never a dangling "Judge 's story"
+/* PD-192: one sentence in one voice for the status line, the panel and the dock; the scale is written once in the panel (storyScale) and is on the buttons */
+const storyRatings=()=>game&&game.info.ratings||[];
+const storyScale=()=>'Rate the story: '+storyRatings().map(r=>r.label+' '+r.points).join(' · ');
+function storyRateLine(S,st){ const nm=String(S.players[st.player]||'').trim(), bots=S.bots||[], others=S.players.some((_,i)=>i!==st.player&&!bots.includes(i));
+  if(st.botTurn) return (nm||'The bot')+' told a story: rate it';
+  const pre=S.players.length>1&&nm?nm+': ':'';
+  return others?pre+'tell it. Everyone else judges':pre+(pre?'tell it, then rate your own story':'Tell it, then rate your own story'); }
+function storyOverText(S){ const res=GAMES.result(S); return S.players.length===1?'Game over: your total: '+res.ranking[0].total:'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total; }
+function storyRateBtn(r,fn,act){ const b=document.createElement('button'); b.type='button'; b.className='rbtn'; b.dataset.rate=r.id; if(act) b.dataset.act=act; b.setAttribute('aria-label',r.label+' '+r.points); b.title=r.label+' = '+r.points+' points'; b.append(Object.assign(document.createElement('b'),{textContent:r.label}),Object.assign(document.createElement('i'),{textContent:String(r.points)})); b.onclick=fn; return b; }
 function renderStoryDock(S,st,over,go,btn,hint,qb){   // PD-176
   if(qb) qb.classList.add('storyq'); go.disabled=true; go.textContent='Roll';
-  if(over){ const res=GAMES.result(S); hint.textContent='Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total; return; }
+  if(over){ hint.textContent=storyOverText(S); return; }
   const who=S.players.length>1?S.players[st.player]:'';
   if(st.phase==='rate'){
-    hint.textContent=st.botTurn?judgeLabel(who):'Tell it, then rate it';   // the sentence itself is drawn on the mat (storyui .ssent)
-    for(const [k,l] of [['bad','Bad 0'],['fair','Fair 1'],['good','Good 2']]) btn(l,()=>storyRate(k),false,'rate-'+k); return; }
+    hint.textContent=storyRateLine(S,st); hint.title=storyScale();   // the sentence itself is drawn on the mat (storyui .ssent); the scale is on the buttons
+    if(qb) qb.classList.add('rating');   // PD-192: five 44 px buttons in one row; the disabled Roll steps aside while rating
+    for(const r of storyRatings()) $('dockact').append(storyRateBtn(r,()=>storyRate(r.id),'rate-'+r.id)); return; }
   hint.classList.remove('sent');
   go.disabled=!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled);
   hint.textContent=(gameMsg?'Last story '+gameMsg+' · ':'')+(st.botTurn?(st.phase==='roll'?'The bot is rolling':'The bot is arranging the dice'):st.phase==='roll'?'Roll the dice':'Put the dice in story order'); }
@@ -1337,7 +1347,7 @@ function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.f
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
 let storyDeal=null, storyPrev=null;   // storyPrev: the setup preview (the story dice on the mat before Start), with what to restore   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
-let game=null, gameSnap=null, gameAwaiting=false, gameMsg='';   // the running game (see the games section near the end)
+let game=null, gameSnap=null, gameAwaiting=false, gameMsg='', gendAsk=false;   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
 function clearHolds(){ held.clear(); heldPose={}; restoring=null; dropHoldRings(); updateHoldUI(); }
@@ -1828,7 +1838,8 @@ $('settingspane').parentNode.append($('logpanel')); document.body.append($('bags
 applyRoomPane();
 function peekHandle(el){ if(!el) return; el.classList.add('peekh'); el.title='Hold to look from above'; el.setAttribute('aria-label','Hold to look from above');
   for(const ev of ['pointerup','pointercancel','lostpointercapture']) el.addEventListener(ev,()=>holdTop(false));
-  el.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; try{el.setPointerCapture(e.pointerId);}catch{} holdTop(true); }); el.addEventListener('contextmenu',e=>e.preventDefault()); }
+  let t0=0; el.addEventListener('pointerup',()=>{ if(t0&&Date.now()-t0<350) toast('Hold to look from above'); t0=0; });   // PD-192: a tap does nothing, so say what the eye is for (mouse and touch)
+  el.addEventListener('pointerdown',e=>{ if(e.target.closest('button')) return; t0=Date.now(); try{el.setPointerCapture(e.pointerId);}catch{} holdTop(true); }); el.addEventListener('contextmenu',e=>e.preventDefault()); }
 const stripHome=$('modesw').parentNode, stripNext=$('modesw').nextSibling, histHome=$('histrow').parentNode, histNext=$('histrow').nextSibling;
 var stripReady=false;
 function placeSwitch(){ if(!stripReady) return; const ph=phoneUI(), tp=$('topstrip'); if($('histrow').parentNode!==histHome) histHome.insertBefore($('histrow'),histNext); }
@@ -1916,7 +1927,7 @@ async function startGame(id,players,options,botSeats=[],resume=null){
   whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
   if(id==='story'){ storyPrev=null; lookSwap(); }   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); if(lookSnap) lookHistoryReset(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+function endGame(){ if(!game) return; gendAsk=false; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2030,11 +2041,13 @@ function storySync(){
   const d3=gprefs.hivis!==true&&rolling&&!!bodies.length&&dice.length===st.dice.length;   // 3D: the real dice fly up into a line facing the player; hi-vis: the flat glyph tiles
   if(!d3) storyFlyEnd();
   for(const d of dice) d.mesh.visible=d3;   // hi-vis: the dice are swept off the mat while the tray is up
-  storyTray.show({sentence:storySentence(st),sentencePre:st.botTurn?judgeLabel(game.state.players[st.player])+': ':'Tell your own: ',glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyTray.show({sentence:storySentence(st),sentencePre:st.botTurn?(String(game.state.players[st.player]||'').trim()||'The bot')+"'s story: ":'Tell your own: ',glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
   storyLogOrder(st);
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
-function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
+function storyDone(){ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); }
+function storyPlayAgain(){ if(!game||game.id!=='story') return; const S=game.state, snap=gameSnap; startGame('story',S.players.slice(),{...S.options,seed:1+Math.floor(rng()*999999)},(S.bots||[]).slice()); if(snap) gameSnap=snap; }   // PD-192: same players and options, a fresh set number; the look to restore at the end stays the player's own
+function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'||rating==='great'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
 // ---- Story Dice sets editor (PD-166): Story sets are bag sets with one glyph-face term (src/storysets.js); this view lists, edits and saves them from the Games panel ----
 let sset=null;   // null (closed) | {view:'list'} | {view:'edit', id:null|setId, d:draft, orig:json, err}
 const ssRandSeed=()=>1+Math.floor(rng()*999);
@@ -2089,13 +2102,14 @@ function storyFit(o){ const have=poolFor(o.packs).length; if(o.dice*o.sides<=hav
   const n=Math.floor(have/6); return n>=3?{ok:false,dice:Math.min(o.dice,n),sides:6}:{ok:false,dice:3,sides:6,short:true}; }
 function renderStory(S,st,over){
   const res=over?GAMES.result(S):null;
-  if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
-  else GP.append(gel('div',{className:'gstat'},(S.players.length>1&&S.players[st.player]?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':judgeLabel(S.players[st.player]).toLowerCase()+': rate it to move on'):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
+  if(over) GP.append(gel('div',{className:'gstat story-over'},storyOverText(S),gel('small',{textContent:S.players.length>1?res.ranking.map(r=>r.name+' '+r.total).join(' · '):''})),
+    gel('div',{className:'story-endbtns'},gel('button',{type:'button',className:'big',id:'storyagain',textContent:'Play again',onclick:storyPlayAgain}),gel('button',{type:'button',className:'big',id:'storydone',textContent:'Done',onclick:storyDone})));   // PD-192: a real end screen
+  else GP.append(gel('div',{className:'gstat'},st.phase==='rate'?storyRateLine(S,st):(S.players.length>1&&S.players[st.player]?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':'the bot is arranging the dice'):st.phase==='roll'?'roll the dice':'put the dice in story order'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
   if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'})),gel('label',{className:'row'},gel('input',{type:'checkbox',checked:gprefs.hivis===true,onchange:ev=>{ gprefs.hivis=ev.target.checked; gsave(); renderGame(); }}),gel('span',{textContent:'Hi-vis: flat glyph tiles instead of the 3D dice'}))); }
   if(!over&&st.phase==='rate'){
     const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
-    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?(judgeLabel(S.players[st.player])+" (an ad-lib): rate it to continue."):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
-    GP.append(gel('div',{className:'story-rate'},...[['bad','Bad · 0'],['fair','Fair · 1'],['good','Good · 2']].map(([k,l])=>gel('button',{type:'button',className:'big',textContent:l,onclick:()=>storyRate(k)}))));
+    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?'This is the bot\'s whole story.':'A sample sentence to start from: tell your own.'}),...(st.botTurn?[]:[gel('button',{type:'button',className:'reword',textContent:'Re-word',title:'Another sample sentence',onclick:()=>{ storySalt++; renderGame(); }})])));   // Re-word only re-rolls the sample prompt; a bot's ad-lib is what it said, so it is not re-rolled
+    GP.append(gel('div',{className:'story-scale',textContent:storyScale()}),gel('div',{className:'story-rate'},...storyRatings().map(r=>storyRateBtn(r,()=>storyRate(r.id)))));
   }
   if(!over&&st.phase!=='roll'&&S.options.hints){ const ids=(st.phase==='rate'?st.order.map(i=>storyGlyphs(st)[i]):storyGlyphs(st).filter((_,i)=>!st.order.includes(i))).map(g=>g.id), box=gel('div',{className:'story-hints'});
     for(const id of ids){ const h=hintFor(id); box.append(gel('div',{},gel('b',{textContent:h.nouns[0]}),gel('br'),'n: '+h.nouns.join(', '),gel('br'),'adj: '+h.adjectives.join(', '),gel('br'),'adv: '+h.adverbs.join(', '),gel('br'),'v: '+h.verbs.join(', '))); } GP.append(box); }
@@ -2115,7 +2129,7 @@ function renderStrip(){   // the phone's mat strip keeps one line: the status (R
   if(!game||game.setup){ GPstage.hidden=true; GPstage.classList.remove('strip'); document.body.classList.remove('gstrip'); return; }
   const S=game.state, st=GAMES.status(S), over=st.phase==='over', farkle=game.id==='farkle';
   GPstage.textContent=''; GPstage.hidden=false; GPstage.classList.add('strip'); document.body.classList.add('gstrip');
-  const who=S.players.length>1&&!over?S.players[st.player]+': ':'', msg=over?'Game over':(gameMsg||(st.message||'').replace(S.players[st.player]+': ',''));
+  const who=S.players.length>1&&!over&&!(game.id==='story'&&st.phase==='rate')?S.players[st.player]+': ':'', msg=over?'Game over':game.id==='story'&&st.phase==='rate'?storyRateLine(S,st):(gameMsg||(st.message||'').replace(S.players[st.player]+': ',''));
   { const sm=rollSum(st), sp=gel('span',{className:'st',textContent:who+msg+(sm!=null?' · total '+sm:'')}); peekHandle(sp); GPstage.append(sp); }
  }
 function renderGameBody(){
@@ -2148,7 +2162,10 @@ function renderGameBody(){
     GP.append(gel('div',{className:'row startrow'},gel('button',{className:'big startbtn',type:'button',textContent:game?'Back to game':'Start game',disabled:g.id==='story'&&opts.dice*opts.sides>poolFor(opts.packs).length,onclick:()=>{ if(game){ game.setup=false; renderGame(); } else { const bs=botIn.map((c,i)=>c.checked?i:-1).filter(i=>i>=0); startGame(g.id,nameIn.map((x,i)=>{ const v=x.value.trim()||('Player '+(i+1)); return botIn[i].checked&&/^Player \d$/.test(v)?'Bot '+(i+1):v; }),opts,bs); } }})));
     return; }
   const S=game.state, st=GAMES.status(S,gviewer()), sug=game.info.hidden?[]:GAMES.suggest(S), over=st.phase==='over';
-  hd(game.info.name,()=>{ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); },'End game'); if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
+  const storyAsk=game.id==='story'&&!over;   // PD-192: ending a Story Dice game that is still going asks once (scores would be lost)
+  hd(game.info.name,()=>{ if(storyAsk&&!gendAsk){ gendAsk=true; renderGame(); return; } endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); },over&&game.id==='story'?'Done':'End game');
+  if(storyAsk&&gendAsk) GP.append(gel('div',{className:'story-confirm',role:'alertdialog',ariaLabel:'End the game?'},gel('span',{textContent:'End the game? Scores will be lost.'}),gel('button',{type:'button',className:'big',id:'endyes',textContent:'End game',onclick:()=>{ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); }}),gel('button',{type:'button',className:'big',id:'endno',textContent:'Keep playing',onclick:()=>{ gendAsk=false; renderGame(); }})));
+  else if(!storyAsk) gendAsk=false; if(false) GP.firstChild.insertBefore(gel('button',{type:'button',textContent:gcollapsed?'Scorecard ▴':'Scorecard ▾',ariaExpanded:String(!gcollapsed),onclick:()=>{ gcollapsed=!gcollapsed; renderGame(); }}),GP.firstChild.lastChild);
   if(game.id==='liarsdice'){ renderLiars(S,st,over); return; }
   if(TURN_GAMES.includes(game.id)){ renderTurn(S,st,over); return; }
   if(game.id==='craps'){ renderCraps(S,st,over); return; }

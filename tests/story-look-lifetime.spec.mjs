@@ -7,7 +7,7 @@ const storyOn = app => app.run(pd => ({ sub: pd.state.substrate, custom: pd.stat
 const pick = (app, id) => app.page.selectOption('#scorepane select >> nth=0', id);
 const toStorySetup = async app => { await app.run(pd => pd.openGames()); await pick(app, 'story'); await app.run(pd => { pd.step(30); pd.renderOnce(); }); };
 const startStory = async app => { await toStorySetup(app); await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); };
-const endButton = async app => { await app.page.getByRole('button', { name: 'End game' }).first().click(); await app.page.waitForTimeout(700); };
+const endButton = async app => { await app.page.getByRole('button', { name: 'End game' }).first().click(); const yes = app.page.locator('#endyes'); if (await yes.count()) await yes.click(); await app.page.waitForTimeout(700); };   // PD-192: mid-game End game asks first
 const box = app => app.page.locator('#qbar input').first().inputValue().catch(() => null);
 const own = async (app, before, dock0, box0) => {
   expect(await mine(app)).toEqual(before);

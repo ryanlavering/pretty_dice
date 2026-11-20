@@ -1,9 +1,10 @@
-// Story Dice (PD-160 spike). Roll 3-9 glyph dice, arrange them in an order that makes sense, tell a story; the table rates it bad / fair / good and the points are entered by hand.
+// Story Dice (PD-160 spike). Roll 3-9 glyph dice, arrange them in an order that makes sense, tell a story; the table rates it bad / weak / fair / good / great and the points are entered by hand.
 // The engine only knows face numbers and order. Which glyph is on which face is the UI's seeded deal (src/story.js); the engine keeps the options (pack list, set seed) so a saved game deals the same dice.
 import { range, rank } from './util.js';
 
-export const RATINGS = { bad: 0, fair: 1, good: 2 };   // owner: manual points, simple rating; the mapping is a design decision, see docs/design/story-dice-game.md
-export const info = { id: 'story', name: 'Story Dice', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 12 }, hints: true,
+export const RATINGS = { bad: 0, weak: 3, fair: 5, good: 7, great: 10 };   // PD-192 (owner 2026-11-20): five buttons, fewer ties. Games saved before this hold the old 0/1/2 points in their tellings; those totals are never recomputed. See docs/design/story-dice-game.md
+const RATING_LABELS = { bad: 'Bad', weak: 'Weak', fair: 'Fair', good: 'Good', great: 'Great' };
+export const info = { id: 'story', name: 'Story Dice', minPlayers: 1, maxPlayers: 6, dice: { count: 5, sides: 12 }, hints: true, ratings: Object.entries(RATINGS).map(([id, points]) => ({ id, points, label: RATING_LABELS[id] })),
   options: [
     { id: 'dice', label: 'Dice', type: 'int', min: 3, max: 9, default: 5 },
     { id: 'sides', label: 'Faces per die', type: 'choice', choices: [{ value: 6, label: 'd6' }, { value: 8, label: 'd8' }, { value: 12, label: 'd12' }, { value: 20, label: 'd20' }], default: 12 },
@@ -40,7 +41,7 @@ export const engine = {
     }
     if (a.type === 'rate') {
       if (!st.canRate) return 'Put every die in order first';
-      if (!(a.rating in RATINGS)) return 'Rating must be bad, fair or good';
+      if (!(a.rating in RATINGS)) return 'Rating must be bad, weak, fair, good or great';
       const pts = RATINGS[a.rating]; s.scores[t.player] += pts; s.tellings[t.player].push({ rating: a.rating, points: pts, faces: t.faces.slice(), order: t.order.slice() });
       ev.push({ type: 'scored', player: t.player, points: pts, rating: a.rating });
       const np = (t.player + 1) % s.players.length, nr = np === 0 ? t.round + 1 : t.round;

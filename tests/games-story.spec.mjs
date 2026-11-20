@@ -11,7 +11,7 @@ test('story: listed with options, defaults, solo allowed, bots allowed @quick', 
   const s = newGame('story', { players: ['Me'] }); expect(s.options.dice).toBe(5); expect(s.options.sides).toBe(12); expect(s.options.packs).toEqual(['noto']);
 });
 
-test('story: roll -> arrange (partial then full) -> rate -> next player; points 0/1/2 @quick', () => {
+test('story: roll -> arrange (partial then full) -> rate -> next player; points 0/3/5/7/10 @quick', () => {
   let s = mk(); expect(status(s).phase).toBe('roll'); expect(rollSpec(s)).toEqual({ slots: [0, 1, 2, 3], sides: [12, 12, 12, 12] });
   expect(act(s, { type: 'rate', rating: 'good' }).error).toMatch(/order/); expect(act(s, { type: 'arrange', order: [0, 1, 2, 3] }).error).toMatch(/Roll first/);
   expect(act(s, { type: 'roll', values: [1, 2, 3] }).error).toMatch(/Expected 4/); expect(act(s, { type: 'roll', values: [1, 2, 3, 13] }).error).toMatch(/1 to 12/);
@@ -21,20 +21,20 @@ test('story: roll -> arrange (partial then full) -> rate -> next player; points 
   expect(act(s, { type: 'arrange', order: [2, 2, 0, null] }).error).toMatch(/Bad order/); expect(act(s, { type: 'arrange', order: [2, 9, 0, null] }).error).toMatch(/Bad order/);
   s = ok(s, { type: 'arrange', order: [2, 1, 0, 3] }); expect(status(s).phase).toBe('rate'); expect(status(s).canRate).toBe(true);
   s = ok(s, { type: 'arrange', order: [2, 1, 0, null] }); expect(status(s).phase).toBe('arrange');   // took one back out
-  s = ok(s, { type: 'arrange', order: [3, 1, 0, 2] }); expect(act(s, { type: 'rate', rating: 'great' }).error).toMatch(/bad, fair or good/);
-  s = ok(s, { type: 'rate', rating: 'good' }); expect(status(s).scores).toEqual([2, 0]); expect(status(s).player).toBe(1); expect(status(s).phase).toBe('roll');
+  s = ok(s, { type: 'arrange', order: [3, 1, 0, 2] }); expect(act(s, { type: 'rate', rating: 'meh' }).error).toMatch(/bad, weak, fair, good or great/);
+  s = ok(s, { type: 'rate', rating: 'good' }); expect(status(s).scores).toEqual([7, 0]); expect(status(s).player).toBe(1); expect(status(s).phase).toBe('roll');
   s = ok(s, { type: 'roll', values: [1, 1, 1, 1] }); s = ok(s, { type: 'arrange', order: [0, 1, 2, 3] }); s = ok(s, { type: 'rate', rating: 'fair' });
-  expect(status(s).scores).toEqual([2, 1]); expect(status(s).round).toBe(2); expect(status(s).player).toBe(0);
+  expect(status(s).scores).toEqual([7, 5]); expect(status(s).round).toBe(2); expect(status(s).player).toBe(0);
 });
 
 test('story: game ends after the set number of stories each; ranking; scorecard; solo @quick', () => {
   let s = mk({ rounds: 1 });
   for (const r of ['bad', 'good']) { s = ok(s, { type: 'roll', values: [1, 2, 3, 4] }); s = ok(s, { type: 'arrange', order: [0, 1, 2, 3] }); s = ok(s, { type: 'rate', rating: r }); }
   expect(status(s).phase).toBe('over'); expect(result(s).winners).toEqual([1]); expect(act(s, { type: 'roll', values: [1, 2, 3, 4] }).error).toMatch(/over/);
-  expect(scorecard(s, 1)).toMatchObject({ total: 2, sections: [{ rows: [{ points: 2, rating: 'good' }] }] });
+  expect(scorecard(s, 1)).toMatchObject({ total: 7, sections: [{ rows: [{ points: 7, rating: 'good' }] }] });
   let solo = newGame('story', { players: ['Me'], options: { dice: 3, rounds: 2 } });
   for (let i = 0; i < 2; i++) { solo = ok(solo, { type: 'roll', values: [1, 2, 3] }); solo = ok(solo, { type: 'arrange', order: [2, 1, 0] }); solo = ok(solo, { type: 'rate', rating: 'fair' }); }
-  expect(status(solo).phase).toBe('over'); expect(result(solo).ranking[0].total).toBe(2);
+  expect(status(solo).phase).toBe('over'); expect(result(solo).ranking[0].total).toBe(10);
 });
 
 test('story bot: rolls, fills the rings one die per step, humans rate; an all-bot table waits for a human grade (PD-173) @quick', () => {
@@ -61,4 +61,19 @@ test('story bot: rolls, fills the rings one die per step, humans rate; an all-bo
   b = ok(b, auto);
   for (let i = 0; i < 12 && status(b).phase !== 'over'; i++) { const a = botMove(b, { seed: i, autoRate: true }); expect(a).not.toBeNull(); b = a.type === 'roll' ? ok(b, { type: 'roll', values: [1, 2, 3] }) : ok(b, a); }
   expect(status(b).phase).toBe('over');
+});
+
+test('story: five ratings are worth 0/3/5/7/10 and add up; a game saved with the old 0/1/2 points keeps its totals (PD-192) @quick', () => {
+  const pts = { bad: 0, weak: 3, fair: 5, good: 7, great: 10 };
+  const info = listGames().find(x => x.id === 'story');
+  expect(Object.fromEntries(info.ratings.map(r => [r.id, r.points]))).toEqual(pts); expect(info.ratings.map(r => r.label)).toEqual(['Bad', 'Weak', 'Fair', 'Good', 'Great']);
+  let s = newGame('story', { players: ['Me'], options: { dice: 3, rounds: 5 } }), tot = 0;
+  for (const r of ['bad', 'weak', 'fair', 'good', 'great']) { s = ok(s, { type: 'roll', values: [1, 2, 3] }); s = ok(s, { type: 'arrange', order: [0, 1, 2] }); s = ok(s, { type: 'rate', rating: r }); tot += pts[r]; expect(status(s).scores).toEqual([tot]); expect(s.tellings[0].at(-1)).toMatchObject({ rating: r, points: pts[r] }); }
+  expect(tot).toBe(25); expect(status(s).phase).toBe('over');
+  // an old save: two stories rated with the old scale (fair 1, good 2); loading never recomputes, new ratings use the new scale
+  let o = newGame('story', { players: ['Me'], options: { dice: 3, rounds: 3 } });
+  o = JSON.parse(JSON.stringify(o)); o.scores = [3]; o.tellings = [[{ rating: 'fair', points: 1, faces: [1, 2, 3], order: [0, 1, 2] }, { rating: 'good', points: 2, faces: [1, 2, 3], order: [0, 1, 2] }]]; o.turn = { player: 0, round: 3, faces: null, order: null };
+  expect(status(o).scores).toEqual([3]); expect(scorecard(o, 0).total).toBe(3); expect(scorecard(o, 0).sections[0].rows.map(r => r.points)).toEqual([1, 2, null]);
+  o = ok(o, { type: 'roll', values: [1, 2, 3] }); o = ok(o, { type: 'arrange', order: [0, 1, 2] }); o = ok(o, { type: 'rate', rating: 'fair' });
+  expect(status(o).scores).toEqual([8]); expect(status(o).phase).toBe('over');
 });

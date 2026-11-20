@@ -39,7 +39,7 @@ test('story dice: a bot story is locked while it is judged, and the tray works a
   await setup(app, 92, { bots: [2], rounds: 2 });
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   for (const i of [0, 1, 2]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
-  await app.page.click('text=Fair · 1');
+  await app.page.click('.story-rate [data-rate=fair]');
   await expect.poll(() => app.run(pd => pd.GAMES.status(pd.game.state).botTurn), { timeout: 15000 }).toBe(true);
   await settleBots(app);
   const st = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(st.phase).toBe('rate'); expect(st.botTurn).toBe(true);
@@ -47,7 +47,7 @@ test('story dice: a bot story is locked while it is judged, and the tray works a
   await drag(app, 0, 2); await drag(app, 1, null);
   expect(await order(app)).toEqual(st.order);   // refused: nothing moved
   expect(await app.page.locator('#storytray .stile.drag').count()).toBe(0);
-  await app.page.click('text=Good · 2');   // judged; the human's own next turn: roll, then the tray works again
+  await app.page.click('.story-rate [data-rate=good]');   // judged; the human's own next turn: roll, then the tray works again
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   await drag(app, 0, 1);
   expect((await order(app))[1]).toBe(0);

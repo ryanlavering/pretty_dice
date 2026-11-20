@@ -50,13 +50,13 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
   const b = async l => (await l.boundingBox()), t4 = await b(app.page.locator('#storytray .stile[data-i="4"]')), r3 = await b(app.page.locator('#storytray .sring').nth(2));
   await app.page.mouse.move(t4.x + t4.width / 2, t4.y + t4.height / 2); await app.page.mouse.down(); await app.page.mouse.move(r3.x + r3.width / 2, r3.y + r3.height / 2, { steps: 6 }); await app.page.mouse.up();
   expect((await app.run(pd => pd.GAMES.status(pd.game.state))).order).toEqual([0, 2, 4, 1, 3]);
-  await app.page.click('text=Good · 2');
-  const after = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(after.scores).toEqual([2]); expect(after.phase).toBe('roll'); expect(after.round).toBe(2);
+  await app.page.click('.story-rate [data-rate=good]');
+  const after = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(after.scores).toEqual([7]); expect(after.phase).toBe('roll'); expect(after.round).toBe(2);
   await expect(app.page.locator('#storytray')).toBeHidden();
   // second story: fair, game over
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   for (const i of [0, 1, 2, 3, 4]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
-  await app.page.click('text=Fair · 1');
+  await app.page.click('.story-rate [data-rate=fair]');
   expect((await app.run(pd => pd.GAMES.status(pd.game.state))).phase).toBe('over'); await expect(app.page.locator('#scorepane')).toContainText('Game over');
   // ending the game puts the player's own design back
   await app.run(pd => pd.endGame()); await app.page.waitForTimeout(500);
@@ -89,7 +89,7 @@ test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; 
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bots)).toEqual([1]);
   await app.run(pd => pd.simRoll({ rerolls: 6 }));
   for (const i of [0, 1, 2]) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
-  await app.page.click('text=Fair · 1');
+  await app.page.click('.story-rate [data-rate=fair]');
   await expect.poll(() => app.run(pd => pd.GAMES.status(pd.game.state).botTurn), { timeout: 15000 }).toBe(true);
   for (let i = 0; i < 40; i++) {   // the test page does not step physics by itself: settle the bot's throw by hand; the bot arranges on its own
     const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate' || st.phase === 'over') break;
@@ -97,15 +97,15 @@ test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; 
     await app.run(pd => { const s = pd.GAMES.status(pd.game.state); if (s.botTurn && s.canRoll) pd.simRoll({ rerolls: 6 }); });
   }
   const st = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(st.phase).toBe('rate'); expect(st.botTurn).toBe(true); expect(st.order.every(x => x !== null)).toBe(true);
-  await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*[.]$/); await expect(app.page.locator('#scorepane')).toContainText("Judge ");
+  await expect(app.page.locator('.story-sent')).toHaveText(/^[A-Z].*[.]$/); await expect(app.page.locator('#scorepane')).toContainText('told a story: rate it');
   await app.page.waitForTimeout(4000);   // PD-173: the bot's story never advances on its own; it waits for the human to judge it
   expect(await app.run(pd => { const s = pd.GAMES.status(pd.game.state); return [s.phase, s.botTurn, s.round]; })).toEqual(['rate', true, st.round]);
-  await expect(app.page.locator('.story-rate button')).toHaveCount(3);
+  await expect(app.page.locator('.story-rate button')).toHaveCount(5);
   await app.page.waitForTimeout(600);
   await app.page.locator('#storytray .stile[data-i="0"]').click({ force: true }); expect((await app.run(pd => pd.GAMES.status(pd.game.state))).order).toEqual(st.order);   // locked on the bot's turn
-  const s1 = await app.page.locator('.story-sent').textContent(); await app.page.click('text=Re-word'); expect(await app.page.locator('.story-sent').textContent()).not.toBe(s1);
-  await app.page.click('text=Good · 2');
-  const fin = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(fin.phase).toBe('over'); expect(fin.scores).toEqual([1, 2]);
+  await expect(app.page.locator('#scorepane .reword')).toHaveCount(0);   // PD-192: a bot's ad-lib is what it said; no Re-word on it
+  await app.page.click('.story-rate [data-rate=good]');
+  const fin = await app.run(pd => pd.GAMES.status(pd.game.state)); expect(fin.phase).toBe('over'); expect(fin.scores).toEqual([5, 7]);
   await app.run(pd => pd.endGame()); expect(errors).toEqual([]);
 });
 
@@ -187,14 +187,14 @@ test('story dice: full view with the pane closed, the mat shows the sentence, th
     const geo = await app.page.evaluate(() => { const q = s => document.querySelector(s).getBoundingClientRect(), t = q('#storytray .ssent'), d = q('#qbar'), rs = [...document.querySelectorAll('#storytray .sring')].map(e => e.getBoundingClientRect());
       return { inside: t.left >= 0 && t.right <= innerWidth && t.top >= 0 && t.bottom <= innerHeight, clearOfRings: rs.every(r => t.top >= r.bottom - 1), clearOfDock: t.bottom <= d.top + 1, dockHasSentence: document.querySelector('#dockhint').textContent.includes(document.querySelector('#storytray .ssent').textContent.slice(-12)) }; });
     expect(geo).toEqual({ inside: true, clearOfRings: true, clearOfDock: true, dockHasSentence: false });
-    await expect(app.page.locator('#dockhint')).toContainText('Tell it, then rate it');
+    await expect(app.page.locator('#dockhint')).toContainText('Everyone else judges');
     await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible();
     const inView = await app.page.evaluate(() => { const r = document.querySelector('#qbar').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; });
     expect(inView).toBe(true);
     if (shot) { await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(600); await app.page.screenshot({ path: `${shot}/story-${vp.width}-rate.png` }); }
     await app.page.locator('#qbar [data-act=rate-good]').click();
-    expect((await app.run(pd => pd.GAMES.status(pd.game.state))).scores[0]).toBe(2);
-    await expect(app.page.locator('#dockhint')).toContainText('Last story +2');
+    expect((await app.run(pd => pd.GAMES.status(pd.game.state))).scores[0]).toBe(7);
+    await expect(app.page.locator('#dockhint')).toContainText('Last story +7 (good)');
   }
 });
 
@@ -227,10 +227,10 @@ test('story dice: a game with only bots stops in the rate phase until a human gr
   const at = await rated(); expect(at.phase).toBe('rate'); expect(at.round).toBe(1);
   await app.page.waitForTimeout(4000);   // nothing rates it, nothing moves on
   expect(await rated()).toEqual(at);
-  await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible(); await expect(app.page.locator('#storytray .ssent')).toContainText('Judge ');
+  await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible(); await expect(app.page.locator('#storytray .ssent')).toContainText("'s story");
   await app.page.locator('#qbar [data-act=rate-good]').click();
   const next = await app.run(pd => { const s = pd.GAMES.status(pd.game.state); return { scores: s.scores, player: s.player, phase: s.phase }; });
-  expect(next.scores[at.player]).toBe(2); expect(next.player).not.toBe(at.player);   // the grade advanced to the other bot
+  expect(next.scores[at.player]).toBe(7); expect(next.player).not.toBe(at.player);   // the grade advanced to the other bot
   expect(errors).toEqual([]);
 });
 
@@ -252,7 +252,7 @@ test('story dice: a blank bot name never shows a dangling "Judge \'s story" (PD-
   const names = await app.run(pd => pd.game.state.players);
   const txt = await app.page.evaluate(() => ({ tray: document.querySelector('#storytray .ssent')?.textContent || '', dock: document.querySelector('#dockhint').textContent, pane: document.querySelector('#scorepane').textContent }));
   for (const t of Object.values(txt)) { expect(t).not.toMatch(/Judge\s+'s|judge\s+'s|^\s*'s story|\s's story/i); expect(t).not.toMatch(/^: /); }
-  expect(txt.tray + txt.dock).toMatch(/Judge /i);   // the judge prompt is still there, with a fallback label if the name is blank (names: ${names})
+  expect(txt.tray + txt.dock).toMatch(/told a story: rate it/i);   // the judge prompt is still there, with a fallback label if the name is blank (names: ${names})
   expect(errors).toEqual([]);
 });
 

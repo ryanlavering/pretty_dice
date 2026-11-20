@@ -251,11 +251,20 @@ button.whoop{background:var(--accent);color:#000;font-weight:700;border-radius:8
 .story-hints{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;font-size:12px;opacity:.85}
 .story-hints div{background:#00000030;border-radius:6px;padding:5px 7px}
 .story-sent{font:italic 17px/1.35 Georgia,serif;margin:8px 0}
-.story-rate{display:flex;gap:8px;margin:8px 0}.story-rate button{flex:1;padding:10px 4px}
+.story-scale{font-size:13px;margin:8px 0 0;color:var(--ink)}
+.story-rate{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+button.rbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.1;min-width:44px;min-height:44px;padding:4px 2px;font:600 13px Inter,sans-serif;cursor:pointer} button.rbtn i{font-style:normal;font-weight:700;font-size:15px;color:var(--accent)}   /* PD-192: five rating buttons, name over points */
+.story-rate button.rbtn{flex:1 1 56px;background:var(--accent);color:#1a1405;border:0} .story-rate button.rbtn i{color:#1a1405}
+#scorepane button.reword{white-space:nowrap;flex:none;min-height:36px;padding:0 12px}
+#scorepane .story-endbtns{display:flex;gap:8px} #scorepane .story-endbtns .big{flex:1;min-height:44px}
+#scorepane .story-confirm{margin:8px 0;padding:10px 12px;border:2px solid #e0605a;border-radius:10px;background:#3a1a18;color:#ffd6d2;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center} #scorepane .story-confirm span{flex:1 1 100%} #scorepane .story-confirm .big{flex:1 1 120px;width:auto;margin:0;min-height:44px}
+#qbar #rollbtn:disabled{opacity:.4;background:#2a2e3a;color:#8a90a0;filter:none;cursor:default}
 
 #qbar.storyq{flex-wrap:wrap;border-radius:18px;overflow-x:hidden;justify-content:center} #qbar.storyq .dhint.sent{flex:1 1 100%;white-space:normal;overflow:visible;text-overflow:clip;text-align:center;color:var(--ink);font-size:14px;line-height:1.3;padding:2px 6px} #qbar.storyq .dhint.sent b{color:var(--accent)}
 #storytray .ssent{position:absolute;left:50%;transform:translateX(-50%);width:min(92%,760px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(20,23,31,.78);color:var(--ink,#eee);text-align:center;line-height:1.3;font-family:Georgia,serif;font-style:italic;overflow:hidden;pointer-events:none;z-index:3} #storytray .ssent b{color:var(--accent,#e0b44a);font-style:normal;font-family:Inter,system-ui,sans-serif;font-size:.8em} #storytray .ssent[hidden]{display:none}
 @media (max-width:600px){ #qbar.storyq .dhint{flex:1 1 100%;text-align:center} }
+body #qbar.storyq.rating #rollbtn{display:none} body #qbar.storyq.rating{gap:4px 4px;padding:4px 8px} body #qbar.storyq.rating .dhint{flex:1 1 100%;text-align:center;white-space:normal;line-height:1.2;font-size:13px}
+body #qbar.storyq .dact button.rbtn{flex:1 1 44px;max-width:72px;min-width:44px;height:44px;padding:2px;flex-direction:column;justify-content:center;gap:0;border-radius:12px;font-size:12px;line-height:1.1} body #qbar.storyq .dact button.rbtn i{font-size:14px;color:var(--accent)}   /* PD-192: 44 x 44 minimum, one row of five at 390 px, wrapping to 3+2 on narrower phones */
 
 /* PD-166 Story Dice sets editor (inside the Games panel; reuses the Bag Sets look) */
 #scorepane .ssets{display:flex;flex-direction:column;gap:8px;margin:8px 0} #scorepane .ssrow .main small{white-space:normal}

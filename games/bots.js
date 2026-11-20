@@ -133,7 +133,7 @@ function storyMove(s, rng, opts = {}) {
   for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [target[i], target[j]] = [target[j], target[i]]; }
   const filled = t.order.filter(x => x !== null).length;
   if (filled < n) return { type: 'arrange', order: target.map((d, k) => k <= filled ? d : null) };
-  return opts.autoRate ? { type: 'rate', rating: ['fair', 'good', 'good', 'bad'][Math.floor(rng() * 4)] } : null;
+  return opts.autoRate ? { type: 'rate', rating: ['bad', 'weak', 'fair', 'good', 'great'][Math.floor(rng() * 5)] } : null;
 }
 
 export function botMove(s, opts = {}, api) {
