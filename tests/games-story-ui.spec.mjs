@@ -5,7 +5,7 @@ const shot = process.env.STORY_SHOT;
 test('story dice: setup picks packs, glyphs paint on the dice, tray orders them, rating scores', async ({ shared: app }) => {
   const errors = []; app.page.on('pageerror', e => errors.push(e.message));
   const setDice = n => app.page.locator('#scorepane input[type=number]').first().evaluate((e, v) => { e.value = v; e.dispatchEvent(new Event('change')); }, String(n));
-  await app.reset(7);
+  await app.reset(7, { plain: true });
   const before = await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft }));
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
@@ -65,7 +65,7 @@ test('story dice: setup picks packs, glyphs paint on the dice, tray orders them,
 });
 
 test('story dice setup preview: picking Story Dice shows the dice, another game or Close puts the old look back', async ({ shared: app }) => {
-  await app.reset(79); await app.run(pd => { if (pd.game) pd.endGame(); });
+  await app.reset(79, { plain: true }); await app.run(pd => { if (pd.game) pd.endGame(); });
   const before = await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }));
   await app.run(pd => pd.openGames());
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
@@ -80,7 +80,7 @@ test('story dice setup preview: picking Story Dice shows the dice, another game 
 
 test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; tray is locked on its turn', async ({ shared: app }) => {
   const errors = []; app.page.on('pageerror', e => errors.push(e.message));
-  await app.reset(77); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.reset(77, { plain: true }); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
   await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '1'; e.dispatchEvent(new Event('change')); });
@@ -111,7 +111,7 @@ test('story dice with a bot: the bot rolls, arranges, ad-libs; the human rates; 
 
 import { test as base, expect as bexpect } from '@playwright/test';
 test('story dice: more than 5 dice split into two rows and stay inside the screen on a phone', async ({ shared: app }) => {
-  await app.reset(7); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
+  await app.reset(7, { plain: true }); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
@@ -123,7 +123,7 @@ test('story dice: more than 5 dice split into two rows and stay inside the scree
 });
 
 test('story dice: a dragged die grows only a little and its screen bounds stay clear of its neighbours (PD-171)', async ({ shared: app }) => {
-  await app.reset(11); await app.page.waitForTimeout(300);
+  await app.reset(11, { plain: true }); await app.page.waitForTimeout(300);
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
   await app.nav.roll();
@@ -147,7 +147,7 @@ test('story dice: a dragged die grows only a little and its screen bounds stay c
 });
 
 test('story dice: landscape phone keeps one row for 9 dice, and the layout follows a resize (PD-174)', async ({ shared: app }) => {
-  await app.reset(7); await app.page.setViewportSize({ width: 844, height: 390 }); await app.page.waitForTimeout(400);
+  await app.reset(7, { plain: true }); await app.page.setViewportSize({ width: 844, height: 390 }); await app.page.waitForTimeout(400);
   await app.run(pd => { pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
@@ -168,7 +168,7 @@ base('story dice: ?game=story opens the Games setup on Story Dice', async ({ pag
 
 test('story dice: full view with the pane closed, the mat shows the sentence, the dock the rating and result (PD-176)', async ({ shared: app }) => {
   for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) {
-    await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+    await app.reset(78, { plain: true }); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
     await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
     await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
     await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
@@ -200,7 +200,7 @@ test('story dice: full view with the pane closed, the mat shows the sentence, th
 
 for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) test(`story dice: shots of the arrangement with the pane open, ${vp.width} wide (PD-175 visual check, STORY_SHOT only)`, async ({ shared: app }) => {
   test.skip(!shot, 'screenshots only'); {
-    await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+    await app.reset(78, { plain: true }); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
     await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
     await app.page.selectOption('#scorepane select >> nth=0', 'story');
     await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); await app.page.waitForTimeout(500); await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(700); 
@@ -212,7 +212,7 @@ for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) te
 
 test('story dice: a game with only bots stops in the rate phase until a human grades it (PD-173)', async ({ shared: app }) => {
   const errors = []; app.page.on('pageerror', e => errors.push(e.message));
-  await app.reset(81); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.reset(81, { plain: true }); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
   await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
@@ -220,8 +220,8 @@ test('story dice: a game with only bots stops in the rate phase until a human gr
   await app.nav.roll();
   expect(await app.run(pd => pd.GAMES.status(pd.game.state).bots)).toEqual([0, 1]);
   for (let i = 0; i < 60; i++) {   // the test page does not step physics by itself: settle the bot's throw by hand
-    const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate') break;
-    await app.run(pd => { for (let k = 0; k < 60; k++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
+    const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate') break;   // the test page does not step physics by itself; pd.step(n) steps without drawing each frame (~100 ms each in swiftshader)
+    await app.run(pd => { pd.step(60); pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
   }
   const rated = () => app.run(pd => { const s = pd.GAMES.status(pd.game.state); return { phase: s.phase, round: s.round, player: s.player, scores: s.scores }; });
   const at = await rated(); expect(at.phase).toBe('rate'); expect(at.round).toBe(1);
@@ -236,7 +236,7 @@ test('story dice: a game with only bots stops in the rate phase until a human gr
 
 test('story dice: a blank bot name never shows a dangling "Judge \'s story" (PD-184)', async ({ shared: app }) => {
   const errors = []; app.page.on('pageerror', e => errors.push(e.message));
-  await app.reset(82); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.reset(82, { plain: true }); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
   await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '2'; e.dispatchEvent(new Event('change')); });
@@ -245,7 +245,7 @@ test('story dice: a blank bot name never shows a dangling "Judge \'s story" (PD-
   await app.nav.roll();
   for (let i = 0; i < 60; i++) {
     const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate') break;
-    await app.run(pd => { for (let k = 0; k < 60; k++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
+    await app.run(pd => { pd.step(60); pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
   }
   await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible();
   await app.page.waitForTimeout(300);
@@ -257,7 +257,7 @@ test('story dice: a blank bot name never shows a dangling "Judge \'s story" (PD-
 });
 
 for (const vp of [{ width: 390, height: 740 }, { width: 740, height: 390 }, { width: 1280, height: 800 }]) test(`story dice: a long story sentence on the mat wraps and is fully visible, ${vp.width}x${vp.height} (PD-184)`, async ({ shared: app }) => {
-  await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+  await app.reset(78, { plain: true }); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
   await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
   await app.page.selectOption('#scorepane select >> nth=0', 'story');
   await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
@@ -275,7 +275,7 @@ for (const vp of [{ width: 390, height: 740 }, { width: 740, height: 390 }, { wi
 
 // PD-186: the story dock wraps to two rows during the game; it must give the one-row dock back when the game ends
 test('story dice on a phone: the dock returns to its pre-game height after the game ends (PD-186)', async ({ shared: app }) => {
-  await app.reset(79); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
+  await app.reset(79, { plain: true }); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
   await app.run(pd => { if (pd.game) pd.endGame(); });
   const h = () => app.page.evaluate(() => { const b = document.querySelector('#qbar'); return b.hidden ? 0 : Math.round(b.getBoundingClientRect().height); });
   await app.run(pd => pd.openGames()); await app.page.selectOption('#scorepane select >> nth=0', 'story');

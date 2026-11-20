@@ -9,11 +9,12 @@ export const slerp=(a,b,t)=>{const th=Math.acos(THREE.MathUtils.clamp(a.dot(b),-
 
 /* Filigree: vector ornament along each face edge, drawn into the number atlas. Etched into the bump map (darken) and
    written to the mask's green channel (lighten) so the shader can fill it with enamel. poly = face corners in atlas px (x right, y up). */
+const LITE_FLAT=typeof location!=='undefined'&&new URLSearchParams(location.search).has('lite');   // ?lite is the test-only render profile (PD-178): the 0.6 px softening of every filigree stroke is a canvas filter pass per stroke, 3-6 s of software rendering per build of a filigree look; tests need the enamel painted, not softened
 export function drawFiligree(atlas,col,row,poly,rp,insetPx,style,soft){
   const cell=atlas.cell, k=Math.max(.3,1-insetPx/rp), Q=poly.map(([x,y])=>[x*k,-y*k]), lw=Math.max(2.2,rp*.034);
   for(const [img,colr,comp,blur] of [[atlas.bump.image,'#000','darken',soft*.5],[atlas.mask.image,'#0f0','lighten',.6]]){
     const g=img.getContext('2d'); g.save(); g.beginPath(); g.rect(col*cell,row*cell,cell,cell); g.clip();
-    g.translate((col+.5)*cell,(row+.5)*cell); g.globalCompositeOperation=comp; g.strokeStyle=g.fillStyle=colr; g.lineCap=g.lineJoin='round'; g.lineWidth=lw; if(blur) g.filter=`blur(${blur}px)`;
+    g.translate((col+.5)*cell,(row+.5)*cell); g.globalCompositeOperation=comp; g.strokeStyle=g.fillStyle=colr; g.lineCap=g.lineJoin='round'; g.lineWidth=lw; if(blur&&!LITE_FLAT) g.filter=`blur(${blur}px)`;
     const dot=(x,y,r,fill)=>{ g.beginPath(); g.arc(x,y,r,0,7); fill?g.fill():g.stroke(); };
     for(let i=0;i<Q.length;i++){
       const A=Q[i], B=Q[(i+1)%Q.length], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, mx=(A[0]+B[0])/2, my=(A[1]+B[1])/2;

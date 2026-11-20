@@ -7,7 +7,7 @@ const openEditor = async (app, page) => { await app.run(pd => pd.openGames()); a
 const formula = page => page.locator('.ssformula').inputValue();
 
 test('create, edit, save, reload, delete a Story Dice set; the set text is the grammar formula', async ({ app, page }) => {
-  await app.open({ seed: 3 });
+  await app.open({ seed: 3, plain: true });
   await openEditor(app, page);
   await expect(page.locator('#scorepane .ssrow')).toHaveCount(0);
   await expect(page.locator('#scorepane .setempty')).toBeVisible();
@@ -48,7 +48,7 @@ test('create, edit, save, reload, delete a Story Dice set; the set text is the g
 });
 
 test('a saved Story set persists over a reload, edits in place and deletes', async ({ app, page }) => {
-  await app.open({ seed: 3 });
+  await app.open({ seed: 3, plain: true });
   const f1 = '7d8{gameicons#42}';
   await app.run(pd => { pd.setOps.create({ name: 'Fairy tales', terms: [{ count: 7, sides: 8, faces: { kind: 'deal', packs: ['gameicons'], seed: 42, dice: 'different', order: 'shuffled' } }], mod: 0 }); });
   // reload: it persists and shows in the list again
@@ -72,7 +72,7 @@ test('a saved Story set persists over a reload, edits in place and deletes', asy
 });
 
 test('use in game loads the setup; roll it puts the dice on the table; non-story sets stay out of the list', async ({ app, page }) => {
-  await app.open({ seed: 4 });
+  await app.open({ seed: 4, plain: true });
   await app.run(pd => { pd.setOps.create({ name: 'Plain', terms: [{ count: 2, sides: 6 }], mod: 0 }); });
   await openEditor(app, page);
   await expect(page.locator('#scorepane .ssrow')).toHaveCount(0);   // the plain set is not a Story set
@@ -88,7 +88,7 @@ test('use in game loads the setup; roll it puts the dice on the table; non-story
 });
 
 test('the game deals the same glyphs as the set text', async ({ app, page }) => {
-  await app.open({ seed: 5 });
+  await app.open({ seed: 5, plain: true });
   await openEditor(app, page); await page.click('#ssnew'); await page.fill('.ssseed', '9'); await page.locator('.ssseed').dispatchEvent('change');
   const preview = await page.locator('.ssdie').first().locator('.ssg').evaluateAll(els => els.map(e => e.title));
   await page.click('.ssuse'); await page.locator('#scorepane button.big:has-text("Start game")').click();
@@ -98,7 +98,7 @@ test('the game deals the same glyphs as the set text', async ({ app, page }) => 
 
 test('the editor works at phone size (390x740)', async ({ app, page }) => {
   await page.setViewportSize({ width: 390, height: 740 });
-  await app.open({ seed: 6 });
+  await app.open({ seed: 6, plain: true });
   await openEditor(app, page);
   if (shot) { await page.waitForTimeout(400); await page.screenshot({ path: `${shot}/pd166-list-390.png` }); }
   await page.click('#ssnew');

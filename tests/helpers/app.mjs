@@ -61,7 +61,7 @@ const SHARED_VIEWPORT = { width: 960, height: 600 };
 const bootShared = async (page, again = false) => {
   if (again) await page.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
   await page.goto(`/index.html?libs=local&multipoop&seed=1${LITE}`); await ready(page);
-  await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); window.__pdGames = localStorage.getItem('prettydice.games'); });
+  await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); window.__pdGames = localStorage.getItem('prettydice.games'); window.__pdGprefs = structuredClone(window.__pd.gprefs); });
 };
 
 export const test = base.extend({
@@ -71,8 +71,9 @@ export const test = base.extend({
     const app = {
       ...helpers(page),
       errors,
-      /** Load the app. query: extra URL params (string). lite: false uses the real render loop (see LITE). secret: false leaves out ?multipoop (PD-162, the code that unlocks Craps). seed: RNG seed. storage: object written to localStorage before the first load. */
-      async open({ query = '', seed = 1, storage = null, secret = true, lite = true } = {}) {
+      /** Load the app. query: extra URL params (string). lite: false uses the real render loop (see LITE). secret: false leaves out ?multipoop (PD-162, the code that unlocks Craps). plain: true boots with a saved look without filigree instead of a random one (the seeded Randomize may pick the scroll/deco/beads filigree, which costs 3-6 s of software-rendered canvas work on every rebuild of the dice, e.g. each Story preview rebuild and restore; use it in specs that rebuild dice a lot and do not look at the design). seed: RNG seed. storage: object written to localStorage before the first load. */
+      async open({ query = '', seed = 1, storage = null, secret = true, lite = true, plain = false } = {}) {
+        if (plain) storage = { 'prettydice.v1': { filigree: 'none' }, ...storage };   // see `plain` below
         await page.addInitScript(seedMath, seed);
         if (storage) await page.addInitScript(storage => {
           if (sessionStorage.getItem('pd-test-seeded')) return;   // only on the first load, so reload tests see what the app saved
@@ -107,12 +108,20 @@ export const test = base.extend({
     const shared = {
       ...helpers(page),
       errors,
-      async reset(seed = 1) {
+      /** plain: true drops the filigree from the restored look (see open({ plain }) above): the Story preview and game restore the player's look after every build. */
+      async reset(seed = 1, { plain = false } = {}) {
         // 4.1 baseline: a test that reloaded or navigated the shared page (it lost __pdBoot) or left it at another size used to leak
         // into every later test of the worker; boot it again from empty storage and put the viewport back.
         // the Games setup (game, player count, bot seats, options) lives in a module variable saved to localStorage, which pd.state
         // does not cover: a test that changed it (Liar's Dice with a bot, two-player Pig) changed the next game test's setup
-        const fresh = await page.evaluate(() => !!(window.__pdBoot && window.__pd) && localStorage.getItem('prettydice.games') === window.__pdGames).catch(() => false);
+        // a test that only changed the Games setup no longer forces a reboot (7 s alone, up to 30+ s under load, where it hung): put the saved
+        // setup and the live gprefs object (pd.gprefs, the same object the app reads) back in place
+        const booted = await page.evaluate(() => !!(window.__pdBoot && window.__pd && window.__pdGprefs)).catch(() => false);
+        if (booted) await page.evaluate(() => {
+          const g = window.__pd.gprefs; for (const k of Object.keys(g)) delete g[k]; Object.assign(g, structuredClone(window.__pdGprefs));
+          if (window.__pdGames === null) localStorage.removeItem('prettydice.games'); else localStorage.setItem('prettydice.games', window.__pdGames);
+        });
+        const fresh = booted;
         // the viewport goes back first: a reboot at the previous test's phone size (and Full view) is slower and was seen to hang under load
         const vp = page.viewportSize(); if (!vp || vp.width !== SHARED_VIEWPORT.width || vp.height !== SHARED_VIEWPORT.height) await page.setViewportSize(SHARED_VIEWPORT);
         if (!fresh) await bootShared(page, true);
@@ -121,12 +130,12 @@ export const test = base.extend({
         await page.evaluate(() => { const m = document.getElementById('cardmenu'); if (m) m.hidden = true; });   // = closeMenu() (a die's menu on the mat has no Escape)
         if (await page.locator('#drawer.open').count()) await page.keyboard.press('Escape');   // the drawer closes on Escape too
         if (await page.evaluate(() => document.body.classList.contains('full'))) await page.evaluate(() => window.__pd.setFull(false));
-        await page.evaluate(async seed => {
-          const pd = window.__pd, boot = structuredClone(window.__pdBoot); pd.pause(); if (pd.game) pd.endGame(); if (pd.rolling) pd.exitRoll(true);
+        await page.evaluate(async ([seed, plain]) => {
+          const pd = window.__pd, boot = structuredClone(window.__pdBoot); if (plain) boot.filigree = 'none'; pd.pause(); if (pd.game) pd.endGame(); if (pd.rolling) pd.exitRoll(true);
           for (const k of Object.keys(pd.state)) if (!(k in boot)) delete pd.state[k];
           Object.assign(pd.state, boot); document.getElementById('dname').value = '';   // every setting back to how the page booted
           pd.reseed(seed); await pd.buildDice(); pd.applyLook();
-        }, seed);
+        }, [seed, plain]);
       },
     };
     await use(shared);
