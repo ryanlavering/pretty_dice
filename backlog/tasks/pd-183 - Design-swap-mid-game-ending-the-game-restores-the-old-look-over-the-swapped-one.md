@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-11-20T06:16:00Z'
+updated_date: '2026-11-20T07:47:00Z'
 labels:
-  - v4.2
+  - v4.1
 dependencies: []
 priority: low
 ordinal: 376000
@@ -16,5 +17,5 @@ ordinal: 376000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Found while fixing PD-180: swapping the design mid-game does not update lookSnap, so ending the game restores the player's previous look over the swapped design. Decide whether the swap should become the new look.
+SUPERSEDED by PD-187 (owner made it a 4.1 bug: Story Dice must use a temporary draft design).
 <!-- SECTION:DESCRIPTION:END -->
