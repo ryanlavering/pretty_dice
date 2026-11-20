@@ -22,6 +22,7 @@ User-facing changes. Versions are git tags.
 - **Fixed: game over screen and Play again.** Story Dice now ends on a proper screen instead of just stopping.
 - **Fixed: five-point rating.** Story Dice ratings of 0 / 1 / 2 produced many ties; they are now 0 / 3 / 5 / 7 / 10. Games already in progress keep their totals.
 - **Safety net for a misread die.** After dice settle, and again before a score is taken, the game re-checks that each die's value matches the face showing, and corrects it if not.
+- **Better stories.** Story Dice sentences read more naturally: a story never repeats a word or echoes itself, "a" and "an" and "some" agree with the noun, long stories end with a closing line that calls back to the hero, and violent or disease verbs are softened around people unless the secret setting is on.
 
 ### Under the hood
 Main code split into modules (sound, geometry, materials and more) with no change in behaviour, and faster, sharded tests in CI.

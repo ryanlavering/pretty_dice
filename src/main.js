@@ -15,7 +15,7 @@ import { LOG_MAX, canonD, designOK, emptyBag, parseBag, slug, thumbKey, uniqueId
 import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
 import { SB, audioInit as audioInitM, audioStatus, hardnessFor, makeLimiter, makeSpatial, onImpact, playBlip, playChime, playFumble, playImpactNow, ringFor, rollTick, setSoundBackend, setVolume, sfx, tone, initSound, updateRolling, wrapAudioInit } from './sound.js';
 import { FACE_SIDES, dealError, dealTerms, faceName, fmtFaces, parseFaceBlock } from './faces.js';
-import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
+import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor, setStorySecret } from './story.js';
 import { createStoryTray } from './storyui.js';
 import { STORY_MAX, STORY_MIN, STORY_SIDES, draftError, draftFormula, draftOf, draftTerm, gameReady, isStorySet, newDraft, previewOf, summaryOf } from './storysets.js';
 let audioInit=audioInitM;   // reassigned by the lag monitor hook below (the sound module's own copy is wrapped through wrapAudioInit)
@@ -1870,6 +1870,7 @@ const KEPT_GAMES=['yahtzee','farkle','pig','craps','liarsdice','story'];   // PD
 // PD-162: Craps is hidden from the UI unless ?multipoop is in the URL (remembered for the browser session). All Craps code stays in place; this is a casual gate, not security.
 const SECRET_GAMES=['craps'];
 const secretOn=(()=>{ let on=new URLSearchParams(location.search).has('multipoop'); try{ if(on) sessionStorage.setItem('pd.multipoop','1'); else on=sessionStorage.getItem('pd.multipoop')==='1'; }catch{} return on; })();
+setStorySecret(secretOn);   // the secret gate also lifts the story generator's soft-verb rule
 const keptGames=()=>GAMES.listGames().filter(g=>KEPT_GAMES.includes(g.id)&&(secretOn||!SECRET_GAMES.includes(g.id))).sort((a,b)=>KEPT_GAMES.indexOf(a.id)-KEPT_GAMES.indexOf(b.id));
 let gsel=new Set(), gtiles=new Set();   // Farkle: dice the player has picked to set aside (shown with the hold ring until set aside)
 function gameHold(i){ if(botLock()) return false; const st=GAMES.status(game.state); if(game.id!=='yahtzee'&&game.id!=='farkle') return false;   // only these two take taps on the dice

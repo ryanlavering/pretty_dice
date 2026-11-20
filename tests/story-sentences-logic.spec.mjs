@@ -68,3 +68,34 @@ test('word choice: no adjective or adverb twice in one story, nouns keep their n
   }
   expect(repeats).toBeLessThanOrEqual(cases.length * 0.05);   // only when a glyph's own bank runs dry (or a noun shares the word)
 });
+
+// Soft dark verbs: with the secret gate off, no violent or disease verb shares a clause with a person noun; with it on, nothing changes.
+const DARK = 'stabbed killed abducted infected haunted struck burned bit stung crushed smashed zapped slapped blasted trapped plundered invaded threatened swallowed captured ruined doomed exploded expired'.split(' ');
+const PEOPLE = ['king', 'guard', 'queen', 'knight', 'wizard', 'witch', 'fairy', 'elf', 'genie', 'mermaid', 'zombie', 'vampire', 'troll', 'pirate', 'ninja', 'soldier', 'clown', 'fool', 'spy', 'astronaut', 'runner', 'baby', 'man', 'woman', 'child', 'god', 'alien', 'visitor', 'suspect', 'minotaur', 'centaur', 'ghost', 'spirit', 'cutie', 'cool kid', 'forest folk', 'bridge guard'];
+const darkRe = new RegExp('\\b(' + DARK.join('|') + ')\\b', 'i'), peopleRe = new RegExp('\\b(' + PEOPLE.join('|') + ')\\b(?! (flag|hat))', 'i');
+const personGlyphs = S.GLYPHS.filter(g => g.n.some(n => PEOPLE.includes(n))), darkGlyphs = S.GLYPHS.filter(g => g.v.some(v => DARK.includes(v.replace(/!$/, ''))));
+const mixed = [], rm = S.rng(77);
+for (let k = 0; k < 400; k++) {
+  const ids = [], pick = a => a[Math.floor(rm() * a.length)].id;
+  ids.push(pick(personGlyphs), pick(darkGlyphs), pick(personGlyphs), pick(darkGlyphs));
+  while (ids.length < 5 + k % 5) ids.push(S.GLYPHS[Math.floor(rm() * S.GLYPHS.length)].id);
+  if (new Set(ids).size === ids.length) mixed.push({ ids, salt: k % 4 });
+}
+const darkWithPerson = () => { let n = 0; for (const { ids, salt } of mixed) for (const c of S.sentenceFor(ids, salt).clauses) if (peopleRe.test(c.text) && darkRe.test(c.text)) n++; return n; };
+
+test('soft verbs: a person never shares a clause with a dark verb unless the secret gate is on @quick', () => {
+  expect(mixed.length).toBeGreaterThan(200);
+  try {
+    S.setStorySecret(false);
+    expect(darkWithPerson()).toBe(0);
+    S.setStorySecret(true);
+    expect(darkWithPerson()).toBeGreaterThan(5);                                    // secret on: the original, unsoftened stories
+  } finally { S.setStorySecret(false); }
+});
+
+test('soft verbs: the gate only changes stories that have a person and a dark verb; ad-lib follows it too @quick', () => {
+  const sample = cases.slice(0, 60); let off = [], on = [];
+  try { S.setStorySecret(false); off = sample.map(c => S.sentenceFor(c.ids, c.salt).text); S.setStorySecret(true); on = sample.map(c => S.sentenceFor(c.ids, c.salt).text); } finally { S.setStorySecret(false); }
+  sample.forEach((c, i) => { if (off[i] !== on[i]) expect(c.ids.some(id => personGlyphs.some(g => g.id === id)), c.ids.join()).toBe(true); });
+  for (const { ids, salt } of mixed.slice(0, 80)) { const t = S.adLibFor(ids, salt); for (const c of t.clauses) if (peopleRe.test(c.text)) expect(c.text).not.toMatch(darkRe); }
+});

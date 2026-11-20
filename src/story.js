@@ -46,13 +46,20 @@ const an=w=>{ const f=w.split(/[ -]/)[0]; if(/^[A-Z0-9]+$/.test(f)) return /^([A
   return /^(hour|honest|honou?r|heir)/i.test(f)||/^[aeiou]/i.test(f)&&!/^(uni|use|usu|one|eu)/i.test(f)?'an':'a'; };
 const np=(n,adj,def)=>{ const w=adj?adj+' '+n:n; return (def?'the':many(n)?'some':an(w))+' '+w; };
 const cap=s=>s[0].toUpperCase()+s.slice(1);
+/* Secret gate (?multipoop): off by default, the dark verbs soften around people. setStorySecret(true) leaves every story unchanged. */
+let secret=false;
+export function setStorySecret(on){ secret=!!on; }
+const PERSON=new Set(['king','guard','queen','knight','chess knight','wizard','witch','fairy','elf','forest folk','genie','mermaid','zombie','vampire','troll','bridge guard','pirate','ninja','soldier','clown','fool','spy','astronaut','runner','baby','man','woman','child','god','alien','visitor','suspect','minotaur','centaur','cool kid','cutie','ghost','spirit']);
+const SOFT={stabbed:'poked',killed:'outwitted',abducted:'invited',infected:'amused',haunted:'visited',struck:'tapped',burned:'warmed',bit:'nibbled',stung:'startled',crushed:'hugged',smashed:'bumped into',zapped:'startled',slapped:'waved to',blasted:'surprised',trapped:'fooled',plundered:'visited',invaded:'visited',threatened:'warned',swallowed:'tempted',captured:'befriended',ruined:'embarrassed',doomed:'warned',exploded:'fizzed',expired:'sighed',raged:'grumbled'};
+const DARK=new Set(Object.keys(SOFT));
 const trans=g=>g.v.filter(v=>!v.endsWith('!')), intrans=g=>g.v.filter(v=>v.endsWith('!')).map(v=>v.slice(0,-1));
 const stem=w=>w.toLowerCase().slice(0,3), clash=(w,n)=>n.split(/[ -]/).some(x=>stem(x)===stem(w));
 /* the story's word picker: fresh() prefers words not used yet in this story and not echoing the noun; N(g) fixes a glyph's noun for the whole story */
 function words(r,lean=0){ const used=new Set(), roots=new Set(), nouns=new Map(), root=w=>w.toLowerCase().slice(0,4);   // roots: no "creaky door ... creaked" across the story either
+  const soft=l=>{ if(!w.safe) return l; const ok=l.filter(v=>!DARK.has(v)); return ok.length?ok:l.map(v=>SOFT[v]||v); };   // inside a clause with a person: no dark verb
   const fresh=(list,n)=>{ const fit=list.filter(w=>!(n&&clash(w,n))), ok=fit.filter(w=>!used.has(w)&&!roots.has(root(w))); const w=pick(ok.length?ok:fit.length?fit:list,r);   /* an echo is worse than a repeat */ used.add(w); for(const x of w.split(/[ -]/)) if(x.length>3) roots.add(root(x)); return w; };
   const N=g=>{ if(!nouns.has(g.id)){ const ok=g.n.filter(n=>!g.v.some(v=>clash(v,n))); nouns.set(g.id,fresh(ok.length?ok:g.n)); } return nouns.get(g.id); };   // "the smug face smirked", not "the smirk smirked"
-  const w={r,fresh,N, A:g=>fresh(g.a,N(g)+' '+g.v.join(' ')), D:g=>fresh(g.d,N(g)), T:g=>fresh(trans(g),N(g)), I:g=>fresh(intrans(g),N(g)), P:()=>fresh(PREP),
+  const w={r,fresh,N, A:g=>fresh(g.a,N(g)+' '+g.v.join(' ')), D:g=>fresh(g.d,N(g)), T:g=>fresh(soft(trans(g)),N(g)), I:g=>fresh(soft(intrans(g)),N(g)), P:()=>fresh(PREP), safe:false,
     the:(g,adj)=>np(N(g),adj&&r()>=lean?w.A(g):'',true), a:(g,adj)=>np(N(g),adj&&r()>=lean?w.A(g):'',false),   // lean: share of adjectives dropped, so 8-9 glyph stories stay about four lines on a phone
     act:(adv,vp)=>/ly$/.test(adv)&&r()<.5?adv+' '+vp:vp+' '+adv,   // "-ly" adverbs may lead the verb; "sideways", "far away" always trail
     pat:list=>{ let i=Math.floor(r()*list.length); for(let k=0;k<list.length&&used.has(list[i]);k++) i=(i+1)%list.length; used.add(list[i]); return list[i]; } };
@@ -82,7 +89,7 @@ const glyphsOf=ids=>ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new 
 export function sentenceFor(ids,salt=0){
   const gl=glyphsOf(ids); if(!gl.length) return {text:'',clauses:[]};
   const r=rng(hash32(ids.join(',')+'#'+salt)), w=words(r,gl.length>=8?.75:gl.length>=7?.4:0), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
-  for(const s of sizes){ const g=gl.slice(at,at+s); at+=s; clauses.push({glyphs:g.map(x=>x.id), text:w.pat(P[s])(g,w)}); }
+  for(const s of sizes){ const g=gl.slice(at,at+s); at+=s; { const person=g.some(x=>PERSON.has(w.N(x))); w.safe=!secret&&person; } clauses.push({glyphs:g.map(x=>x.id), text:w.pat(P[s])(g,w)}); }
   const out=[], beat=gl.length>=6&&gl.length<8&&clauses.length>2&&r()<.3?1+Math.floor(r()*(clauses.length-2)):-1; let open=0;   // out: sentences without the full stop; open: clauses in the last one
   clauses.forEach((c,i)=>{ const t=c.text, size=t.includes(', ')?2:1;
     if(i===0){ out.push(cap(w.fresh(OPEN)+' '+t)); open=size; }
@@ -104,7 +111,7 @@ const LIB_OPEN=['Okay so,','Listen.','Breaking news:','You will not believe this
 export function adLibFor(ids,salt=0){
   const gl=glyphsOf(ids); if(!gl.length) return {text:'',clauses:[]};
   const r=rng(hash32('adlib:'+ids.join(',')+'#'+salt)), w=words(r), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
-  for(const sz of sizes){ const chim=gl.slice(at,at+sz).map(g=>({...g,a:pick(gl,r).a,d:pick(gl,r).d,v:pick(gl,r).v})); at+=sz;
+  for(const sz of sizes){ const chim=gl.slice(at,at+sz).map(g=>({...g,a:pick(gl,r).a,d:pick(gl,r).d,v:pick(gl,r).v})); at+=sz; { const person=chim.some(x=>PERSON.has(w.N(x))); w.safe=!secret&&person; }
     let t=w.pat(P[sz])(chim,w); if(r()<.55) t+=', '+w.fresh(LIB_TAG); clauses.push({glyphs:chim.map(x=>x.id),text:t}); }
   const open=w.fresh(LIB_OPEN), first=open.endsWith('.')?cap(clauses[0].text):clauses[0].text;
   const text=[cap(open+' '+first),...clauses.slice(1).map(c=>cap(w.fresh(LIB_JOIN)+' '+c.text))].join('. ')+'. '+pick(LIB_END,r);
