@@ -239,6 +239,7 @@ button.whoop{background:var(--accent);color:#000;font-weight:700;border-radius:8
 #storytray .sring{position:absolute;width:var(--s);height:var(--s);border-radius:50%;border:3px dashed #ffffff80;display:grid;place-items:center;color:#ffffffa0;font:700 20px system-ui,sans-serif}
 #storytray .sring.hot{background:#ffffff30;border-style:solid}
 #storytray .stile{position:absolute;pointer-events:auto;width:var(--s);height:var(--s);border-radius:22%;background:radial-gradient(circle at 30% 25%,var(--hi),var(--lo));box-shadow:0 6px 12px #0008,inset 0 -4px 8px #0006,inset 0 3px 5px #fff5;display:grid;place-items:center;cursor:grab;transition:left .5s cubic-bezier(.3,.8,.3,1),top .5s cubic-bezier(.3,.8,.3,1);user-select:none;touch-action:none}
+#storytray.locked .stile{cursor:default;touch-action:auto}   /* PD-181: judging locks the dice */
 #logpanel .lstory{color:var(--gold,#e8c45a);margin-top:2px}
 #storytray .stile.ghost{background:none;box-shadow:none;border-radius:50%}
 #storytray.d3{background:none}

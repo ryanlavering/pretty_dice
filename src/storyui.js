@@ -34,13 +34,14 @@ export function createStoryTray(host){
   const hit=e=>{ const s=size(), cx=parseFloat(e.style.left)+s/2, cy=parseFloat(e.style.top)+s/2; let best=-1, bd=s*.6; rings.forEach((r,j)=>{ const [x,y]=ringXY(j,rings.length), d=Math.hypot(cx-(x+s/2),cy-(y+s/2)); if(d<bd){ bd=d; best=j; } }); return best; };
   function wire(e){ let moved=false, ox=0, oy=0, sx=0, sy=0;
     e.addEventListener('pointerdown',ev=>{ if(cur.locked) return; e.setPointerCapture(ev.pointerId); moved=false; sx=ev.clientX; sy=ev.clientY; const b=e.getBoundingClientRect(); ox=ev.clientX-b.left; oy=ev.clientY-b.top; });
-    e.addEventListener('pointermove',ev=>{ if(!e.hasPointerCapture(ev.pointerId)) return; if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; moved=true; drag={el:e}; e.classList.add('drag'); const m=root.getBoundingClientRect(); e.style.left=(ev.clientX-ox-m.left)+'px'; e.style.top=(ev.clientY-oy-m.top)+'px'; const k=hit(e); rings.forEach((r,j)=>r.classList.toggle('hot',j===k)); });
+    e.addEventListener('pointermove',ev=>{ if(!e.hasPointerCapture(ev.pointerId)||!cur||cur.locked) return; if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<6) return; moved=true; drag={el:e}; e.classList.add('drag'); const m=root.getBoundingClientRect(); e.style.left=(ev.clientX-ox-m.left)+'px'; e.style.top=(ev.clientY-oy-m.top)+'px'; const k=hit(e); rings.forEach((r,j)=>r.classList.toggle('hot',j===k)); });
     e.addEventListener('pointerup',()=>{ if(!cur||cur.locked) return; const i=+e.dataset.i, a=arr(); rings.forEach(r=>r.classList.remove('hot'));
       let next; if(!moved) next=a.rings.includes(i)?removeDie(a,i):fillNext(a,i); else { const k=hit(e); next=k>=0?dropDie(a,i,k,{autoswap:cur.autoswap!==false}):removeDie(a,i); }
       e.classList.remove('drag'); drag=null; moved=false; change(next); place(); }); }
   return {
     /* o: {glyphs:[glyph objects per die], order:[ring -> die|null], onOrder(order), autoswap, locked} */
-    show(o){ if(!root.isConnected) host.append(root); if(!ro&&window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(cur&&!root.hidden&&!drag){ place(); placeSent(); } }); ro.observe(root); } cur=o; const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); placeSent(); },
+    show(o){ if(!root.isConnected) host.append(root); if(!ro&&window.ResizeObserver){ ro=new ResizeObserver(()=>{ if(cur&&!root.hidden&&!drag){ place(); placeSent(); } }); ro.observe(root); } cur=o; root.classList.toggle('locked',!!o.locked); if(o.locked&&drag){ drag.el.classList.remove('drag'); drag=null; rings.forEach(r=>r.classList.remove('hot')); }   // PD-181: a story up for judging is locked; a drag already under way is dropped
+      const k=o.glyphs.map(g=>g.id).join('|')+(o.dice3d?'|3d':''); root.hidden=false; if(k!==key||!tiles.length){ key=k; build(); } place(); placeSent(); },
     hide(){ root.hidden=true; sent=null; cur=null; key=''; root.textContent=''; tiles=[]; rings=[]; drag=null; },
     get visible(){ return !root.hidden; }, get size(){ return cur?size():0; }, get tiles(){ return tiles; }, get rings(){ return rings; }, root };
 }
