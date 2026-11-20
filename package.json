@@ -8,6 +8,7 @@
     "test": "sh scripts/with-test-lock.sh playwright test --project='fast-*'",
     "test:docker": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh",
     "test:update": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh --update-snapshots",
+    "test:shard": "sh scripts/with-test-lock.sh playwright test --project='fast-*' --shard",
     "test:slow": "sh scripts/with-test-lock.sh playwright test --project=slow --pass-with-no-tests",
     "probe": "node scripts/probe.mjs",
     "guide": "node scripts/guide-shots.mjs",

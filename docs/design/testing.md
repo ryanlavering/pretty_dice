@@ -72,6 +72,30 @@ The Playwright config starts `node scripts/serve.mjs 8124` (8123 is left for the
 - `.github/workflows/test.yml`: on pushes to any branch and PRs to `main`, run the fast tiers in the Playwright container. Upload `playwright-report/` and `test-results/` on failure.
 - Nightly cron: slow tier plus the live-CDN check.
 
+## Speed (PD-178)
+
+Goal: full suite from 24-26 min to 15 min or less. Measured on the 16-core dev machine (software WebGL), 2026-11-19.
+
+**Finding.** A Chromium page on swiftshader burned CPU even when nobody was looking: an unpaused app page drew ~8 frames/s at 960x600 and used ~11 cores (about one core-second per frame; the 2048 px PCF shadow map, MSAA, transmission); a *paused* page still cost ~7 cores (the compositor). Two workers already saturated the box, so more workers gave nothing (102-test sample: 2 workers 357 s, 4 workers 359 s, load 32).
+
+| Lever | Measured | Kept? |
+|---|---|---|
+| Workers 2 -> 4 before any other change | 357 s -> 359 s (sample), no gain: CPU bound | no, not alone |
+| `?lite` test render profile (below) | sample at 2 workers 357 s -> 195 s; idle page 44 -> 2 CPU-s per 4 s | yes |
+| Workers after `?lite` | 2: 195 s, 4: 149 s, 6: 160 s, 8: 165 s (load 12 / 23 / 44 / 53) | 4 is the knee, now the local default (`PD_WORKERS` overrides; CI stays 1 per 4-core runner) |
+| Chromium flags: `--disable-gpu-vsync` (worse: 22 CPU-s boot), `--num-raster-threads=1`, `--in-process-gpu`, `--disable-features=...`, `--use-gl=angle` | no gain in boot CPU or idle CPU | no |
+| `--disable-gpu-compositing` | paused page 30 -> 0 CPU-s, but boot +0.9 s and a running page 44 -> 50; moot once `?lite` makes idle ~0 | no |
+| Viewport 480x300 | 3x fps for the same CPU (cost scales with pixels) but breaks layout specs | no |
+| CI `--shard` matrix | 3 shards in `.github/workflows/test.yml` | yes |
+
+**`?lite`** (src/main.js, read only from the URL, production defaults unchanged): no MSAA, no shadow pass, and the animation loop does not draw (`renderOnce()` and the boot frames still draw, so pixel readers such as `canvasStats` work; physics, state and DOM are unchanged). `app.open()` and the shared page add it by default (`tests/helpers/app.mjs`). Opt out with `app.open({ lite: false })`, or `PD_NOLITE=1` for the whole run. Specs on the real loop: `golden.spec` (frame hashes, screens), `flick.spec` (reads pointer physics against real frames). Anything that compares real rendered pixels or relies on rAF frames having been drawn should pass `lite: false`.
+
+No coverage was removed by this work: no test was deleted, demoted or tagged `@slow`. (Boot-count merging and pruning were not needed to pass 15 min; candidates if more is wanted: owner-comments 30 tests / 190 s, bagbrowser 22 / 205 s, games-story-ui 8 / 161 s.)
+
+**Result.** Full suite `npm test -- --retries=0`: 490 passed, 12 skipped, 0 failed in 12.8 min (baseline 23.7-26 min, 475 passed; the first lite run was 12.7 min with 6 failures, fixed as described above). Other sessions' runs add load, so a quiet machine should be a little faster.
+
+**Recipe.** `npm test` (4 workers, lite). Sharding by hand: `npm run test:shard -- 1/3`. CI: `--shard=N/3` matrix, `retries` as configured.
+
 ## Workflow
 
 Run `npm test` (or `test:docker` when rendering changed) before moving a card to Needs Review. Cards that intentionally change the look update baselines in the same branch.
