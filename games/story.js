@@ -8,7 +8,7 @@ export const info = { id: 'story', name: 'Story Dice', minPlayers: 1, maxPlayers
     { id: 'dice', label: 'Dice', type: 'int', min: 3, max: 9, default: 5 },
     { id: 'sides', label: 'Faces per die', type: 'choice', choices: [{ value: 6, label: 'd6' }, { value: 8, label: 'd8' }, { value: 12, label: 'd12' }, { value: 20, label: 'd20' }], default: 12 },
     { id: 'rounds', label: 'Stories each', type: 'int', min: 1, max: 10, default: 2 },
-    { id: 'seed', label: 'Set number', type: 'int', min: 1, max: 999, default: 1 },
+    { id: 'seed', label: 'Set number', type: 'int', min: 1, max: 999999, default: 1 },
     { id: 'hints', label: 'Show word hints', type: 'bool', default: true },
     { id: 'packs', label: 'Glyph packs', type: 'multi', default: ['noto'], choices: [] }] };   // choices are filled in by the app from the glyph packs it carries
 

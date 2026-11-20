@@ -16,6 +16,7 @@ import { GLASS_FM, MAT_HARD, RING } from './sound-tables.js';
 import { FACE_SIDES, dealError, dealTerms, faceName, fmtFaces, parseFaceBlock } from './faces.js';
 import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor } from './story.js';
 import { createStoryTray } from './storyui.js';
+import { STORY_MAX, STORY_MIN, STORY_SIDES, draftError, draftFormula, draftOf, draftTerm, gameReady, isStorySet, newDraft, previewOf, summaryOf } from './storysets.js';
 
 /* ---------- utils ---------- */
 const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mulberry32(SEED):Math.random;   // ?seed=N: reproducible looks and rolls (tests); audio and particle jitter stay on Math.random
@@ -1185,7 +1186,8 @@ const NF_ALL=[
   {id:'PD-173', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice with a bot: after the bot tells its story you see "Judge <bot>\'s story" with the sentence and rate it before play continues. Check: Games > Story Dice, add a bot player, finish your story: the bot\'s turn ends with a Judge prompt and Bad / Fair / Good.', card:'PD-173'},
   {id:'PD-174', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the arrangement row re-lays out when the window is resized or the phone turns, and sits in one row on a landscape phone. Check: start Story Dice with 9 dice, resize the window or rotate the phone: the rings and dice stay on screen; landscape phone shows one row.', card:'PD-174'},
   {id:'PD-175', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the ring numbers and rings sit behind the dice, not in front. Check: Games > Story Dice, roll, tap a die into ring 1: the die covers the ring and its number, nothing is drawn over the dice.', card:'PD-175'},
-  {id:'PD-176', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the bar at the bottom (the dock) now shows the story sentence, the Bad / Fair / Good buttons and the last result, so you can play in full view with the side pane closed. Check: Story Dice, press Full view, roll, arrange: the bottom bar shows the sentence and the three rating buttons.', card:'PD-176'}
+  {id:'PD-176', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the bar at the bottom (the dock) now shows the story sentence, the Bad / Fair / Good buttons and the last result, so you can play in full view with the side pane closed. Check: Story Dice, press Full view, roll, arrange: the bottom bar shows the sentence and the three rating buttons.', card:'PD-176'},
+  {id:'PD-166', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice sets: see, edit and save the Story Dice sets you can make. Check: Games > Story Dice sets... > New Story set: pick glyph packs, 3-9 dice, d6/d8/d12/d20, a seed (Reroll seed), shuffled or in pack order, same or different dice; the preview and the set text update live. Save puts it in the bag (Bag > Sets), Use in game loads it into the Story Dice setup, Roll it rolls it on the table.', card:'PD-166'}
 ];
 const NEW_FEATURES=NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
 
@@ -1969,7 +1971,7 @@ function placeSwitch(){ if(!stripReady) return; const ph=phoneUI(), tp=$('topstr
 peekHandle($('stripmid')); stripReady=true; placeSwitch(); phoneMq.addEventListener('change',placeSwitch); addEventListener('resize',placeSwitch);   // resize too: a viewport change must always re-place the strip contents
 addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
-function closeGamesUI(){ storyPreviewOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
+function closeGamesUI(){ sset=null; storyPreviewOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
@@ -2113,7 +2115,7 @@ function renderLiars(S,st,over){
 }
 // ---- Story dice (PD-160 spike): glyph faces from the seeded deal, the ring tray, hints, the bot's sentence and manual bad/fair/good rating ----
 const storyTray=createStoryTray(stage); let storySalt=0;
-function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealGlyphs(dice,fp,poolFor(o.packs)).map(run=>run.map(id=>GLYPH_BY_ID.get(id)))}; }
+function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealTerms([{count:o.dice,sides:o.sides,faces:{kind:'deal',packs:[...new Set(o.packs)].sort(),seed:o.seed,dice:'different',order:'shuffled'}}])[0]}; }   // PD-166: the same deal as the set formula {packs#seed}, so a Story set plays as it previews
 const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
 function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
   if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
@@ -2165,6 +2167,55 @@ function storySync(){
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
 function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
+// ---- Story Dice sets editor (PD-166): Story sets are bag sets with one glyph-face term (src/storysets.js); this view lists, edits and saves them from the Games panel ----
+let sset=null;   // null (closed) | {view:'list'} | {view:'edit', id:null|setId, d:draft, orig:json, err}
+const ssRandSeed=()=>1+Math.floor(rng()*999);
+function ssOpenEdit(id){ const st=id&&setOps.find(id), d=st?draftOf(st):newDraft(uniqueName(bag.sets.map(x=>x.name),'Story set'),ssRandSeed()); sset={view:'edit',id:st?id:null,d,orig:JSON.stringify(d),err:''}; renderGame(); }
+function ssSave(){ const S=sset, d=S.d, err=draftError(d); if(err){ S.err=err; renderGame(); return null; }
+  let id=S.id; const t=[draftTerm(d)];
+  if(id&&setOps.find(id)){ if(!setOps.edit(id,{name:d.name,terms:t,mod:0})) return null; } else { id=setOps.create({name:d.name,terms:t,mod:0}); }
+  const st=setOps.find(id); S.id=id; S.d.name=st.name; S.orig=JSON.stringify(S.d); S.err=''; return id; }
+function ssUse(d){ gprefs.gameId='story'; Object.assign(gprefs.opts,{'story.dice':d.count,'story.sides':d.sides,'story.seed':d.seed,'story.packs':[...d.packs]}); gsave(); sset=null; renderGame(); }
+function ssRoll(){ const id=ssSave(); if(!id) return; storyPreviewOff(); sset=null; closeGamesUI(); setOps.open(id,{roll:true}); }
+function ssPreviewMat(d){ const err=draftError(d); if(err){ storyPreviewOff(); return; } const note=draftFormula(d), key='sset|'+note; if(storyPrev&&storyPrev.key===key) return;
+  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=null; state.shape='custom'; state.notation=note; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }
+function renderStorySets(){
+  const S=sset, hd=(title,back,label)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:label,onclick:back,type:'button',className:'ssback'})));
+  const leave=()=>{ storyPreviewOff(); sset=null; renderGame(); };
+  GP.textContent=''; GP.hidden=false;
+  if(S.view==='list'){ hd('Story Dice sets',leave,'Back');
+    const list=bag.sets.filter(isStorySet), box=gel('div',{className:'ssets'});
+    for(const st of list){ const d=draftOf(st), row=gel('div',{className:'setrow ssrow'}); row.dataset.id=st.id;
+      const main=gel('button',{type:'button',className:'main',onclick:()=>ssOpenEdit(st.id)},gel('span',{className:'nm',textContent:st.name}),gel('small',{textContent:summaryOf(d)}));
+      const pen=gel('button',{type:'button',className:'pen',textContent:'✎',title:'Edit',ariaLabel:'Edit '+st.name,onclick:()=>ssOpenEdit(st.id)});
+      const dots=gel('button',{type:'button',className:'dots',textContent:'⋯',ariaLabel:'Menu for '+st.name,onclick:e=>{ e.stopPropagation(); openMenu(dots,[{label:'Edit…',run:()=>ssOpenEdit(st.id)},{label:'Roll it',disabled:!!draftError(d),run:()=>{ sset=null; closeGamesUI(); setOps.open(st.id,{roll:true}); }},{label:'Use in game',disabled:!gameReady(d),run:()=>ssUse(d)},{label:'Make a copy',run:()=>{ setOps.copy(st.id); renderGame(); }},
+        {label:'Delete…',danger:true,run:()=>setTimeout(()=>openMenu(dots,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(st.id); renderGame(); }},{label:'Cancel',run:()=>{}}]),0)}]); }});
+      row.append(main,pen,dots); box.append(row); }
+    if(!list.length) box.append(gel('div',{className:'setempty',textContent:'No Story Dice sets yet. Make one: pick the glyph packs, the dice and a seed.'}));
+    GP.append(gel('div',{className:'setact'},gel('button',{type:'button',id:'ssnew',className:'big',textContent:'New Story set',onclick:()=>ssOpenEdit(null)})),box);
+    GP.append(gel('div',{className:'gstat'},gel('small',{textContent:'Story sets are saved in the bag (Bag > Sets) like any other set.'}))); storyPreviewOff(); return; }
+  const d=S.d, dirty=JSON.stringify(d)!==S.orig, err=S.err||draftError(d), pv=previewOf(d), note=draftFormula(d);
+  hd(S.id?'Edit Story set':'New Story set',()=>{ if(!dirty){ sset={view:'list'}; renderGame(); return; } openMenu(GP.querySelector('.ssback'),[{head:'Discard your changes?'},{label:'Discard',danger:true,run:()=>{ sset={view:'list'}; renderGame(); }},{label:'Keep editing',run:()=>{}}]); },'Close');
+  const host=gel('div',{className:'seted sseditor'+(dirty?' dirty':'')}), lab=t=>gel('div',{className:'selab',textContent:t});
+  const nm=gel('input',{type:'text',className:'sename',value:d.name,maxLength:80,placeholder:'Set name',ariaLabel:'Set name',oninput:()=>{ d.name=nm.value; host.classList.toggle('dirty',JSON.stringify(d)!==S.orig); },onkeydown:e=>e.stopPropagation()});
+  const again=()=>{ S.err=''; renderGame(); };
+  const packs=gel('div',{className:'sspacks'}); for(const p of PACK_LIST){ const cb=gel('input',{type:'checkbox',checked:d.packs.includes(p.id),onchange:()=>{ d.packs=PACK_LIST.filter(x=>x.id===p.id?cb.checked:d.packs.includes(x.id)).map(x=>x.id); again(); }}); packs.append(gel('label',{className:'row',title:p.blurb+' · '+p.credit},cb,gel('span',{textContent:p.name+' ('+p.count+') · '+p.license}))); }
+  const cnt=gel('div',{className:'row2'},gel('label',{textContent:'Dice'}),gel('button',{type:'button',textContent:'−',ariaLabel:'Fewer dice',disabled:d.count<=STORY_MIN,onclick:()=>{ d.count--; again(); }}),gel('b',{className:'mv sscount',textContent:String(d.count)}),gel('button',{type:'button',textContent:'+',ariaLabel:'More dice',disabled:d.count>=STORY_MAX,onclick:()=>{ d.count++; again(); }}));
+  const sides=gel('div',{className:'presets sssides'}); for(const n of STORY_SIDES) sides.append(gel('button',{type:'button',textContent:'d'+n,ariaPressed:String(d.sides===n),className:d.sides===n?'on':'',onclick:()=>{ d.sides=n; again(); }}));
+  const seed=gel('div',{className:'row2'},gel('label',{textContent:'Seed'}),gel('input',{type:'number',className:'ssseed',min:1,max:999999,value:d.seed,ariaLabel:'Seed',disabled:d.order==='ordered',onkeydown:e=>e.stopPropagation(),onchange:e=>{ d.seed=Math.max(1,Math.min(999999,Math.round(+e.target.value)||1)); again(); }}),gel('button',{type:'button',className:'ssreseed',textContent:'Reroll seed',disabled:d.order==='ordered',onclick:()=>{ d.seed=ssRandSeed(); again(); }}));
+  const sel=(label,cls,val,opts,set)=>{ const s=gel('select',{className:cls,ariaLabel:label,onchange:()=>{ set(s.value); again(); }}); for(const [v,t] of opts) s.append(gel('option',{value:v,textContent:t,selected:v===val})); return gel('div',{className:'row2'},gel('label',{textContent:label}),s); };
+  const mode=sel('Faces on the dice','ssdice',d.dice,[['different','Different on every die'],['same','Same on every die']],v=>{ d.dice=v; });
+  const ord=sel('Glyph order','ssorder',d.order,[['shuffled','Shuffled (by seed)'],['ordered','In pack order']],v=>{ d.order=v; });
+  const pre=gel('div',{className:'sspreview'}); if(pv){ pv.dice.forEach((faces,i)=>{ const r=gel('div',{className:'ssdie'},gel('small',{textContent:'Die '+(i+1)})); const fl=gel('span',{className:'ssfaces'}); for(const g of faces){ const sp=gel('span',{className:'ssg',title:g.name.replace(/[-_]+/g,' ')}); sp.innerHTML=`<svg viewBox="${g.vb}"><path d="${g.path}"/></svg>`; fl.append(sp); } r.append(fl); pre.append(r); });
+    pre.append(gel('div',{className:'sssent',textContent:pv.sentence})); }
+  const ft=gel('input',{type:'text',className:'ssformula',readOnly:true,value:note,ariaLabel:'Set text',onfocus:()=>ft.select(),onkeydown:e=>e.stopPropagation()});
+  const cp=gel('button',{type:'button',className:'sscopy',textContent:'Copy',onclick:async()=>{ try{ await navigator.clipboard.writeText(note); toast('Copied '+note); }catch{ ft.select(); toast('Press Ctrl+C to copy'); } }});
+  const save=gel('button',{type:'button',className:'primary sesave sssave',textContent:'Save',disabled:!!draftError(d),onclick:()=>{ const id=ssSave(); if(id){ toast(`Saved "${S.d.name}" to the bag`); sset={view:'list'}; renderGame(); } }});
+  const use=gel('button',{type:'button',className:'ssuse',textContent:'Use in game',disabled:!gameReady(d),title:gameReady(d)?'Load this pack, dice count and seed into the Story Dice setup':'The game deals shuffled, different dice only',onclick:()=>ssUse(d)});
+  const roll=gel('button',{type:'button',className:'ssroll',textContent:'Roll it',disabled:!!draftError(d),title:'Save and roll these dice on the table',onclick:ssRoll});
+  const del=S.id?gel('button',{type:'button',className:'ssdel',textContent:'Delete',onclick:()=>{ const st=setOps.find(S.id); if(!st) return; openMenu(del,[{head:`Delete "${st.name}"?`},{label:'Delete',danger:true,run:()=>{ setOps.remove(S.id); sset={view:'list'}; renderGame(); }},{label:'Cancel',run:()=>{}}]); }}):null;
+  host.append(gel('div',{className:'sehead'},nm,save),lab('Glyph packs'),packs,cnt,lab('Faces per die'),sides,seed,mode,ord,gel('div',{className:'seerr',textContent:err||''}),lab('Preview'),pre,lab('Set text'),gel('div',{className:'row2'},ft,cp),gel('div',{className:'setact'},use,roll,...(del?[del]:[])));
+  GP.append(host); ssPreviewMat(d); }   // the mat preview last: a rebuild re-selects the Games pane, which needs the panel to have content
 function storyFit(o){ const have=poolFor(o.packs).length; if(o.dice*o.sides<=have) return {ok:true,dice:o.dice,sides:o.sides};   // the closest dice set the packs can fill: keep the dice count and take the biggest die that fits, else fewer d6
   for(const sd of [20,12,8,6]) if(sd<o.sides&&o.dice*sd<=have) return {ok:false,dice:o.dice,sides:sd};
   const n=Math.floor(have/6); return n>=3?{ok:false,dice:Math.min(o.dice,n),sides:6}:{ok:false,dice:3,sides:6,short:true}; }
@@ -2202,17 +2253,19 @@ function renderStrip(){   // the phone's mat strip keeps one line: the status (R
 function renderGameBody(){
   GP.textContent=''; GP.hidden=false;
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
+  if(!game&&sset) return renderStorySets();
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
     if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+keptGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
     const games=keptGames(), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
+    if(!game) GP.append(gel('div',{className:'row'},gel('button',{type:'button',id:'storysets',textContent:'Story Dice sets…',title:'See, edit and save Story Dice sets',onclick:()=>{ sset={view:'list'}; renderGame(); }})));
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers))}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
     const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!g.noBots&&!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,g.noBots?'':gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }
     const opts={}; for(const o of g.options){ const v=gprefs.opts[g.id+'.'+o.id]??o.default; opts[o.id]=v;
       if(o.type==='bool'){ const cb=gel('input',{type:'checkbox',checked:!!v,onchange:()=>{ gprefs.opts[g.id+'.'+o.id]=cb.checked; opts[o.id]=cb.checked; gsave(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:o.label}))); }
-      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); if(g.id==='story') renderGame(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); }
+      else if(o.type==='int'){ const ni=gel('input',{type:'number',min:o.min,max:o.max,step:o.id==='seed'?1:o.max>=1000?(o.min>=1000?1000:50):5,value:v,ariaLabel:o.label,onchange:()=>{ const x=Math.max(o.min,Math.min(o.max,Math.round(+ni.value)||o.default)); ni.value=x; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); if(g.id==='story') renderGame(); }}); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),ni)); }
       else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
       else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
         for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }

@@ -255,3 +255,12 @@ button.whoop{background:var(--accent);color:#000;font-weight:700;border-radius:8
 #qbar.storyq{flex-wrap:wrap;border-radius:18px;overflow-x:hidden;justify-content:center} #qbar.storyq .dhint.sent{flex:1 1 100%;white-space:normal;overflow:visible;text-overflow:clip;text-align:center;color:var(--ink);font-size:14px;line-height:1.3;padding:2px 6px} #qbar.storyq .dhint.sent b{color:var(--accent)}
 #storytray .ssent{position:absolute;left:50%;transform:translateX(-50%);width:min(92%,760px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(20,23,31,.78);color:var(--ink,#eee);text-align:center;line-height:1.3;font-family:Georgia,serif;font-style:italic;overflow:hidden;pointer-events:none;z-index:3} #storytray .ssent b{color:var(--accent,#e0b44a);font-style:normal;font-family:Inter,system-ui,sans-serif;font-size:.8em} #storytray .ssent[hidden]{display:none}
 @media (max-width:600px){ #qbar.storyq .dhint{flex:1 1 100%;text-align:center} }
+
+/* PD-166 Story Dice sets editor (inside the Games panel; reuses the Bag Sets look) */
+#scorepane .ssets{display:flex;flex-direction:column;gap:8px;margin:8px 0} #scorepane .ssrow .main small{white-space:normal}
+#scorepane .sseditor{max-width:none;margin-top:8px} #scorepane .sseditor .sspacks{display:flex;flex-direction:column;gap:2px;max-height:150px;overflow:auto}
+#scorepane .sseditor .row2 input[type=number]{flex:1;min-width:0;max-width:110px} #scorepane .sseditor .row2 select{flex:1.4;max-width:62%}
+#scorepane .sseditor .sssides{grid-template-columns:repeat(4,minmax(0,1fr))} #scorepane .sseditor .sssides .on{background:var(--accent);color:#fff}
+#scorepane .sseditor .ssdie{display:flex;align-items:center;gap:6px;margin:2px 0} #scorepane .sseditor .ssdie small{flex:none;width:38px;color:var(--dim)}
+#scorepane .sseditor .ssfaces{display:flex;flex-wrap:wrap;gap:2px} #scorepane .sseditor .ssg{width:20px;height:20px;display:inline-block} #scorepane .sseditor .ssg svg{width:100%;height:100%;fill:var(--ink)}
+#scorepane .sseditor .sssent{margin-top:4px;font-size:13px;line-height:1.35;color:var(--ink);font-style:italic} #scorepane .sseditor .ssformula{flex:1;min-width:0;font-family:ui-monospace,monospace} #scorepane .sseditor .setact button{flex:1 1 auto}
