@@ -1,7 +1,7 @@
 ---
 id: PD-166
 title: 'Story dice sets: see, edit and save from the Games menu'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T20:11:00Z'
 labels:
