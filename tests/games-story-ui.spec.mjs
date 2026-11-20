@@ -272,3 +272,22 @@ for (const vp of [{ width: 390, height: 740 }, { width: 740, height: 390 }, { wi
   expect(g).toMatchObject({ inStage: true, notClipped: true, clearOfRings: true, clearOfDock: true }); expect(g.lines).toBeLessThanOrEqual(4);
   if (shot) await app.page.screenshot({ path: `${shot}/pd184-${vp.width}x${vp.height}.png` });
 });
+
+// PD-186: the story dock wraps to two rows during the game; it must give the one-row dock back when the game ends
+test('story dice on a phone: the dock returns to its pre-game height after the game ends (PD-186)', async ({ shared: app }) => {
+  await app.reset(79); await app.page.setViewportSize({ width: 390, height: 844 }); await app.page.waitForTimeout(400);
+  await app.run(pd => { if (pd.game) pd.endGame(); });
+  const h = () => app.page.evaluate(() => { const b = document.querySelector('#qbar'); return b.hidden ? 0 : Math.round(b.getBoundingClientRect().height); });
+  await app.run(pd => pd.openGames()); await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.run(pd => { pd.endGame && pd.game && pd.game.setup && 0; });
+  await app.run(pd => { if (pd.game) pd.endGame(); }); await app.page.waitForTimeout(200);
+  const before = await h();
+  await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); await app.page.waitForTimeout(300);
+  await app.run(pd => pd.renderGame());
+  await expect(app.page.locator('#qbar.storyq')).toHaveCount(1);
+  expect(await h()).toBeGreaterThan(before);   // the story dock is the taller, wrapped one
+  await app.run(pd => pd.endGame()); await app.page.waitForTimeout(300);
+  await expect(app.page.locator('#qbar.storyq')).toHaveCount(0);
+  expect(await h()).toBe(before);
+  await app.page.setViewportSize({ width: 1280, height: 720 });
+});

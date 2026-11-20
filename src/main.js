@@ -979,6 +979,7 @@ function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }
 /* PD-142.38 slice 3: in a game the dock is the game's one Roll button plus the turn actions (Bank, Set aside, Cash out) and a short hint; the panel keeps picks, bids and scorecards. The conditions are the ones the panel buttons used */
 function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint'); if(!go||!act||!hint) return; act.replaceChildren(); hint.textContent=''; hint.classList.remove('sent'); hint.removeAttribute('title');
+  { const q0=$('qbar'); if(q0) q0.classList.remove('storyq'); }   // PD-186: leaving a story game (end, setup, other game) must give the one-row dock back
   if(!game||game.setup){ go.textContent='Roll'; go.disabled=false; return; }
   const S=game.state, st=GAMES.status(S,gviewer()), over=st.phase==='over', id=game.id, farkle=id==='farkle', pass=needPass(), busy=st.botTurn||pass||gameAwaiting||(rolling&&!settled);
   const btn=(txt,fn,dis,cls)=>{ const b=el('button','',txt); b.type='button'; b.disabled=!!dis; if(cls) b.dataset.act=cls; b.onclick=fn; act.append(b); };

@@ -113,8 +113,9 @@ export const test = base.extend({
         // the Games setup (game, player count, bot seats, options) lives in a module variable saved to localStorage, which pd.state
         // does not cover: a test that changed it (Liar's Dice with a bot, two-player Pig) changed the next game test's setup
         const fresh = await page.evaluate(() => !!(window.__pdBoot && window.__pd) && localStorage.getItem('prettydice.games') === window.__pdGames).catch(() => false);
-        if (!fresh) await bootShared(page, true);
+        // the viewport goes back first: a reboot at the previous test's phone size (and Full view) is slower and was seen to hang under load
         const vp = page.viewportSize(); if (!vp || vp.width !== SHARED_VIEWPORT.width || vp.height !== SHARED_VIEWPORT.height) await page.setViewportSize(SHARED_VIEWPORT);
+        if (!fresh) await bootShared(page, true);
         // overlays a test left open (the Bag view, a die's card menu, the utility drawer, Full view) covered the next test's controls
         for (let i = 0; i < 3 && await page.locator('#bagsheet:not([hidden])').count(); i++) await page.keyboard.press('Escape');   // the app's own Escape: card menu, then the sheet
         await page.evaluate(() => { const m = document.getElementById('cardmenu'); if (m) m.hidden = true; });   // = closeMenu() (a die's menu on the mat has no Escape)

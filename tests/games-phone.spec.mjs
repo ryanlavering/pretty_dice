@@ -26,6 +26,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     await expect(app.page.locator('#rollbtn')).toBeEnabled();
     await expect(app.page.locator('#scorepane table')).toBeVisible();
     // touch emulation (PD-165): the click of a finger carries pointerType 'touch'; one tap only previews, two score
+    await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });   // PD-179: the unset default on touch is long press
     const tap = () => app.page.evaluate(() => { const el = document.querySelector('#scorepane td.pick'); el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true })); el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); });
     await tap();
     expect(await app.run(pd => pd.GAMES.status(pd.game.state).rollsUsed)).toBeGreaterThan(0);
@@ -40,6 +41,7 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     await app.page.click('#scorepane button:has-text("End game")');
     await expect(app.page.locator('#gamepanel')).toBeHidden(); await expect(app.page.locator('#scorepane select').first()).toBeVisible();   // PD-142.14.3.1.6: End game opens the Games setup, in Play
     await app.page.click('#paneltabs button[data-pane=table]'); await expect(app.page.locator('#settingspane')).toBeVisible();
+    await app.run(pd => { delete pd.gprefs.scoreMode; });
     await app.page.setViewportSize({ width: 1280, height: 720 });
   });
 }

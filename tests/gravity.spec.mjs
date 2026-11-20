@@ -63,8 +63,9 @@ test('the slider ends (1/64x and 2x) still settle without a hang', async ({ app,
 
 // PD-169 rework: a throw scales with sqrt(g) so it flies the same arc at any gravity (flick on high gravity used to just twitch)
 const flight = (app, x, vel) => app.run((pd, a) => {
-  pd.simRoll({});   // settle at the default first, so every run starts the throw from the same pose and rng state
+  pd.reseed(11); pd.simRoll({});   // settle at the default first, so every run starts the throw from the same pose and rng state
   pd.setGravity(a.x === 'def' ? pd.GRAV.DEF : a.x);
+  pd.reseed(118);   // the launch speed is 13 + 7*rng(): the same draw in every run, or the ratios below measure the rng (reload-dependent), not the gravity scaling
   pd.startRoll(true, false, a.vel);
   const b = pd.bodies, y0 = pd.TABLE_Y, x0 = b[0].position.x, vy0 = b[0].velocity.y; let top = -1e9, reach = 0, air = 0, left = false;
   for (let i = 0; i < 1500; i++) { pd.drift(1); const y = b[0].position.y; top = Math.max(top, y - y0);
