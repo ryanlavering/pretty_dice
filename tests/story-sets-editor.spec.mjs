@@ -3,7 +3,7 @@ import { test, expect } from './helpers/app.mjs';
 import { parseFaceBlock } from '../src/faces.js';
 const shot = process.env.STORY_SHOT;
 
-const openEditor = async (app, page) => { await app.run(pd => pd.openGames()); await page.click('#storysets'); };
+const openEditor = async (app, page) => { await app.run(pd => pd.openGames()); await page.selectOption('#scorepane select >> nth=0', 'story'); await page.click('#storysets'); };
 const formula = page => page.locator('.ssformula').inputValue();
 
 test('create, edit, save, reload, delete a Story Dice set; the set text is the grammar formula', async ({ app, page }) => {
@@ -45,9 +45,15 @@ test('create, edit, save, reload, delete a Story Dice set; the set text is the g
   const set = await app.run(pd => { const s = pd.bag.sets.find(x => x.name === 'Fairy tales'); return { s, nota: pd.fmtNotation(s.terms, s.mod || 0) }; });
   expect(set.s.terms).toHaveLength(1); expect(set.s.terms[0]).toMatchObject({ count: 7, sides: 8, faces: { seed: 42, dice: 'different', order: 'shuffled' } });
   expect(set.nota).toBe(f1);   // the saved set prints exactly the text the editor showed
+});
+
+test('a saved Story set persists over a reload, edits in place and deletes', async ({ app, page }) => {
+  await app.open({ seed: 3 });
+  const f1 = '7d8{gameicons#42}';
+  await app.run(pd => { pd.setOps.create({ name: 'Fairy tales', terms: [{ count: 7, sides: 8, faces: { kind: 'deal', packs: ['gameicons'], seed: 42, dice: 'different', order: 'shuffled' } }], mod: 0 }); });
   // reload: it persists and shows in the list again
   await page.reload(); await app.ready();
-  await app.run(pd => pd.openGames()); await page.click('#storysets');
+  await openEditor(app, page);
   await expect(page.locator('#scorepane .ssrow')).toHaveCount(1);
   // edit the saved set: rename, new seed, save; no duplicate is made
   await page.locator('#scorepane .ssrow .pen').click();
