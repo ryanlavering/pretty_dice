@@ -47,10 +47,27 @@ const dieAt = (page, i) => page.evaluate(i => { const pd = window.__pd; pd.rende
 const holdDice = async (page, idx) => { for (const i of idx) { const { x, y } = await dieAt(page, i); await page.mouse.click(x, y); await page.waitForTimeout(900); } };
 // Story Dice: start a game, roll, then tap the dice into the rings in order so the sentence and the grade buttons show.
 const storyArranged = async p => {
-  await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(800);
-  await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(2500);
+  await storyStart(p, 1); await rollToTray(p); await p.waitForTimeout(3000);
   for (let i = 0; i < 5; i++) { await p.locator(`#storytray .stile[data-i="${i}"]`).click(); await p.waitForTimeout(500); }
   await p.waitForTimeout(1500); };
+// Start a Story Dice game from the setup panel (a script click: the sticky Start button is never "stable" for Playwright's own click).
+const storyStart = async (p, players) => {
+  await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(3000);
+  if (players > 1) { await p.selectOption('#scorepane select >> nth=1', String(players)); await p.waitForTimeout(800); await p.locator('#scorepane input[type=number]').nth(1).fill('2'); await p.waitForTimeout(1500); }
+  await p.waitForTimeout(2000); await p.evaluate(() => document.querySelector('#scorepane button.big').click());
+  await p.waitForFunction(() => document.body.classList.contains('game'), null, { timeout: 60_000 }); await p.waitForTimeout(1500); };
+// Roll, arrange and rate one story (rating index 0..4 = Bad..Great).
+const rollToTray = async p => {
+  for (let tries = 0; tries < 4; tries++) {   // a Roll pressed too soon after the start or a rating can be ignored: wait for the button, press, and press again if no story tray shows up
+    await p.waitForFunction(() => { const b = document.getElementById('rollbtn'); return b && !b.disabled && /roll the dice/i.test(document.getElementById('dockhint')?.textContent || ''); }, null, { timeout: 60_000 });
+    await p.evaluate(() => document.getElementById('rollbtn').click()); await p.waitForTimeout(1000);
+    if (await p.waitForSelector('#storytray .stile', { timeout: 40_000 }).then(() => true, () => false)) return;
+  }
+  throw new Error('the story tray never showed'); };
+const storyTurn = async (p, rating) => {
+  await rollToTray(p); await p.waitForTimeout(3000);
+  for (let i = 0; i < 5; i++) { await p.locator(`#storytray .stile[data-i="${i}"]`).click(); await p.waitForTimeout(500); }
+  await p.waitForTimeout(1200); await p.locator('#qbar button.rbtn').nth(rating).click(); await p.waitForTimeout(2000); };
 const side = { x: 0, y: 0, width: 310, height: DESK.height };
 
 // name, options, steps(page) -> optional clip rect
@@ -101,6 +118,9 @@ const SHOTS = [
   ['31-story-arrange', {}, async p => { await storyArranged(p); }],
   ['32-story-sets', {}, async p => { await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(3000); await p.waitForSelector('#storysets', { timeout: 60_000 }); await p.locator('#storysets').scrollIntoViewIfNeeded(); await p.evaluate(() => document.getElementById('storysets').click()); await p.waitForSelector('#ssnew', { timeout: 60_000 }); await p.evaluate(() => document.getElementById('ssnew').click()); await p.waitForTimeout(6000); return side; }],
   ['33-phone-story', { vp: PHONE }, async p => { await storyArranged(p); }],
+  ['34-story-over', {}, async p => { await storyStart(p, 2); for (const r of [3, 4, 2, 4]) await storyTurn(p, r); await p.waitForSelector('#storyagain', { timeout: 60_000 }); await p.waitForTimeout(2500); }],   // two people, two stories each: the game over screen
+  ['35-story-end-confirm', {}, async p => { await storyStart(p, 1); await navFor(p).roll(); await settle(p); await p.waitForTimeout(2500); await p.locator('#scorepane button:text-is("End game")').click(); await p.waitForSelector('.story-confirm'); await p.waitForTimeout(800); }],
+  ['36-story-bag', {}, async p => { await storyStart(p, 1); await navFor(p).openBag(); await p.waitForTimeout(1500); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
 ];
 
