@@ -26,3 +26,5 @@ Sequence: PD-191 (look lifetime) lands first; then B, then A (needs the scoring 
 <!-- SECTION:DESCRIPTION:END -->
 
 Owner decision (2026-11-20): rating = FIVE BUTTONS worth 0 / 3 / 5 / 7 / 10 points (labels: Bad 0, Weak 3, Fair 5, Good 7, Great 10). Replaces Bad 0 / Fair 1 / Good 2. Saved games in progress keep the totals they already have.
+
+Owner decision (2026-11-20): REMOVE the 'No game' entry from the Game selector ('I don't like No game as a choice'). The preview lives only while the Games tab shows it (PD-191), so leaving the tab / quick roll releases it without a 'none' choice. Lane v41-nonone.
