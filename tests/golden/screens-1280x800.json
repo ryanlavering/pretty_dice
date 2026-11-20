@@ -94,7 +94,7 @@
      18,
      146,
      273,
-     724
+     763
     ]
    },
    "actions": {
@@ -170,7 +170,7 @@
      18,
      146,
      273,
-     724
+     763
     ]
    },
    "shapehead": {
@@ -539,8 +539,44 @@
      18,
      358,
      273,
-     121
+     161
     ]
+   },
+   "gravityreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": true,
+    "box": [
+     73,
+     409,
+     43,
+     19
+    ],
+    "text": "Reset"
+   },
+   "gravity": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     401,
+     131,
+     16
+    ],
+    "value": "0.135"
+   },
+   "gravityv": {
+    "tag": "span",
+    "cls": "",
+    "shown": true,
+    "box": [
+     159,
+     419,
+     129,
+     15
+    ],
+    "text": "0.044x realistic (default)"
    },
    "bounce": {
     "tag": "input",
@@ -548,7 +584,7 @@
     "shown": true,
     "box": [
      159,
-     403,
+     443,
      131,
      16
     ],
@@ -560,7 +596,7 @@
     "shown": true,
     "box": [
      159,
-     429,
+     469,
      131,
      16
     ],
@@ -572,7 +608,7 @@
     "shown": true,
     "box": [
      159,
-     455,
+     495,
      131,
      16
     ],
@@ -594,7 +630,7 @@
     "shown": true,
     "box": [
      18,
-     479,
+     519,
      273,
      391
     ]
@@ -605,7 +641,7 @@
     "shown": true,
     "box": [
      22,
-     534,
+     574,
      13,
      13
     ],
@@ -618,7 +654,7 @@
     "shown": true,
     "box": [
      159,
-     567,
+     607,
      131,
      16
     ],
@@ -630,7 +666,7 @@
     "shown": true,
     "box": [
      159,
-     603,
+     642,
      131,
      16
     ],
@@ -642,7 +678,7 @@
     "shown": true,
     "box": [
      18,
-     636,
+     676,
      98,
      36
     ],
@@ -654,7 +690,7 @@
     "shown": true,
     "box": [
      124,
-     654,
+     693,
      0,
      0
     ]
@@ -665,7 +701,7 @@
     "shown": true,
     "box": [
      108,
-     707,
+     747,
      96,
      33
     ],
@@ -677,7 +713,7 @@
     "shown": true,
     "box": [
      211,
-     706,
+     745,
      80,
      36
     ],
@@ -689,7 +725,7 @@
     "shown": true,
     "box": [
      18,
-     747,
+     787,
      273,
      39
     ]
@@ -700,7 +736,7 @@
     "shown": true,
     "box": [
      108,
-     759,
+     798,
      80,
      16
     ],
@@ -712,7 +748,7 @@
     "shown": true,
     "box": [
      197,
-     751,
+     790,
      94,
      33
     ],
@@ -724,7 +760,7 @@
     "shown": true,
     "box": [
      152,
-     796,
+     835,
      140,
      33
     ],
@@ -736,7 +772,7 @@
     "shown": true,
     "box": [
      159,
-     840,
+     879,
      131,
      16
     ],
@@ -748,7 +784,7 @@
     "shown": true,
     "box": [
      18,
-     864,
+     903,
      0,
      0
     ]
@@ -1245,6 +1281,7 @@
    "Standard 7",
    "Custom",
    "rhombic d12",
+   "#gravityreset Reset",
    "#soundtest Test sound",
    "#sndaud Audition",
    "#paneclose ",
@@ -2080,6 +2117,21 @@
    },
    "sec-roll": {
     "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "gravityreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": false
+   },
+   "gravity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "gravityv": {
+    "tag": "span",
     "cls": "",
     "shown": false
    },
@@ -3537,6 +3589,21 @@
     "cls": "",
     "shown": false
    },
+   "gravityreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": false
+   },
+   "gravity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "gravityv": {
+    "tag": "span",
+    "cls": "",
+    "shown": false
+   },
    "bounce": {
     "tag": "input",
     "cls": "",
@@ -4786,6 +4853,21 @@
    },
    "sec-roll": {
     "tag": "section",
+    "cls": "",
+    "shown": false
+   },
+   "gravityreset": {
+    "tag": "button",
+    "cls": "rzero",
+    "shown": false
+   },
+   "gravity": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "gravityv": {
+    "tag": "span",
     "cls": "",
     "shown": false
    },

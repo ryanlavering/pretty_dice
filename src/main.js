@@ -52,7 +52,12 @@ const rig=new THREE.Group(); scene.add(rig);
 
 /* ---------- state (persisted to localStorage) ---------- */
 const $=id=>document.getElementById(id);
-const DEFAULTS={shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
+/* PD-169 gravity. Calibration: every die is normalised to circumradius 1 world unit; a d20/d12 face to face is then 2 x inradius = 2 x .7947 = 1.5894 u, and the owner measured that as 20 mm,
+   so 1 m = 79.47 u and realistic gravity (9.81 m/s2) = 779.6 u/s2. The old fixed -34 u/s2 is therefore 0.0436 x realistic (a slow, floaty roll). The slider is log (x = LO * (HI/LO)^p) and shows the multiple of realistic. */
+const GRAV_U_PER_M=2*0.79465447/0.02, GRAV_REAL=9.81*GRAV_U_PER_M, GRAV_OLD=34, GRAV_DEF=GRAV_OLD/GRAV_REAL;
+const GRAV_LO=1/64, GRAV_HI=32;   // owner asked .25x..2x; today's feel (.044x) lies below .25x, so the log range is widened by 16x each way (.25/16 .. 2*16) with the owner's .25x..2x span inside it
+const gravFromPos=p=>GRAV_LO*Math.pow(GRAV_HI/GRAV_LO,Math.max(0,Math.min(1,p))), gravToPos=x=>Math.log(Math.max(GRAV_LO,Math.min(GRAV_HI,x))/GRAV_LO)/Math.log(GRAV_HI/GRAV_LO);
+const DEFAULTS={gravity:GRAV_DEF, shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
   shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS); bindState(state);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1';
@@ -508,6 +513,7 @@ function syncUI(){
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
   $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=k==='numSize'?numToPos(state[k]):state[k];
+  syncGravityUI();
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
   $('stonectl').hidden=state.substrate!=='marble'; $('stone').value=state.stone;
   $('incl').value=state.inclusion; $('inclctl').hidden=state.inclusion==='none'; $('epoxyctl').hidden=state.substrate!=='epoxy'; $('randshape').checked=state.randshape;
@@ -518,6 +524,8 @@ const NUM_MIN=.45, NUM_MAX=5;   // number size, as a fraction of the face inradi
 const numToPos=v=>Math.log(Math.max(NUM_MIN,Math.min(NUM_MAX,v))/NUM_MIN)/Math.log(NUM_MAX/NUM_MIN), numFromPos=p=>+(NUM_MIN*Math.pow(NUM_MAX/NUM_MIN,p)).toFixed(2);   // log scale: the useful .5-1.5 range keeps most of the slider
 state.numSize=Math.max(NUM_MIN,Math.min(NUM_MAX,state.numSize));   // older saves allowed print down to .3
 const SLIDERS=[['volume','volume'],['inclsize','inclSize'],['inclturn','inclTurn'],['inclheight','inclY'],['polish','polish'],['accent','stoneAccent'],['glitter','glitter'],['bubbles','bubbles'],['clarity','clarity'],['scale','scale'],['radius','radius'],['numsize','numSize'],['numrot','numRot'],['numdepth','numDepth'],['numsoft','numSoft'],['panel','panel'],['paneldepth','panelDepth'],['patina','patina'],['spin','spin'],['bounce','bounce'],['fricdice','fricDice'],['fricmat','fricMat']];
+$('gravity').oninput=e=>{ let p=+e.target.value; const pd=gravToPos(GRAV_DEF); setGravity(Math.abs(p-pd)<.008?GRAV_DEF:gravFromPos(p)); };   // PD-169: snaps to today's feel near its mark
+$('gravityreset').onclick=()=>{ if(Math.abs(state.gravity-GRAV_DEF)>1e-9) setGravity(GRAV_DEF); };
 const REBUILD=new Set(['radius','numSize','numRot','numSoft','panel','panelDepth']);
 for(const [id,k] of SLIDERS) $(id).oninput=e=>{ state[k]=k==='numSize'?numFromPos(+e.target.value):+e.target.value; if(REBUILD.has(k)) scheduleRebuild(); applyLook(); if(world&&(k==='bounce'||k==='fricDice'||k==='fricMat')) applyContacts(); };
 $('numrotreset').onclick=()=>{ const r=$('numrot'); if(+r.value!==0){ checkpoint(); r.value=0; r.dispatchEvent(new Event('input')); } };   // PD-142.38.26
@@ -1186,6 +1194,7 @@ const NF_ALL=[
   {id:'PD-174', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the arrangement row re-lays out when the window is resized or the phone turns, and sits in one row on a landscape phone. Check: start Story Dice with 9 dice, resize the window or rotate the phone: the rings and dice stay on screen; landscape phone shows one row.', card:'PD-174'},
   {id:'PD-175', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the ring numbers and rings sit behind the dice, not in front. Check: Games > Story Dice, roll, tap a die into ring 1: the die covers the ring and its number, nothing is drawn over the dice.', card:'PD-175'},
   {id:'PD-176', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the bar at the bottom (the dock) now shows the story sentence, the Bad / Fair / Good buttons and the last result, so you can play in full view with the side pane closed. Check: Story Dice, press Full view, roll, arrange: the bottom bar shows the sentence and the three rating buttons.', card:'PD-176'},
+  {id:'PD-169', rev:1, room:'play', anchor:'#gravity', text:'New Gravity slider under Roll feel: from a slow floaty roll up to many times realistic gravity, on a log scale, with a Reset button; the default is the feel the dice had before. Check: Play > Roll feel > Gravity: drag it right and roll (dice fall faster), left (they hang), Reset returns to the default.', card:'PD-169'},
   {id:'PD-166', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice sets: see, edit and save the Story Dice sets you can make. Check: Games > Story Dice sets... > New Story set: pick glyph packs, 3-9 dice, d6/d8/d12/d20, a seed (Reroll seed), shuffled or in pack order, same or different dice; the preview and the set text update live. Save puts it in the bag (Bag > Sets), Use in game loads it into the Story Dice setup, Roll it rolls it on the table.', card:'PD-166'}
 ];
 const NEW_FEATURES=NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
@@ -1296,6 +1305,9 @@ let placed=false, placing=false;   // placed: the dice are set out on the mat at
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
+function gravityY(){ const x=state.gravity; return Math.abs(x-GRAV_DEF)<1e-9?-GRAV_OLD:-x*GRAV_REAL; }   // the default is exactly the old -34
+function setGravity(x,persist=true){ x=+x; if(!isFinite(x)) return; state.gravity=Math.max(GRAV_LO,Math.min(GRAV_HI,x)); if(world){ world.gravity.set(0,gravityY(),0); bodies.forEach(b=>b.wakeUp&&b.wakeUp()); } if(persist) save(); syncGravityUI(); }
+function syncGravityUI(){ const x=state.gravity, el=$('gravity'); if(!el) return; if(document.activeElement!==el) el.value=gravToPos(x); $('gravityv').textContent=(x<.1?x.toFixed(3):x.toFixed(2))+'x realistic'+(Math.abs(x-GRAV_DEF)<1e-9?' (default)':''); }
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
@@ -1359,7 +1371,7 @@ function startRoll(launch=false,place=false,vel=null){        // launch: re-roll
   Object.assign(key.shadow.camera,{left:-7.3*sc,right:7.3*sc,top:7.3*sc,bottom:-7.3*sc,far:20+10*sc}); key.shadow.camera.updateProjectionMatrix();
   for(const i of [...held]) if(i>=dice.length) held.delete(i); dropHoldRings(); restoring=null; restoreTries=0;
   if(!place) for(const i of held){ if(heldPose[i]||!poses[i]) continue; heldPose[i]={q:poses[i].q.clone(),y:poses[i].p.y,label:faceLabel(i,poses[i].q)}; }   // a die held without a record (engine locks) is recorded as it lies now
-  rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,-34,0)}); world.allowSleep=true;
+  rollHalf={x:halfX,z:halfZ}; world=new CANNON.World({gravity:new CANNON.Vec3(0,gravityY(),0)}); world.allowSleep=true;
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
   world.addContactMaterial(ccDD=new CANNON.ContactMaterial(diceMat,diceMat)); world.addContactMaterial(ccDM=new CANNON.ContactMaterial(diceMat,matMat)); applyContacts();
@@ -2387,7 +2399,7 @@ function renderTurn(S,st,over){
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(roomNow()==='design') goPlay(); paneAuto=true; renderGame(); });   // the Games tab belongs to the Play room
 { const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
-window.__pd={get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
+window.__pd={setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
   corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
