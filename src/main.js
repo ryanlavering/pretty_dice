@@ -1437,6 +1437,14 @@ function tickRestore(dt){ if(!restoring) return; restoring.t+=dt; const u=Math.m
   for(const i of restoring.ids){ const f=restoring.from[i], b=bodies[i], rec=heldPose[i], lift=1.4*Math.sin(Math.PI*u)*(dice[i].r||1);
     tmp.copy(f.q).slerp(rec.q,e); b.position.set(f.p.x,f.p.y+(rec.y-f.p.y)*e+lift,f.p.z); b.quaternion.set(tmp.x,tmp.y,tmp.z,tmp.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }
   if(u>=1){ for(const i of restoring.ids){ const b=bodies[i]; b.type=CANNON.Body.DYNAMIC; b.mass=1; b.updateMassProperties(); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.slowT=0; b.wakeUp(); } restoring=null; } }
+/* PD-155: self-check backup. recFaces is the face of record per die from the last settle; faceCheck compares it with the face the orientation shows now and re-reads on disagreement */
+var faceTick=0, recFaces=null, faceFixes=0;
+function faceWarn(i,oldV,newV,why){ faceFixes++; console.warn('PD-155 face self-check ('+why+'): die '+i+' ('+(dice[i]&&dice[i].name)+') stored '+oldV+', re-read '+newV); }
+function faceCheck(why){ if(!rolling||!world||!settled||!recFaces||restoring||placing||recFaces.length!==bodies.length) return false;
+  const now=readResult(), bad=[]; now.forEach((p,i)=>{ if(p.label!==recFaces[i]&&!leanDice[i]) bad.push(i); });   // a flagged lean is handled by refreshLeans
+  if(!bad.length) return false;
+  bad.forEach(i=>faceWarn(i,recFaces[i],now[i].label,why)); recFaces=now.map(p=>p.label); finishRoll(); return true; }
+function reconcileParts(parts,why){ const now=readResult(); now.forEach((p,i)=>{ if(parts[i]&&p.label!==parts[i].label){ faceWarn(i,parts[i].label,p.label,why); parts[i]=p; } }); return parts; }
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
   const parts=readResult();
@@ -1448,7 +1456,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(alone.some(Boolean)&&freeTries<2){ freeTries++; rollT=Math.min(rollT,4); bodies.forEach((b,i)=>{ if(!alone[i]) return; b.free=true; b.angularDamping=.05; b.linearDamping=.02; b.wakeUp(); b.slowT=-1.2;
     const t=tiltInfo(i), ax=new THREE.Vector3().crossVectors(t.n,new THREE.Vector3(0,t.four?-1:1,0)), ang=Math.asin(Math.min(1,ax.length()));   // tip it the way gravity would: the die sits balanced on an edge/corner the solver will not release
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
-  settled=true; showLeans();
+  settled=true; showLeans(); recFaces=parts.map(p=>p.label);
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   droppedDice=new Set();
   let main, sub='', subItems=null, subMod='', storyText='';
@@ -1792,6 +1800,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
+    if(settled&&recFaces&&!restoring&&(++faceTick&7)===0) faceCheck('after settle');   // a settled die that was bumped and now shows another face
   }
   updateFx(dt); updateRolling(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
@@ -1998,6 +2007,7 @@ function gameBeforeRoll(){ whoopEnd(); gpv=null; const st=GAMES.status(game.stat
   { const live=new Set(GAMES.rollSpec(game.state).slots); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); for(let i=0;i<dice.length;i++) if(!live.has(i)) held.add(i); }   // dice the engine is not rolling (set aside, locked, or the unused second die) stay put
   gameAwaiting=true; gameMsg=''; renderGame(); return true; }
 function gameOnSettled(parts){ if(!gameAwaiting||!game) return;
+  if(!leanDice.some(Boolean)) reconcileParts(parts,'before game score');
   if(leanDice.some(Boolean)){ if(botLock()) setTimeout(rerollLeans,0); return; }   // PD-157: a bot never taps the 'Fix leaning dice' chip, so it re-rolls the leaning dice itself and the turn goes on
   const spec=GAMES.rollSpec(game.state); if(!spec.slots.length||spec.slots.some(i=>!parts[i])){ gameAwaiting=false; return; }
   cbet.ready=false; const prevPoint=game.state.point; const r=GAMES.act(game.state,{type:'roll',values:spec.slots.map(i=>parts[i].label)}); gameAwaiting=false;
@@ -2015,9 +2025,9 @@ function crapsCallout(ev,prevPoint){
   if(ev.some(e=>e.type==='payout'&&e.kind==='field'&&e.result==='win')) out.push('Field wins');
   return out.length?(t!=null?t+' · ':'')+out.join(' · '):(t!=null?String(t):null); }
 function showCallout(){ const R=$('result'); R.querySelectorAll('.callout').forEach(n=>n.remove()); if(!game||game.setup||!gameCallout) return; const d=document.createElement('div'); d.className='callout'; d.textContent=gameCallout; R.append(d); R.classList.add('on'); }
-function gameSetAside(slots){ if(botLock()) return; const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameSetAside(slots){ if(botLock()) return; faceCheck('before set aside'); const r=GAMES.act(game.state,{type:'score',dice:[...slots]}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const hot=r.events.some(e=>e.type==='hotDice'); if(hot) gflash='hot'; gameMsg=hot?'Hot dice! Roll all six again':''; gameSync(); renderGame(); }
-function gameBank(){ if(botLock()) return; const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameBank(){ if(botLock()) return; faceCheck('before bank'); const r=GAMES.act(game.state,{type:'bank'}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gflash='bank'; gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
 /* PD-156: scoring is deliberate (double tap / long press; a single tap previews) and a score can be taken back for 3 s ('Whoopsie'); PD-165: a mouse click scores at once on desktop, deliberate entry is for touch/pen. prev is the engine state before the score; it is what a reload would see while the window is open (a pending score is never saved). Bots never get a window, and a bot's turn waits for it to close. */
 const WHOOP_MS=3000; let gpv=null, whoop=null, lpAt=0, lastPtr='mouse'; addEventListener('pointerdown',e=>{ lpAt=0; lastPtr=e.pointerType||'mouse'; },true);
@@ -2028,7 +2038,7 @@ function whoopEnd(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(who
 function whoopClear(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(whoop.iv); whoop=null; }
 function whoopBtn(){ const b=gel('button',{type:'button',className:'whoop',textContent:whoopLabel(),onclick:gameWhoops}); b.dataset.whoop='1'; return b; }
 function gameWhoops(){ if(!whoop||!game) return; const w=whoop; whoopClear(); game.state=w.prev; gpv=null; gameMsg='Score taken back'; gameSync(); renderGame(); }
-function gameScore(cat){ if(botLock()) return; whoopEnd(); const prev=JSON.parse(JSON.stringify(game.state)), r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
+function gameScore(cat){ if(botLock()) return; faceCheck('before score entry'); whoopEnd(); const prev=JSON.parse(JSON.stringify(game.state)), r=GAMES.act(game.state,{type:'score',category:cat}); if(!r.ok){ gameMsg=r.error; renderGame(); return; }
   game.state=r.state; gpv=null; const sc=r.events.find(e=>e.type==='scored'), bn=r.events.filter(e=>e.type==='bonus').map(e=>e.name+' +'+e.points);
   gameMsg=(sc?'Scored '+sc.points:'')+(bn.length?' · '+bn.join(', '):''); clearHolds();
   if(game.id==='yahtzee'&&!GAMES.status(prev).botTurn){ whoop={prev,until:Date.now()+WHOOP_MS,t:setTimeout(whoopEnd,WHOOP_MS),iv:setInterval(whoopTick,100)}; }
@@ -2378,7 +2388,8 @@ function renderTurn(S,st,over){
   tb.append(body); GP.append(tb); }
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(roomNow()==='design') goPlay(); paneAuto=true; renderGame(); });   // the Games tab belongs to the Play room
 { const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
-window.__pd={get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+window.__pd={get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
+  corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
