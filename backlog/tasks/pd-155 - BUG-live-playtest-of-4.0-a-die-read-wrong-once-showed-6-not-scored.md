@@ -1,10 +1,10 @@
 ---
 id: PD-155
 title: 'BUG (live playtest of 4.0): a die read wrong once (showed 6, not scored)'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T02:39:00Z'
-updated_date: '2026-11-20T00:53:00Z'
+updated_date: '2026-11-20T07:04:00Z'
 labels:
   - v4.1
 dependencies: []
