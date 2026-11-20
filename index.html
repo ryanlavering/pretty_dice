@@ -46,9 +46,6 @@
   @keyframes pdhop{0%,100%{transform:translateY(46px)}12%{transform:translateY(46px)}45%{transform:translateY(0)}78%{transform:translateY(46px)}86%{transform:translateY(34px)}93%,100%{transform:translateY(46px)}}
   @keyframes pdshadow{0%,12%,78%,100%{transform:scale(1);opacity:.5}45%{transform:scale(.55);opacity:.2}86%{transform:scale(.85);opacity:.4}}
   @keyframes pdtumble{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(720deg) rotateY(1080deg) rotateZ(360deg)}}
-  #qbar{flex-wrap:nowrap;overflow:hidden} #qbar input{flex:1 0 104px;min-width:104px;transition:flex-basis .15s,min-width .15s} #qbar input:focus{flex-basis:150px;min-width:150px} #qchips{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain} #qchips::-webkit-scrollbar{display:none} #qchips.drag{cursor:grabbing}   /* PD-142.14.3.1.1/.2: the box keeps a readable width and Roll stays put; only the preset chips scroll */
-  /* PD-142.40.1: the dock is ONE row; the preset chips are a scrollable ribbon (drag or wheel) */
-  @media (max-width:520px){ body #qbar button{height:28px;padding:0 8px} }
   @media (prefers-reduced-motion:reduce){#bootdice .hop,#bootdice .cube,#bootdice .sh{animation-duration:12s}}
   </style>
   <div id="bootdice" title="Keeps rolling while the page loads; if it stops, the page is frozen"><div class="sh"></div><div class="hop"><div class="cube">

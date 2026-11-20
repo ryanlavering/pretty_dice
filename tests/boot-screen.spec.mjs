@@ -65,3 +65,14 @@ for (const [w, h] of [[360, 640], [390, 844]]) {
     expect(r.union.t).toBeGreaterThanOrEqual(0); expect(r.union.l).toBeGreaterThanOrEqual(0); expect(r.union.r).toBeLessThanOrEqual(r.vw);
   });
 }
+
+// A slow start (a boot stage over 10 s, as on a loaded machine) makes the watchdog rewrite #boot.innerHTML. The dock layout once lived in that overlay's <style>, so the rewrite
+// dropped it for the whole session (chips lost flex and gap, the dock sat 48 px off: the intermittent golden screens failure). The dock rules must live in app.css.
+test('a slow start (boot watchdog message) keeps the dock layout', async ({ page }) => {
+  await page.goto(URL('&boothold=12'));
+  await page.waitForFunction(() => /could not start/.test(document.getElementById('boot')?.textContent || ''), null, { timeout: 60_000 });   // the watchdog fired
+  await page.waitForFunction(() => window.__ready === true, null, { timeout: 60_000 });
+  const d = await page.evaluate(() => { const c = document.getElementById('qchips'), s = getComputedStyle(c); return { display: s.display, gap: s.gap, boot: !!document.getElementById('bootbox') }; });
+  expect(d.boot, 'the watchdog replaced the boot overlay').toBe(false);
+  expect(d).toMatchObject({ display: 'flex', gap: '6px' });
+});
