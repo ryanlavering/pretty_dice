@@ -136,7 +136,7 @@ const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.c
 /* keep-highest / keep-lowest (PD-142.2): the dice that count and the ones set aside; ties keep the earlier die */
 function keepSum(vals,keep){ const idx=vals.map((_,i)=>i); if(keep&&keep.n<vals.length) idx.sort((a,b)=>keep.mode==='h'?vals[b]-vals[a]||a-b:vals[a]-vals[b]||a-b);
   const kept=new Set(keep&&keep.n<vals.length?idx.slice(0,keep.n):idx); return {sum:vals.reduce((a,v,i)=>a+(kept.has(i)?v:0),0),kept}; }
-const keepLine=(t,vals,ks,names)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:v; return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1?' = '+ks.sum:''}`;   // names: glyph names beside the values (PD-167)
+const keepLine=(t,vals,ks,names,noSum)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:v; return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1&&!noSum?' = '+ks.sum:''}`;   // noSum: glyph-only dice have no meaningful total. names: glyph names beside the values (PD-167)
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -952,12 +952,14 @@ const setOps={
   /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
   open(id,{roll=false}={}){ const st=this.find(id); if(!st||gameDiceFixed(!gameRun()||sameDiceAsGame(setNotation(st)))) return false; checkpoint(); const gr=gameRun(), poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null; state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); if(gr){ pendingLay={n:dice.length,poses}; startRoll(false,true); gameSync(); renderGame(); } else startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
-  quick(id){ const st=this.find(id); if(!st) return null; let total=st.mod||0;
+  quick(id){ const st=this.find(id); if(!st) return null;
+    if(gameRun()){ if(!gameDiceFixed(sameDiceAsGame(setNotation(st)))) this.open(id); return null; }   // PD-192 D: a running game fixes the dice: a set with other dice is declined, a same-dice set applies as a look only; never a roll, never a log row
+    let total=st.mod||0;
     if(st.group>1){ const g=rollGroup(st.terms,st.mod||0,st.group,()=>rng()), shown=g.totals.join(' · '); st.last={total:shown,at:Date.now()};
       addLog({set:st.name,notation:setNotation(st),total:shown,items:g.items,modText:'',quick:true}); showQuick(st.name,shown,g.items,''); return shown; }
-    const dealt=dealTerms(st.terms), items=st.terms.map((t,ti)=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks,dealt[ti]?r.map((v,i)=>faceName(dealt[ti][i][v-1])):null).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
+    const dealt=dealTerms(st.terms), glyphOnly=!st.mod&&st.terms.every((t,ti)=>dealt[ti]), items=st.terms.map((t,ti)=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks,dealt[ti]?r.map((v,i)=>faceName(dealt[ti][i][v-1])):null,glyphOnly).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
-    const look=st.table?lookupTable(st.table,total):null; addLog({set:st.name,notation:setNotation(st),total:String(total),detail,items,modText,quick:true,...(look?{lookup:look}:{})}); showQuick(st.name,total,items,modText,look); return total; }
+    const look=st.table?lookupTable(st.table,total):null; addLog({set:st.name,notation:setNotation(st),total:glyphOnly?'':String(total),detail,items,modText,quick:true,...(look?{lookup:look}:{})}); showQuick(st.name,total,items,modText,look); return total; }
 };
 /* roll lines: a mini die chip in front of each term's text, like the set list */
 const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.design):liveChipJ(); };
@@ -1042,15 +1044,15 @@ document.addEventListener('pointerdown',e=>{ const b=$('rollbox'); if(b&&documen
 let quickT=0, quickClickAt=0;   // the lightning button's result: the roll panel's gold numerals, on top of everything, fading after a moment
 function showQuick(name,total,items,modText,look){ const q=$('quickres'); q.replaceChildren(); if(name) q.append(el('div','qn',name)); q.append(el('div','tot',String(total))); if(look) q.append(el('div','qn look','→ '+look)); const b=el('div','stk'); b.append(rollItemsEl(items,modText)); q.append(b); q.classList.remove('on'); void q.offsetWidth; q.classList.add('on'); clearTimeout(quickT); quickT=setTimeout(()=>q.classList.remove('on'),2600); }
 function addLog(e){ if(!bag) return; bag.log.push({ts:Date.now(),...(bag.roller?{roller:bag.roller}:{}),...e}); if(bag.log.length>LOG_MAX) bag.log=bag.log.slice(-LOG_MAX); save(); renderLog(); }
-function logRoll(total,detail,items,modText,story){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
+function logRoll(total,detail,items,modText,story,noTotal){ if(!bag) return; const st=rollSetId&&setOps.find(rollSetId)&&state.shape==='custom'&&setNotation(setOps.find(rollSetId))===state.notation?setOps.find(rollSetId):null;
   if(st) st.last={total:Number.isNaN(+total)?total:+total,at:Date.now()};
   const look=st&&st.table?lookupTable(st.table,total):null;
-  addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:String(total),detail:detail||'',...(items?{items,modText}:{}),...(story?{story}:{}),...(look?{lookup:look}:{})}); return look; }
+  addLog({set:st?st.name:null,...(st?{setId:st.id}:{}),notation:state.shape==='custom'?state.notation:state.shape==='set7'?'Standard 7':state.shape,total:noTotal?'':String(total),detail:detail||'',...(items?{items,modText}:{}),...(story?{story}:{}),...(look?{lookup:look}:{})}); return look; }
 /* the log as plain text, oldest first, for pasting into notes (PD-142.14.1.5) */
 function logText(){ const pad=n=>String(n).padStart(2,'0'); return bag.log.map(e=>{ const t=new Date(e.ts); const head=`${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
   if(e.note) return `${head}  ${e.note}`;
   const items=e.items?e.items.map(i=>i.text).join('  ·  ')+(e.modText?'  ·  '+e.modText:''):(e.detail||'');
-  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation} = ${e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}${e.story?'  [story: '+e.story+']':''}`; }).join('\n'); }
+  return `${head}  ${e.roller?e.roller+': ':''}${e.label?e.label+' — ':''}${e.set||e.notation}${e.total===''?'':' = '+e.total}${e.lookup?' → '+e.lookup:''}${items&&items!==String(e.total)?'  ('+items+')':''}${e.story?'  [story: '+e.story+']':''}`; }).join('\n'); }
 /* table lookup (PD-142.14.1.7): a set can carry a result table, one line per result: "3 Empty room", "4-8 Goblins", "9+ Boss" */
 function lookupTable(table,total){ const n=+total; if(!table||!Number.isFinite(n)) return null;
   for(const line of String(table).split('\n')){ const m=line.trim().match(/^(\d+)\s*(?:[-–]\s*(\d+)|(\+))?\s*[:=\-–]?\s*(.+)$/); if(!m) continue; const lo=+m[1], hi=m[3]?Infinity:m[2]!==undefined?+m[2]:lo; if(n>=lo&&n<=hi) return m[4].trim(); }
@@ -1494,7 +1496,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   settled=true; showLeans(); recFaces=parts.map(p=>p.label);
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   droppedDice=new Set();
-  let main, sub='', subItems=null, subMod='', storyText='';
+  let main, sub='', subItems=null, subMod='', storyText='', glyphLog=false;
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), G=P.group||1;
     if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[])), perI=Array.from({length:G},()=>P.terms.map(()=>[]));
@@ -1504,12 +1506,12 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
     else {
     const groups=P.terms.map(()=>[]);
     const gI=P.terms.map(()=>[]), gN=P.terms.map(()=>[]);
-    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); gN[d.term].push(null); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); gN[d.term].push(d.glyphs&&P.terms[d.term].faces?faceName(d.glyphs[parts[i].label-1]):null); } });
+    dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); gN[d.term].push(null); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); gN[d.term].push(d.glyphs?faceName(d.glyphs[parts[i].label-1]):null); } });
     const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     ks.forEach((k,ti)=>gI[ti].forEach((di,j)=>{ if(!k.kept.has(j)) droppedDice.add(di); }));   // dice dropped by keep/drop/adv/dis: they do not count, so no nat 20 / nat 1 effect for them
-    main=String(total);
+    main=String(total); const glyphOnly=G===1&&!P.mod&&gN.every(a=>a.length&&a.every(Boolean)); glyphLog=glyphOnly;
     if(P.terms.some(t=>t.faces)){ const ids=[]; dice.forEach((d,i)=>{ if(d.glyphs&&P.terms[d.term].faces&&!droppedDice.has(i)) ids.push(d.glyphs[parts[i].label-1].id); }); if(ids.length) storyText=sentenceFor(ids,0).text; }   // PD-167: a set with glyph faces reads as a sentence
-    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep||P.terms.some(t=>t.faces)){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i],gN[i].some(Boolean)?gN[i]:null)})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||P.terms.length>1?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
+    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep||P.terms.some(t=>t.faces)){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i],gN[i].some(Boolean)?gN[i]:null,glyphOnly)})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||(P.terms.length>1&&!glyphOnly)?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
     }
   }
@@ -1522,7 +1524,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   m.addEventListener('contextmenu',e=>e.preventDefault());
   if(sub){ const d2=document.createElement('div'); d2.className='brk'; if(subItems) d2.append(rollItemsEl(subItems,subMod)); else d2.textContent=sub; R.append(d2); }
   document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); if(storyText){ const d4=document.createElement('div'); d4.className='brk look'; d4.textContent=storyText; R.append(d4); }
-  { const look=logRoll(main,sub,subItems,subMod,storyText); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
+  { const look=logRoll(main,sub,subItems,subMod,storyText,glyphLog); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
   showDropped();
   R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }

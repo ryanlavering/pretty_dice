@@ -291,3 +291,21 @@ test('story dice on a phone: the dock returns to its pre-game height after the g
   expect(await h()).toBe(before);
   await app.page.setViewportSize({ width: 1280, height: 720 });
 });
+
+test('story dice: the roll log shows glyph names without a sum, and applying a set mid-game neither rolls nor logs (PD-192 D)', async ({ shared: app }) => {
+  await app.reset(7, { plain: true });
+  await app.run(pd => { pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.nav.roll();   // Start game
+  await app.run(pd => pd.simRoll({ rerolls: 6 }));
+  const e = await app.run(pd => pd.bag.log.at(-1));
+  expect(e.total).toBe(''); expect(e.detail).toMatch(/^5d12: ([a-z0-9 ]+=\d+)( \+ [a-z0-9 ]+=\d+){4}$/i);
+  const r = await app.run(async pd => {
+    await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'T', designs: [{ id: 'a', name: 'A', design: { ...pd.designToJSON(), name: 'A' } }],
+      sets: [{ id: 'other', name: 'Other', terms: [{ count: 2, sides: 6 }], mod: 0 }, { id: 'same', name: 'Same', terms: [{ count: 5, sides: 12 }], mod: 0 }], active: { design: 'a' } });
+    const n0 = pd.bag.log.length, a = pd.setOps.quick('other'), n1 = pd.bag.log.length, msg = document.querySelector('#scorepane').textContent;
+    const b = pd.setOps.quick('same'); return { n0, n1, n2: pd.bag.log.length, a, b, msg, game: pd.game && pd.game.id };
+  });
+  expect(r.game).toBe('story'); expect(r.a).toBeNull(); expect(r.b).toBeNull();
+  expect(r.n1).toBe(r.n0); expect(r.n2).toBe(r.n0); expect(r.msg).toContain('The game fixes the dice');
+});

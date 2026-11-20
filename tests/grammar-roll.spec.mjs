@@ -24,10 +24,10 @@ test('rolling 5d12{noto#1} in normal mode paints glyphs, totals by index, and re
     return { notation: e.notation, total: e.total, detail: e.detail, story: e.story, n: pd.state.notation, glyphed: [...Array(5).keys()].length, result: txt };
   });
   expect(r.notation).toBe('5d12{noto#1}');
-  const m = r.detail.match(/^5d12: (.+) = (\d+)$/); expect(m).toBeTruthy();
+  const m = r.detail.match(/^5d12: (.+)$/); expect(m).toBeTruthy();   // PD-192 D: glyph names beside the index, no meaningless sum
   const parts = m[1].split(' + '); expect(parts.length).toBe(5);
-  let sum = 0; for (const p of parts) { const q = p.match(/^[a-z0-9 ]+=(\d+)$/i); expect(q, p).toBeTruthy(); sum += +q[1]; }
-  expect(sum).toBe(+m[2]); expect(+r.total).toBe(sum);          // the total is the sum of the face indices
+  for (const p of parts) expect(p, p).toMatch(/^[a-z0-9 ]+=\d+$/i);
+  expect(r.detail).not.toMatch(/ = \d+$/); expect(r.total).toBe('');
   expect(r.story.length).toBeGreaterThan(10); expect(r.result).toContain(r.story);
 });
 
@@ -54,6 +54,17 @@ test('an ordinary set has no glyphs and a Story set in the bag saves, reloads an
   });
   expect(r.plain).toBe(true);
   expect(r.notation).toBe('4d8{noto#3}+1');
-  expect(r.detail).toMatch(/^4d8: [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ = \d+  ·  \+1$/i);
+  expect(r.detail).toMatch(/^4d8: [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ = \d+  ·  \+1$/i);   // a modifier keeps its total
   expect(r.version).toBe(1); expect(r.faces).toEqual({ kind: 'deal', packs: ['noto'], seed: 3, dice: 'different', order: 'shuffled' });
+});
+
+test('a glyph-only quick roll logs names and no total; the text export has no "= N" for it (PD-192 D)', async ({ shared: app }) => {
+  await app.reset(1);
+  const r = await app.run(async pd => {
+    await pd.importBag({ format: 'pretty-dice-bag', version: 1, name: 'T', designs: [{ id: 'a', name: 'A', design: { ...pd.designToJSON(), name: 'A' } }],
+      sets: [{ id: 'g', name: 'Glyphs', terms: [{ count: 3, sides: 6, faces: { kind: 'deal', packs: ['noto'], seed: 3, dice: 'different', order: 'shuffled' } }], mod: 0 }], active: { design: 'a' } }, { replace: true });
+    pd.setOps.quick('g'); const e = pd.bag.log.at(-1); return { total: e.total, detail: e.detail, txt: pd.logText ? pd.logText() : null };
+  });
+  expect(r.total).toBe(''); expect(r.detail).toMatch(/^3d6: [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+ \+ [a-z0-9 ]+=\d+$/i);
+  if (r.txt !== null) expect(r.txt).not.toMatch(/= \d+/);
 });
