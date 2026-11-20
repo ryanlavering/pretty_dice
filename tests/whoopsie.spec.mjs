@@ -14,16 +14,24 @@ async function start(app, seed) {
 // a touch tap: the click event of a finger carries pointerType 'touch' (a mouse click scores at once, PD-165)
 const touchTap = (app, sel) => app.page.evaluate(sel => { const el = document.querySelector(sel); el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true })); el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); }, sel);
 // Timing-sensitive touch sequences run INSIDE one page.evaluate: the gaps are in-page waits, so Playwright round-trip latency (huge under suite load) cannot stretch the 700 ms double-tap window or the long-press timer.
-// steps: ['tap', sel] | ['down', sel] | ['up', sel] (up also fires the click) | ['wait', ms]; returns nothing.
+// steps: ['tap', sel] | ['down', sel] | ['up', sel] (up also fires the click) | ['mouse', sel] (a real mouse press+click) | ['wait', ms]
+//   | ['rec'] (snapshot round/rollsUsed/previewed boxes) | ['whoop'] (click the Whoopsie button; throws if it is not there).
+// Returns the 'rec' snapshots. The Whoopsie window is 3 s of real time: a Playwright round trip under load can outlast it, so a score
+// and its undo must happen in the same page task (a separate click on [data-whoop] then waited out the 90 s test timeout for a button that had gone).
 const touchSeq = (app, steps) => app.page.evaluate(async steps => {
+  const recs = [];
   const P = (el, type) => el.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', bubbles: true }));
   for (const [op, a] of steps) {
     if (op === 'wait') { await new Promise(r => setTimeout(r, a)); continue; }
-    const el = document.querySelector(a); if (!el) throw new Error('touchSeq: no element for ' + a);
+    if (op === 'rec') { const pd = window.__pd, g = pd.GAMES.status(pd.game.state); recs.push({ round: g.round, rollsUsed: g.rollsUsed, prev: document.querySelectorAll('#scorepane td.prev').length }); continue; }
+    if (op === 'whoop') { const w = document.querySelector('#scorepane [data-whoop]'); if (!w) throw new Error('touchSeq: no Whoopsie button'); w.click(); continue; }
+    const el = document.querySelector(a); if (!el) { if (op === 'up') continue; throw new Error('touchSeq: no element for ' + a); }   // (a long press has already scored by its pointerup: the box is gone)
     if (op === 'tap') { P(el, 'pointerdown'); P(el, 'click'); }
     else if (op === 'down') P(el, 'pointerdown');
     else if (op === 'up') { P(el, 'pointerup'); P(el, 'click'); }
+    else if (op === 'mouse') { for (const t of ['pointerdown', 'pointerup']) el.dispatchEvent(new PointerEvent(t, { pointerType: 'mouse', bubbles: true })); el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })); }
   }
+  return recs;
 }, steps);
 const total = app => app.page.locator('#scorepane tr.tot td').nth(1).textContent();
 
@@ -37,29 +45,32 @@ test('desktop mouse: a single click scores; touch: a single tap only previews, a
   expect(await app.page.locator('#dockhint').textContent()).toContain('to score it');
   await touchSeq(app, [['wait', 800], ['tap', '#scorepane td.prev']]);   // a slow second tap is only another preview
   b = await st(app); expect(b.rollsUsed).toBe(a.rollsUsed);
-  await touchSeq(app, [['tap', '#scorepane td.prev']]);   // the second tap inside 700 ms scores
-  b = await st(app); expect(b.rollsUsed).toBe(0); expect(b.round).toBe(a.round + 1);
-  await expect(app.page.locator('[data-whoop]').first()).toBeVisible();
-  await app.page.click('#scorepane [data-whoop]');
-  b = await st(app); expect(b.round).toBe(a.round);
-  await app.page.click(sel);   // a plain mouse click scores at once, no preview
-  b = await st(app); expect(b.round).toBe(a.round + 1);
-  await expect(app.page.locator('#scorepane td.prev')).toHaveCount(0);
-  await expect(app.page.locator('[data-whoop]').first()).toBeVisible();
+  // the second tap inside 700 ms scores; the Whoopsie is used in the same page task (its 3 s window is real time)
+  let r = await touchSeq(app, [['tap', '#scorepane td.prev'], ['rec'], ['whoop'], ['rec']]);
+  expect(r[0].rollsUsed).toBe(0); expect(r[0].round).toBe(a.round + 1);
+  expect(r[1].round).toBe(a.round);   // Whoopsie undid it
+  // a plain mouse click scores at once, no preview, and shows the Whoopsie
+  r = await touchSeq(app, [['mouse', sel], ['rec'], ['whoop']]);
+  expect(r[0].round).toBe(a.round + 1); expect(r[0].prev).toBe(0);
 });
 
 test('whoopsie inside 3 s restores dice, rolls left and turn', async ({ shared: app }) => {
   await start(app, 52);
   const a = await st(app);
-  await app.page.click('#scorepane td.pick.best, #scorepane td.pick');
-  const w = app.page.locator('#scorepane [data-whoop]');
-  await expect(w).toHaveText(/Whoopsie.*\(\d\.\ds\)/);
-  const t1 = await w.textContent(); await app.page.waitForTimeout(500);
-  expect(await w.textContent()).not.toBe(t1);   // the countdown moves
-  // a pending score is not what a reload would see: the saved game is still the state before it
-  const saved = await app.run(() => JSON.parse(localStorage.getItem('prettydice.games.game')).state);
-  expect(JSON.stringify(saved)).not.toBe(await app.run(pd => JSON.stringify(pd.game.state)));
-  await w.click();
+  // score, watch the countdown, check the saved game and undo in ONE page task: the 3 s window is real time and a test round trip can outlast it
+  const o = await app.page.evaluate(async () => {
+    const td = document.querySelector('#scorepane td.pick.best, #scorepane td.pick');   // a mouse press: lastPtr may still be 'touch' from an earlier test
+    for (const t of ['pointerdown', 'pointerup']) td.dispatchEvent(new PointerEvent(t, { pointerType: 'mouse', bubbles: true }));
+    td.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    const w = () => document.querySelector('#scorepane [data-whoop]'), t1 = w().textContent;
+    await new Promise(r => setTimeout(r, 500));
+    const t2 = w().textContent, pd = window.__pd, saved = JSON.parse(localStorage.getItem('prettydice.games.game')).state;
+    const savedIsPrev = JSON.stringify(saved) === JSON.stringify(pd.game.state);
+    w().click(); return { t1, t2, savedIsPrev };
+  });
+  expect(o.t1).toMatch(/Whoopsie.*\(\d\.\ds\)/);
+  expect(o.t2).not.toBe(o.t1);   // the countdown moves
+  expect(o.savedIsPrev).toBe(false);   // a pending score is not what a reload would see: the saved game is still the state before it
   const b = await st(app);
   expect(b.rollsUsed).toBe(a.rollsUsed); expect(b.dice).toEqual(a.dice); expect(b.round).toBe(a.round); expect(b.player).toBe(a.player);
   await expect(app.page.locator('[data-whoop]')).toHaveCount(0);
@@ -71,10 +82,18 @@ test('whoopsie inside 3 s restores dice, rolls left and turn', async ({ shared: 
 test('after 3 s the score is locked in', async ({ shared: app }) => {
   await start(app, 53);
   const a = await st(app);
-  await app.page.click('#scorepane td.pick.best, #scorepane td.pick');
-  await expect(app.page.locator('[data-whoop]').first()).toBeVisible();
-  await app.page.waitForTimeout(2400); await expect(app.page.locator('[data-whoop]')).not.toHaveCount(0);   // still open after 2 s
-  await expect(app.page.locator('[data-whoop]')).toHaveCount(0, { timeout: 2500 });
+  // the window is measured in the page (score time to now), so a slow test round trip cannot make it look longer or shorter
+  const o = await app.page.evaluate(async () => {
+    const td = document.querySelector('#scorepane td.pick.best, #scorepane td.pick'), t0 = Date.now(), open = () => !!document.querySelector('[data-whoop]');
+    for (const t of ['pointerdown', 'pointerup']) td.dispatchEvent(new PointerEvent(t, { pointerType: 'mouse', bubbles: true }));
+    td.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    const first = open(); await new Promise(r => setTimeout(r, 2400)); const at2 = Date.now() - t0, still = open();
+    while (open() && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 50));
+    return { first, still, at2, gone: !open(), end: Date.now() - t0 };
+  });
+  expect(o.first).toBe(true);
+  expect(o.at2 < 3000 ? o.still : true, 'still open before 3 s').toBe(true);
+  expect(o.gone).toBe(true); expect(o.end).toBeGreaterThanOrEqual(2900);
   const b = await st(app); expect(b.round).toBe(a.round + 1);
   const saved = await app.run(() => JSON.parse(localStorage.getItem('prettydice.games.game')).state);
   expect(JSON.stringify(saved)).toBe(await app.run(pd => JSON.stringify(pd.game.state)));   // now the score is what a reload restores
@@ -87,12 +106,12 @@ test('long press scores; single-tap mode scores at once', async ({ shared: app }
   const pick = '#scorepane td.pick.best, #scorepane td.pick';
   await touchSeq(app, [['down', pick], ['wait', 150], ['up', pick]]);   // a short touch press only previews
   expect((await st(app)).round).toBe(a.round);
-  await touchSeq(app, [['down', pick], ['wait', 700], ['up', pick]]);   // held past the long-press timer
-  expect((await st(app)).round).toBe(a.round + 1);
-  await app.page.click('#scorepane [data-whoop]');   // take it back, then try single-tap mode
+  let r = await touchSeq(app, [['down', pick], ['wait', 700], ['up', pick], ['rec'], ['whoop']]);   // held past the long-press timer; then take it back
+  expect(r[0].round).toBe(a.round + 1);
+  expect((await st(app)).round).toBe(a.round);
   await app.run(pd => { pd.gprefs.scoreMode = 'single'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly
-  await touchTap(app, '#scorepane td.pick.best, #scorepane td.pick');
-  expect((await st(app)).round).toBe(a.round + 1);
+  r = await touchSeq(app, [['tap', pick], ['rec']]);
+  expect(r[0].round).toBe(a.round + 1);
   await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly   // leave the shared page on the default
 });
 
@@ -145,16 +164,13 @@ test('PD-179: unset score entry = long press on touch; mouse click scores; expli
   await click({});   // emulated clicks without a pointerdown after a touch: still no score
   expect((await st(app)).round).toBe(a.round);
   // long press scores
-  await touchSeq(app, [['down', sel], ['wait', 700]]); await fire('pointerup', { pointerType: 'touch' });   // (the click that follows a long press is swallowed by lpAt)
-  expect((await st(app)).round).toBe(a.round + 1);
-  await app.page.click('#scorepane [data-whoop]');
+  let r = await touchSeq(app, [['down', sel], ['wait', 700], ['rec'], ['whoop']]);   // the long-press timer scored it (no pointerup needed); take it back at once (3 s real-time window)
+  expect(r[0].round).toBe(a.round + 1);
   // a real mouse pointer clicks and scores at once
-  await app.page.click(sel);
-  expect((await st(app)).round).toBe(a.round + 1);
-  await app.page.click('#scorepane [data-whoop]');
+  r = await touchSeq(app, [['mouse', sel], ['rec'], ['whoop']]);
+  expect(r[0].round).toBe(a.round + 1);
   // an explicit stored 'double' still works as a double tap
   await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });
-  await touchTap(app, sel); expect((await st(app)).round).toBe(a.round);
-  await touchTap(app, '#scorepane td.prev'); expect((await st(app)).round).toBe(a.round + 1);
-  await app.page.click('#scorepane [data-whoop]');
+  r = await touchSeq(app, [['tap', sel], ['rec'], ['tap', '#scorepane td.prev'], ['rec'], ['whoop']]);
+  expect(r[0].round).toBe(a.round); expect(r[1].round).toBe(a.round + 1);
 });
