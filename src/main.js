@@ -541,7 +541,6 @@ $('filigree').onchange=e=>{ checkpoint(); state.filigree=e.target.value; schedul
 $('filifill').onchange=e=>{ checkpoint(); state.filiFill=e.target.checked; applyLook(); };
 $('enamelsame').onchange=e=>{ checkpoint(); state.enamelSame=e.target.checked; applyLook(); };
 $('enamel').oninput=e=>{ state.enamel=e.target.value; applyLook(); };
-$('antique').onclick=()=>{ checkpoint(); Object.assign(state,{panel:.14,panelDepth:.6,numRaised:true,numPaint:false,patina:.7}); buildDice(true); applyLook(); };
 $('d4style').onchange=e=>{ state.d4Style=e.target.value; checkpoint(); scheduleRebuild(); };
 $('d6style').onchange=e=>{ state.d6Style=e.target.value; checkpoint(); scheduleRebuild(); };
 $('font').onchange=async e=>{ state.font=e.target.value; await ensureFont(state.font); scheduleRebuild(); applyLook(); };

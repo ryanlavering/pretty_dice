@@ -38,7 +38,7 @@ The material the die is made of (choosing **Stone** gives you a random stone; th
 ![Face panel, relief, patina and filigree options](img/06-relief-filigree.png)
 
 - **Face panel** and **Panel depth** sink or raise a panel behind the number. The panel is what lets the numbers be Raised.
-- **Patina** ages the die; **Antique relief preset** applies a worn look in one click.
+- **Patina** ages the die.
 - **Filigree** (the last controls in the Numbers section, after Number style) adds ornament: Scrollwork, Beaded border or Art-deco lines. **Fill with enamel** colours it in; **Enamel matches number paint** keeps the two in step.
 
 ![On a phone: the Look panel below the table, scrolled to Substrate](img/23-phone-design-pane.png)
