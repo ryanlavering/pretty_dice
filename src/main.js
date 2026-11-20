@@ -1174,7 +1174,7 @@ const ICON_I='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M
   ICON_GEAR='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function refit(){ resize(); window.scrollTo(0,0); }   // re-measure the stage right away and keep the page from keeping a stale scroll offset
 function dset(el,icon,label){ el.innerHTML=icon+'<span class="lb">'+label+'</span>'; }
-function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ refit(); requestAnimationFrame(refit); setTimeout(refit,300); } dset($('layout'),on?ICON_GEAR:ICON_EXPAND,on?'Show pane':'Full view'); $('layout').title=on?'Show the side pane (H)':'Hide the side pane (H)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
+function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){ if(on) syncGameLook(); else if(!SP.hidden&&!game&&roomNow()==='play') document.dispatchEvent(new CustomEvent('pd-open-games'));  refit(); requestAnimationFrame(refit); setTimeout(refit,300); } dset($('layout'),on?ICON_GEAR:ICON_EXPAND,on?'Show pane':'Full view'); $('layout').title=on?'Show the side pane (H)':'Hide the side pane (H)'; $('layout').setAttribute('aria-label',$('layout').title); if(!keep){ try{localStorage.setItem('prettydice.full',on?'1':'0');}catch{} } }
 /* Full view (PD-142.38 slice 1): one state that hides the side pane. H, the drawer item and the two handles toggle it. */
 const toggleFull=()=>setFull(!document.body.classList.contains('full'));
 /* Utility drawer: opens as a list, shown once as a pill when a session starts (not in test URLs), closes on an outside tap or Escape. */
@@ -1529,7 +1529,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
 $('back').onclick=()=>goDesign();
 /* PD-142.38 slice 4: two rooms. Design | Play is a pure switch, it never throws. designRoom is the room the owner chose; it matters in a game, where the dice stay on the mat while the Design room shows the look (a running game survives the visit, and Play carries a dot) */
 var designRoom=true;
-function goDesign(){ designRoom=true; if(rolling||game) exitRoll(true); syncMode(); }
+function goDesign(){ syncGameLook(true); designRoom=true; if(rolling||game) exitRoll(true); syncMode(); }
 function goPlay(){ designRoom=false; if(!rolling) startRoll(false,true); syncMode(); if(game&&!game.setup) renderGame(); }   // PD-180: a render made in the Design room (no roll view) put the story dice into the flat tiles; Play re-syncs so the 3D arrangement comes back   // placed unrolled; only the dock's Roll throws
 /* PD-142.38.47: the dock formula box (Play) and the Custom set (Design: state.shape/notation) are one formula. On a room switch the side that was just edited wins: Design -> Play loads the box from the design's formula when that changed; Play -> Design writes the box into the design (a plain dN selects that shape, anything else is Custom). Shapes that are not a dN or Custom (rd12, Standard 7) are left alone. */
 const stateFormula=()=>state.shape==='custom'?state.notation:/^d\d+$/.test(state.shape)?'1'+state.shape:null;
@@ -1820,7 +1820,7 @@ function setPane(name){ const room=roomNow();
 function applyRoomPane(){ try{ setPane('settings'); }catch{} }
 function resetUiState(){ roomTab.design='look'; roomTab.play='table'; editSet=null; sheetTab='designs'; applyRoomPane(); }   /* test hook (shared.reset), no use in the app: the remembered tab per room back to Look / Table, and no half-open Bag set editor */
 PT.querySelectorAll('button[data-pane]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pane;
-  if(n==='games'&&!game&&!SP.childNodes.length){ document.dispatchEvent(new CustomEvent('pd-open-games')); return; } setPane(n); });   // slice 6: the Games tab replaces the round Games button
+  if(n==='games'&&!game){ document.dispatchEvent(new CustomEvent('pd-open-games')); return; } setPane(n); syncGameLook(); });   // PD-191: opening Games always redraws it (the story dice come back with the setup); any other tab releases them   // slice 6: the Games tab replaces the round Games button
 $('settingspane').parentNode.append($('logpanel')); document.body.append($('bagsheet'));   // the roll log lives in the panel; the Bag view is an overlay on the page (it also works in Full view)
 applyRoomPane();
 function peekHandle(el){ if(!el) return; el.classList.add('peekh'); el.title='Hold to look from above'; el.setAttribute('aria-label','Hold to look from above');
@@ -1982,6 +1982,8 @@ function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.s
 const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
 function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
   if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
+/* PD-191: the story look (setup preview, with the player's own look parked in lookSnap) is held only while the Games tab shows it and no game runs; leaving the tab, the Design room or the panel releases it. A running game never calls this (storyPrev is null then). */
+function syncGameLook(leaving){ if(!storyPrev||game) return; if(leaving||roomNow()!=='play'||SP.hidden||document.body.classList.contains('full')) storyPreviewOff(); }
 function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
 var storyFly=null, storyLogE=null, storyRings=null;   // storyFly: the dice flying up into the line facing the player (3D arrangement view); storyLogE: this turn's roll-log entry, rewritten as the order changes
 function storyOrderText(st){ const g=storyGlyphs(st), names=st.order.filter(x=>x!==null).map(i=>g[i].n[0]); return names.length?names.join(' → ')+(names.length<st.order.length?' …':''):''; }
