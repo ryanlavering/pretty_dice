@@ -74,3 +74,73 @@ for (const id of ['pig', 'yahtzee', 'farkle', 'liarsdice']) {
     expect(await mine(app)).toEqual(before);
   });
 }
+
+// PD-187 mitigation (4.1): while the game look is live nothing in the bag may write it into the player's design or drop their unsaved edits.
+test('PD-187: Save / Copy JSON / menu Save / Revert / Undo mid-Story leave the design and its unsaved edits alone; the Bag shows the player\'s picture and a dashed game tile', async ({ app, page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await app.open({ seed: 192, plain: true });
+  await addDesign(app, 'Mine', 'swirl');
+  await app.run(pd => { pd.state.polish = 0.93; pd.applyLook(); });
+  await page.waitForTimeout(300);
+  const before = await mine(app);
+  expect(JSON.parse(before.pending)).not.toEqual({});   // unsaved edits on the active design
+  const myId = await app.run(pd => pd.bag.active.design);
+  const myPic = await app.run(pd => JSON.stringify(pd.bag.pending[pd.bag.active.design]));
+  await startGame(app, 'story');
+  const dice0 = await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length }));
+  expect(dice0.n).toBeGreaterThan(0);
+
+  // the Bag: the player's own tile and header show the player's design (not the white game look), plus one dashed inert game tile
+  await expect(page.locator('#bagname')).toHaveText('Mine');
+  const cards = page.locator('#cards .card');
+  await expect(cards.filter({ hasText: 'Story Dice look (draft)' })).toHaveCount(1);
+  const game = cards.filter({ hasText: 'Story Dice look (draft)' });
+  await expect(game).toHaveClass(/ghost/); await expect(game).toHaveAttribute('title', 'Temporary look for this game; saving comes later');
+  expect(await app.run(pd => pd.bag.active.design)).toBe(myId);
+  await game.dispatchEvent('click'); await page.waitForTimeout(300);
+  expect(await app.run(pd => pd.bag.active.design), 'the game tile is not selectable').toBe(myId);
+  expect(await app.run(pd => pd.state.substrate), 'still the game look').toBe('solid');
+  await expect(page.locator('#bagact')).toBeHidden();   // no Save/Revert block for the temporary look
+  expect(await app.run(pd => !!document.querySelector('#bagth').style.backgroundImage)).toBe(true);
+
+  // Save bag file and Copy JSON
+  await app.nav.openBag();
+  await expect(page.locator('#tiles .tile.ghost.inert')).toHaveCount(1);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
+  const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
+  expect(file.designs.find(d => d.id === myId).design.substrate, 'saved design keeps its own look').toBe('swirl');
+  await page.click('#sheetcopy'); await page.waitForTimeout(300);
+  // the tile menu has no Save / Revert for the active design now; the direct calls are no-ops too
+  await page.locator(`#tiles .tile[data-id="${myId}"] .dots`).click();
+  await expect(page.locator('#cardmenu button', { hasText: /^(Save|Revert)/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await app.run(async pd => { await pd.bagOps.save(pd.bag.active.design); await pd.bagOps.save(); await pd.bagOps.saveCopy(); await pd.bagOps.revert(pd.bag.active.design); await pd.bagOps.revert(); });
+  await page.click('#sheetclose');
+  const mid = await mine(app);
+  expect(mid.designs).toEqual(before.designs); expect(mid.pending).toBe(before.pending); expect(mid.sets).toBe(before.sets);
+  expect(await app.run(pd => JSON.stringify(pd.bag.pending[pd.bag.active.design]))).toBe(myPic);
+
+  // Undo mid-game cannot bring back the pre-game look or dice count
+  await app.run(async pd => { await pd.undo(); await pd.undo(); }); await page.waitForTimeout(400);
+  expect(await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length, sub: pd.state.substrate }))).toEqual({ ...dice0, n: dice0.n, sub: 'solid' });
+
+  await endIt(app);
+  expect(await mine(app)).toEqual(before);   // the design and its pending edits are exactly as before the game
+  await expect(page.locator('#cards .card', { hasText: 'Story Dice look (draft)' })).toHaveCount(0);
+});
+
+const setupStory = async app => { await app.run(pd => { pd.openGames(); }); await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); };
+test('PD-187: a never-edited design is not Modified after a Story round (End game button)', async ({ app, page }) => {
+  await app.open({ seed: 7, plain: true });
+  await setupStory(app);
+  await page.getByRole('button', { name: 'End game' }).first().click(); await page.waitForTimeout(1500);
+  expect(await app.run(pd => Object.keys(pd.bag.pending))).toEqual([]);
+});
+test('PD-187: Bag > Add > Blank mid-game keeps the game\'s dice and does not leak them into the new design', async ({ app, page }) => {
+  await app.open({ seed: 8, plain: true });
+  await setupStory(app);
+  const dice = await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length }));
+  await app.run(async pd => { await pd.bagOps.addBlank(); }); await page.waitForTimeout(500);
+  expect(await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length }))).toEqual(dice);
+  expect(await app.run(pd => pd.bag.designs[pd.bag.designs.length - 1].design.shape)).not.toBe('custom');
+});

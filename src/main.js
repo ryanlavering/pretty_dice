@@ -350,8 +350,8 @@ function randomize(noBuild){
   ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); if(wasRoll&&state.shape!==oldShape) startRoll(); });   // a new shape in roll view is thrown straight onto the mat   // geometry/atlas depend on radius, font and number settings
 }
 function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does, starting from a plain off-white die
-  enterDraft(); checkpoint(); const oldShape=state.shape;
-  Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
+  enterDraft(); checkpoint(); const oldShape=state.shape, gk=gameRun()?{shape:state.shape,notation:state.notation}:null;   // PD-187: a running game keeps its dice
+  Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); if(gk){ state.shape=gk.shape; state.notation=gk.notation; } state.substrate='solid'; setSubstrate('solid');
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); checkpoint();
   const tok=buildTok+1; buildTok=tok; ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); });
 }
@@ -366,8 +366,9 @@ let lookSnap=null;   // the player's look, kept while the story dice use the pla
    lookDrop()                 the player deliberately picked a design (or Randomize/Blank): the draft is gone and the pick stays
    While a draft is live the bag is frozen (syncLive/isLiveModified skip it, save() writes the player's look to the settings store), so no design gains edits. */
 function lookSwap(apply=plainLook){ if(lookSnap) return; syncLive(); lookSnap=snapshot(); apply(); }
+const lookHistoryReset=()=>{ clearTimeout(hTimer); hTimer=null; history=[snapshot()]; hIdx=0; syncHistoryUI(); };   // PD-187: Undo must not cross the look swap (it would bring back the pre-game look)
 function lookDrop(){ lookSnap=null; }   // PD-187: the player deliberately picked a design (or Randomize/Blank) while the game look was live: that pick is theirs now and ending the game leaves it; only the temporary look is gone
-function lookRestore(){ if(!lookSnap) return; const o=JSON.parse(lookSnap); lookSnap=null; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate); repaint(); }
+function lookRestore(){ if(!lookSnap) return; const o=JSON.parse(lookSnap); lookSnap=null; Object.assign(state,o); state.colors=state.palettes[palKey()]||state.colors; legalRelief(); setSubstrate(state.substrate); lookHistoryReset(); }   // the snapshot already holds the paint: re-picking it (repaint) changed a never-edited design's paint, so it showed Modified after a game
 
 /* ---------- undo / redo of design settings ---------- */
 const DESIGN_KEYS=['inclusion','inclSize','inclTurn','inclY','polish','shape','substrate','stone','stoneAccent','palettes','paint','paintMode','scale','off','radius','font','numSize','numRot','numDepth','numSoft','d4Style','d6Style','panel','panelDepth','numRaised','numPaint','patina','filigree','filiFill','enamelSame','enamel','glitter','bubbles','clarity','notation','seed'];
@@ -381,7 +382,8 @@ function checkpoint(){                                   // record the current d
 const scheduleCheckpoint=()=>{ if(hIdx<0) return; clearTimeout(hTimer); hTimer=setTimeout(checkpoint,500); syncHistoryUI(); };   // coalesces slider drags
 function syncHistoryUI(){ $('undo').disabled=!(hIdx>0||hTimer); $('redo').disabled=!(hIdx>=0&&hIdx<history.length-1); }
 async function restore(snap){
-  const o=JSON.parse(snap), oldShape=state.shape; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate);
+  const o=JSON.parse(snap), oldShape=state.shape; if(gameRun()){ o.shape=state.shape; o.notation=state.notation; }   /* PD-187: undo never changes a running game's dice */
+  Object.assign(state,o); legalRelief(); setSubstrate(state.substrate);
   const tok=++buildTok; await ensureFont(state.font); if(buildTok===tok) buildDice(state.shape===oldShape); syncHistoryUI();
 }
 async function undo(){ checkpoint(); if(hIdx>0){ hIdx--; await restore(history[hIdx]); } }
@@ -639,6 +641,9 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
 const entryOf=id=>bag&&bag.designs.find(d=>d.id===id);
 const activeEntry=()=>entryOf(bag.active.design);
 function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; return dj; }
+/* PD-187: what the bag shows and saves as the active design: the player's own picture while the game look is live */
+function viewJSON(){ if(!lookSnap) return liveJSON(); if(bag.active.draft) return bag.draft||liveJSON(); const e=activeEntry(), p=bag.pending[e.id]; return {...(p||e.design),name:(p&&p.name)||e.name}; }
+const frozenId=id=>!!lookSnap&&(!id||id==='draft'||(!bag.active.draft&&id===bag.active.design));   // PD-187: while the game look is live, the active design is read-only (Save/Revert would write or drop the game look)
 function isLiveModified(){ const e=activeEntry(); if(lookSnap) return !!bag.pending[e.id]; return !bag.active.draft&&canonD(liveJSON())!==canonD({...e.design,name:e.name}); }
 const isModified=id=>bag.active.draft||bag.active.design!==id?!!bag.pending[id]:isLiveModified();
 let bagLoading=0;   // while a design is being loaded into the live state, the half-loaded state must not be saved back as edits
@@ -683,17 +688,17 @@ function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.n
 function addEntry(json,name,afterId){ name=uniqueName(bag.designs.map(d=>d.name),name); const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
 const bagOps={
-  async save(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),p.name||e.name); e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
+  async save(id){ if(frozenId(id)) return; if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),p.name||e.name); e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
     if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),j.name||e.name); e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
   isOther(id){ return bag.active.draft||bag.active.design!==id; },
-  async saveCopy(id){ if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; delete bag.pending[id]; addEntry(p,`${e.name} copy`,id); save(); return; }
+  async saveCopy(id){ if(frozenId(id)) return; if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; delete bag.pending[id]; addEntry(p,`${e.name} copy`,id); save(); return; }
     if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
     const c=addEntry(j,`${e.name} copy`,e.id); bag.active.design=c.id; $('dname').value=c.name; save(); },
-  async revert(id){ if(id&&this.isOther(id)){ delete bag.pending[id]; save(); return; }
+  async revert(id){ if(frozenId(id)) return; if(id&&this.isOther(id)){ delete bag.pending[id]; save(); return; }
     if(bag.active.draft) return this.discard(); const e=activeEntry(); delete bag.pending[e.id]; await loadSlot(e.design,e.name); normalizeActive(); save(); },
-  async keep(){ if(!bag.active.draft) return; const j=liveJSON(), name=(j.name||'').trim()||newDesignName(), e=addEntry(j,name);
+  async keep(){ if(!bag.active.draft||lookSnap) return; const j=liveJSON(), name=(j.name||'').trim()||newDesignName(), e=addEntry(j,name);
     bag.active.design=e.id; bag.active.draft=false; bag.draft=null; $('dname').value=e.name; save(); },
-  async discard(){ bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); normalizeActive(); } save(); },
+  async discard(){ if(lookSnap) return; bag.draft=null; if(bag.active.draft){ bag.active.draft=false; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); normalizeActive(); } save(); },
   async duplicate(id){ syncLive(); const e=entryOf(id); if(!e) return; const c=addEntry(structuredClone(bag.pending[id]||e.design),`${e.name} copy`,id); await activate(c.id); return c.id; },
   rename(id,name){ name=String(name||'').trim().slice(0,80); if(!name) return; name=uniqueName(bag.designs.filter(d=>d.id!==id).map(d=>d.name),name);   // a rename is an outstanding edit like any other: it shows Modified until saved
     if(id==='draft'){ if(bag.active.draft) $('dname').value=name; else if(bag.draft) bag.draft.name=name; save(); return; }
@@ -709,8 +714,8 @@ const bagOps={
   move(id,to){ const k=bag.designs.findIndex(d=>d.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.designs.length-1,to)); const [e]=bag.designs.splice(k,1); bag.designs.splice(to,0,e); save(); },
   async addLoaded(obj){ if(!obj||obj.format!=='pretty-dice') throw new Error(obj&&obj.format==='pretty-dice-bag'?'That is a bag file: use Add to the bag > From a file':'Not a pretty-dice design file');
     const {bag:inc}=parseBag(obj); syncLive(); const d=inc.designs[0].design, e=addEntry(d,d.name||newDesignName()); await activate(e.id,{skipSync:true}); return e.id; },
-  async addBlank(){ syncLive(); bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); state.substrate='solid'; setSubstrate('solid'); state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); applyLook();   // a plain off-white plastic die: a neutral starting point (Randomize is the way to get a surprise)
-    await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
+  async addBlank(){ syncLive(); lookDrop(); const gk=gameRun()?{shape:state.shape,notation:state.notation}:null; bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); if(gk){ state.shape=gk.shape; state.notation=gk.notation; } state.substrate='solid'; setSubstrate('solid'); state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); applyLook();   // a plain off-white plastic die: a neutral starting point (Randomize is the way to get a surprise)
+    await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),...(gk?{shape:DEFAULTS.shape,notation:DEFAULTS.notation}:{}),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
 };
 /* The background picture pass borrows the live state for a moment, so anything that changes the live design waits for it to finish. */
 let thumbBusy=false;
@@ -767,7 +772,7 @@ $('bagfile').onchange=async e=>{ const inp=e.target, f=inp.files[0]; if(!f) retu
 const THUMBS_KEY='prettydice.thumbs.v2', thumbsOn=!(navigator.webdriver&&!new URLSearchParams(location.search).get('thumbs'));
 let thumbs={}; try{ thumbs=JSON.parse(localStorage.getItem(THUMBS_KEY)||'{}')||{}; }catch{}
 function pruneThumbs(){ const keep=new Set([...bag.designs.map(e=>thumbKey(bag.pending[e.id]||e.design)),...(bag.draft?[thumbKey(bag.draft)]:[])]);
-  if(!bag.active.draft&&activeEntry()) keep.add(thumbKey(liveJSON())); for(const k of Object.keys(thumbs)) if(!keep.has(k)) delete thumbs[k]; }
+  if(!bag.active.draft&&activeEntry()) keep.add(thumbKey(viewJSON())); for(const k of Object.keys(thumbs)) if(!keep.has(k)) delete thumbs[k]; }
 function persistThumbs(){ pruneThumbs(); try{ localStorage.setItem(THUMBS_KEY,JSON.stringify(thumbs)); }catch{} }
 let thumbTimer=null, touchedAt=0;
 for(const t of ['pointerdown','keydown','input']) addEventListener(t,()=>{ touchedAt=performance.now(); },true);   // a person editing beats the background pass
@@ -816,7 +821,7 @@ async function renderDesignPicture(j){
 async function updateThumbs(){   // idle for a moment: picture the live design, then any design that has no picture yet, one per slice. Always a single d20 (a design's look, not a set).
   if(thumbBusy||actBusy||!bag) return; if(rolling||performance.now()-touchedAt<1200){ scheduleThumb(500); return; }   // low priority: a roll or a person at work goes first
   thumbBusy=true;
-  try{ const live=liveJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({json:live});
+  try{ const live=viewJSON(), todo=[]; if(!thumbs[thumbKey(live)]) todo.push({json:live});
     for(const e of bag.designs){ if(e.id===bag.active.design&&!bag.active.draft) continue; const j=bag.pending[e.id]||e.design; if(!thumbs[thumbKey(j)]) todo.push({json:j}); }
     if(bag.draft&&!bag.active.draft&&!thumbs[thumbKey(bag.draft)]) todo.push({json:bag.draft});
     const more=todo.length>1;   // one picture per slice, then yield: a bag of ten designs must not freeze the page
@@ -829,16 +834,17 @@ function thumbStyle(j,id){ const u=thumbs[thumbKey(j)]; if(u){ if(id) lastThumb[
 
 const el=(tag,cls,txt)=>{ const n=document.createElement(tag); if(cls) n.className=cls; if(txt!=null) n.textContent=txt; return n; };
 function slots(){   // what the shelf and sheet show, in order: designs, then the draft
-  const out=bag.designs.map(e=>{ const live=!bag.active.draft&&bag.active.design===e.id; const j=live?liveJSON():(bag.pending[e.id]||e.design);
+  const out=bag.designs.map(e=>{ const live=!bag.active.draft&&bag.active.design===e.id; const j=live?viewJSON():(bag.pending[e.id]||e.design);
     return {id:e.id,name:live?(j.name||e.name):(bag.pending[e.id]?.name||e.name),json:j,on:live,mod:isModified(e.id)}; });
-  if(bag.draft||bag.active.draft) out.push({id:'draft',name:(bag.active.draft?liveJSON():bag.draft).name||'Draft',json:bag.active.draft?liveJSON():bag.draft,on:bag.active.draft,draft:true});
+  if(bag.draft||bag.active.draft) out.push({id:'draft',name:(bag.active.draft?viewJSON():bag.draft).name||'Draft',json:bag.active.draft?viewJSON():bag.draft,on:bag.active.draft,draft:true});
+  if(lookSnap) out.push({id:'game',name:'Story Dice look (draft)',json:liveJSON(),on:false,draft:true,game:true});   // PD-187: the temporary game look is shown as its own dashed, inert tile (saving comes later)
   return out; }
 let lastSig='', lastCenter=null;
 $('dkeep').onclick=()=>bagOps.save(); $('dcopy').onclick=()=>bagOps.saveCopy(); $('ddiscard').onclick=()=>bagOps.revert();   // PD-142.38.36: the very handlers of the Bag tab block (save() keeps a draft, revert() discards it), so the two places always agree   // PD-142.38.17: Keep / Discard sit next to Randomize in the Look tab
 function renderBag(){
   if(!bag) return; renderQBar(); const e=activeEntry(), n=bag.designs.length, draft=bag.active.draft, mod=!draft&&isLiveModified();
-  $('draftact').hidden=!(draft||mod); if(draft||mod){ $('draftth').style.backgroundImage=thumbStyle(liveJSON(),draft?'draft':bag.active.design); $('draftname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('draftpos').textContent=draft?`unsaved · bag of ${n}`:`Modified · ${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`; $('dkeep').textContent=draft?'Keep':'Save'; $('dcopy').hidden=draft; $('ddiscard').textContent=draft?'Discard':'Revert'; } $('bagname').textContent=draft?'Random draft':(liveJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
-  $('bagth').style.backgroundImage=thumbStyle(liveJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft);
+  $('draftact').hidden=!(draft||mod)||!!lookSnap; if(draft||mod){ $('draftth').style.backgroundImage=thumbStyle(viewJSON(),draft?'draft':bag.active.design); $('draftname').textContent=draft?'Random draft':(viewJSON().name||e.name); $('draftpos').textContent=draft?`unsaved · bag of ${n}`:`Modified · ${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`; $('dkeep').textContent=draft?'Keep':'Save'; $('dcopy').hidden=draft; $('ddiscard').textContent=draft?'Discard':'Revert'; } $('bagname').textContent=draft?'Random draft':(viewJSON().name||e.name); $('bagpos').textContent=draft?`unsaved · bag of ${n}`:`${bag.designs.indexOf(e)+1} of ${n} in ${bag.name}`;
+  $('bagth').style.backgroundImage=thumbStyle(viewJSON(),bag.active.draft?'draft':bag.active.design); $('modbadge').hidden=!(mod); $('bagact').hidden=!(mod||draft)||!!lookSnap;
   { const dirty=bagDirty(); $('bagdirty').hidden=!dirty; $('sheetbag').hidden=!dirty; $('sheetsave').classList.toggle('dirty',dirty); $('bagbtn').classList.toggle('dirty',dirty); }
   const uses=draft?0:bag.sets.filter(st=>st.terms.some(t=>t.design===e.id)).length;
   $('bsave').textContent=draft?'Keep':(uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save'); $('bcopy').hidden=draft; $('brevert').textContent=draft?'Discard':'Revert';
@@ -857,7 +863,8 @@ function editName(span,id){ const cur=span.textContent, inp=el('input','nmedit')
   for(const t of ['click','pointerdown','pointerup']) inp.addEventListener(t,e=>e.stopPropagation()); }
 function cardEl(x){ const b=el('div','card'+(x.on?' on':'')+(x.draft?' ghost':'')); b.dataset.id=x.id; b.tabIndex=0; b.setAttribute('role','option'); b.setAttribute('aria-selected',x.on);
   b.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===b){ e.preventDefault(); b.click(); } };
-  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot')); b.append(th,nameEl(x)); wireCard(b,x); return b; }
+  const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot')); if(x.game){ b.classList.add('inert'); b.title=GAME_LOOK_TIP; b.append(th,el('span','nm',x.name)); return b; } b.append(th,nameEl(x)); wireCard(b,x); return b; }
+const GAME_LOOK_TIP='Temporary look for this game; saving comes later';
 function plusEl(cls){ const b=el('button',cls); b.type='button'; const th=el('div','th','+'); b.append(th,el('span','nm','Add')); b.onclick=e=>openMenu(b,addItems()); return b; }
 const cardInView=c=>{ const box=$('cards'), mid=c.offsetLeft+c.offsetWidth/2; return mid>=box.scrollLeft&&mid<=box.scrollLeft+box.clientWidth; };
 function centerCard(c,smooth=true){ progScroll=Date.now(); const box=$('cards'); box.scrollTo({left:c.offsetLeft-box.clientWidth/2+c.offsetWidth/2,behavior:smooth?'smooth':'instant'}); }
@@ -893,10 +900,11 @@ function closeMenu(){ $('cardmenu').hidden=true; }
 addEventListener('pointerdown',e=>{ if(!$('cardmenu').hidden&&!e.target.closest('#cardmenu')){ menuShut=menuEl&&menuEl.contains&&menuEl.contains(e.target)?{a:menuEl,t:Date.now()}:null; closeMenu(); } },true);
 const addItems=()=>[{head:'Add to the bag'},{label:'Blank draft',run:()=>blankDraft()},{label:'Random draft',run:()=>randomize()},{label:'From a file…',run:()=>{ bagReplace=false; $('bagfile').click(); }}];
 function cardItems(id){
+  if(id==='game'||(id==='draft'&&lookSnap)) return [{label:'Saving comes later (game look is temporary)',disabled:true,run:()=>{}}];
   if(id==='draft') return [{label:'Keep in the bag',run:()=>bagOps.keep()},{label:'Discard draft',danger:true,run:()=>bagOps.discard()}];
   const k=bag.designs.findIndex(d=>d.id===id), last=bag.designs.length-1;
   const uses=bag.sets.filter(st=>st.terms.some(t=>t.design===id)).length;
-  const edits=isModified(id)?[{head:'Modified'},{label:uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save',run:()=>bagOps.save(id)},{label:'Save as copy',run:()=>bagOps.saveCopy(id)},{label:'Revert',run:()=>bagOps.revert(id)},{head:'Design'}]:[];
+  const edits=isModified(id)&&!frozenId(id)?[{head:'Modified'},{label:uses?`Save · changes ${uses} set${uses>1?'s':''}`:'Save',run:()=>bagOps.save(id)},{label:'Save as copy',run:()=>bagOps.saveCopy(id)},{label:'Revert',run:()=>bagOps.revert(id)},{head:'Design'}]:[];
   return [...edits,{label:'Rename…',run:()=>setTimeout(()=>{ const n=document.querySelector(`#bagsheet:not([hidden]) .tile[data-id="${id}"] .nm`)||document.querySelector(`#cards .card[data-id="${id}"] .nm`); if(n) editName(n,id); },0)},{label:'Duplicate',run:()=>bagOps.duplicate(id)},
     {label:'Move left',disabled:k===0,run:()=>bagOps.move(id,k-1)},{label:'Move right',disabled:k===last,run:()=>bagOps.move(id,k+1)},
     {label:'Move to start',disabled:k===0,run:()=>bagOps.move(id,0)},{label:'Move to end',disabled:k===last,run:()=>bagOps.move(id,last)},
@@ -911,6 +919,7 @@ function editBagName(span){ const cur=bag.name, inp=el('input','nmedit bnedit');
 function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs button')) b.classList.toggle('on',b.dataset.tab===sheetTab); $('tiles').hidden=sheetTab!=='designs'; $('setlist').hidden=sheetTab!=='sets'; if(sheetTab==='sets'){ renderSets(); return; }
   const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}${sl.some(x=>x.draft)?' + draft':''}`);
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
+      if(x.game){ t.classList.add('inert'); t.title=GAME_LOOK_TIP; t.append(th,el('span','nm',x.name)); return t; }
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
@@ -1903,7 +1912,7 @@ async function startGame(id,players,options,botSeats=[],resume=null){
   const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
   whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
   if(id==='story'){ storyPrev=null; lookSwap(); }   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
-  state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); paneAuto=true; renderGame(); }
+  state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); if(lookSnap) lookHistoryReset(); paneAuto=true; renderGame(); }
 function endGame(){ if(!game) return; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
@@ -1972,7 +1981,7 @@ const storyTray=createStoryTray(stage); let storySalt=0;
 function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealTerms([{count:o.dice,sides:o.sides,faces:{kind:'deal',packs:[...new Set(o.packs)].sort(),seed:o.seed,dice:'different',order:'shuffled'}}])[0]}; }   // PD-166: the same deal as the set formula {packs#seed}, so a Story set plays as it previews
 const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
 function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
-  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
+  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
 function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
 var storyFly=null, storyLogE=null, storyRings=null;   // storyFly: the dice flying up into the line facing the player (3D arrangement view); storyLogE: this turn's roll-log entry, rewritten as the order changes
 function storyOrderText(st){ const g=storyGlyphs(st), names=st.order.filter(x=>x!==null).map(i=>g[i].n[0]); return names.length?names.join(' → ')+(names.length<st.order.length?' …':''):''; }
@@ -2032,7 +2041,7 @@ function ssSave(){ const S=sset, d=S.d, err=draftError(d); if(err){ S.err=err; r
 function ssUse(d){ gprefs.gameId='story'; Object.assign(gprefs.opts,{'story.dice':d.count,'story.sides':d.sides,'story.seed':d.seed,'story.packs':[...d.packs]}); gsave(); sset=null; renderGame(); }
 function ssRoll(){ const id=ssSave(); if(!id) return; storyPreviewOff(); sset=null; closeGamesUI(); setOps.open(id,{roll:true}); }
 function ssPreviewMat(d){ const err=draftError(d); if(err){ storyPreviewOff(); return; } const note=draftFormula(d), key='sset|'+note; if(storyPrev&&storyPrev.key===key) return;
-  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=null; state.shape='custom'; state.notation=note; buildDice(); startRoll(false,true); syncUI(); setPane('games'); }
+  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=null; state.shape='custom'; state.notation=note; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }
 function renderStorySets(){
   const S=sset, hd=(title,back,label)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:label,onclick:back,type:'button',className:'ssback'})));
   const leave=()=>{ storyPreviewOff(); sset=null; renderGame(); };

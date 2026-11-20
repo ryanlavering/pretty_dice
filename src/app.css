@@ -138,7 +138,7 @@
   .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:12px} .nm{cursor:text}
   .card .nm{max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 6px #000}
   .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
-  .ghost .th{border-style:dashed;opacity:.9} .plus .th{display:grid;place-items:center;font-size:28px;color:var(--dim);border-style:dashed;background:rgba(20,23,31,.6)}
+  .inert{cursor:default} .ghost .th{border-style:dashed;opacity:.9} .plus .th{display:grid;place-items:center;font-size:28px;color:var(--dim);border-style:dashed;background:rgba(20,23,31,.6)}
   @media (min-width:761px){ #bagsheet>*{align-self:center;width:min(760px,100%);box-sizing:border-box} #bagsheet>#bagbox{width:min(728px,calc(100% - 32px))} }   /* PD-142.38.43: the Bag view is the same overlay on desktop, as a centred column */
   #bagsheet #bagbox{margin:8px 16px 0} #bagsheet #bagopen{pointer-events:none}
   #bagsheet{position:fixed;inset:0;z-index:20;background:rgba(14,16,21,.97);display:flex;flex-direction:column} #bagsheet[hidden]{display:none}
