@@ -3,10 +3,10 @@ id: PD-187
 title: >-
   Story Dice must use a temporary draft design, never overwrite the user's
   design
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T07:47:00Z'
-updated_date: '2026-11-20T08:35:00Z'
+updated_date: '2026-11-20T09:17:00Z'
 labels:
   - v4.1
 dependencies: []
