@@ -29,12 +29,15 @@ for (const [vname, vp] of Object.entries(VIEWS)) {
     expect(await app.run(() => JSON.parse(localStorage.getItem('prettydice.bag.v1')).active.design)).toBe('sixer');
   });
 
-  test(`PD-158 ${vname}: Bag pick of a different shape is refused with a message`, async ({ app }) => {
+  test(`PD-158/187 ${vname}: Bag pick of a design saved with other dice is accepted as a look only`, async ({ app }) => {   // owner 2026-11-20: "I can't switch designs mid game"
     await setup(app); const before = await snap(app);
-    await app.nav.openBag(); await app.page.locator('#tiles .tile[data-id="twenty"]').click(); await app.page.waitForTimeout(800);
+    await app.nav.openBag(); await app.page.locator('#tiles .tile[data-id="twenty"]').click(); await app.page.waitForTimeout(1000);
     const after = await snap(app);
-    expect([after.shape, after.notation, after.n, after.colors]).toEqual([before.shape, before.notation, before.n, before.colors]);
-    expect(after.msg).toContain('fixes the dice');
+    expect([after.shape, after.notation, after.n, after.game]).toEqual([before.shape, before.notation, before.n, before.game]);   // the game's dice stay
+    expect(after.vals).toEqual(before.vals);
+    expect(after.msg).not.toContain('fixes the dice');
+    expect(await app.run(() => JSON.parse(localStorage.getItem('prettydice.bag.v1')).active.design)).toBe('twenty');   // the pick is the player's design now
+    await app.run(pd => { pd.simRoll(); }); expect((await snap(app)).n).toBe(5);
   });
 
   test(`PD-158 ${vname}: a set with the same dice applies; a set with other dice is refused`, async ({ app }) => {

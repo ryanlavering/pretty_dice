@@ -665,7 +665,6 @@ let actBusy=false, actNext=null;
 const gameRun=()=>!!game&&!game.setup;
 function gameDiceFixed(fits){ if(!gameRun()||fits) return false; gameMsg='The game fixes the dice: only a design or set with the same dice fits (end the game to pick another)'; renderGame(); return true; }
 function sameDiceAsGame(notation){ const dd=game.info.dice, p=parseNotation(notation||'',true); return !p.error&&!p.mod&&!(p.group>1)&&p.terms.length>0&&p.terms.every(t=>t.sides===dd.sides&&!t.keep)&&p.terms.reduce((a,t)=>a+t.count,0)===dd.count; }
-function designFitsGame(id){ if(!gameRun()) return true; const d=id==='draft'?bag.draft:(bag.pending[id]||entryOf(id)?.design); if(!d) return false; return d.shape==='d'+game.info.dice.sides||(d.shape==='custom'&&sameDiceAsGame(d.notation)); }
 let gameKeep=null;   // while a design loads into a running game its shape and notation stay the game's   // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
@@ -679,7 +678,7 @@ async function activate(target,{skipSync=false}={}){   // target: a design id, o
   if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
 }
 /* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
-function enterDraft(){ lookDrop(); if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; $('dname').value=''; }
+function enterDraft(){ const inGameLook=!!lookSnap; lookDrop(); if(!bag||bag.active.draft) return; if(!inGameLook) syncLive();   /* PD-187: the game's look is nobody's edit: Randomize/Blank mid-game must not write it into the design that was active */ bag.active.draft=true; bag.draft=null; $('dname').value=''; }
 function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.name)); let n=bag.designs.length+1; while(used.has(`${base} ${n}`)) n++; return `${base} ${n}`; }
 function addEntry(json,name,afterId){ name=uniqueName(bag.designs.map(d=>d.name),name); const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
@@ -868,7 +867,7 @@ function wireCard(b,x){ let t=null,sx=0,sy=0;
   const cancel=()=>clearTimeout(t); b.addEventListener('pointerup',cancel); b.addEventListener('pointerleave',cancel); b.addEventListener('pointercancel',cancel);
   b.addEventListener('pointermove',e=>{ if(Math.hypot(e.clientX-sx,e.clientY-sy)>8) cancel(); });
   b.addEventListener('contextmenu',e=>{ e.preventDefault(); cancel(); longFired=true; openMenu(b,cardItems(x.id)); });
-  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on&&!gameDiceFixed(designFitsGame(x.id))) activate(x.id==='draft'?'draft':x.id); }; }   // tapping a card selects it without moving the strip
+  b.onclick=()=>{ if(longFired){ longFired=false; return; } if(!x.on) activate(x.id==='draft'?'draft':x.id); }; }   // tapping a card selects it without moving the strip
 /* shelf: scrolling only browses; a tap picks the design (owner decision 2026-11-11). Rotating the phone or resizing re-centres the strip on the active card. */
 new ResizeObserver(()=>{ progScroll=Date.now(); const on=$('cards').querySelector('.card.on'); if(on) centerCard(on,false); }).observe($('cards'));
 
@@ -913,7 +912,7 @@ function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs but
   const sl=slots(), box=$('tiles'); setSheetTitle(`${bag.designs.length} design${bag.designs.length===1?'':'s'}${sl.some(x=>x.draft)?' + draft':''}`);
   box.replaceChildren(...sl.map(x=>{ const t=el('div','tile'+(x.on?' on':'')+(x.draft?' ghost':'')); t.dataset.id=x.id; const th=el('div','th'); th.style.backgroundImage=thumbStyle(x.json,x.id); if(x.mod) th.append(el('span','dot'));
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
-      const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); if(!gameDiceFixed(designFitsGame(x.id))) activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
+      const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id==='draft'?'draft':x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
 let sheetTab='designs';
 for(const b of document.querySelectorAll('#sheettabs button')) b.onclick=()=>{ sheetTab=b.dataset.tab; closeMenu(); renderSheet(); };
