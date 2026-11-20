@@ -15,6 +15,7 @@ User-facing changes. Versions are git tags.
 - **Yacht: no more accidental scores.** On a touch screen, a tap on the scorecard only previews a box; long press it to score (the default; a **Score entry** menu under the card switches to double tap, and shows only on touch screens). A single tap never scores on a phone. With a mouse, a single click scores.
 - **Whoopsie! Undo.** After a Yacht score, a 3-second **Whoopsie! Undo** button with a countdown takes the score back. Computer players wait for the window to close.
 - **Antique relief preset removed.** The Patina and relief sliders still do the same by hand.
+- **Slow start no longer breaks the quick roll bar.** If the page took more than ten seconds to start (a slow phone or a busy computer), the die chips and Roll button under the table could lose their layout for the rest of the session. They now keep it.
 - **Safety net for a misread die.** After dice settle, and again before a score is taken, the game re-checks that each die's value matches the face showing, and corrects it if not.
 
 ### Under the hood
