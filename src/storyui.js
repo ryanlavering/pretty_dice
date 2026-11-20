@@ -22,7 +22,9 @@ export function createStoryTray(host){
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
   let sent=null;   // PD-176: the finished story's sentence is drawn in the pool zone (where the unplaced dice were)
   function placeSent(){ if(!cur||!cur.sentence){ if(sent) sent.hidden=true; return; } if(!sent||!sent.isConnected){ sent=document.createElement('div'); sent.className='ssent'; root.append(sent); }
-    const pool=poolOf(arr()), top=Math.round(poolXY(0,1)[1]), room=H()-top-76; sent.hidden=pool.length>0||room<30; sent.replaceChildren(); const b=document.createElement('b'); b.textContent=cur.sentencePre||''; sent.append(b,document.createTextNode(cur.sentence)); sent.style.top=top+'px'; sent.style.maxHeight=room+'px'; sent.style.fontSize=(W()<520?15:19)+'px'; }
+    const pool=poolOf(arr()), n=NN(), sz=size(), top=Math.round(ringY()+(two(n)?sz*1.08:0)+sz+8), room=H()-top-76;   // PD-184: straight under the last ring row (not down at the pool row), so there is room for two or more lines
+    sent.hidden=pool.length>0||room<30; sent.replaceChildren(); const b=document.createElement('b'); b.textContent=cur.sentencePre||''; sent.append(b,document.createTextNode(cur.sentence)); sent.style.top=top+'px'; sent.style.maxHeight=room+'px';
+    let fs=W()<520?15:19; sent.style.fontSize=fs+'px'; while(fs>11&&sent.scrollHeight>sent.clientHeight+1){ fs--; sent.style.fontSize=fs+'px'; } }   // wrap, and shrink the type rather than clip
   function build(){ root.textContent=''; const n=cur.glyphs.length;
     rings=[...Array(n).keys()].map(i=>{ const r=document.createElement('div'); r.className='sring'; r.textContent=i+1; root.append(r); return r; });
     tiles=cur.glyphs.map((g,i)=>{ const e=document.createElement('div'), h=HUES[i%9]; e.className='stile'+(g.tier==='o'||g.pack!=='noto'?' alt':''); e.style.setProperty('--hi',`hsl(${h} 55% 45%)`); e.style.setProperty('--lo',`hsl(${h} 60% 24%)`); e.dataset.i=i; e.title=g.n[0];

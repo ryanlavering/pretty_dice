@@ -988,12 +988,13 @@ function renderDock(){ const go=$('rollbtn'), act=$('dockact'), hint=$('dockhint
   go.textContent=st.canRoll&&farkle&&st.turnTotal?'Roll '+n+(n>1?' dice':' die'):'Roll'; if(!st.canRoll) hint.textContent=farkle?'Set aside first':'Close tiles first';
   if(['farkle','pig','shipcaptain'].includes(id)) btn('Bank '+(id==='shipcaptain'?st.cargo:st.turnTotal),gameBank,!st.canBank||gameAwaiting,'bank');
   if(farkle&&st.canScore) btn(gsel.size?'Set aside '+gsel.size+(gsel.size>1?' dice':' die'):'Tap dice to set aside',()=>gameSetAside(gsel),!gsel.size||!settled,'aside'); }
+const judgeLabel=n=>n&&String(n).trim()?'Judge '+String(n).trim()+"'s story":'Judge this story';   // PD-184: never a dangling "Judge 's story"
 function renderStoryDock(S,st,over,go,btn,hint,qb){   // PD-176
   if(qb) qb.classList.add('storyq'); go.disabled=true; go.textContent='Roll';
   if(over){ const res=GAMES.result(S); hint.textContent='Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total; return; }
   const who=S.players.length>1?S.players[st.player]:'';
   if(st.phase==='rate'){
-    hint.textContent=st.botTurn?'Judge '+who+"'s story":'Tell it, then rate it';   // the sentence itself is drawn on the mat (storyui .ssent)
+    hint.textContent=st.botTurn?judgeLabel(who):'Tell it, then rate it';   // the sentence itself is drawn on the mat (storyui .ssent)
     for(const [k,l] of [['bad','Bad 0'],['fair','Fair 1'],['good','Good 2']]) btn(l,()=>storyRate(k),false,'rate-'+k); return; }
   hint.classList.remove('sent');
   go.disabled=!st.canRoll||st.botTurn||gameAwaiting||(rolling&&!settled);
@@ -2007,7 +2008,7 @@ function storySync(){
   const d3=gprefs.hivis!==true&&rolling&&!!bodies.length&&dice.length===st.dice.length;   // 3D: the real dice fly up into a line facing the player; hi-vis: the flat glyph tiles
   if(!d3) storyFlyEnd();
   for(const d of dice) d.mesh.visible=d3;   // hi-vis: the dice are swept off the mat while the tray is up
-  storyTray.show({sentence:storySentence(st),sentencePre:st.botTurn?'Judge '+game.state.players[st.player]+"'s story: ":'Tell your own: ',glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
+  storyTray.show({sentence:storySentence(st),sentencePre:st.botTurn?judgeLabel(game.state.players[st.player])+': ':'Tell your own: ',glyphs:storyGlyphs(st),order:st.order,locked:st.botTurn,dice3d:d3,autoswap:gprefs.autoswap!==false,onOrder:o=>{ const r=GAMES.act(game.state,{type:'arrange',order:o}); if(r.ok){ game.state=r.state; gameMsg=''; storySalt=0; renderGame(); } }});
   storyLogOrder(st);
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
@@ -2067,11 +2068,11 @@ function storyFit(o){ const have=poolFor(o.packs).length; if(o.dice*o.sides<=hav
 function renderStory(S,st,over){
   const res=over?GAMES.result(S):null;
   if(over) GP.append(gel('div',{className:'gstat'},'Game over: '+res.winners.map(i=>S.players[i]).join(' & ')+' win'+(res.winners.length>1?'':'s')+' with '+res.ranking[0].total,gel('small',{textContent:res.ranking.map(r=>r.name+' '+r.total).join(' · ')})));
-  else GP.append(gel('div',{className:'gstat'},(S.players.length>1?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':'judge '+S.players[st.player]+"'s story: rate it to move on"):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
+  else GP.append(gel('div',{className:'gstat'},(S.players.length>1&&S.players[st.player]?S.players[st.player]+': ':'')+(st.botTurn?(st.phase==='roll'?'the bot is rolling':st.phase==='arrange'?'the bot is arranging the dice':judgeLabel(S.players[st.player]).toLowerCase()+': rate it to move on'):st.phase==='roll'?'roll the dice':st.phase==='arrange'?'put the dice in story order':'tell it, then rate it'),gel('small',{textContent:'Story '+st.round+' of '+st.rounds+(gameMsg?' · '+gameMsg:'')})));
   if(!over&&st.phase==='arrange'&&!st.botTurn){ const ac=gel('input',{type:'checkbox',checked:gprefs.autoswap!==false,onchange:()=>{ gprefs.autoswap=ac.checked; gsave(); renderGame(); }}); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:st.order.filter(x=>x!==null).length+' of '+st.order.length+' placed: click the dice in order, or drag them onto the rings'})),gel('label',{className:'row'},ac,gel('span',{textContent:'Autoswap when dropping on a filled ring'})),gel('label',{className:'row'},gel('input',{type:'checkbox',checked:gprefs.hivis===true,onchange:ev=>{ gprefs.hivis=ev.target.checked; gsave(); renderGame(); }}),gel('span',{textContent:'Hi-vis: flat glyph tiles instead of the 3D dice'}))); }
   if(!over&&st.phase==='rate'){
     const ids=st.order.map(i=>storyGlyphs(st)[i].id), txt=st.botTurn?adLibFor(ids,storySalt).text:sentenceFor(ids,storySalt).text;
-    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?("Judge "+S.players[st.player]+"'s story (an ad-lib): rate it to continue."):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
+    GP.append(gel('div',{className:'story-sent',textContent:txt}),gel('div',{className:'row'},gel('small',{textContent:st.botTurn?(judgeLabel(S.players[st.player])+" (an ad-lib): rate it to continue."):"The bot's version is a prompt: tell your own."}),gel('button',{type:'button',textContent:'Re-word',onclick:()=>{ storySalt++; renderGame(); }})));
     GP.append(gel('div',{className:'story-rate'},...[['bad','Bad · 0'],['fair','Fair · 1'],['good','Good · 2']].map(([k,l])=>gel('button',{type:'button',className:'big',textContent:l,onclick:()=>storyRate(k)}))));
   }
   if(!over&&st.phase!=='roll'&&S.options.hints){ const ids=(st.phase==='rate'?st.order.map(i=>storyGlyphs(st)[i]):storyGlyphs(st).filter((_,i)=>!st.order.includes(i))).map(g=>g.id), box=gel('div',{className:'story-hints'});

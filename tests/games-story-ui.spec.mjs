@@ -233,3 +233,42 @@ test('story dice: a game with only bots stops in the rate phase until a human gr
   expect(next.scores[at.player]).toBe(2); expect(next.player).not.toBe(at.player);   // the grade advanced to the other bot
   expect(errors).toEqual([]);
 });
+
+test('story dice: a blank bot name never shows a dangling "Judge \'s story" (PD-184)', async ({ shared: app }) => {
+  const errors = []; app.page.on('pageerror', e => errors.push(e.message));
+  await app.reset(82); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
+  await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '2'; e.dispatchEvent(new Event('change')); });
+  await app.page.check('#scorepane input[aria-label="Seat 1 is a computer player"]'); await app.page.check('#scorepane input[aria-label="Seat 2 is a computer player"]');
+  for (const i of [1, 2]) await app.page.fill(`#scorepane input[aria-label="Player ${i} name"]`, '   ');
+  await app.nav.roll();
+  for (let i = 0; i < 60; i++) {
+    const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate') break;
+    await app.run(pd => { for (let k = 0; k < 60; k++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
+  }
+  await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible();
+  await app.page.waitForTimeout(300);
+  const names = await app.run(pd => pd.game.state.players);
+  const txt = await app.page.evaluate(() => ({ tray: document.querySelector('#storytray .ssent')?.textContent || '', dock: document.querySelector('#dockhint').textContent, pane: document.querySelector('#scorepane').textContent }));
+  for (const t of Object.values(txt)) { expect(t).not.toMatch(/Judge\s+'s|judge\s+'s|^\s*'s story|\s's story/i); expect(t).not.toMatch(/^: /); }
+  expect(txt.tray + txt.dock).toMatch(/Judge /i);   // the judge prompt is still there, with a fallback label if the name is blank (names: ${names})
+  expect(errors).toEqual([]);
+});
+
+for (const vp of [{ width: 390, height: 740 }, { width: 740, height: 390 }, { width: 1280, height: 800 }]) test(`story dice: a long story sentence on the mat wraps and is fully visible, ${vp.width}x${vp.height} (PD-184)`, async ({ shared: app }) => {
+  await app.reset(78); await app.page.setViewportSize(vp); await app.page.waitForTimeout(400);
+  await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '9'; e.dispatchEvent(new Event('change')); });
+  await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); await app.page.waitForTimeout(900);
+  await app.run(pd => { pd.setFull(true); });
+  for (let i = 0; i < 9; i++) await app.page.locator(`#storytray .stile[data-i="${i}"]`).click();
+  await expect(app.page.locator('#storytray .ssent')).toBeVisible();
+  const g = await app.page.evaluate(() => { const e = document.querySelector('#storytray .ssent'), t = e.getBoundingClientRect(), st = document.querySelector('#storytray').getBoundingClientRect(), d = document.querySelector('#qbar').getBoundingClientRect(), cs = getComputedStyle(e), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3;
+    const rs = [...document.querySelectorAll('#storytray .sring')].map(x => x.getBoundingClientRect());
+    return { inStage: t.left >= st.left && t.right <= st.right && t.top >= st.top && t.bottom <= st.bottom, notClipped: e.scrollHeight <= e.clientHeight + 1, lines: Math.round((t.height - 16) / lh), clearOfRings: rs.every(r => t.top >= r.bottom - 1), clearOfDock: t.bottom <= d.top + 1, len: e.textContent.length }; });
+  expect(g.len).toBeGreaterThan(40);
+  expect(g).toMatchObject({ inStage: true, notClipped: true, clearOfRings: true, clearOfDock: true }); expect(g.lines).toBeLessThanOrEqual(4);
+  if (shot) await app.page.screenshot({ path: `${shot}/pd184-${vp.width}x${vp.height}.png` });
+});
