@@ -45,6 +45,12 @@ const panelAt = async (page, heading) => {   // scroll the side panel so a secti
 // Screen position of die i (projected through the app's own camera), so a tap lands on the die whatever the physics did.
 const dieAt = (page, i) => page.evaluate(i => { const pd = window.__pd; pd.renderOnce(); const d = pd.dice[i], r = pd.canvas.getBoundingClientRect(); const v = d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera); return { x: r.left + (v.x + 1) / 2 * r.width, y: r.top + (1 - v.y) / 2 * r.height }; }, i);
 const holdDice = async (page, idx) => { for (const i of idx) { const { x, y } = await dieAt(page, i); await page.mouse.click(x, y); await page.waitForTimeout(900); } };
+// Story Dice: start a game, roll, then tap the dice into the rings in order so the sentence and the grade buttons show.
+const storyArranged = async p => {
+  await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(800);
+  await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(2500);
+  for (let i = 0; i < 5; i++) { await p.locator(`#storytray .stile[data-i="${i}"]`).click(); await p.waitForTimeout(500); }
+  await p.waitForTimeout(1500); };
 const side = { x: 0, y: 0, width: 310, height: DESK.height };
 
 // name, options, steps(page) -> optional clip rect
@@ -91,6 +97,10 @@ const SHOTS = [
   ['27-phone-log', { vp: PHONE }, async p => { await rollNow(p); await navFor(p).openLog(); await p.waitForTimeout(400); }],
   ['28-phone-drawer', { vp: PHONE }, async p => { await navFor(p).openDrawer(); }],
   ['29-phone-scorecard', { vp: PHONE }, async p => { await navFor(p).openGames(); await p.click('text=Start game'); await p.waitForTimeout(1500); await navFor(p).roll(); await settle(p); await p.waitForTimeout(800); }],
+  ['30-story-setup', {}, async p => { await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(3000); }],
+  ['31-story-arrange', {}, async p => { await storyArranged(p); }],
+  ['32-story-sets', {}, async p => { await navFor(p).openGames(); await p.selectOption('#scorepane select >> nth=0', 'story'); await p.waitForTimeout(3000); await p.waitForSelector('#storysets', { timeout: 60_000 }); await p.locator('#storysets').scrollIntoViewIfNeeded(); await p.evaluate(() => document.getElementById('storysets').click()); await p.waitForSelector('#ssnew', { timeout: 60_000 }); await p.evaluate(() => document.getElementById('ssnew').click()); await p.waitForTimeout(6000); return side; }],
+  ['33-phone-story', { vp: PHONE }, async p => { await storyArranged(p); }],
   ['17-phone-bag', { vp: PHONE }, async p => { await navFor(p).openBag(); await p.waitForTimeout(700); }],
 ];
 
@@ -100,7 +110,7 @@ for (const [name, opt, steps] of SHOTS) {
   const { page, close } = await open(opt);
   try {
     const clip = await steps(page);
-    await page.screenshot({ path: `${OUT}${name}.png`, ...(clip ? { clip } : {}) });
+    await page.screenshot({ path: `${OUT}${name}.png`, timeout: 180_000, ...(clip ? { clip } : {}) });
     n++; console.log('shot', name);
   } catch (e) { console.error('FAILED', name, e.message.split('\n').slice(0, 3).join(' | ')); process.exitCode = 1; }
   await close();

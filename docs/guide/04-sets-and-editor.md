@@ -37,6 +37,21 @@ When dice are dropped (by keep, drop, `adv` or `dis`) the table marks them with 
 
 Put a count and `x` in front to make separate rolls: `4x d20+2` throws four d20s, adds the +2 to **each**, and shows the results side by side (for example `22 · 7 · 16 · 17`) with a breakdown per roll (`#1: 20 + 2 = 22`). Use it for a pack of goblins attacking or everyone rolling initiative. It works in the notation box here and in the dock at the table ([Rolling](05-rolling.md)). Each group member can be added to the initiative list: see [The roll log](06-roll-log.md).
 
+### Glyph faces
+
+A die can carry small pictures instead of numbers. Add a **face block** in curly braces right after the die (and after any keep or `adv`), before an optional `@design`:
+
+`NdS{pack#seed}`, with the optional flags `!same` and `!ordered`, then `@design`.
+
+| You type | Meaning |
+|---|---|
+| `5d12{noto#1}` | five d12, every face a different picture from the Everyday pictures pack, dealt with seed 1 |
+| `3d6{memes&noto#2}@bone` | three d6 dealt from the Memes and Everyday packs together with seed 2, using the bag's design called `bone` (the `@design` must exist in your bag, or the box says `No design "@bone" in the bag`) |
+| `4d8{gameicons#7!same}` | every die carries the same eight pictures |
+| `2d6{hiero!ordered}` | the pack's pictures in their own order, no seed (an ordered deal takes none) |
+
+The pack names are `noto` (Everyday pictures), `symbols`, `memes`, `gameicons` (Fantasy and adventure), `fontawesome` (Plain icons) and `hiero` (Hieroglyphs); join several with `&`. The seed is a number from 1 to 999999 (left off it means 1). The same text deals the same pictures on every device, and adding a die at the end keeps the faces of the dice before it. Glyph faces work on d6, d8, d12 and d20 only. Unless you ask for `!same`, no picture repeats, so the packs must hold enough: five d12 need 60 pictures, and the box says so ("Set needs 60 faces; ... holds ...") if not. A face counts in totals by its position on the die (1 to the number of sides), so keep highest, `adv` and the rest work on glyph dice too. The [Story Dice sets editor](10-games.md#story-dice-sets) builds this text for you.
+
 Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "advantage" and "disadvantage" spelled out (use `adv` or `dis`, or the buttons). A bad entry shows a message such as `d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)` or `Too many dice (101); max 24`.
 
 ## Save it as a set

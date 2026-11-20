@@ -34,7 +34,11 @@ Press and hold a settled die for about half a second (or right-click it) to open
 
 ![Bounciness, friction and sound controls](img/13-roll-controls.png)
 
-In the **Table** tab, under **Roll feel**, **Bounciness**, **Dice friction** and **Mat friction** change how the dice move (on a phone, also the **Shake phone to roll** option). The **Sound** settings are further down the same tab; see [Sound](09-sound.md).
+In the **Table** tab, under **Roll feel**, **Gravity**, **Bounciness**, **Dice friction** and **Mat friction** change how the dice move (on a phone, also the **Shake phone to roll** option). 
+
+**Gravity** is a slider on a log scale from 1/64x to 2x, shown as a multiple of realistic gravity: 1x is real gravity (9.81 m/s²) for a 20 mm d20. The default, marked "(default)", is the app's slow-motion table feel, about 1/23 of realistic, so dice hang in the air longer than in real life. Drag right and the dice fall faster; left and they float. A throw or flick scales with the setting, so the dice still fly and tumble the same way at any gravity. **Reset** next to the label returns to the default.
+
+The **Sound** settings are further down the same tab; see [Sound](09-sound.md).
 
 ## Looking at the result
 
