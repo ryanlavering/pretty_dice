@@ -3,9 +3,10 @@ id: PD-186
 title: >-
   Mobile: the dock (quick roll bar) grows tall during Story Dice and never
   returns to normal size
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T07:45:00Z'
+updated_date: '2026-11-20T08:23:00Z'
 labels:
   - v4.1
 dependencies: []
