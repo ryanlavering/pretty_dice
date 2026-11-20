@@ -23,3 +23,5 @@ C (trimmed): steadier dock during a game with bigger rating chips (no clipping d
 D (small, 4.1 only): applying a Set mid-game must not log a fake numeric roll ('5d12: 7+12+4+9+4 = 36') in the Log during Story Dice. Rest of D (Rename marks Modified, 'Random draft' label on Blank draft, toast on discarded game-look edits, word-hint labels) -> 4.2.
 Sequence: PD-191 (look lifetime) lands first; then B, then A (needs the scoring decision), C and D in parallel lanes on separate files where possible.
 <!-- SECTION:DESCRIPTION:END -->
+
+Owner decision (2026-11-20): rating = FIVE BUTTONS worth 0 / 3 / 5 / 7 / 10 points (labels: Bad 0, Weak 3, Fair 5, Good 7, Great 10). Replaces Bad 0 / Fair 1 / Good 2. Saved games in progress keep the totals they already have.
