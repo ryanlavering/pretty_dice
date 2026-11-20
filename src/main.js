@@ -58,7 +58,8 @@ const $=id=>document.getElementById(id);
 /* PD-169 gravity. Calibration: every die is normalised to circumradius 1 world unit; a d20/d12 face to face is then 2 x inradius = 2 x .7947 = 1.5894 u, and the owner measured that as 20 mm,
    so 1 m = 79.47 u and realistic gravity (9.81 m/s2) = 779.6 u/s2. The old fixed -34 u/s2 is therefore 0.0436 x realistic (a slow, floaty roll). The slider is log (x = LO * (HI/LO)^p) and shows the multiple of realistic. */
 const GRAV_U_PER_M=2*0.79465447/0.02, GRAV_REAL=9.81*GRAV_U_PER_M, GRAV_OLD=34, GRAV_DEF=GRAV_OLD/GRAV_REAL;
-const GRAV_LO=1/64, GRAV_HI=32;   // owner asked .25x..2x; today's feel (.044x) lies below .25x, so the log range is widened by 16x each way (.25/16 .. 2*16) with the owner's .25x..2x span inside it
+const GRAV_LO=1/64, GRAV_HI=2;   // today's feel (.0436x, about 1/23) lies below the owner's .25x, so the range runs from 1/64x up to 2x realistic (the owner's .25x..2x sits inside); 128x of log range
+/* PD-169 rework, measured: a die dropped 10 u in the live sim takes 0.7666 s at -34 u/s2 vs sqrt(2h/g)=0.7670 s (world.step(1/60,dt,4): no time scale, no speed multiplier; damping .04/s is negligible), so the 0.0436x factor is exact: at true 1x a 20 mm d20 falls 16 u (0.2 m) in 0.2 s and today's table is about 4.8x slower than real life in time (1/23 the gravity). A throw is scaled by throwK() so it covers the same path at any gravity. */
 const gravFromPos=p=>GRAV_LO*Math.pow(GRAV_HI/GRAV_LO,Math.max(0,Math.min(1,p))), gravToPos=x=>Math.log(Math.max(GRAV_LO,Math.min(GRAV_HI,x))/GRAV_LO)/Math.log(GRAV_HI/GRAV_LO);
 const DEFAULTS={gravity:GRAV_DEF, shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
   shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
@@ -1197,7 +1198,7 @@ const NF_ALL=[
   {id:'PD-174', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the arrangement row re-lays out when the window is resized or the phone turns, and sits in one row on a landscape phone. Check: start Story Dice with 9 dice, resize the window or rotate the phone: the rings and dice stay on screen; landscape phone shows one row.', card:'PD-174'},
   {id:'PD-175', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the ring numbers and rings sit behind the dice, not in front. Check: Games > Story Dice, roll, tap a die into ring 1: the die covers the ring and its number, nothing is drawn over the dice.', card:'PD-175'},
   {id:'PD-176', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice: the bar at the bottom (the dock) now shows the story sentence, the Bad / Fair / Good buttons and the last result, so you can play in full view with the side pane closed. Check: Story Dice, press Full view, roll, arrange: the bottom bar shows the sentence and the three rating buttons.', card:'PD-176'},
-  {id:'PD-169', rev:1, room:'play', anchor:'#gravity', text:'New Gravity slider under Roll feel: from a slow floaty roll up to many times realistic gravity, on a log scale, with a Reset button; the default is the feel the dice had before. Check: Play > Roll feel > Gravity: drag it right and roll (dice fall faster), left (they hang), Reset returns to the default.', card:'PD-169'},
+  {id:'PD-169', rev:1, room:'play', anchor:'#gravity', text:'New Gravity slider under Roll feel: 1x is true realistic gravity for a 20 mm d20 (9.81 m/s2); the slider runs on a log scale from 1/64x to 2x, and the default (about 1/23 of realistic, the feel the dice always had) is marked. A throw is scaled with the gravity so it flies the same arc at any setting. Check: Play > Roll feel > Gravity: drag it right and flick or roll (dice fall faster but still travel and tumble), left (they hang longer), Reset returns to the default.', card:'PD-169'},
   {id:'PD-166', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice sets: see, edit and save the Story Dice sets you can make. Check: Games > Story Dice sets... > New Story set: pick glyph packs, 3-9 dice, d6/d8/d12/d20, a seed (Reroll seed), shuffled or in pack order, same or different dice; the preview and the set text update live. Save puts it in the bag (Bag > Sets), Use in game loads it into the Story Dice setup, Roll it rolls it on the table.', card:'PD-166'}
 ];
 const NEW_FEATURES=NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
@@ -1308,6 +1309,7 @@ let placed=false, placing=false;   // placed: the dice are set out on the mat at
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
+const throwK=()=>Math.max(.5,Math.min(8,Math.sqrt(-gravityY()/GRAV_OLD)));   // PD-169: velocities and spins scale with sqrt(g) so a throw flies the same arc (same apex, same reach, same turns) at any gravity; exactly 1 at the default
 function gravityY(){ const x=state.gravity; return Math.abs(x-GRAV_DEF)<1e-9?-GRAV_OLD:-x*GRAV_REAL; }   // the default is exactly the old -34
 function setGravity(x,persist=true){ x=+x; if(!isFinite(x)) return; state.gravity=Math.max(GRAV_LO,Math.min(GRAV_HI,x)); if(world){ world.gravity.set(0,gravityY(),0); bodies.forEach(b=>b.wakeUp&&b.wakeUp()); } if(persist) save(); syncGravityUI(); }
 function syncGravityUI(){ const x=state.gravity, el=$('gravity'); if(!el) return; if(document.activeElement!==el) el.value=gravToPos(x); $('gravityv').textContent=(x<.1?x.toFixed(3):x.toFixed(2))+'x realistic'+(Math.abs(x-GRAV_DEF)<1e-9?' (default)':''); }
@@ -1395,11 +1397,13 @@ function startRoll(launch=false,place=false,vel=null){        // launch: re-roll
     if(prev){                                                                              // thrown up off the mat from where it lay
       const pp=prev[i]; b.position.set(pp.p.x,pp.p.y+.25,pp.p.z); b.quaternion.copy(pp.q); d.mesh.quaternion.set(pp.q.x,pp.q.y,pp.q.z,pp.q.w);
       b.velocity.set(vel?vel.x+R()*3:-pp.p.x*.5+R()*6,13+rng()*7,vel?vel.z+R()*3:-pp.p.z*.5+R()*6); b.angularVelocity.set(R()*50,R()*50,R()*50);
+      { const k=throwK(); if(k!==1){ b.velocity.scale(k,b.velocity); b.angularVelocity.scale(k,b.angularVelocity); } }
     } else {
     b.position.set(px,TABLE_Y+dropH+i*1.1+rng()*2,pz);                           // random heights too, so overlapping spots never collide at spawn
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4);
-    b.angularVelocity.set(R()*40,R()*40,R()*40); }
+    b.angularVelocity.set(R()*40,R()*40,R()*40);
+    { const k=throwK(); if(k!==1){ b.velocity.scale(k,b.velocity); b.angularVelocity.scale(k,b.angularVelocity); } } }
     const layFrom=!place?null:(pendingLay&&pendingLay.n===dice.length&&pendingLay.poses.length===dice.length?pendingLay:(lastLay&&lastLay.key===rollKey&&lastLay.n===dice.length?lastLay:null));
     if(layFrom){ const L=layFrom.poses[i]; b.position.set(L.p.x,L.p.y+.02,L.p.z); b.quaternion.copy(L.q); d.mesh.quaternion.copy(L.q); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }   // put back where it last lay
     hookHit(b);   // one sound per pair
@@ -1569,7 +1573,7 @@ function dropIn(idx){
   idx.forEach((i,k)=>{ const b=bodies[i]; let px=0,pz=0;
     for(let t=0;t<60;t++){ px=(rng()*2-1)*(rollHalf.x-1.1); pz=(rng()*2-1)*(rollHalf.z-1.1); if(bodies.every((o,j)=>j===i||Math.hypot(o.position.x-px,o.position.z-pz)>2.3)) break; }
     const rq=randQuat(); b.position.set(px,TABLE_Y+dropH+k*1.1+rng()*2,pz); b.quaternion.set(rq.x,rq.y,rq.z,rq.w);
-    b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4); b.angularVelocity.set(R()*40,R()*40,R()*40); b.free=false; b.angularDamping=.1; b.linearDamping=.04; b.slowT=0; b.wakeUp();
+    b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4); b.angularVelocity.set(R()*40,R()*40,R()*40); { const k=throwK(); if(k!==1){ b.velocity.scale(k,b.velocity); b.angularVelocity.scale(k,b.angularVelocity); } } b.free=false; b.angularDamping=.1; b.linearDamping=.04; b.slowT=0; b.wakeUp();
     dice[i].mesh.position.copy(b.position); dice[i].mesh.quaternion.copy(rq); });
   bodies.forEach(b=>b.slowT=0);
 }
