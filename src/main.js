@@ -76,7 +76,7 @@ try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
   if(!Array.isArray(state.off)||state.off.length!==3) state.off=[...DEFAULTS.off];
   if(Array.isArray(state.palettes)) state.palettes={};
 }catch{}
-function save(){ try{ const {colors,...rest}=state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); scheduleBagUI(); }
+function save(){ try{ const {colors,...rest}=lookSnap?{...state,...JSON.parse(lookSnap)}:state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); scheduleBagUI(); }
 /* One palette (3 colours) is shared by every substrate and stone type, so switching substrate keeps the colours (PD-61).
    Only Randomize makes new colours, using the logic of the substrate that is active at that moment (metal picks a metal, a stone picks its own palette).
    Substrates that use fewer than 3 colours (solid plastic, metal) still get 3, so every other substrate has a full set to show.
@@ -360,7 +360,13 @@ function plainLook(){   // Story dice start from the plain default design (what 
   Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); state.substrate='solid'; setSubstrate('solid');
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.numSize=.9; repaint(); }   // numSize .9: glyphs must read on a phone
 let lookSnap=null;   // the player's look, kept while the story dice use the plain one (a snapshot, not a bag draft: no thumbnails to render, nothing to save or discard)
-function lookSwap(){ if(lookSnap) return; lookSnap=snapshot(); plainLook(); }
+/* PD-187: the temporary draft look. Entry points (a game that wants its own dice look, PD-188, calls these):
+   lookSwap(apply=plainLook)  enter: keep the player's look, then run apply() to put the game's look on the live state; no-op if already in a draft
+   lookRestore()              leave: discard the draft and put the player's look back exactly (end of game / setup preview)
+   lookDrop()                 the player deliberately picked a design (or Randomize/Blank): the draft is gone and the pick stays
+   While a draft is live the bag is frozen (syncLive/isLiveModified skip it, save() writes the player's look to the settings store), so no design gains edits. */
+function lookSwap(apply=plainLook){ if(lookSnap) return; syncLive(); lookSnap=snapshot(); apply(); }
+function lookDrop(){ lookSnap=null; }   // PD-187: the player deliberately picked a design (or Randomize/Blank) while the game look was live: that pick is theirs now and ending the game leaves it; only the temporary look is gone
 function lookRestore(){ if(!lookSnap) return; const o=JSON.parse(lookSnap); lookSnap=null; Object.assign(state,o); legalRelief(); setSubstrate(state.substrate); repaint(); }
 
 /* ---------- undo / redo of design settings ---------- */
@@ -633,14 +639,15 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
 const entryOf=id=>bag&&bag.designs.find(d=>d.id===id);
 const activeEntry=()=>entryOf(bag.active.design);
 function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; return dj; }
-function isLiveModified(){ const e=activeEntry(); return !bag.active.draft&&canonD(liveJSON())!==canonD({...e.design,name:e.name}); }
+function isLiveModified(){ const e=activeEntry(); if(lookSnap) return !!bag.pending[e.id]; return !bag.active.draft&&canonD(liveJSON())!==canonD({...e.design,name:e.name}); }
 const isModified=id=>bag.active.draft||bag.active.design!==id?!!bag.pending[id]:isLiveModified();
 let bagLoading=0;   // while a design is being loaded into the live state, the half-loaded state must not be saved back as edits
-function syncLive(){ if(!bag||bagLoading) return;
+function syncLive(){ if(!bag||bagLoading||lookSnap) return;   // PD-187: the game's temporary look is nobody's edit: while it is live the bag keeps what the player had
+
   if(bag.active.draft){ bag.draft=liveJSON(); return; }
   const e=activeEntry(); if(!e) return;
   if(isLiveModified()) bag.pending[e.id]=liveJSON();
-  else{ delete bag.pending[e.id]; const dj=designToJSON(); if(!isMulti()){ e.design.shape=dj.shape; e.preview_shape=dj.shape; } } }   // PD-142.38.37: the roll set on the mat (Custom / Standard 7 and its formula) is a draft outside the bag: it is never written into the saved design, so editing it cannot make the bag look modified
+  else{ delete bag.pending[e.id]; const dj=designToJSON(); if(!isMulti()&&!gameRun()){ e.design.shape=dj.shape; e.preview_shape=dj.shape; } } }   // a running game's dice are the game's, not the design's preview shape (PD-187)   // PD-142.38.37: the roll set on the mat (Custom / Standard 7 and its formula) is a draft outside the bag: it is never written into the saved design, so editing it cannot make the bag look modified
 function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
 function saveBag(){ if(!bag||bagLoading) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
 /* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
@@ -652,7 +659,7 @@ function initBag(){
 /* Put a design into the live state and start a fresh undo history (undo does not cross designs). */
 async function loadSlot(json,name){ bagLoading++; try{ await loadDesign(name!=null?{...json,name}:json); }finally{ bagLoading--; } history=[snapshot()]; hIdx=0; syncHistoryUI(); }
 /* An unmodified design is stored in the normal form the app writes (clamped numbers, defaults filled in), so imported files do not read as Modified. */
-function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag.pending[e.id]){ const dj=designToJSON(); e.design={...dj,name:e.name}; e.preview_shape=dj.shape; } }
+function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag.pending[e.id]){ const dj=designToJSON(); if(gameRun()){ dj.shape=e.design.shape; dj.notation=e.design.notation; } e.design={...dj,name:e.name}; e.preview_shape=dj.shape; } }   // a running game's dice are the game's, not the design's (PD-187)
 let actBusy=false, actNext=null;
 /* PD-154/158: a running game fixes the dice SET (shape and count); the look may change. gameDiceFixed(fits) is true (and says why) when the pick does not fit the game's dice. */
 const gameRun=()=>!!game&&!game.setup;
@@ -663,7 +670,7 @@ let gameKeep=null;   // while a design loads into a running game its shape and n
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
   const gr=gameRun(), keep=gr?{shape:state.shape,notation:state.notation}:null, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed, inDesign=designRoom&&gameRun(); gameKeep=keep;   // PD-158: in a game only the look changes; the dice stay where they lie
-  try{ if(!skipSync) syncLive();
+  try{ if(!skipSync) syncLive(); lookDrop();
     if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
     else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
     if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; if(inDesign){ designRoom=true; exitRoll(true); } gameSync(); renderGame(); }   // PD-180: a swap made in the Design room stays there (the dice were rebuilt to lie as they did; Play shows them)
@@ -672,7 +679,7 @@ async function activate(target,{skipSync=false}={}){   // target: a design id, o
   if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
 }
 /* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
-function enterDraft(){ if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; $('dname').value=''; }
+function enterDraft(){ lookDrop(); if(!bag||bag.active.draft) return; syncLive(); bag.active.draft=true; bag.draft=null; $('dname').value=''; }
 function newDesignName(base='Design'){ const used=new Set(bag.designs.map(d=>d.name)); let n=bag.designs.length+1; while(used.has(`${base} ${n}`)) n++; return `${base} ${n}`; }
 function addEntry(json,name,afterId){ name=uniqueName(bag.designs.map(d=>d.name),name); const e={id:uniqueId(slug(name,'design'),new Set(bag.designs.map(d=>d.id))), name, preview_shape:json.shape, design:{...json,name}};
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
