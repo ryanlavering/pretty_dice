@@ -3,9 +3,10 @@ id: PD-184
 title: >-
   Story Dice: no dangling "Judge 's story" when the name is blank; mat sentence
   cut off on mobile
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T06:21:00Z'
+updated_date: '2026-11-20T06:36:00Z'
 labels:
   - v4.1
 dependencies: []
