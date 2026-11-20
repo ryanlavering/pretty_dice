@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOTS = [os.path.join(HERE, '..', '..', 'pretty_dice-v4.1'), os.path.join(HERE, '..')]  # later roots win
 
 GROUPS = [
-  ('Story Dice review tweaks', ['PD-171', 'PD-172', 'PD-173', 'PD-174', 'PD-175', 'PD-176', 'PD-179', 'PD-180', 'PD-181', 'PD-184']),
+  ('Story Dice review tweaks', ['PD-171', 'PD-172', 'PD-173', 'PD-174', 'PD-175', 'PD-176', 'PD-179', 'PD-180', 'PD-181', 'PD-184', 'PD-186', 'PD-187']),
   ('Story Dice features', ['PD-160', 'PD-167', 'PD-166']),
   ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169', 'PD-178', 'PD-116', 'PD-20.7']),
   ('Reviewed and landed (4.1 so far)', ['PD-154', 'PD-157', 'PD-156', 'PD-158', 'PD-159', 'PD-162', 'PD-163', 'PD-165']),
@@ -21,7 +21,7 @@ GROUPS = [
 
 # (gate, done, note)
 GATES = [
-  ('Story Dice review tweaks landed and reviewed (PD-171 to PD-181, 184)', False, 'all reviewed except PD-184 (blank judge name, mat sentence on phone)'),
+  ('Story Dice review tweaks landed and reviewed (PD-171 to PD-184)', True, 'all reviewed'),
   ('Grammar slice 1 (PD-167) landed', True, 'owner grammar answers recorded; review pending'),
   ('PD-166 Story Dice set editor (Games menu) landed; PD-161 glyph controls moved to 4.2', True, 'landed bf9c717; owner review pending'),
   ('PD-155 bad-6 self-check as backup', True, 'landed; card stays open as a watch item'),
@@ -29,11 +29,12 @@ GATES = [
   ('PD-164 release tingles: owner picks the 5 to 10 highlights', False, 'needs the final feature list'),
   ('Owner round with no new change requests (4.1 settled)', False, 'comment-free review of a normal Dev artifact'),
   ('Test suite faster (PD-178): full run 14 min, goal met', True, 'reviewed; 24-26 min before'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', False, 'CHECKPOINT 41-3 @565a47d: run A 495 passed in 14.0 min; run B (PD_NOLITE=1) in progress; one more clean run at the tag'),
+  ('Full suite green on the release candidate (two clean runs, --retries=0)', False, 'CHECKPOINT 41-3 @565a47d was RED: run A 6 failed, run B (PD_NOLITE=1) 8 failed; 5 real (games-phone, PD-184 sentence test, gravity flick). Lane v41-red fixing; rerun after PD-186 and PD-187 land'),
   ('Golden set stable', True, 're-baselined only for the owner-approved Antique removal and gravity row'),
   ('Artifact CSP spec and single-file build boot clean', True, 'rechecked at each publish'),
+  ('Owner bugs from the phone: PD-186 dock stays tall after Story Dice; PD-187 Story Dice must use a temporary draft design, never overwrite the user design', False, 'lanes v41-red and v41-draft running; then owner re-check on the Dev artifact'),
+  ('CHANGELOG 4.1 and README written', True, '882ad13'),
   ('Guide review and update (Story Dice, Whoopsie, desktop click, Craps secret, gravity if in)', False, 'guide lane; desktop and phone shots'),
-  ('CHANGELOG 4.1 (from docs/design/v41-changelog-draft.md) and README', False, ''),
   ('Merge v4 backlog commits into v4.1; then ff main to v4.1', False, 'main is at 4.0.1; check ls-remote afterwards'),
   ('Annotated tag v4.1, push, verify with git ls-remote', False, 'never pipe a failing merge into tail'),
   ('Release artifact: build with the review flag stripped, no tingles', False, 'then enable release tingles (PD-164) for the new version'),
@@ -43,10 +44,11 @@ GATES = [
 ]
 
 OWNER_QS = [
-  'PD-20.7 (CI v5, sharding): keep in Needs Review until the first real GitHub run is green, or accept now?',
-  'PD-169 gravity (range 1/64x..2x, flick compensation) and PD-184: check on the Dev artifact (v12).',
-  'PD-164 release tingles: pick the 5 to 10 highlights once the feature list settles.',
+  'PD-20.7 (CI v5, sharding): stays in Needs Review until the first real GitHub run is green.',
+  'PD-164 release tingles: pick the 5 to 10 highlights (a proposed list comes with the release candidate).',
+  'Re-check PD-186 (dock retracts) and PD-187 (draft design) on the Dev artifact once the lanes land.',
   'Stale ~/code/pretty_dice checkout: now fast-forwarded to main; remove it or keep it?',
+  'Final sign-off on the release candidate before the tag.',
 ]
 
 
