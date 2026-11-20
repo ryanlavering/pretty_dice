@@ -29,50 +29,85 @@ export function dealGlyphs(dice,fp=fingerprint(dice),pool=poolFor(DEFAULT_PACKS)
   return dice.map(d=>{ const run=order.slice(at,at+d.faces); at+=d.faces; return run; });
 }
 
-/* ---- sentence generator ---- */
-const PREP=['near','beside','above','under','behind','with','beyond','inside'], OPEN=['One day,','Once upon a time,','Long ago,','Late one night,','Far from here,'], MID=['and','but','so','then','until','or maybe'], END=['In the end,','At last,','Before long,'];
-const vowel=w=>/^[aeiou]/i.test(w)&&!/^(uni|use|one)/i.test(w), art=w=>(/^[A-Z]{2,}/.test(w)?'a':vowel(w)?'an':'a')+' '+w;   // UFO -> "a UFO" is fine for the spike (unreadable acronyms are rare)
+/* ---- sentence generator ----
+   Review 2026-11-20 (docs/design/sentence-generator-review.md): one word picker per story (a glyph keeps its noun, no adjective/adverb/verb/connective/pattern twice, no "the smirk smirked" echoes), number-aware articles (an hour, an L, some coins, some water),
+   adverbs that are not -ly go after the verb, at most two clauses per sentence, new-sentence transitions, an occasional short beat (6-7 glyphs) and a closing line that calls back to the first glyph (8+ glyphs). */
+const PREP=['near','beside','above','under','behind','beyond','past','around','with'],
+  OPEN=['One day,','Once upon a time,','Long ago,','Late one night,','Far from here,','One stormy evening,','Just before breakfast,','At the edge of town,','Without warning,','Every Tuesday,'],
+  JOIN=['and','but','so','then','until','while','or maybe'],   // continues the sentence after a comma
+  NEXT=['Meanwhile,','Then','After that,','Just then,','Later,','Soon,'],   // starts a new sentence
+  END=['In the end,','At last,','Before long,','Finally,'],
+  BEAT=['Nobody saw that coming','It was that kind of day','Nobody asked why','This was not the plan'],
+  CODA=[(h,l)=>`And that is how the ${h} became so ${l.a}`,(h,l)=>`The ${h} never spoke of the ${l.n} again`,(h,l)=>`The ${h} never forgave the ${l.n}`,h=>`Nobody ever believed the ${h}`,h=>`The ${h} would do it all again`];
+const MAXLEN=200;   // PD-184: a 9-glyph story on a 390 px phone should wrap to four lines or fewer
+const MASS=new Set('water steam energy dust daylight milk sand lava honey music justice rain bread cheese ice magic sass money popcorn love lightning treasure yarn DNA'.split(' '));
+const many=w=>MASS.has(w)||/s$/.test(w)&&!/(ss|us|is)$/.test(w);   // plural or mass: "some", never "a"
+const an=w=>{ const f=w.split(/[ -]/)[0]; if(/^[A-Z0-9]+$/.test(f)) return /^([AEFHILMNORSX]|8|11|18)/.test(f)?'an':'a';   // read as letters: an L, a UFO, a 404
+  return /^(hour|honest|honou?r|heir)/i.test(f)||/^[aeiou]/i.test(f)&&!/^(uni|use|usu|one|eu)/i.test(f)?'an':'a'; };
+const np=(n,adj,def)=>{ const w=adj?adj+' '+n:n; return (def?'the':many(n)?'some':an(w))+' '+w; };
 const cap=s=>s[0].toUpperCase()+s.slice(1);
-
-const trans=g=>g.v.filter(v=>!v.endsWith('!')), intrans=g=>g.v.filter(v=>v.endsWith('!')).map(v=>v.slice(0,-1)), pw=(g,k,r)=>pick(g[k],r);
-// A clause pattern takes n glyphs and a pick function; each returns text without the final full stop.
+const trans=g=>g.v.filter(v=>!v.endsWith('!')), intrans=g=>g.v.filter(v=>v.endsWith('!')).map(v=>v.slice(0,-1));
+const stem=w=>w.toLowerCase().slice(0,3), clash=(w,n)=>n.split(/[ -]/).some(x=>stem(x)===stem(w));
+/* the story's word picker: fresh() prefers words not used yet in this story and not echoing the noun; N(g) fixes a glyph's noun for the whole story */
+function words(r,lean=0){ const used=new Set(), roots=new Set(), nouns=new Map(), root=w=>w.toLowerCase().slice(0,4);   // roots: no "creaky door ... creaked" across the story either
+  const fresh=(list,n)=>{ const fit=list.filter(w=>!(n&&clash(w,n))), ok=fit.filter(w=>!used.has(w)&&!roots.has(root(w))); const w=pick(ok.length?ok:fit.length?fit:list,r);   /* an echo is worse than a repeat */ used.add(w); for(const x of w.split(/[ -]/)) if(x.length>3) roots.add(root(x)); return w; };
+  const N=g=>{ if(!nouns.has(g.id)){ const ok=g.n.filter(n=>!g.v.some(v=>clash(v,n))); nouns.set(g.id,fresh(ok.length?ok:g.n)); } return nouns.get(g.id); };   // "the smug face smirked", not "the smirk smirked"
+  const w={r,fresh,N, A:g=>fresh(g.a,N(g)+' '+g.v.join(' ')), D:g=>fresh(g.d,N(g)), T:g=>fresh(trans(g),N(g)), I:g=>fresh(intrans(g),N(g)), P:()=>fresh(PREP),
+    the:(g,adj)=>np(N(g),adj&&r()>=lean?w.A(g):'',true), a:(g,adj)=>np(N(g),adj&&r()>=lean?w.A(g):'',false),   // lean: share of adjectives dropped, so 8-9 glyph stories stay about four lines on a phone
+    act:(adv,vp)=>/ly$/.test(adv)&&r()<.5?adv+' '+vp:vp+' '+adv,   // "-ly" adverbs may lead the verb; "sideways", "far away" always trail
+    pat:list=>{ let i=Math.floor(r()*list.length); for(let k=0;k<list.length&&used.has(list[i]);k++) i=(i+1)%list.length; used.add(list[i]); return list[i]; } };
+  return w; }
+// A clause pattern takes n glyphs and the story's word picker; each returns text without the final full stop.
 const P={
-  1:[ (g,r)=>`${art(pw(g[0],'a',r))} ${pw(g[0],'n',r)} ${pick(intrans(g[0]),r)} ${pw(g[0],'d',r)}`,
-      (g,r)=>`the ${pw(g[0],'n',r)} ${pick(intrans(g[0]),r)}` ],
-  2:[ (g,r)=>`the ${pw(g[0],'a',r)} ${pw(g[0],'n',r)} ${pick(trans(g[0]),r)} the ${pw(g[1],'n',r)}`,
-      (g,r)=>`${art(pw(g[0],'n',r))} ${pick(intrans(g[0]),r)} ${pick(PREP,r)} the ${pw(g[1],'a',r)} ${pw(g[1],'n',r)}`,
-      (g,r)=>`the ${pw(g[0],'n',r)} and the ${pw(g[1],'n',r)} ${pick(intrans(g[r()<.5?0:1]),r)} ${pw(g[1],'d',r)}`,
-      (g,r)=>`the ${pw(g[1],'a',r)} ${pw(g[1],'n',r)} ${pw(g[0],'d',r)} ${pick(trans(g[1]),r)} the ${pw(g[0],'n',r)}` ],
-  3:[ (g,r)=>`the ${pw(g[0],'a',r)} ${pw(g[0],'n',r)} ${pick(trans(g[0]),r)} the ${pw(g[1],'a',r)} ${pw(g[1],'n',r)} ${pick(PREP,r)} the ${pw(g[2],'n',r)}`,
-      (g,r)=>`the ${pw(g[0],'n',r)}, the ${pw(g[1],'n',r)} and the ${pw(g[2],'n',r)} ${pick(intrans(g[r()<.5?0:(r()<.5?1:2)]),r)} ${pw(g[2],'d',r)}`,
-      (g,r)=>`the ${pw(g[2],'a',r)} ${pw(g[2],'n',r)} ${pick(intrans(g[2]),r)}, so the ${pw(g[0],'n',r)} ${pick(trans(g[0]),r)} the ${pw(g[1],'n',r)}`,
-      (g,r)=>`${art(pw(g[0],'a',r))} ${pw(g[0],'n',r)} ${pw(g[1],'d',r)} ${pick(trans(g[0]),r)} ${art(pw(g[1],'n',r))} ${pick(PREP,r)} the ${pw(g[2],'a',r)} ${pw(g[2],'n',r)}` ] };
+  1:[ (g,w)=>`${w.a(g[0],1)} ${w.act(w.D(g[0]),w.I(g[0]))}`,
+      (g,w)=>`${w.the(g[0])} ${w.I(g[0])}` ],
+  2:[ (g,w)=>`${w.the(g[0],1)} ${w.T(g[0])} ${w.the(g[1])}`,
+      (g,w)=>`${w.a(g[0])} ${w.I(g[0])} ${w.P()} ${w.the(g[1],1)}`,
+      (g,w)=>`${w.the(g[0])} and ${w.the(g[1])} ${w.act(w.D(g[1]),w.I(g[w.r()<.5?0:1]))}`,
+      (g,w)=>`${w.the(g[1],1)} ${w.act(w.D(g[0]),w.T(g[1])+' '+w.the(g[0]))}`,
+      (g,w)=>`${w.the(g[0],1)} ${w.T(g[0])} ${w.the(g[1])} and ${w.I(g[0])}` ],
+  3:[ (g,w)=>`${w.the(g[0],1)} ${w.T(g[0])} ${w.the(g[1])} ${w.P()} ${w.the(g[2])}`,
+      (g,w)=>`${w.the(g[0])} that ${w.T(g[0])} ${w.the(g[1])} ${w.I(g[0])} ${w.P()} ${w.the(g[2],1)}`,
+      (g,w)=>`${w.the(g[2],1)} ${w.I(g[2])}, so ${w.the(g[0])} ${w.T(g[0])} ${w.the(g[1])}`,
+      (g,w)=>`${w.a(g[0],1)} ${w.act(w.D(g[1]),w.T(g[0])+' '+w.a(g[1]))} ${w.P()} ${w.the(g[2])}`,
+      (g,w)=>`while ${w.the(g[0])} ${w.I(g[0])}, ${w.the(g[1])} ${w.T(g[1])} ${w.the(g[2],1)}`,
+      (g,w)=>`${w.the(g[0])} and ${w.the(g[1])} ${w.T(g[w.r()<.5?0:1])} ${w.the(g[2],1)}` ] };
 
 /* Split n glyphs into clauses of 1-3 in a seeded way: mostly 2s and 3s, never a lone glyph unless n is 1. */
-export function chunkSizes(n,r){ const out=[]; while(n>0){ if(n<=3){ out.push(n); break; } const s=n===4?2:n===5?(r()<.5?2:3):(r()<.5?2:3); out.push(s); n-=s; } return out; }
+export function chunkSizes(n,r){ const out=[], long=n>=8; while(n>0){ if(n<=3){ out.push(n); break; } const s=n===4?2:(r()<(long?.8:.5)?3:2); out.push(s); n-=s; } return out; }   // 8-9 glyphs lean to threes: fewer, fuller clauses
+const glyphsOf=ids=>ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new Error('unknown glyph '+id); return g; });
 
-/* sentenceFor(ids, salt): the arranged glyph ids (in ring order) -> {text, clauses}. The same arrangement and salt always give the same text; a new salt re-words it. */
+/* sentenceFor(ids, salt): the arranged glyph ids (in ring order) -> {text, clauses}. The same arrangement and salt always give the same text; a new salt re-words it.
+   The first glyph is the hero: it opens the story and, from 8 glyphs, comes back in the closing line with the last glyph. */
 export function sentenceFor(ids,salt=0){
-  const gl=ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new Error('unknown glyph '+id); return g; }); if(!gl.length) return {text:'',clauses:[]};
-  const r=rng(hash32(ids.join(',')+'#'+salt)), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
-  for(const s of sizes){ const g=gl.slice(at,at+s); at+=s; clauses.push({glyphs:g.map(x=>x.id), text:pick(P[s],r)(g,r)}); }
-  const parts=clauses.map((c,i)=>{ let t=c.text; if(i===0) t=pick(OPEN,r)+' '+t; else if(i===clauses.length-1&&clauses.length>2&&r()<.6) t=pick(END,r)+' '+t; else if(r()<.5) t=pick(MID,r)+' '+t; return t; });
-  // joins: a clause after a connector like "and"/"but" continues the sentence with a comma, otherwise it starts a new one
-  let text=''; parts.forEach((t,i)=>{ const joined=/^(and|but|so|then|until|or maybe) /.test(t); if(i===0) text=cap(t); else if(joined) text+=', '+t; else text+='. '+cap(t); }); text+='.';
-  return {text, clauses};
+  const gl=glyphsOf(ids); if(!gl.length) return {text:'',clauses:[]};
+  const r=rng(hash32(ids.join(',')+'#'+salt)), w=words(r,gl.length>=8?.75:gl.length>=7?.4:0), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
+  for(const s of sizes){ const g=gl.slice(at,at+s); at+=s; clauses.push({glyphs:g.map(x=>x.id), text:w.pat(P[s])(g,w)}); }
+  const out=[], beat=gl.length>=6&&gl.length<8&&clauses.length>2&&r()<.3?1+Math.floor(r()*(clauses.length-2)):-1; let open=0;   // out: sentences without the full stop; open: clauses in the last one
+  clauses.forEach((c,i)=>{ const t=c.text, size=t.includes(', ')?2:1;
+    if(i===0){ out.push(cap(w.fresh(OPEN)+' '+t)); open=size; }
+    else if(i===clauses.length-1&&clauses.length>2&&gl.length<8&&r()<.6){ out.push(w.fresh(END)+' '+t); open=size; }
+    else { const x=r(), js=JOIN.filter(j=>!new RegExp('\\b'+j+'\\b').test(out.at(-1)+' '+t));
+      if(open+size<=2&&x<.5&&js.length){ out[out.length-1]+=', '+w.fresh(js)+' '+t; open+=size; }
+      else { out.push(cap(x<(gl.length<8?.75:0)?w.fresh(NEXT)+' '+t:t)); open=size; } }
+    if(i===beat&&out.join('. ').length<MAXLEN-90){ out.push(w.fresh(BEAT)); open=9; } });
+  if(gl.length>=8){ const c=w.pat(CODA)(w.N(gl[0]),{n:w.N(gl.at(-1)),a:w.A(gl.at(-1))}); if(out.join('. ').length+c.length<=MAXLEN) out.push(c); }   // the closing line only when it still fits about four lines on a phone
+  return {text:out.join('. ')+'.', clauses};
 }
 
 /* ---- the bot's ad-lib (Story dice with a bot player) ----
-   Same clause patterns, but every word class is borrowed from a random die in the arrangement (so the cat gets the dagger's adjectives and the moon's verbs), with a breathless opener, connectors, asides and a flat ending. Same arrangement and salt, same ad-lib. */
-const LIB_OPEN=['Okay so,','Listen.','Breaking news:','You will not believe this, but','As the prophecy foretold,','Hold my nachos,','Legend says that','Allegedly,','Plot twist:','So there I was,'], LIB_JOIN=['and then,','meanwhile,','but also,','so naturally,','suddenly,','and, plot twist,','which led to the fact that','and for some reason,'],
-  LIB_TAG=['obviously','as one does','for no reason','dramatically','which was extremely suspicious','and nobody asked','with alarming confidence','in a totally normal way','against all advice','twice'],
+   Same clause patterns, but every word class is borrowed from a random die in the arrangement (so the cat gets the dagger's adjectives and the moon's verbs), with a breathless opener, connectors, asides and a flat ending. Same arrangement and salt, same ad-lib.
+   Each clause after the first is its own sentence led by a connector ("Meanwhile, ...", "So naturally, ..."), so the asides never pile into comma soup. */
+const LIB_OPEN=['Okay so,','Listen.','Breaking news:','You will not believe this, but','As the prophecy foretold,','Hold my nachos,','Legend says that','Allegedly,','Plot twist:','So there I was,','Fun fact:','True story:'], LIB_JOIN=['and then,','meanwhile,','but also,','so naturally,','suddenly,','and, plot twist,','which meant that','and for some reason,','next thing you know,','long story short,'],
+  LIB_TAG=['obviously','as one does','for no reason','dramatically','which was extremely suspicious','and nobody asked','with alarming confidence','in a totally normal way','against all advice','twice','on a Tuesday','to thunderous applause'],
   LIB_END=['The end. Roll credits.','And that is why we have rules.','Nobody was ever the same.','Thank you, I will be here all week.','To be continued, probably.','Moral of the story: always check the dice.','No refunds.'];
 export function adLibFor(ids,salt=0){
-  const gl=ids.map(id=>{ const g=GLYPH_BY_ID.get(id); if(!g) throw new Error('unknown glyph '+id); return g; }); if(!gl.length) return {text:'',clauses:[]};
-  const r=rng(hash32('adlib:'+ids.join(',')+'#'+salt)), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
+  const gl=glyphsOf(ids); if(!gl.length) return {text:'',clauses:[]};
+  const r=rng(hash32('adlib:'+ids.join(',')+'#'+salt)), w=words(r), sizes=chunkSizes(gl.length,r), clauses=[]; let at=0;
   for(const sz of sizes){ const chim=gl.slice(at,at+sz).map(g=>({...g,a:pick(gl,r).a,d:pick(gl,r).d,v:pick(gl,r).v})); at+=sz;
-    let t=pick(P[sz],r)(chim,r); if(r()<.55) t+=', '+pick(LIB_TAG,r); clauses.push({glyphs:chim.map(x=>x.id),text:t}); }
-  const text=cap(pick(LIB_OPEN,r)+' '+clauses.map((c,i)=>(i?pick(LIB_JOIN,r)+' ':'')+c.text).join(', '))+'. '+pick(LIB_END,r);
+    let t=w.pat(P[sz])(chim,w); if(r()<.55) t+=', '+w.fresh(LIB_TAG); clauses.push({glyphs:chim.map(x=>x.id),text:t}); }
+  const open=w.fresh(LIB_OPEN), first=open.endsWith('.')?cap(clauses[0].text):clauses[0].text;
+  const text=[cap(open+' '+first),...clauses.slice(1).map(c=>cap(w.fresh(LIB_JOIN)+' '+c.text))].join('. ')+'. '+pick(LIB_END,r);
   return {text,clauses};
 }
 
