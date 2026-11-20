@@ -1,10 +1,10 @@
 ---
 id: PD-169
 title: 'Play option: gravity slider (0.25x-2x realistic, log scale)'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T20:21:00Z'
-updated_date: '2026-11-20T05:57:00Z'
+updated_date: '2026-11-20T06:12:00Z'
 labels:
   - v4.1
 dependencies: []
