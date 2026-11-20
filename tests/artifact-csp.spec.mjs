@@ -84,7 +84,7 @@ test('the artifact build runs Story Dice: setup preview, start, roll, ring tray,
   await expect(page.locator('#storytray .stile')).toHaveCount(5);
   for (let i = 0; i < 5; i++) await page.locator(`#storytray .stile[data-i="${i}"]`).click();
   await expect(page.locator('.story-sent')).toHaveText(/^[A-Z].*\.$/);
-  await page.click('text=Good · 2');
-  expect(await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).scores)).toEqual([2]);
+  await page.click('#scorepane .story-rate [data-rate=good]');   // PD-192: Bad 0 / Weak 3 / Fair 5 / Good 7 / Great 10
+  expect(await page.evaluate(() => window.__pd.GAMES.status(window.__pd.game.state).scores)).toEqual([7]);
   expect(errors).toEqual([]);
 });
