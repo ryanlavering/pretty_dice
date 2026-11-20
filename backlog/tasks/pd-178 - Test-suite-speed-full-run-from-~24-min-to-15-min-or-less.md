@@ -1,9 +1,10 @@
 ---
 id: PD-178
 title: 'Test suite speed: full run from ~24 min to 15 min or less'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-20T03:58:00Z'
+updated_date: '2026-11-20T07:14:00Z'
 labels:
   - v4.1
 dependencies: []
