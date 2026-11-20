@@ -3,7 +3,7 @@ id: PD-168
 title: >-
   Factoring pass S10: split sound, physics, nat20/nat1 effects, epoxy inclusion,
   thumbnail lab out of src/main.js
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T20:18:00Z'
 labels:
