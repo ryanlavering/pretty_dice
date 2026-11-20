@@ -1,9 +1,10 @@
 ---
 id: PD-166
 title: 'Story dice sets: see, edit and save from the Games menu'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T20:11:00Z'
+updated_date: '2026-11-20T06:09:00Z'
 labels:
   - v4.1
 dependencies: []
