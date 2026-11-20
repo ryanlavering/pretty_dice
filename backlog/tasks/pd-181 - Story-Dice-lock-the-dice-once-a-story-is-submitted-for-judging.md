@@ -1,9 +1,10 @@
 ---
 id: PD-181
 title: 'Story Dice: lock the dice once a story is submitted for judging'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T05:01:00Z'
+updated_date: '2026-11-20T05:32:00Z'
 labels:
   - v4.1
 dependencies: []
