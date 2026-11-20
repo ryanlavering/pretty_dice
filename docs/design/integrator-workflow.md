@@ -29,7 +29,7 @@ Written 2026-11-19. Companion to `docs/design/v4-sessions.md` (lanes, protocol, 
 ## Review artifacts
 - Build: `python3 scripts/build-static.py --artifact`, then `sed` the `<title>`; check the page boots under the artifact CSP with `node <scratch>/csptest.mjs <file> "<CSP>"` (expects `ready: true`); publish with the Artifact tool (same file path / `url` to update in place). The download-link warning is the app's export link, harmless.
 - "Tingles" (flashing dots, the `New` callouts) show only when `window.__PD_REVIEW` is set (artifact build) or `?new=1`. List: `NF_ALL` in `src/main.js`. At artifact build, entries whose card is Review Complete/Done are dropped (`window.__PD_RETIRED`). A page cannot read live comment state, so retirement happens at each republish. Release build = artifact build with the review flag stripped (no tingles). Planned: release tingles (PD-164).
-- The release artifact is private, review callouts stripped.
+- The release artifact is private, review callouts stripped. The standalone Story Dice Prototype artifact is retired (owner 2026-11-19): do not republish it; the v4.1 Dev artifact carries Story Dice.
 
 ## Release recipe (4.0 / 4.0.1 pattern)
 Settled when the owner has no new change requests on a normal review round. Then: guide + docs review, CHANGELOG and README, full suite green, ff `main` to the branch, annotated tag, push, verify with `git ls-remote`, release artifact. Lesson: never pipe a failing `git merge` into `tail` and chain more commands.
