@@ -979,7 +979,7 @@ let qbarSig='';
 /* the dock (PD-142.38 slice 2; was the quick roll bar): a formula box and the one Roll button. dockRoll is the single way to throw in roll view: the button, Enter in the box, R, a flick and a shake all call it */
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
 function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ startRoll(launch||(game?rolling:placed),false,vel); return; }
-  if(!game&&storyPrev&&!parseNotation(v,true).error){ gprefs.gameId='none'; gsave(); storyPreviewOff(); renderGame(); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look, rolls the player's own dice on the Table, and the Games tab goes back to 'none' so panel and table agree
+  if(!game&&storyPrev&&!parseNotation(v,true).error){ syncGameLook(true); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
   const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
@@ -1850,6 +1850,7 @@ function closeGamesUI(){ sset=null; storyPreviewOff(); document.body.classList.t
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
+if(gprefs.gameId==='none') gprefs.gameId='yahtzee';   // a 'No game' choice saved by an earlier build (removed) falls back to the default game
 const gsave=()=>{ try{ localStorage.setItem(GKEY,JSON.stringify(gprefs)); }catch{} };
 const gel=(tag,props={},...kids)=>{ const e=document.createElement(tag); Object.assign(e,props); for(const k of kids) e.append(k); return e; };
 function gameSync(){ const st=GAMES.status(game.state); held=new Set(st.held.map((h,i)=>h?i:-1).filter(i=>i>=0)); syncHoldRings(); }
@@ -2138,10 +2139,9 @@ function renderGameBody(){
   if(!game&&sset) return renderStorySets();
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
     if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+keptGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
-    const games=keptGames(), noGame=!game&&gprefs.gameId==='none', g=noGame?null:(games.find(x=>x.id===gprefs.gameId)||games[0]);   // PD-192 B: 'none' = just roll dice; only offered while no game runs
-    const sel=gel('select',{ariaLabel:'Game',onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); if(!game) sel.append(gel('option',{value:'none',textContent:'No game (just roll dice)',selected:noGame})); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:!noGame&&x.id===g.id}));
+    const games=keptGames(), g=games.find(x=>x.id===gprefs.gameId)||games[0];
+    const sel=gel('select',{ariaLabel:'Game',onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
-    if(noGame){ storyPreviewOff(); GP.append(gel('div',{className:'gstat'},gel('small',{textContent:'Pick a game above to set it up, or just roll your dice on the Table.'}))); return; }
     const cnt=gel('select',{onchange:()=>{ gprefs.count=+cnt.value; gsave(); renderGame(); }}); for(let n=g.minPlayers;n<=g.maxPlayers;n++) cnt.append(gel('option',{value:n,textContent:n+(n>1?' players':' player'),selected:n===Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers))}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Players'}),cnt));
     const n=Math.max(g.minPlayers,Math.min(gprefs.count,g.maxPlayers)), nameIn=[], botIn=[]; for(let i=0;i<n;i++){ const inp=gel('input',{type:'text',value:gprefs.names[i],maxLength:14,ariaLabel:'Player '+(i+1)+' name',oninput:()=>{ gprefs.names[i]=inp.value; gsave(); }}), bc=gel('input',{type:'checkbox',checked:!g.noBots&&!!gprefs.bots[i],ariaLabel:'Seat '+(i+1)+' is a computer player',onchange:()=>{ gprefs.bots[i]=bc.checked; gsave(); }}); nameIn.push(inp); botIn.push(bc); GP.append(gel('div',{className:'row'},inp,g.noBots?'':gel('label',{className:'botlbl'},bc,gel('span',{textContent:'Bot'})))); }

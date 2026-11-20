@@ -91,7 +91,7 @@ test('PD-191 (c2): reload with no paused game boots to the user\'s table too', a
   expect(await storyOn(app)).toMatchObject({ custom: true });
 });
 
-// PD-192 B: the 'none' entry, Start game in view, quick roll with a game selected but not started.
+// PD-192 B: Start game in view, quick roll with a game selected but not started.
 const gameSel = app => app.page.locator('#scorepane select').first();
 const startInView = async app => {
   const r = await app.page.evaluate(() => { const b = [...document.querySelectorAll('#scorepane button')].find(x => x.textContent.trim() === 'Start game'); if (!b) return null; const a = b.getBoundingClientRect(), p = b.closest('aside').getBoundingClientRect(); return { top: a.top, bottom: a.bottom, pTop: p.top, pBottom: p.bottom, vh: innerHeight }; });
@@ -100,33 +100,38 @@ const startInView = async app => {
   expect(r.top).toBeGreaterThanOrEqual(r.pTop - 1);
 };
 
-test('PD-192 B1: the Game selector has a first "none" entry that releases a selected game look', async ({ shared: app }) => {
+test('PD-192 B1: leaving by the Table tab or another game releases a selected game look; the selection stays and reopening Games previews it again', async ({ shared: app }) => {
   await app.reset(1921, { plain: true }); await app.nav.toPlay();
   const before = await mine(app), dock0 = await dock(app);
   await app.run(pd => pd.openGames());
-  expect(await gameSel(app).locator('option').first().getAttribute('value')).toBe('none');
+  expect(await gameSel(app).locator('option[value=none]').count(), 'no "none" entry').toBe(0);
   await pick(app, 'story'); await app.run(pd => { pd.step(20); pd.renderOnce(); });
   expect(await storyOn(app)).toMatchObject({ custom: true });
-  await pick(app, 'none'); await app.run(pd => { pd.step(20); pd.renderOnce(); });
+  await app.page.click('#paneltabs [data-pane=table]'); await app.run(pd => { pd.step(20); pd.renderOnce(); });
   await own(app, before, dock0, null);
-  expect(await gameSel(app).inputValue()).toBe('none');
-  await expect(app.page.getByRole('button', { name: 'Start game' })).toHaveCount(0);
-  // it survives a visit to another tab and back
-  await app.page.click('#paneltabs [data-pane=table]'); await app.page.click('#paneltabs [data-pane=games]');
-  expect(await gameSel(app).inputValue()).toBe('none');
-  // and picking a game again works
-  await pick(app, 'story'); expect(await storyOn(app)).toMatchObject({ custom: true });
-  await expect(app.page.getByRole('button', { name: 'Start game' })).toHaveCount(1);
+  await app.page.click('#paneltabs [data-pane=games]'); await app.run(pd => { pd.step(30); pd.renderOnce(); });
+  expect(await gameSel(app).inputValue(), 'selection kept').toBe('story');
+  expect(await storyOn(app), 'previewed again on reopen').toMatchObject({ custom: true });
+  await pick(app, 'yahtzee'); await app.run(pd => { pd.step(20); pd.renderOnce(); });
+  await own(app, before, dock0, null);
 });
 
-test('PD-192 B1: a running game does not offer none and keeps running when the setup is opened', async ({ shared: app }) => {
+test('PD-192 B1: a running game keeps running when the setup is opened', async ({ shared: app }) => {
   await app.reset(1922, { plain: true });
   await startStory(app);
   await app.run(pd => document.dispatchEvent(new CustomEvent('pd-open-games')));
-  expect(await gameSel(app).locator('option[value=none]').count()).toBe(0);
   await pick(app, 'yahtzee'); expect(await app.run(pd => !!pd.game)).toBe(true);
   await expect(app.page.getByRole('button', { name: 'Back to game' })).toHaveCount(1);
   await app.run(pd => pd.endGame());
+});
+
+test('PD-192 B1: a saved "none" game choice from an earlier build falls back to Yahtzee on load', async ({ shared: app }) => {
+  await app.reset(1926, { plain: true }); const page = app.page;
+  await page.evaluate(() => { const k = 'prettydice.games', o = JSON.parse(localStorage.getItem(k) || '{}'); o.gameId = 'none'; localStorage.setItem(k, JSON.stringify(o)); });
+  await page.reload(); await app.ready();
+  await app.nav.toPlay(); await app.run(pd => pd.openGames());
+  expect(await gameSel(app).inputValue()).toBe('yahtzee');
+  await expect(app.page.getByRole('button', { name: 'Start game' })).toHaveCount(1);
 });
 
 for (const [w, h, name] of [[1280, 800, 'desktop'], [390, 844, 'phone']]) {
@@ -155,7 +160,7 @@ test('PD-192 B3: Start game stays sticky in view when the panel scrolls (6 playe
 });
 
 for (const size of ['desktop', 'phone']) {
-  test(`PD-192 B4 ${size}: quick roll with Story Dice selected, not started: own table, own dice, Games back to none`, async ({ shared: app }) => {
+  test(`PD-192 B4 ${size}: quick roll with Story Dice selected, not started: own table, own dice, selection kept`, async ({ shared: app }) => {
     await app.reset(1925, { plain: true });
     if (size === 'phone') await app.page.setViewportSize({ width: 390, height: 780 });
     await app.nav.toPlay();
@@ -169,9 +174,10 @@ for (const size of ['desktop', 'phone']) {
     expect(await dock(app), 'dock one row').toBe(dock0);
     await expect(app.page.locator('#paneltabs [data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.page.click('#paneltabs [data-pane=games]');
-    expect(await gameSel(app).inputValue(), 'panel and table agree').toBe('none');
+    expect(await gameSel(app).inputValue(), 'selection unchanged').toBe('story');
     expect(await app.run(pd => !!pd.game)).toBe(false);
-    expect((await mine(app)).shape).toBe('custom');
+    await app.run(pd => { pd.step(30); pd.renderOnce(); });
+    expect(await storyOn(app), 'reopening Games previews the selection again').toMatchObject({ custom: true });
     await app.page.setViewportSize({ width: 1280, height: 800 });
   });
 }
