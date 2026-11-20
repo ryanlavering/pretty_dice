@@ -233,10 +233,10 @@ Each slice ships alone and keeps every existing test green. **P** = touches `par
 
 ## Open questions for the owner
 
-All seven earlier questions are answered (below). Remaining, small:
-1. Ordered deals over several packs: pack order as written (proposed) or alphabetical?
-2. Should an old app refuse a bag that contains face blocks (flip to v2 in slice 1) or merely drop the glyphs (stay v1 until slice 3)? Slice 1 stays v1.
-3. Design default faces: stored in the design file's optional `faces` (proposed); the bag then goes v2.
+All answered (2026-11-19, second round):
+1. Ordered deals over several packs: **pack order as written** (implemented).
+2. Old apps and face blocks: **quietly drop the glyphs**; the bag stays v1 until a later slice needs v2.
+3. Design default faces: **deferred** (decision 7 below stands as the eventual design; not in 4.1). It would make the bag v2 and is slice 3.
 
 ## Owner decisions (2026-11-19)
 
