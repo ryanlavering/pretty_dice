@@ -3,7 +3,8 @@
 embedded as data: URLs, so it runs from a double-click (file://) with no network and no vendor/ folder.
 Usage: python3 scripts/build-static.py            -> dist/pretty-dice-offline.html
        python3 scripts/build-static.py --artifact -> dist/pretty-dice-artifact.html (libraries from the jsDelivr/Google Fonts CDNs,
-       static import map and no fetch probe, for hosts whose CSP only allows those CDNs, e.g. a claude.ai artifact)"""
+       static import map and no fetch probe, for hosts whose CSP only allows those CDNs, e.g. a claude.ai artifact)
+       python3 scripts/build-static.py --artifact --release-tour -> dist/pretty-dice-release.html (release build: no review callouts, plus the one-time 'What's new' tour)"""
 import base64, json, pathlib, re, sys
 root = pathlib.Path(__file__).resolve().parent.parent
 v = root / 'vendor'
@@ -11,6 +12,8 @@ b64 = lambda data, mime: f"data:{mime};base64," + base64.b64encode(data).decode(
 js = lambda p: b64(p.read_bytes(), 'text/javascript')
 
 ARTIFACT = '--artifact' in sys.argv
+RELEASE_TOUR = '--release-tour' in sys.argv   # PD-164: with --artifact: the release build (no review flag, no retired list) plus the 'What's new in 4.1' tour
+TOUR_VERSION = '4.1'
 def retired_cards(tasks=None):   # PD-163: card ids whose board card is Review Complete or Done; the 'New' callouts for them are dropped from the artifact.
     # The page cannot read live comment state, so retirement happens at each republish. Fails soft (empty list) when the board is missing.
     import pathlib
@@ -124,9 +127,10 @@ if ARTIFACT:
     marker = "import * as GAMES from 'pd-games';"
     assert html.count(marker) == 1, 'index.html must import the engine with exactly: ' + marker
     html = html.replace(marker, games_bundle())
-    out = html.replace(m.group(0), '<script>window.__PD_REVIEW=1;window.__PD_RETIRED=' + json.dumps(retired_cards()) + ';</script>\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
+    flags = f"<script>window.__PD_RELEASE_TOUR='{TOUR_VERSION}';</script>" if RELEASE_TOUR else '<script>window.__PD_REVIEW=1;window.__PD_RETIRED=' + json.dumps(retired_cards()) + ';</script>'
+    out = html.replace(m.group(0), flags + '\n<script type="importmap">' + json.dumps({'imports': cdn}) + '</script>\n<link rel="stylesheet" href="' + fl + '">\n' + sounds_tag())
     (root / 'dist').mkdir(exist_ok=True)
-    p = root / 'dist/pretty-dice-artifact.html'; p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
+    p = root / ('dist/pretty-dice-release.html' if RELEASE_TOUR else 'dist/pretty-dice-artifact.html'); p.write_text(out); print(f'wrote {p} ({p.stat().st_size/1e6:.2f} MB)'); sys.exit(0)
 
 imports = {
     **games_imports(),

@@ -99,3 +99,7 @@ No coverage was removed by this work: no test was deleted, demoted or tagged `@s
 ## Workflow
 
 Run `npm test` (or `test:docker` when rendering changed) before moving a card to Needs Review. Cards that intentionally change the look update baselines in the same branch.
+
+## Release tour build (PD-164)
+
+`python3 scripts/build-static.py --artifact --release-tour` writes `dist/pretty-dice-release.html`: the artifact build with the review flag (`__PD_REVIEW`, `__PD_RETIRED`) left out and `window.__PD_RELEASE_TOUR='4.1'` set instead. The app then shows the one-time "What's new in 4.1" tour (`NF_RELEASE` in `src/main.js`, same dots and Prev/Next as the review callouts), remembered per version under `prettydice.tour.4.1`. Plain `--artifact` (review/dev build) and the normal app never show it. Spec: `tests/release-tour.spec.mjs`. For the next release bump `TOUR_VERSION` in the build script and rewrite `NF_RELEASE`.

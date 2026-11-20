@@ -1231,9 +1231,19 @@ const NF_ALL=[
   {id:'PD-169', rev:1, room:'play', anchor:'#gravity', text:'New Gravity slider under Roll feel: 1x is true realistic gravity for a 20 mm d20 (9.81 m/s2); the slider runs on a log scale from 1/64x to 2x, and the default (about 1/23 of realistic, the feel the dice always had) is marked. A throw is scaled with the gravity so it flies the same arc at any setting. Check: Play > Roll feel > Gravity: drag it right and flick or roll (dice fall faster but still travel and tumble), left (they hang longer), Reset returns to the default.', card:'PD-169'},
   {id:'PD-166', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice sets: see, edit and save the Story Dice sets you can make. Check: Games > Story Dice sets... > New Story set: pick glyph packs, 3-9 dice, d6/d8/d12/d20, a seed (Reroll seed), shuffled or in pack order, same or different dice; the preview and the set text update live. Save puts it in the bag (Bag > Sets), Use in game loads it into the Story Dice setup, Roll it rolls it on the table.', card:'PD-166'}
 ];
-const NEW_FEATURES=NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
+// PD-164: release tour. build-static.py --artifact --release-tour (the release build: no review flag) injects window.__PD_RELEASE_TOUR='4.1'; the same dot/box/Prev/Next machinery then walks NF_RELEASE instead of NF_ALL, remembered per version under its own key. Never active in a review build or the plain app. pane = Play tab to open first.
+const NF_RELEASE=[
+  {id:'T1', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Story Dice game: roll glyph dice, arrange them on the rings, and read the story they tell. Then rate it.'},
+  {id:'T2', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Glyph dice in normal rolls: type something like 5d12{noto#1} to roll dice with emoji or hieroglyph faces.'},
+  {id:'T3', rev:1, room:'play', pane:'table', anchor:'#gravity', text:'Gravity slider (Roll feel): make the table heavier or floatier. Reset brings back the default feel.'},
+  {id:'T4', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Yacht scoring that no longer misfires: on touch, tap to preview a box and long-press to score it.'},
+  {id:'T5', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Whoopsie! Undo (Yacht): scored the wrong box? You get 3 seconds to take it back.'},
+  {id:'T6', rev:1, room:'play', anchor:'#bagbtn', text:'Change a die\'s design during a game (the Bag): swap designs mid-game. Only the look changes, and your dice and holds stay put.'},
+].map(f=>({...f, card:"What's new in 4.1"}));
+const NF_TOUR=window.__PD_REVIEW?null:(window.__PD_RELEASE_TOUR||null);
+const NEW_FEATURES=NF_TOUR?NF_RELEASE:NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
 
-const NF_ON=!!(window.__PD_REVIEW||new URLSearchParams(location.search).get('new')==='1'), NFKEY='prettydice.seen';
+const NF_ON=!!(window.__PD_REVIEW||NF_TOUR||new URLSearchParams(location.search).get('new')==='1'), NFKEY=NF_TOUR?'prettydice.tour.'+NF_TOUR:'prettydice.seen';
 let nfSeen=new Set(); try{ nfSeen=new Set(JSON.parse(localStorage.getItem(NFKEY)||'[]')); }catch{}
 const nfKey=f=>f.id+'@'+f.rev, nfUnseen=()=>NEW_FEATURES.filter(f=>!nfSeen.has(nfKey(f)));
 const nfSave=()=>{ try{ localStorage.setItem(NFKEY,JSON.stringify([...nfSeen])); }catch{} };
@@ -1251,6 +1261,7 @@ function nfShow(f,dot){ document.querySelectorAll('.nfdot.open').forEach(d=>d.cl
 // PD-163: Prev / Next walk the unseen entries in list order (wrapping); an anchor on the other room is reached with the existing Design | Play switch (#roomsw), then the callout opens once its dot is visible.
 function nfStep(dir){ const un=nfUnseen(); if(!un.length) return; const i=un.indexOf(nfOpen); nfGo(un[((i<0?(dir>0?-1:0):i)+dir+un.length)%un.length]); }
 function nfGo(f){ nfCollapse(); const inDesign=document.body.classList.contains('design'); if(f.room&&((f.room==='design')!==inDesign)) $('roomsw').click();
+  if(f.pane){ const pt=document.querySelector('#paneltabs [data-pane='+f.pane+']'); if(pt&&pt.offsetParent) pt.click(); }
   let n=0; const iv=setInterval(()=>{ nfRender(); const d=nfDots.get(nfKey(f)); if(d&&!d.hidden){ clearInterval(iv); nfShow(f,d); } else if(++n>25){ clearInterval(iv); } },80); }
 const nfShown=t=>{ if(!t) return false; const r=t.getBoundingClientRect(), cs=getComputedStyle(t); return r.width>0&&r.height>0&&cs.visibility!=='hidden'&&cs.display!=='none'; };
 function nfAnchor(f){ const ts=[...document.querySelectorAll(f.anchor)]; let t=ts.find(nfShown)||ts.find(x=>x.closest("#dmenu"))||ts[0];   // PD-142.38.42: the anchor may list alternatives (#modesw,#roomsw); take the first one that is on screen
@@ -1260,10 +1271,10 @@ function nfRender(){ if(!NF_ON) return; const un=nfUnseen(), stack=new Map(); le
   for(const f of un){ const k=nfKey(f); let d=nfDots.get(k); if(!d){ d=el('button','nfdot'); d.type='button'; d.dataset.feature=f.id; d.setAttribute('aria-label','New: '+f.card); d.onclick=e=>{ e.stopPropagation(); if(nfOpen===f) nfCollapse(); else nfShow(f,d); }; document.body.append(d); nfDots.set(k,d); }
     const t=nfAnchor(f), r=t&&t.getBoundingClientRect(), vis=!!r&&r.width>0&&r.height>0&&getComputedStyle(t).visibility!=='hidden'&&getComputedStyle(t).display!=='none'&&r.bottom>0&&r.top<innerHeight;
     d.hidden=!vis; if(vis){ here++; const n=stack.get(t)||0; stack.set(t,n+1); d.style.left=(r.right-4-(n%6)*18)+'px'; d.style.top=(r.top+4+Math.floor(n/6)*18)+'px';   /* PD-142.38.67: more than six dots on one anchor wrap to a second row instead of running under the centred title toast */ } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
-  const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=here===un.length?`Seen all (${un.length} new)`:`Seen all (${un.length} new, ${here} on this screen)`; all.title=here===un.length?'':'The others are on another tab or room: Design/Play, Look/Bag/Sets, Table/Games/Log'; } }
+  const all=$('nfall'); if(all){ all.hidden=!un.length; const lb=NF_TOUR?'Skip tour':'Seen all'; all.querySelector('span').textContent=here===un.length?`${lb} (${un.length} new)`:`${lb} (${un.length} new, ${here} on this screen)`; all.title=here===un.length?'':'The others are on another tab or room: Design/Play, Look/Bag/Sets, Table/Games/Log'; } }
 const nfCollapsedOnce=new Set();
 if(NF_ON){ document.body.append(nfBox);
-  const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','','Seen all')); all.onclick=()=>{ closeDrawer(); nfRetire(NEW_FEATURES.map(nfKey)); }; $('dmenu').append(all);
+  const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','',NF_TOUR?'Skip tour':'Seen all')); all.onclick=()=>{ closeDrawer(); nfRetire(NEW_FEATURES.map(nfKey)); }; $('dmenu').append(all);
   document.addEventListener('pointerdown',e=>{ if(nfOpen&&!e.target.closest('.nfbox,.nfdot')){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   addEventListener('keydown',e=>{ if(e.key==='Escape'&&nfOpen){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   setInterval(()=>{ nfRender(); if(nfOpen){ const d=nfDots.get(nfKey(nfOpen)); if(d&&!d.hidden) nfPlace(nfOpen,d); else nfCollapse(); } },400); nfRender(); }
