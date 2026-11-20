@@ -2,7 +2,7 @@
 // - ?seed=N makes the app's own RNG (looks, throws) reproducible; Math.random is seeded too, for three.js ids and audio.
 // - Each test gets a fresh browser context (empty localStorage) and loads ?libs=local (no network).
 // - Any pageerror, console.error or alert/confirm dialog fails the test.
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, chromium } from '@playwright/test';
 import { navFor } from './nav.mjs';
 
 export { expect };
@@ -87,13 +87,16 @@ export const test = base.extend({
   /** One booted, paused page per worker, for tests that only drive __pd state (physics). Booting dominates test time.
    *  shared.reset(seed) exits any roll, restores every setting the page booted with and reseeds the app RNG,
    *  so each test starts from the same state whatever ran before it. Errors are still checked per test. */
-  _sharedPage: [async ({ browser }, use, workerInfo) => {
+  _sharedPage: [async ({}, use, workerInfo) => {
+    // Its own browser process, not the worker's: a fresh page's WebGL context takes ~18 s to create in a browser that also holds
+    // the paused shared page (PD-20.7). Many specs mix `shared` and `app` tests, so the projects alone cannot keep them apart.
+    const browser = await chromium.launch(workerInfo.project.use.launchOptions);
     const ctx = await browser.newContext({ viewport: SHARED_VIEWPORT, deviceScaleFactor: 1, baseURL: workerInfo.project.use.baseURL });
     const page = await ctx.newPage(), errors = watch(page);
     await page.addInitScript(seedMath, 1);
     await bootShared(page);
     await use({ page, errors });
-    await ctx.close();
+    await ctx.close(); await browser.close();
   }, { scope: 'worker' }],
 
   shared: async ({ _sharedPage }, use) => {

@@ -5,14 +5,14 @@
   "description": "Dev-only test tooling. The app itself needs no install (see README).",
   "type": "module",
   "scripts": {
-    "test": "sh scripts/with-test-lock.sh playwright test --project=fast",
+    "test": "sh scripts/with-test-lock.sh playwright test --project='fast-*'",
     "test:docker": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh",
     "test:update": "sh scripts/with-test-lock.sh sh scripts/test-docker.sh --update-snapshots",
     "test:slow": "sh scripts/with-test-lock.sh playwright test --project=slow --pass-with-no-tests",
     "probe": "node scripts/probe.mjs",
     "guide": "node scripts/guide-shots.mjs",
     "test:lock": "sh scripts/test-lock-status.sh",
-    "test:quick": "sh scripts/with-test-lock.sh playwright test --project=fast --grep \"physics.spec|logic.spec|bag.spec|bagsets.spec|@quick\" --grep-invert @slow"
+    "test:quick": "sh scripts/with-test-lock.sh playwright test --project='fast-*' --grep \"physics.spec|logic.spec|bag.spec|bagsets.spec|@quick\" --grep-invert @slow"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"

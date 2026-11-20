@@ -1,7 +1,7 @@
 #!/bin/sh
 # Runs a command while holding a machine-wide lock, so test runs from different sessions or worktrees queue up
 # instead of piling onto the same CPUs (software WebGL uses every core, so two runs at once time each other out).
-# Usage: sh scripts/with-test-lock.sh <command...>        e.g. sh scripts/with-test-lock.sh playwright test --project=fast
+# Usage: sh scripts/with-test-lock.sh <command...>        e.g. sh scripts/with-test-lock.sh playwright test --project='fast-*'
 #
 # The holder leaves a calling card (${LOCK}.card: who, where, branch, command, since, expected finish, note) and anyone
 # waiting leaves one in ${LOCK}.queue/, so sessions can see each other: `npm run test:lock` shows both.

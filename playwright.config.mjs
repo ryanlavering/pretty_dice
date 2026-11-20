@@ -2,6 +2,7 @@
 import { defineConfig } from '@playwright/test';
 
 const PORT = Number(process.env.PD_PORT) || 8124;   // worktrees set PD_PORT so they do not reuse another checkout's server
+const STATE_SPECS = /(logic|physics)\.spec\.mjs$/;   // specs on the `shared` page only
 const inDocker = !!process.env.PD_DOCKER;   // visual baselines are only made and compared inside the pinned image
 
 export default defineConfig({
@@ -24,8 +25,12 @@ export default defineConfig({
     // (about 5 s per design build) and the next WebGL sync call waits for all of it, which froze tests for up to 90 s. On the CPU it takes milliseconds.
     launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required', '--disable-accelerated-2d-canvas'] },
   },
+  // Shared-page specs and fresh-page specs live in separate projects, so they run in separate workers and browsers:
+  // in a browser that also holds the paused shared page, a new page's WebGL context takes ~18 s to create (PD-20.7).
+  // The fixtures enforce this split (tests/helpers/app.mjs). `--project='fast-*'` runs both.
   projects: [
-    { name: 'fast', testIgnore: /slow\// },
+    { name: 'fast-state', testMatch: STATE_SPECS },
+    { name: 'fast-ui', testIgnore: [/slow\//, STATE_SPECS] },
     { name: 'slow', testMatch: /slow\/.*\.spec\.mjs/ },
   ],
   webServer: { command: `node scripts/serve.mjs ${PORT}`, url: `http://127.0.0.1:${PORT}/index.html`, reuseExistingServer: !process.env.CI },

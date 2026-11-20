@@ -1,10 +1,10 @@
 {
  "dist/pretty-dice-artifact.html": {
-  "bytes": 942585,
-  "sha256": "a1315ead083166cc"
+  "bytes": 2102884,
+  "sha256": "887b59a8211907a0"
  },
  "dist/pretty-dice-offline.html": {
-  "bytes": 3755913,
-  "sha256": "742825e12e15ffe7"
+  "bytes": 4915630,
+  "sha256": "dd2cb45d8b298b3f"
  }
 }
