@@ -14,7 +14,7 @@ ROOTS = [os.path.join(HERE, '..', '..', 'pretty_dice-v4.1'), os.path.join(HERE, 
 
 GROUPS = [
   ('Story Dice review tweaks', ['PD-171', 'PD-172', 'PD-173', 'PD-174', 'PD-175', 'PD-176']),
-  ('Story Dice features', ['PD-160', 'PD-167', 'PD-166', 'PD-161']),
+  ('Story Dice features', ['PD-160', 'PD-167', 'PD-166']),
   ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169']),
   ('Reviewed and landed (4.1 so far)', ['PD-154', 'PD-157', 'PD-156', 'PD-158', 'PD-159', 'PD-162', 'PD-163', 'PD-165']),
 ]
@@ -23,7 +23,7 @@ GROUPS = [
 GATES = [
   ('Story Dice review tweaks landed and reviewed (PD-171 to PD-176)', False, 'owner threads on the v4.1 Dev artifact resolve one by one'),
   ('Grammar slice 1 (PD-167) landed', True, 'c3c514d: NdS{pack#seed} faces in normal rolls; owner review and 3 small decisions pending'),
-  ('PD-166 set editor (Games menu) and PD-161 glyph controls: in or out of 4.1?', False, 'owner decision needed: they are 4.1 cards but large'),
+  ('PD-166 Story Dice set editor (Games menu) landed; PD-161 glyph controls moved to 4.2', False, 'owner decided 2026-11-19; PD-166 lane running'),
   ('PD-155 bad-6 check: add the read-face vs scored-value self-check, or close as not reproducible', False, ''),
   ('PD-168 factoring pass S10 (main.js split) done before the final regression', False, 'mechanical; golden must stay unchanged'),
   ('PD-164 release tingles: owner picks the 5 to 10 highlights', False, 'needs the final feature list'),
