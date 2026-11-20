@@ -13,6 +13,18 @@ async function start(app, seed) {
 }
 // a touch tap: the click event of a finger carries pointerType 'touch' (a mouse click scores at once, PD-165)
 const touchTap = (app, sel) => app.page.evaluate(sel => { const el = document.querySelector(sel); el.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true })); el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); }, sel);
+// Timing-sensitive touch sequences run INSIDE one page.evaluate: the gaps are in-page waits, so Playwright round-trip latency (huge under suite load) cannot stretch the 700 ms double-tap window or the long-press timer.
+// steps: ['tap', sel] | ['down', sel] | ['up', sel] (up also fires the click) | ['wait', ms]; returns nothing.
+const touchSeq = (app, steps) => app.page.evaluate(async steps => {
+  const P = (el, type) => el.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', bubbles: true }));
+  for (const [op, a] of steps) {
+    if (op === 'wait') { await new Promise(r => setTimeout(r, a)); continue; }
+    const el = document.querySelector(a); if (!el) throw new Error('touchSeq: no element for ' + a);
+    if (op === 'tap') { P(el, 'pointerdown'); P(el, 'click'); }
+    else if (op === 'down') P(el, 'pointerdown');
+    else if (op === 'up') { P(el, 'pointerup'); P(el, 'click'); }
+  }
+}, steps);
 const total = app => app.page.locator('#scorepane tr.tot td').nth(1).textContent();
 
 test('desktop mouse: a single click scores; touch: a single tap only previews, a double tap scores', async ({ shared: app }) => {
@@ -23,10 +35,9 @@ test('desktop mouse: a single click scores; touch: a single tap only previews, a
   await expect(app.page.locator('#scorepane td.prev')).toHaveCount(1);
   let b = await st(app); expect(b.rollsUsed).toBe(a.rollsUsed); expect(await total(app)).toBe(t0);
   expect(await app.page.locator('#dockhint').textContent()).toContain('to score it');
-  await app.page.waitForTimeout(800);   // a slow second tap is only another preview
-  await touchTap(app, '#scorepane td.prev');
+  await touchSeq(app, [['wait', 800], ['tap', '#scorepane td.prev']]);   // a slow second tap is only another preview
   b = await st(app); expect(b.rollsUsed).toBe(a.rollsUsed);
-  await touchTap(app, '#scorepane td.prev');   // the second tap inside 700 ms scores
+  await touchSeq(app, [['tap', '#scorepane td.prev']]);   // the second tap inside 700 ms scores
   b = await st(app); expect(b.rollsUsed).toBe(0); expect(b.round).toBe(a.round + 1);
   await expect(app.page.locator('[data-whoop]').first()).toBeVisible();
   await app.page.click('#scorepane [data-whoop]');
@@ -73,10 +84,10 @@ test('long press scores; single-tap mode scores at once', async ({ shared: app }
   await start(app, 54);
   const a = await st(app);
   await app.run(pd => { pd.gprefs.scoreMode = 'long'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly
-  const ev = (type, ms) => app.page.evaluate(([type]) => { const el = document.querySelector('#scorepane td.pick.best, #scorepane td.pick'); if (!el) return; el.dispatchEvent(new PointerEvent(type, { pointerType: 'touch', bubbles: true })); if (type === 'pointerup') el.dispatchEvent(new PointerEvent('click', { pointerType: 'touch', bubbles: true })); }, [type]);
-  await ev('pointerdown'); await app.page.waitForTimeout(150); await ev('pointerup');   // a short touch press only previews
+  const pick = '#scorepane td.pick.best, #scorepane td.pick';
+  await touchSeq(app, [['down', pick], ['wait', 150], ['up', pick]]);   // a short touch press only previews
   expect((await st(app)).round).toBe(a.round);
-  await ev('pointerdown'); await app.page.waitForTimeout(700); await ev('pointerup');
+  await touchSeq(app, [['down', pick], ['wait', 700], ['up', pick]]);   // held past the long-press timer
   expect((await st(app)).round).toBe(a.round + 1);
   await app.page.click('#scorepane [data-whoop]');   // take it back, then try single-tap mode
   await app.run(pd => { pd.gprefs.scoreMode = 'single'; pd.renderGame(); });   // the menu is touch-only (PD-172): set the pref directly
@@ -131,10 +142,10 @@ test('PD-179: unset score entry = long press on touch; mouse click scores; expli
   // finger tap whose click reports pointerType 'mouse' (and a double of them): previews only
   await fire('pointerdown', { pointerType: 'touch' }); await fire('pointerup', { pointerType: 'touch' }); await click({});
   expect((await st(app)).round).toBe(a.round);
-  await app.page.waitForTimeout(100); await click({});   // emulated clicks without a pointerdown after a touch: still no score
+  await click({});   // emulated clicks without a pointerdown after a touch: still no score
   expect((await st(app)).round).toBe(a.round);
   // long press scores
-  await fire('pointerdown', { pointerType: 'touch' }); await app.page.waitForTimeout(700); await fire('pointerup', { pointerType: 'touch' });
+  await touchSeq(app, [['down', sel], ['wait', 700]]); await fire('pointerup', { pointerType: 'touch' });   // (the click that follows a long press is swallowed by lpAt)
   expect((await st(app)).round).toBe(a.round + 1);
   await app.page.click('#scorepane [data-whoop]');
   // a real mouse pointer clicks and scores at once
