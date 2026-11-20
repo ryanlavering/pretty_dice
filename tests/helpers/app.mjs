@@ -134,6 +134,7 @@ export const test = base.extend({
           const pd = window.__pd, boot = structuredClone(window.__pdBoot); if (plain) boot.filigree = 'none'; pd.pause(); if (pd.game) pd.endGame(); if (pd.rolling) pd.exitRoll(true);
           for (const k of Object.keys(pd.state)) if (!(k in boot)) delete pd.state[k];
           Object.assign(pd.state, boot); document.getElementById('dname').value = '';   // every setting back to how the page booted
+          pd.resetUiState();   // the remembered tab per room (a test that left Play on Games or Log made the next toPlay() land there; an open Bag set editor hid the set list of the next test)
           pd.reseed(seed); await pd.buildDice(); pd.applyLook();
         }, [seed, plain]);
       },

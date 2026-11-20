@@ -17,6 +17,11 @@ test.describe('room tabs', () => {
     await expect(p.locator('#paneltabs button[data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.nav.toDesign(); await expect(p.locator('#settingspane')).toHaveAttribute('data-tab', 'look'); await expect(p.locator('#paneltabs button[data-pane=look]')).toHaveCount(0);   // PD-142.38.41: Design is always Look
   });
+  test('shared.reset() puts the remembered tab of each room back to Look / Table (a test that left Play on Log leaked into the next one)', async ({ shared: app }) => {
+    const p = app.page; await app.nav.openLog(); await expect(p.locator('#paneltabs button[data-pane=log]')).toHaveAttribute('aria-selected', 'true');
+    await app.reset(7); await app.nav.toPlay();
+    await expect(p.locator('#paneltabs button[data-pane=table]')).toHaveAttribute('aria-selected', 'true'); await expect(p.locator('#sec-roll')).toBeVisible();
+  });
   test('the Bag button opens the Bag view; its Sets tab shows the set list (PD-142.38.43)', async ({ shared: app }) => {
     const p = app.page; await app.nav.toDesign();
     await p.click('#bagbtn'); await p.click('#sheettabs [data-tab=sets]'); await expect(p.locator('#bagsheet')).toBeVisible(); await expect(p.locator('#setlist')).toBeVisible();
