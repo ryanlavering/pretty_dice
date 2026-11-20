@@ -1,9 +1,10 @@
 ---
 id: PD-171
 title: 'Story Dice: dragged dice grow too big and overlap other dice'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T22:12:00Z'
+updated_date: '2026-11-20T04:38:00Z'
 labels:
   - v4.1
 dependencies: []

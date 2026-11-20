@@ -3,9 +3,10 @@ id: PD-175
 title: >-
   Story Dice: ring numbers and rings are drawn in front of the dice (should be
   behind)
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T22:24:00Z'
+updated_date: '2026-11-20T04:38:00Z'
 labels:
   - v4.1
 dependencies: []

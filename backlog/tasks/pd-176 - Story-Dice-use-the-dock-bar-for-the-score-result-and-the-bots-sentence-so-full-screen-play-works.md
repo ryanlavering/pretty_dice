@@ -3,9 +3,10 @@ id: PD-176
 title: >-
   Story Dice: use the dock bar for the score/result and the bot's sentence so
   full-screen play works
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-19T22:26:00Z'
+updated_date: '2026-11-20T04:38:00Z'
 labels:
   - v4.1
 dependencies: []
