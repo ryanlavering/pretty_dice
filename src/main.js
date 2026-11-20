@@ -661,11 +661,11 @@ function designFitsGame(id){ if(!gameRun()) return true; const d=id==='draft'?ba
 let gameKeep=null;   // while a design loads into a running game its shape and notation stay the game's   // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
-  const gr=gameRun(), keep=gr?{shape:state.shape,notation:state.notation}:null, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed; gameKeep=keep;   // PD-158: in a game only the look changes; the dice stay where they lie
+  const gr=gameRun(), keep=gr?{shape:state.shape,notation:state.notation}:null, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed, inDesign=designRoom&&gameRun(); gameKeep=keep;   // PD-158: in a game only the look changes; the dice stay where they lie
   try{ if(!skipSync) syncLive();
     if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
     else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
-    if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; gameSync(); renderGame(); }
+    if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; if(inDesign){ designRoom=true; exitRoll(true); } gameSync(); renderGame(); }   // PD-180: a swap made in the Design room stays there (the dice were rebuilt to lie as they did; Play shows them)
     save();
   }finally{ actBusy=false; gameKeep=null; }
   if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
@@ -1400,7 +1400,7 @@ function startRoll(launch=false,place=false,vel=null){        // launch: re-roll
     b.quaternion.set(rq.x,rq.y,rq.z,rq.w); d.mesh.quaternion.copy(rq);
     b.velocity.set(-px*.4+R()*4,-2-rng()*4,-pz*.4+R()*4);
     b.angularVelocity.set(R()*40,R()*40,R()*40); }
-    const layFrom=!place?null:(pendingLay&&pendingLay.n===dice.length?pendingLay:(lastLay&&lastLay.key===rollKey&&lastLay.n===dice.length?lastLay:null));
+    const layFrom=!place?null:(pendingLay&&pendingLay.n===dice.length&&pendingLay.poses.length===dice.length?pendingLay:(lastLay&&lastLay.key===rollKey&&lastLay.n===dice.length?lastLay:null));
     if(layFrom){ const L=layFrom.poses[i]; b.position.set(L.p.x,L.p.y+.02,L.p.z); b.quaternion.copy(L.q); d.mesh.quaternion.copy(L.q); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }   // put back where it last lay
     hookHit(b);   // one sound per pair
     world.addBody(b); return b;});
@@ -1509,7 +1509,7 @@ $('back').onclick=()=>goDesign();
 /* PD-142.38 slice 4: two rooms. Design | Play is a pure switch, it never throws. designRoom is the room the owner chose; it matters in a game, where the dice stay on the mat while the Design room shows the look (a running game survives the visit, and Play carries a dot) */
 var designRoom=true;
 function goDesign(){ designRoom=true; if(rolling||game) exitRoll(true); syncMode(); }
-function goPlay(){ designRoom=false; if(!rolling) startRoll(false,true); syncMode(); }   // placed unrolled; only the dock's Roll throws
+function goPlay(){ designRoom=false; if(!rolling) startRoll(false,true); syncMode(); if(game&&!game.setup) renderGame(); }   // PD-180: a render made in the Design room (no roll view) put the story dice into the flat tiles; Play re-syncs so the 3D arrangement comes back   // placed unrolled; only the dock's Roll throws
 /* PD-142.38.47: the dock formula box (Play) and the Custom set (Design: state.shape/notation) are one formula. On a room switch the side that was just edited wins: Design -> Play loads the box from the design's formula when that changed; Play -> Design writes the box into the design (a plain dN selects that shape, anything else is Custom). Shapes that are not a dN or Custom (rd12, Standard 7) are left alone. */
 const stateFormula=()=>state.shape==='custom'?state.notation:/^d\d+$/.test(state.shape)?'1'+state.shape:null;
 const normF=v=>{ const p=parseNotation(v,true); return p.error?null:fmtNotation(p.terms,p.mod,p.group); };
@@ -1861,7 +1861,8 @@ function gameBank(){ if(botLock()) return; faceCheck('before bank'); const r=GAM
   game.state=r.state; gsel.clear(); const b=r.events.find(e=>e.type==='banked'); gflash='bank'; gameMsg=b?'Banked '+(b.points??b.amount??''):'Banked'; clearHolds(); gameSync(); renderGame(); }
 /* PD-156: scoring is deliberate (double tap / long press; a single tap previews) and a score can be taken back for 3 s ('Whoopsie'); PD-165: a mouse click scores at once on desktop, deliberate entry is for touch/pen. prev is the engine state before the score; it is what a reload would see while the window is open (a pending score is never saved). Bots never get a window, and a bot's turn waits for it to close. */
 const WHOOP_MS=3000; let gpv=null, whoop=null, lpAt=0, lastPtr='mouse'; addEventListener('pointerdown',e=>{ lpAt=0; lastPtr=e.pointerType||'mouse'; },true);
-const isTouchy=e=>{ const t=(e&&e.pointerType)||lastPtr; return t==='touch'||t==='pen'; };   // PD-165: by the pointer of the event, not the screen width
+const isTouchy=e=>{ if(e&&e.type==='click'&&e.detail===0&&!e.pointerType) return false; return lastPtr==='touch'||lastPtr==='pen'; };   // PD-179: the pointer is the one of the last pointerdown (a click's own pointerType is 'mouse' on some touch browsers, and emulated mouse events after a touch carry no pointerdown); a click with detail 0 is the keyboard
+const scoreModeOf=()=>gprefs.scoreMode||'long';   // PD-179: unset pref = long press (only touch/pen ever reads it; a stored explicit choice wins)   // PD-165: by the pointer of the event, not the screen width
 const whoopLabel=()=>'Whoopsie! Undo ('+(Math.max(0,whoop.until-Date.now())/1000).toFixed(1)+'s)';
 function whoopTick(){ if(!whoop) return; document.querySelectorAll('[data-whoop]').forEach(b=>{ b.textContent=whoopLabel(); }); }
 function whoopEnd(){ if(!whoop) return; clearTimeout(whoop.t); clearInterval(whoop.iv); whoop=null; if(game&&!game.setup){ renderGame(); } }
@@ -1876,11 +1877,11 @@ function gameScore(cat){ if(botLock()) return; faceCheck('before score entry'); 
 /* a tap on a scorecard box: the mode is a preference (double tap by default); a short tap always only previews unless the mode is 'single' */
 function scoreTap(cat,label,pts,ev){ if(lpAt){ lpAt=0; return; }   // the click that ends a long press is not a tap
   if(!isTouchy(ev)){ gameScore(cat); return; }   // PD-165: mouse (and keyboard) click scores; Whoopsie is the safety net
-  const mode=gprefs.scoreMode||'double';
+  const mode=scoreModeOf();
   if(mode==='single'){ gameScore(cat); return; }
   if(mode==='double'&&gpv&&gpv.cat===cat&&Date.now()-gpv.t<700){ gameScore(cat); return; }
   gpv={cat,t:Date.now(),pts,label,mode}; renderGame(); }   // the hint goes in the dock (no layout shift between the two taps)
-function scorePress(td,cat){ const mode=gprefs.scoreMode||'double'; if(mode!=='long') return; let t=0; const off=()=>{ clearTimeout(t); };
+function scorePress(td,cat){ const mode=scoreModeOf(); if(mode!=='long') return; let t=0; const off=()=>{ clearTimeout(t); };
   td.addEventListener('pointerdown',e=>{ off(); if(!isTouchy(e)) return; t=setTimeout(()=>{ lpAt=Date.now(); gameScore(cat); },450); }); for(const ev of ['pointerup','pointerleave','pointercancel']) td.addEventListener(ev,off); td.addEventListener('contextmenu',e=>e.preventDefault()); }
 const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
 const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
@@ -2139,7 +2140,7 @@ function renderGameBody(){
         cell(tr,p,txt,cls.trim(),fn,cat); }); body.append(tr); });
     if(sec.subtotal!=null||sec.bonus){ const tr=gel('tr'); tr.append(gel('td',{textContent:si===0?'Upper bonus':'Yacht bonus'})); S.players.forEach((_,p)=>{ const c=cards[p].sections[si]; cell(tr,p,String(c.bonus||''),p===st.player&&!over?'cur':''); }); body.append(tr); } });
   const tt=gel('tr',{className:'tot'}); tt.append(gel('td',{textContent:'Total'})); S.players.forEach((_,p)=>cell(tt,p,String(cards[p].total),p===st.player&&!over?'cur':'')); body.append(tt); tb.append(body); if(whoop) GP.append(gel('div',{className:'row'},whoopBtn())); GP.append(tb);
-  { const ms=gel('select',{ariaLabel:'Score entry',onchange:()=>{ gprefs.scoreMode=ms.value; gpv=null; gsave(); renderGame(); }}); for(const [v,t] of [['double','Double tap to score'],['long','Long press to score'],['single','Single tap scores']]) ms.append(gel('option',{value:v,textContent:t,selected:(gprefs.scoreMode||'double')===v})); if(navigator.maxTouchPoints>0||matchMedia('(any-pointer:coarse)').matches) GP.append(gel('div',{className:'row'},gel('label',{textContent:'Score entry'}),ms)); }   // PD-172: touch devices only; a mouse click scores directly
+  { const ms=gel('select',{ariaLabel:'Score entry',onchange:()=>{ gprefs.scoreMode=ms.value; gpv=null; gsave(); renderGame(); }}); for(const [v,t] of [['double','Double tap to score'],['long','Long press to score'],['single','Single tap scores']]) ms.append(gel('option',{value:v,textContent:t,selected:scoreModeOf()===v})); if(navigator.maxTouchPoints>0||matchMedia('(any-pointer:coarse)').matches) GP.append(gel('div',{className:'row'},gel('label',{textContent:'Score entry'}),ms)); }   // PD-172: touch devices only; a mouse click scores directly
 }
 let cbet={chip:null,who:null,rules:false,n:1,ready:false};   // n: how many of the chosen chip (or units) one tap adds; drag a chip up or down to change it (PD-142.33.1)
 const betsLocked=()=>gameAwaiting||(rolling&&!settled)||!!(game&&GAMES.status(game.state).rolling);   // owner rule: no betting while the dice are rolling, until the roll settles and is reported

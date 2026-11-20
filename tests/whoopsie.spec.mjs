@@ -17,6 +17,7 @@ const total = app => app.page.locator('#scorepane tr.tot td').nth(1).textContent
 
 test('desktop mouse: a single click scores; touch: a single tap only previews, a double tap scores', async ({ shared: app }) => {
   await start(app, 51);
+  await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });   // PD-179: the unset default on touch is long press
   const a = await st(app), t0 = await total(app), sel = '#scorepane td.pick.best, #scorepane td.pick';
   await touchTap(app, sel);
   await expect(app.page.locator('#scorepane td.prev')).toHaveCount(1);
@@ -119,3 +120,30 @@ for (const touch of [false, true]) {
     await ctx.close();
   });
 }
+
+// PD-179: on touch the default is long press; a single tap (even one whose click claims to be a mouse click, as on some phones) only previews
+test('PD-179: unset score entry = long press on touch; mouse click scores; explicit double is honoured', async ({ shared: app }) => {
+  await start(app, 57);
+  await app.run(pd => { delete pd.gprefs.scoreMode; pd.renderGame(); });
+  const sel = '#scorepane td.pick.best, #scorepane td.pick', a = await st(app);
+  const fire = (type, init) => app.page.evaluate(([sel, type, init]) => { const el = document.querySelector(sel); if (el) el.dispatchEvent(new PointerEvent(type, { bubbles: true, ...init })); }, [sel, type, init]);
+  const click = init => app.page.evaluate(([sel, init]) => { const el = document.querySelector(sel); el.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1, ...init })); }, [sel, init]);
+  // finger tap whose click reports pointerType 'mouse' (and a double of them): previews only
+  await fire('pointerdown', { pointerType: 'touch' }); await fire('pointerup', { pointerType: 'touch' }); await click({});
+  expect((await st(app)).round).toBe(a.round);
+  await app.page.waitForTimeout(100); await click({});   // emulated clicks without a pointerdown after a touch: still no score
+  expect((await st(app)).round).toBe(a.round);
+  // long press scores
+  await fire('pointerdown', { pointerType: 'touch' }); await app.page.waitForTimeout(700); await fire('pointerup', { pointerType: 'touch' });
+  expect((await st(app)).round).toBe(a.round + 1);
+  await app.page.click('#scorepane [data-whoop]');
+  // a real mouse pointer clicks and scores at once
+  await app.page.click(sel);
+  expect((await st(app)).round).toBe(a.round + 1);
+  await app.page.click('#scorepane [data-whoop]');
+  // an explicit stored 'double' still works as a double tap
+  await app.run(pd => { pd.gprefs.scoreMode = 'double'; pd.renderGame(); });
+  await touchTap(app, sel); expect((await st(app)).round).toBe(a.round);
+  await touchTap(app, '#scorepane td.prev'); expect((await st(app)).round).toBe(a.round + 1);
+  await app.page.click('#scorepane [data-whoop]');
+});
