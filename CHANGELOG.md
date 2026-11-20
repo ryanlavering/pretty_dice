@@ -2,6 +2,24 @@
 
 User-facing changes. Versions are git tags.
 
+## 4.1 (unreleased)
+
+### New
+- **Story Dice.** A new game: roll a set of glyph dice (emoji, symbols, icons, hieroglyphs and more), put them in story order on numbered rings, and rate the sentence they tell as Bad, Fair or Good. After the roll the dice fly into rows facing the camera, and the roll log keeps each roll's story. Computer players tell their own ridiculous stories, and you judge them: the game waits for your grade, even at a table of only computer players. While a story is being judged the dice stay locked. The story sentence appears on the mat, wraps to fit, and the rating buttons sit in the dock, so you can play with the side pane closed. Dice you drag grow only a little and stay clear of their neighbours; the arrangement re-spreads when you resize the window or turn the phone, and uses one row on a landscape phone. A game with more than five dice splits into two rows.
+- **Story Dice sets.** Under Games, **Story Dice sets...** lets you see, create, edit, copy and delete sets (glyph packs, number and size of dice, seed, same or different dice, shuffled or in pack order) with a live preview and copyable set text. Saved sets are ordinary bag sets.
+- **Glyph dice in normal rolls.** A roll formula can deal glyph faces, for example `5d12{noto#1}` or `3d6{memes&noto#2}@bone`. The same text deals the same faces on every device, and keep highest, advantage and the rest work on them.
+- **Gravity slider.** Play > Roll feel > Gravity runs from 1/64x to 2x on a log scale, where 1x is real gravity for a 20 mm d20. The default is the slow-motion feel the dice always had (about 1/23 of realistic) and is marked; Reset puts it back. Throws scale with gravity, so a flick travels and tumbles about the same at any setting.
+- **Change a die's design during a game.** In a running game you can pick another design from the Bag, a set with the same dice, or press Randomize: only the look changes. Dice, values and holds stay put. A design or set with different dice (another shape or count) is still declined with a message.
+
+### Changed
+- **Yacht: no more accidental scores.** On a touch screen, a tap on the scorecard only previews a box; long press it to score (the default; a **Score entry** menu under the card switches to double tap, and shows only on touch screens). A single tap never scores on a phone. With a mouse, a single click scores.
+- **Whoopsie! Undo.** After a Yacht score, a 3-second **Whoopsie! Undo** button with a countdown takes the score back. Computer players wait for the window to close.
+- **Antique relief preset removed.** The Patina and relief sliders still do the same by hand.
+- **Safety net for a misread die.** After dice settle, and again before a score is taken, the game re-checks that each die's value matches the face showing, and corrects it if not.
+
+### Under the hood
+Main code split into modules (sound, geometry, materials and more) with no change in behaviour, and faster, sharded tests in CI.
+
 ## 4.0.1 (2026-11-18)
 
 Fixes from live play of 4.0.
