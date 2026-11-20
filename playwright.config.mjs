@@ -10,7 +10,7 @@ export default defineConfig({
   timeout: process.env.CI ? 150_000 : 90_000,   // software WebGL on a 4-core runner is slow
   expect: { timeout: 15_000, toHaveScreenshot: { maxDiffPixelRatio: 0.01 } },
   fullyParallel: true,
-  workers: process.env.PD_WORKERS ? +process.env.PD_WORKERS : process.env.CI ? 1 : 2,   // 4-core CI runner: one browser gets every core   // software WebGL is CPU-heavy; keep this low
+  workers: process.env.PD_WORKERS ? +process.env.PD_WORKERS : process.env.CI ? 1 : 4,   // PD-178: 4 is the knee on 16 cores once ?lite removed the idle rendering (2: 195 s, 4: 149 s, 6: 160 s, 8: 165 s on a 102-test sample); CI runners have 4 cores: 1
   retries: 1,   // a lone boot timeout under CPU load (software WebGL uses every core) shows as 'flaky' instead of failing; real bugs fail both tries
   forbidOnly: !!process.env.CI,
   ignoreSnapshots: !inDocker,

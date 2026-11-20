@@ -97,7 +97,7 @@ test.describe('golden: model', () => {
 test.describe('golden: boot', () => {
   for (const [seed, query] of [[1, ''], [9, 'shape=d20'], [17, 'shape=set7']])
     test(`fresh boot seed ${seed} ${query}: look, first roll and a rendered frame`, async ({ app }) => {
-      await app.open({ seed, query }); await install(app.page);
+      await app.open({ seed, query, lite: false }); await install(app.page);
       // no frame of the showcase: its spin depends on how long the page ran before pause(); the settled roll is a fixed pose
       const r = await app.run(pd => { const g = window.__g; pd.pause(); const look = g.q(pd.designToJSON());
         const roll = pd.simRoll(); pd.renderOnce();
@@ -135,7 +135,7 @@ for (const [w, h] of [[390, 740], [1280, 800]])
   test.describe(`golden: screens ${w}x${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
     test('Play, Design, Bag view and Games', async ({ app }) => {
-      const p = app.page; await app.open({ seed: 3 }); await install(p);
+      const p = app.page; await app.open({ seed: 3, lite: false }); await install(p);
       const shots = {};
       await app.nav.toPlay(); await app.run(pd => { pd.simRoll(); }); await settle(p); shots.play = await snapDom(p);
       await app.nav.toDesign(); await settle(p); shots.design = await snapDom(p);

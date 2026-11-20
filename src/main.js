@@ -26,9 +26,10 @@ const SEED=+new URLSearchParams(location.search).get('seed')||0; let rng=SEED?mu
 const __bs=async(l,f)=>{ if(window.__bootStage){ window.__bootStage(l,f); await window.__bootYield(); } };   // boot progress: label + fraction, then let the browser paint it
 await __bs('Setting up the 3D scene',.30);
 const stage=document.getElementById('stage');
-const renderer=new THREE.WebGLRenderer({antialias:true});
+const LITE=new URLSearchParams(location.search).has('lite');   // ?lite: test-only render profile (PD-178): no MSAA, no shadow pass, and the animation loop does not draw (physics, state and DOM run as usual; __pd.renderOnce still draws, which is what tests that read pixels call)
+const renderer=new THREE.WebGLRenderer({antialias:!LITE});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=!LITE; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.5;
 stage.prepend(renderer.domElement);
 const scene=new THREE.Scene();
@@ -1648,7 +1649,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     { const drop=ROLL_DROP*camBlend*(1-topBlend); if(drop>.0005){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion); camera.lookAt(tgt.clone().addScaledVector(up,drop*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*rr)); } } }   /* PD-142.38.61: aim the camera a little above the mat centre so the dice sit lower in the frame (resting dice ~40% up from the bottom instead of ~55%); the Design showcase and the top-down check are untouched */
   tickStoryFly(dt);
   table.visible=camBlend>.01; table.material.opacity=camBlend;
-  renderer.render(scene,camera);
+  if(!(LITE&&dtOver===undefined&&window.__ready)) renderer.render(scene,camera);   // ?lite: only renderOnce (and the boot frames) draw
 };
 
 /* ---------- thumbnail lab (dev tool, PD-131) ----------

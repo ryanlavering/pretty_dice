@@ -3,7 +3,7 @@
 import { test, expect } from './helpers/app.mjs';
 
 const setup = async app => {
-  await app.open(); await app.nav.toPlay();
+  await app.open({ lite: false }); await app.nav.toPlay();   // lite: false: the real render loop (a flick is read against real frames)
   await app.page.fill('#rollbox', '3d6'); await app.page.click('#rollbtn');
   await app.run(pd => pd.simRoll());
 };

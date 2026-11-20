@@ -53,11 +53,14 @@ const helpers = page => ({
   },
 });
 
+// PD-178: tests boot the app with ?lite (no MSAA, no shadow pass, no per-frame draw: swiftshader drew ~8 frames/s at ~11 cores, even for pages nobody looked at).
+// __pd.renderOnce() still draws, so tests that read pixels work; a spec that needs the real render loop passes open({ lite: false }); PD_NOLITE=1 turns it off everywhere.
+const LITE = process.env.PD_NOLITE ? '' : '&lite';
 const SHARED_VIEWPORT = { width: 960, height: 600 };
 /** Boot (or re-boot) the shared worker page: empty storage, seed 1, paused, and the booted state kept for reset(). */
 const bootShared = async (page, again = false) => {
   if (again) await page.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); }).catch(() => {});
-  await page.goto('/index.html?libs=local&multipoop&seed=1'); await ready(page);
+  await page.goto(`/index.html?libs=local&multipoop&seed=1${LITE}`); await ready(page);
   await page.evaluate(() => { window.__pd.pause(); window.__pdBoot = structuredClone(window.__pd.state); window.__pdGames = localStorage.getItem('prettydice.games'); });
 };
 
@@ -68,15 +71,15 @@ export const test = base.extend({
     const app = {
       ...helpers(page),
       errors,
-      /** Load the app. query: extra URL params (string). secret: false leaves out ?multipoop (PD-162, the code that unlocks Craps). seed: RNG seed. storage: object written to localStorage before the first load. */
-      async open({ query = '', seed = 1, storage = null, secret = true } = {}) {
+      /** Load the app. query: extra URL params (string). lite: false uses the real render loop (see LITE). secret: false leaves out ?multipoop (PD-162, the code that unlocks Craps). seed: RNG seed. storage: object written to localStorage before the first load. */
+      async open({ query = '', seed = 1, storage = null, secret = true, lite = true } = {}) {
         await page.addInitScript(seedMath, seed);
         if (storage) await page.addInitScript(storage => {
           if (sessionStorage.getItem('pd-test-seeded')) return;   // only on the first load, so reload tests see what the app saved
           for (const [k, v] of Object.entries(storage)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
           sessionStorage.setItem('pd-test-seeded', '1');
         }, storage);
-        await page.goto(`/index.html?libs=local${secret ? '&multipoop' : ''}&seed=${seed}${query ? '&' + query : ''}`);
+        await page.goto(`/index.html?libs=local${secret ? '&multipoop' : ''}&seed=${seed}${lite ? LITE : ''}${query ? '&' + query : ''}`);
         await ready(page);
       },
     };
