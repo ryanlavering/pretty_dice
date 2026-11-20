@@ -209,3 +209,27 @@ for (const vp of [{ width: 1280, height: 800 }, { width: 390, height: 740 }]) te
     await app.run(pd => { for (let i = 0; i < 90; i++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(700); await app.page.screenshot({ path: `${shot}/story-${vp.width}-partial-pane.png` });
   }
 });
+
+test('story dice: a game with only bots stops in the rate phase until a human grades it (PD-173)', async ({ shared: app }) => {
+  const errors = []; app.page.on('pageerror', e => errors.push(e.message));
+  await app.reset(81); await app.run(pd => { if (pd.game) pd.endGame(); pd.openGames(); });
+  await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.page.selectOption('#scorepane select >> nth=1', '2');
+  await app.page.locator('#scorepane input[type=number]').first().evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
+  await app.page.locator('#scorepane input[type=number]').nth(1).evaluate(e => { e.value = '3'; e.dispatchEvent(new Event('change')); });
+  await app.page.check('#scorepane input[aria-label="Seat 1 is a computer player"]'); await app.page.check('#scorepane input[aria-label="Seat 2 is a computer player"]');
+  await app.nav.roll();
+  expect(await app.run(pd => pd.GAMES.status(pd.game.state).bots)).toEqual([0, 1]);
+  for (let i = 0; i < 60; i++) {   // the test page does not step physics by itself: settle the bot's throw by hand
+    const st = await app.run(pd => pd.GAMES.status(pd.game.state)); if (st.phase === 'rate') break;
+    await app.run(pd => { for (let k = 0; k < 60; k++) pd.renderOnce(1 / 60); }); await app.page.waitForTimeout(250);
+  }
+  const rated = () => app.run(pd => { const s = pd.GAMES.status(pd.game.state); return { phase: s.phase, round: s.round, player: s.player, scores: s.scores }; });
+  const at = await rated(); expect(at.phase).toBe('rate'); expect(at.round).toBe(1);
+  await app.page.waitForTimeout(4000);   // nothing rates it, nothing moves on
+  expect(await rated()).toEqual(at);
+  await expect(app.page.locator('#qbar [data-act=rate-good]')).toBeVisible(); await expect(app.page.locator('#storytray .ssent')).toContainText('Judge ');
+  await app.page.locator('#qbar [data-act=rate-good]').click();
+  const next = await app.run(pd => { const s = pd.GAMES.status(pd.game.state); return { scores: s.scores, player: s.player, phase: s.phase }; });
+  expect(next.scores[at.player]).toBe(2); expect(next.player).not.toBe(at.player);   // the grade advanced to the other bot
+  expect(errors).toEqual([]);
+});

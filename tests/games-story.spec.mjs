@@ -37,7 +37,7 @@ test('story: game ends after the set number of stories each; ranking; scorecard;
   expect(status(solo).phase).toBe('over'); expect(result(solo).ranking[0].total).toBe(2);
 });
 
-test('story bot: rolls, fills the rings one die per step, humans rate; an all-bot table rates itself @quick', () => {
+test('story bot: rolls, fills the rings one die per step, humans rate; an all-bot table waits for a human grade (PD-173) @quick', () => {
   let s = newGame('story', { players: ['H', 'Bot 2'], bots: [1], options: { dice: 4, rounds: 1 } });
   expect(botMove(s, { seed: 1 })).toBeNull();                                   // the human's turn
   s = ok(s, { type: 'roll', values: [1, 2, 3, 4] }); s = ok(s, { type: 'arrange', order: [0, 1, 2, 3] }); s = ok(s, { type: 'rate', rating: 'fair' });
@@ -54,6 +54,11 @@ test('story bot: rolls, fills the rings one die per step, humans rate; an all-bo
   expect(t.turn.order).toEqual(s.turn.order);
   s = ok(s, { type: 'rate', rating: 'good' }); expect(status(s).phase).toBe('over');
   let b = newGame('story', { players: ['Bot 1', 'Bot 2'], bots: [0, 1], options: { dice: 3, rounds: 1 } });
-  for (let i = 0; i < 12 && status(b).phase !== 'over'; i++) { const a = botMove(b, { seed: i }); expect(a).not.toBeNull(); b = a.type === 'roll' ? ok(b, { type: 'roll', values: [1, 2, 3] }) : ok(b, a); }
+  for (let i = 0; i < 12 && status(b).phase !== 'rate'; i++) { const a = botMove(b, { seed: i }); expect(a).not.toBeNull(); b = a.type === 'roll' ? ok(b, { type: 'roll', values: [1, 2, 3] }) : ok(b, a); }
+  expect(status(b).phase).toBe('rate'); expect(botMove(b, { seed: 3 })).toBeNull();   // an all-bot table stops and waits for the human judge
+  expect(status(ok(b, { type: 'rate', rating: 'good' })).round).toBe(1);   // the human's grade moves it on
+  const auto = botMove(b, { seed: 3, autoRate: true }); expect(auto.type).toBe('rate');   // explicit test hook for automated play
+  b = ok(b, auto);
+  for (let i = 0; i < 12 && status(b).phase !== 'over'; i++) { const a = botMove(b, { seed: i, autoRate: true }); expect(a).not.toBeNull(); b = a.type === 'roll' ? ok(b, { type: 'roll', values: [1, 2, 3] }) : ok(b, a); }
   expect(status(b).phase).toBe('over');
 });

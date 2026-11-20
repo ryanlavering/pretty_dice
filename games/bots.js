@@ -125,15 +125,15 @@ function liarsMove(s, api, seat, rng) {
   return { type: 'bid', quantity: raises[0].quantity, face: raises[0].face };
 }
 
-// Story Dice: the bot rolls, then fills the rings one die per step in a seeded order (its 'choice'; the engine knows only face numbers, the UI writes the ad-lib). Humans rate its story; with no humans left it rates itself.
-function storyMove(s, rng) {
+// Story Dice: the bot rolls, then fills the rings one die per step in a seeded order (its 'choice'; the engine knows only face numbers, the UI writes the ad-lib). A human always grades its story (PD-173), even at an all-bot table: the human is the judge; only the explicit test hook opts.autoRate lets a table rate itself.
+function storyMove(s, rng, opts = {}) {
   const t = s.turn, n = s.options.dice;
   if (!t.faces) return { type: 'roll' };
   const seed = [...(t.faces.join(',') + '|' + t.round + '|' + t.player)].reduce((h, c) => (Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0), 2166136261), r = mulberry32(seed), target = [...Array(n).keys()];
   for (let i = n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [target[i], target[j]] = [target[j], target[i]]; }
   const filled = t.order.filter(x => x !== null).length;
   if (filled < n) return { type: 'arrange', order: target.map((d, k) => k <= filled ? d : null) };
-  return s.bots.length === s.players.length ? { type: 'rate', rating: ['fair', 'good', 'good', 'bad'][Math.floor(rng() * 4)] } : null;
+  return opts.autoRate ? { type: 'rate', rating: ['fair', 'good', 'good', 'bad'][Math.floor(rng() * 4)] } : null;
 }
 
 export function botMove(s, opts = {}, api) {
@@ -153,7 +153,7 @@ export function botMove(s, opts = {}, api) {
     case 'shipcaptain': return shipMove(s, api);
     case 'bunco': return { type: 'roll' };
     case 'liarsdice': return liarsMove(s, api, seat, rng);
-    case 'story': return storyMove(s, rng);
+    case 'story': return storyMove(s, rng, opts);
   }
   return null;
 }
