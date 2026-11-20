@@ -1,9 +1,10 @@
 ---
 id: PD-180
 title: 'Story Dice: changing the dice design mid-game drops to the 2D view'
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T04:38:00Z'
+updated_date: '2026-11-20T05:24:00Z'
 labels:
   - v4.1
 dependencies: []
