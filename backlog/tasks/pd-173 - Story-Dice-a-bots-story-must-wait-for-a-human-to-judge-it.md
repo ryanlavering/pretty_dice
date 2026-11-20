@@ -1,7 +1,7 @@
 ---
 id: PD-173
 title: 'Story Dice: a bot''s story must wait for a human to judge it'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-19T22:14:00Z'
 updated_date: '2026-11-20T00:49:00Z'
