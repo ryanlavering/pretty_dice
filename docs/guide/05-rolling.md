@@ -42,4 +42,4 @@ The **Sound** settings are further down the same tab; see [Sound](09-sound.md).
 
 ## Looking at the result
 
-Hold the total at the top of the table, or hold `t`, for a top-down look at the dice (on a phone, hold the eye button in the top-right corner, where a right thumb reaches it without covering the dice); the controls step aside while you hold. Press `h`, or use **Full view** in the Utilities drawer, to hide the panel; the arrow at the screen edge brings it back.
+Hold the total at the top of the table, or hold `t`, for a top-down look at the dice (on a phone, hold the eye button in the top-right corner, where a right thumb reaches it without covering the dice; a quick tap on it only shows **Hold to look from above**); the controls step aside while you hold. Press `h`, or use **Full view** in the Utilities drawer, to hide the panel; the arrow at the screen edge brings it back.

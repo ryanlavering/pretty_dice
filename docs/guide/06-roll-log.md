@@ -4,7 +4,7 @@ Every roll is recorded. Open the **Log** tab in the Play room to see it. If the 
 
 ![The roll log open beside a settled die](img/12-roll-log.png)
 
-Each entry shows the total, the time and what was rolled. A roll typed into the dock or a notation box shows its formula (for example `d20` or `4x 1d20+2`); a roll of a saved set shows the set's name, and a ⚡ after it when you used the set's quick roll (⚡) button. For rolls of several dice or a group roll, the entry lists each die or each roll.
+Each entry shows the total, the time and what was rolled. A roll typed into the dock or a notation box shows its formula (for example `d20` or `4x 1d20+2`); a roll of a saved set shows the set's name, and a ⚡ after it when you used the set's quick roll (⚡) button. For rolls of several dice or a group roll, the entry lists each die or each roll. A roll of glyph dice (Story Dice, or a formula like `5d12{noto#1}`) names the pictures in the entry and shows no total, since a sum of pictures means nothing; the roll's story order is kept with it. Applying a set in the middle of a game neither rolls nor logs.
 
 ![On a phone: the Log tab in the panel below the table](img/27-phone-log.png)
 
