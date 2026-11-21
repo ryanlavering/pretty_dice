@@ -105,3 +105,49 @@ test('flick up has a smaller depth component than flick down; sideways unchanged
     expect(m, `resting height after flick (${dx},${dy})`).toBeGreaterThan(25); expect(m, 'on screen').toBeLessThan(75);
   }
 });
+
+// PD-199 rework: for organic gestures (touch flick, mouse drag-release) the launch height follows the gesture speed; only R / Roll / shake stay random.
+for (const type of ['touch', 'mouse']) {
+  test(`${type}: launch speed follows the gesture (faster, longer drags launch higher); typical flick keeps today's average`, async ({ app }) => {
+    await setup(app);
+    const vy = async (dx, ms, seed) => { await reroll(app, seed); return (await flickRun(app, type, dx, 0, ms, seed)).my; };
+    const mean = async (dx, ms) => { let t = 0; for (const s of [3, 7, 11, 19]) t += await vy(dx, ms, s); return t / 4; };
+    const lazy = await mean(70, 440);   // 0.16 px/ms (a flick needs > 60 px and < 450 ms to count): the slowest end
+    const slow = await mean(120, 400), mid = await mean(200, 200), typ = await mean(200, 120), fast = await mean(200, 60);   // 0.3, 1.0, 1.67, 3.3 px/ms
+    console.log(`FLICK launch vy (${type}) 0.3px/ms=${slow.toFixed(1)} 1.0=${mid.toFixed(1)} 1.67=${typ.toFixed(1)} 3.3=${fast.toFixed(1)}`);
+    expect(lazy, 'slowest gesture >= the 8 x 1.25 minimum (less the 5% jitter)').toBeGreaterThan(8 * 1.25 * .94); expect(lazy).toBeLessThan(8 * 1.25 * 1.06); expect(lazy).toBeLessThan(slow + .01); expect(slow).toBeLessThan(mid); expect(mid).toBeLessThan(typ); expect(typ).toBeLessThan(fast);
+    expect(fast / slow, 'a hard flick is clearly higher than a lazy one').toBeGreaterThan(1.5);
+    expect(typ, 'typical flick: within 10% of today\'s mean 16.5 x 1.25').toBeGreaterThan(16.5 * 1.25 * .9); expect(typ).toBeLessThan(16.5 * 1.25 * 1.1);
+    // same gesture, different rng: only the +-5% jitter
+    const a = await vy(200, 120, 3), b = await vy(200, 120, 19); expect(Math.abs(a - b) / typ).toBeLessThan(.12);
+    // a longer drag at the same duration is faster
+    expect(await mean(300, 120)).toBeGreaterThan(await mean(150, 120));
+  });
+}
+test('R key / Roll button throw keeps the full random launch spread (not gesture driven)', async ({ app }) => {
+  await setup(app);
+  const ys = [];
+  for (const s of [3, 5, 7, 11, 13, 17, 19, 23]) ys.push(await app.run((pd, sd) => { pd.reseed(sd); pd.dockRoll(true); return pd.bodies.reduce((t, b) => t + b.velocity.y, 0) / pd.bodies.length; }, s));
+  console.log('FLICK R-path vy', ys.map(v => v.toFixed(1)).join(' '));
+  for (const v of ys) { expect(v).toBeGreaterThan(12.9); expect(v).toBeLessThan(20.1); }   // 13..20, no 1.25 boost
+  expect(Math.max(...ys) - Math.min(...ys), 'still random').toBeGreaterThan(1.5);
+});
+
+test('slowest gesture still launches, travels and bounces (not a drop); airtime and travel vs median', async ({ app }) => {
+  await setup(app);
+  const fl = (dx, ms) => app.run((pd, a) => {
+    pd.reseed(11); pd.simRoll({});
+    const v = pd.flickVel(a.dx, 0, a.ms); pd.reseed(118); pd.startRoll(true, false, v);
+    const b = pd.bodies, y0 = pd.TABLE_Y; let air = 0, bounces = 0, wasUp = false, path = 0, net = 0; const last = b.map(q => [q.position.x, q.position.z]), st = last.map(q => q.slice());
+    for (let i = 0; i < 600; i++) { pd.drift(1); const y = b[0].position.y - y0;
+      b.forEach((q, k) => { path += Math.hypot(q.position.x - last[k][0], q.position.z - last[k][1]) / b.length; last[k] = [q.position.x, q.position.z]; });
+      if (y > .6) { wasUp = true; air = (i + 1) / 60; } else if (wasUp && y < .6) { bounces++; wasUp = false; } }
+    net = last.reduce((t, q, k) => t + Math.hypot(q[0] - st[k][0], q[1] - st[k][1]), 0) / b.length;
+    return { air, bounces, travel: path, net, vy0: v.sp };
+  }, { dx, ms });
+  const slowest = await fl(70, 440), median = await fl(200, 120);
+  console.log('FLICK slowest', JSON.stringify(slowest), 'median', JSON.stringify(median));
+  expect(slowest.air, 'leaves the surface for a real flight, not a drop').toBeGreaterThan(.25);
+  expect(slowest.travel, 'travels (mean path of the dice) at least about a die width (1.6 u)').toBeGreaterThan(1.6);
+  expect(slowest.bounces, 'lands and bounces back up at least once (1-2 seen)').toBeGreaterThanOrEqual(1);
+});
