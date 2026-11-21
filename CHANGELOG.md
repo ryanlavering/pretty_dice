@@ -7,6 +7,7 @@ User-facing changes. Versions are git tags.
 ### Changed
 - **Designs are looks.** Picking a design no longer changes your dice; a Suggested chip offers the design's dice.
 - **Sets can carry a look.** A set can name a design: picking the set brings that look; Keep my look turns it off.
+- **Dice settle without wiggling at the default gravity too.** A die rocking on an edge now topples to flat instead of rocking or freezing leaning.
 
 ## 4.1 (2026-11-21)
 
