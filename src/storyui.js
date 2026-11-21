@@ -22,7 +22,8 @@ export function createStoryTray(host){
   const change=a=>{ if(cur) cur.onOrder(a.rings); };
   let sent=null;   // PD-176: the finished story's sentence is drawn in the pool zone (where the unplaced dice were)
   function placeSent(){ if(!cur||!cur.sentence){ if(sent) sent.hidden=true; return; } if(!sent||!sent.isConnected){ sent=document.createElement('div'); sent.className='ssent'; root.append(sent); }
-    const pool=poolOf(arr()), n=NN(), sz=size(), top=Math.round(ringY()+(two(n)?sz*1.08:0)+sz+8), room=H()-top-76;   // PD-184: straight under the last ring row (not down at the pool row), so there is room for two or more lines
+    const pool=poolOf(arr()), n=NN(), sz=size(), desk=W()>=900&&H()>=520, base=ringY()+(two(n)?sz*1.08:0)+sz, top0=Math.round(base+(desk?Math.min(48,Math.max(16,sz*.22)):8)), top=H()-top0-76>=60?top0:Math.round(base+8), room=H()-top-76;   // PD-196: on a desktop-size stage the 3D dice and rings draw a little beyond their tile boxes, so leave a clear gap (phones keep 8 px)
+      // PD-184: straight under the last ring row (not down at the pool row), so there is room for two or more lines
     sent.hidden=pool.length>0||room<30; sent.replaceChildren(); const b=document.createElement('b'); b.textContent=cur.sentencePre||''; sent.append(b,document.createTextNode(cur.sentence)); sent.style.top=top+'px'; sent.style.maxHeight=room+'px';
     let fs=W()<520?15:19; sent.style.fontSize=fs+'px'; while(fs>11&&sent.scrollHeight>sent.clientHeight+1){ fs--; sent.style.fontSize=fs+'px'; } }   // wrap, and shrink the type rather than clip
   function build(){ root.textContent=''; const n=cur.glyphs.length;
