@@ -64,7 +64,12 @@ def card_files():
             m = re.search(r'^id:\s*(\S+)', t, re.M)
             if not m:
                 continue
-            g = lambda k: (re.search(r'^%s:\s*(.*)$' % k, t, re.M) or [None, ''])[1].strip().strip("'\"")
+            def g(k):
+                # a YAML folded/literal scalar ("title: >-" or "|") keeps its text on the indented lines below
+                mm = re.search(r'^%s:[ \t]*([>|][-+]?)[ \t]*\n((?:[ \t]+.*\n?)+)' % k, t, re.M)
+                if mm:
+                    return ' '.join(l.strip() for l in mm.group(2).splitlines() if l.strip())
+                return (re.search(r'^%s:[ \t]*(.*)$' % k, t, re.M) or [None, ''])[1].strip().strip("'\"")
             cards[m.group(1)] = dict(id=m.group(1), title=g('title'), status=g('status'), prio=g('priority'),
                                      labels=re.findall(r'^  - (\S+)$', t.split('---')[1], re.M))
     return cards
