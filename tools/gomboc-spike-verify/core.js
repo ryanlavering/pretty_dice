@@ -1,12 +1,28 @@
 // ---- Goemboc core: shape, support function, rolling dynamics (no dependencies) ----
+// Real spherical harmonics, degrees 2..Lmax (degree 0,1 excluded: degree 1 would move the centre of mass), orthonormal on the unit sphere.
+const SH=(function(){
+ function make(Lmax){ const terms=[]; for(let l=2;l<=Lmax;l++) for(let m=0;m<=l;m++){ let f=1; for(let k=l-m+1;k<=l+m;k++) f/=k; // (l-m)!/(l+m)!
+   let nrm=Math.sqrt((2*l+1)/(4*Math.PI)*f)*(m>0?Math.SQRT2:1); terms.push({l,m,c:0,n:nrm,type:'c'}); if(m>0) terms.push({l,m,c:0,n:nrm,type:'s'}); }
+  const N=terms.length; const Q=[]; for(let l=0;l<=Lmax;l++) Q.push(new Float64Array(l+1));
+  const mc=new Float64Array(Lmax+1), ms=new Float64Array(Lmax+1);
+  function eval(x,y,z,out){ // fills out[i] = Y_i(x,y,z)
+    mc[0]=1; ms[0]=0; for(let m=1;m<=Lmax;m++){ mc[m]=mc[m-1]*x-ms[m-1]*y; ms[m]=ms[m-1]*x+mc[m-1]*y; }
+    let df=1; for(let m=0;m<=Lmax;m++){ Q[m][m]=df; df*=(2*m+1); if(m+1<=Lmax) Q[m+1][m]=z*(2*m+1)*Q[m][m]; for(let l=m+2;l<=Lmax;l++) Q[l][m]=((2*l-1)*z*Q[l-1][m]-(l+m-1)*Q[l-2][m])/(l-m); }
+    for(let i=0;i<N;i++){ const t=terms[i]; const q=Q[t.l][t.m]*t.n; out[i]=t.type==='c'?q*mc[t.m]:q*ms[t.m]; } }
+  return {N,terms,eval,Lmax}; }
+ return {make}; })();
+
 const Gomboc=(function(){
 const PI=Math.PI;
 // Sloan (2023) second construction: r^4 = 1 + 4*beta*sin(phi)*cos(theta - P(phi)), P(phi)=(3pi/2)(cos phi - cos^3 phi/3).
 // With u=(x,y,z) a unit vector: sin(phi)cos(theta-P) = x cosP + y sinP, cos(phi)=z (smooth everywhere, poles included).
-function Shape(beta){
-  const b4=4*beta; const S=this; S.beta=beta;
+function Shape(arg){
+  const S=this; let beta=null; if(typeof arg==='number'){ beta=arg; } S.beta=beta;
   // radial function about the construction origin O
-  S.r=function(x,y,z){ const c=z, P=1.5*PI*(c-c*c*c/3); return Math.sqrt(Math.sqrt(1+b4*(x*Math.cos(P)+y*Math.sin(P)))); };
+  if(beta!==null){ const b4=4*beta; S.r=function(x,y,z){ const c=z, P=1.5*PI*(c-c*c*c/3); return Math.sqrt(Math.sqrt(1+b4*(x*Math.cos(P)+y*Math.sin(P)))); }; }
+  else { // spherical-harmonic body: r^4 = 1 + sum_{l=2..Lmax} c_i Y_i (no degree 1 => centre of mass exactly at the origin)
+    const shb=SH.make(arg.Lmax), cf=Float64Array.from(arg.c), buf=new Float64Array(shb.N), N=shb.N; S.sh=arg;
+    S.r=function(x,y,z){ shb.eval(x,y,z,buf); let s=1; for(let i=0;i<N;i++) s+=cf[i]*buf[i]; return Math.sqrt(Math.sqrt(s)); }; }
   // quadrature: volume, centroid c, second moments about c (Gauss-Legendre in cos(phi), uniform in theta)
   const NZ=160, NT=320; const {nodes,weights}=gaussLegendre(NZ);
   let V=0, cx=0,cy=0,cz=0; const M=[0,0,0,0,0,0]; // xx,yy,zz,xy,xz,yz about O
@@ -75,7 +91,7 @@ function matvec(M,v){ return [M[0]*v[0]+M[1]*v[1]+M[2]*v[2],M[3]*v[0]+M[4]*v[1]+
 function solve3(A,b){ const [a,bb,c,d,e,f,g,h,i]=A; const det=a*(e*i-f*h)-bb*(d*i-f*g)+c*(d*h-e*g);
   return [ (b[0]*(e*i-f*h)-bb*(b[1]*i-f*b[2])+c*(b[1]*h-e*b[2]))/det, (a*(b[1]*i-f*b[2])-b[0]*(d*i-f*g)+c*(d*b[2]-b[1]*g))/det, (a*(e*b[2]-b[1]*h)-bb*(d*b[2]-b[1]*g)+b[0]*(d*h-e*g))/det ]; }
 function Body(shape,opt){
-  opt=opt||{}; const B=this; B.S=shape; B.g=opt.g||9.81; B.damp=opt.damp!=null?opt.damp:0.35; // rolling dissipation: torque = -damp*Iavg*om  (1/s)
+  opt=opt||{}; const B=this; B.S=shape; B.g=opt.g||9.81; B.damp=opt.damp!=null?opt.damp:0.35; B.dampQ=opt.dampQ||0; // rolling dissipation: torque = -damp*Iavg*om  (1/s)
   B.q=[1,0,0,0]; B.om=[0,0,0]; B.pos=[0,0]; B.t=0; B.guess=null; B.rs={h:0,x:[0,0,0],n:[0,0,0]}; B.J=[0,0,0,0,0,0,0,0,0]; B.minN=1e9; B.Fz=0;
   B.Ib=shape.I; B.m=1;
   const nb=[0,0,0], pw=[0,0,0];
@@ -92,7 +108,7 @@ function Body(shape,opt){
     const m=B.m, pp=p[0]*p[0]+p[1]*p[1]+p[2]*p[2];
     const A=[Iw[0]+m*(pp-p[0]*p[0]),Iw[1]-m*p[0]*p[1],Iw[2]-m*p[0]*p[2], Iw[3]-m*p[1]*p[0],Iw[4]+m*(pp-p[1]*p[1]),Iw[5]-m*p[1]*p[2], Iw[6]-m*p[2]*p[0],Iw[7]-m*p[2]*p[1],Iw[8]+m*(pp-p[2]*p[2])];
     const Iom=matvec(Iw,om), wIw=cross(om,Iom), pdw=cross(pd,om), ppdw=cross(p,pdw), pxg=cross(p,[0,0,-B.g*m]);
-    const rhs=[-wIw[0]+m*ppdw[0]-pxg[0]-B.damp*B.S.Iavg*om[0], -wIw[1]+m*ppdw[1]-pxg[1]-B.damp*B.S.Iavg*om[1], -wIw[2]+m*ppdw[2]-pxg[2]-B.damp*B.S.Iavg*om[2]];
+    const dm=B.damp+B.dampQ*Math.hypot(om[0],om[1],om[2]); const rhs=[-wIw[0]+m*ppdw[0]-pxg[0]-dm*B.S.Iavg*om[0], -wIw[1]+m*ppdw[1]-pxg[1]-dm*B.S.Iavg*om[1], -wIw[2]+m*ppdw[2]-pxg[2]-dm*B.S.Iavg*om[2]];
     const al=solve3(A,rhs); const pxa=cross(p,al);
     const F=[m*(pdw[0]+pxa[0]), m*(pdw[1]+pxa[1]), m*(pdw[2]+pxa[2]+B.g)]; // contact force (F = m(a_G - g))
     const vG=cross(p,om);

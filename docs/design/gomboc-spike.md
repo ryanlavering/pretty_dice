@@ -122,3 +122,90 @@ Custom smooth collision shape in cannon: cannon-es shapes are a closed set (Sphe
 * As a novelty die shape `d1` in Look inside the main app via cannon-es: not feasible with the faceted hull (no N from 100 to 2000 gives the property; best case still more than 60 resting orientations). It is also not a good fit for the product: the settle time of the real thing is on the order of a minute of simulation time at physical scale, which is slow for a dice roll (the page needs a x4 time-lapse), and the result is always 1 so there is nothing to randomise.
 * If the owner still wants it in the app: build it as a special-case mode outside the cannon world: a single Gomboc on the mat with this spike's own integrator (about 250 lines already written and tested; per step about 1 ms in a headless browser, so a x4 time-lapse costs 8 ms per frame), drawn with the same mesh, and replaced by a cheap scripted ending (blend to the stable orientation after the creep phase) when it must settle in a few seconds. Estimated 2 to 3 days (mode plumbing, camera, sound, no dice-dice collisions, a "Gomboc" entry in Look, tests), with the honesty caveat that the shortened ending is not the real dynamics.
 * Recommendation: ship as a tool page only (this artifact), not as a Look shape. Revisit the app special-case mode only if the owner wants a joke die and accepts one-die-only and a time-lapse.
+
+---
+
+# Round 2 (owner feedback: faster settling, more pronounced shape, shape selector)
+
+Sections 1 to 6 above describe round 1 (Sloan near-sphere, c = 0.6). Round 2 changes the page defaults (rolling resistance 2.0 instead of 0.6), adds a second, more pronounced shape and a shape selector, and adds a skip-to-rest button, a rolling-resistance slider and a "colour by radius" toggle. The Sloan shape and its beta slider are unchanged and remain selectable.
+
+## 7. Settling time versus accuracy (rolling resistance)
+
+Same harness as section 4 (`batch.mjs`, Sloan beta = 0.03, 50 random rolls per setting, g = 654, step 1/120, rest = |omega| < 0.05 rad/s for 1.5 s, then 30 s more). Only the viscous torque rate c (1/s) changes. "False rest" = a roll whose rest detector fires while the body is on the valley floor far from the true stable point (here: more than 10 degrees away at detection or still more than 10 degrees away 30 s later).
+
+| setting | c | rested | time to rest, sim s (mean, sd, range) | angle from stable point at rest detection (mean, max) | 30 s later (mean, max) | swings (mean, range) | false rests |
+|---|---|---|---|---|---|---|---|
+| round 1 | 0.6 | 50/50 | 60.8, 3.9, 49.8 to 67.3 | 1.52 deg, 4.31 deg | 0.095 deg, 0.325 deg | 40, 21 to 131 | 0 |
+| 2x | 1.2 | 50/50 | 31.3, 2.0, 26.5 to 34.8 | 0.84 deg, 3.47 deg | 0.004 deg, 0.011 deg | 24, 12 to 61 | 0 |
+| 3.3x (new default) | 2.0 | 50/50 | 18.4, 1.2, 15.3 to 20.9 | 1.03 deg, 2.82 deg | 0.000 deg, 0.000 deg | 12, 6 to 52 | 0 |
+| 5x | 3.0 | 50/50 | 12.4, 1.0, 9.5 to 14.1 | 0.94 deg, 4.39 deg | 0.000 deg, 0.000 deg | 7, 3 to 18 | 0 |
+| speed-dependent: c = 0.3 + 0.05 |omega| | | 50/50 | 99.0, 6.1, 85.3 to 107.6 | 1.81 deg, 4.13 deg | 0.496 deg, 1.228 deg | 57, 32 to 120 | 0 |
+
+Findings: more resting resistance shortens the settling without hurting accuracy at any value tried; the final point is the same (the minimum of CoM height) because the resistance is viscous (no static rolling friction), so it cannot make the body stick on the flat valley floor. Time to rest scales roughly as 1/c up to c = 3 (the near-minimum motion is under-damped to critically damped for these values; heavier damping, beyond about 4, would turn it over-damped and slow the final creep, not tested). The speed-dependent variant (strong damping at high speed, weak near the valley) was slower, because the weak damping near the valley leaves a long ringing tail; it is not used. No "settle assist" was needed. Default c = 2.0 (18.4 s mean, within the 20 s target); slider range 0.3 to 4.0; x1..x16 selector kept; new "Skip to rest" button runs the clock fast until the body stops. The page note says what is physical (the roll, the shape, the equilibria) and what is a convenience (the viscous resistance is a stand-in for real rolling friction; time-lapse). With the same resistance a real Gomboc of this accuracy would also settle on the same point, only the number of swings differs.
+
+## 8. A more pronounced shape (numerical construction)
+
+Sources checked: Sloan arXiv:2306.14914 (two constructions; construction 1 is not C^2 at the poles, construction 2 is what round 1 used and both are near-spheres), Couey arXiv:2604.17120 (strict convexity limits Sloan's beta, a regime in (beta, a1, k) exists; I could not read the parameters), a 2026 arXiv:2604.17095 "Computational Construction and Engineering Evaluation of a Verified Mono-Monostatic Body" (listed by search, not read), and search results quoting that the first Domokos-Varkonyi Gomboc deviated from a sphere by only 1e-5. I found no published explicit coordinates of the physical Gomboc of the Wikipedia photo (flatness, radial table or STL), so I could not reproduce it exactly. I therefore built a body numerically.
+
+Construction (my own): `r^4(u) = 1 + sum_{l=2..10} sum_m c_lm Y_lm(u)` with 117 real spherical-harmonic coefficients (`sh.js`, orthonormal). Excluding degree 1 puts the centre of mass of the homogeneous body exactly at the origin (the centroid integral of r^4 u only sees the degree-1 part), and because r = F^(1/4) is monotone in F, the equilibria are the critical points of the polynomial-like F on the sphere. Starting point: the least-squares projection of Sloan's beta = 0.03 body (fit error 1.4e-3 in F, flatness 1.062, still 2 critical points). Optimiser (`opt.mjs`, `climb.mjs`): randomised hill climbing on the 117 coefficients maximising r_max/r_min subject to (a) convexity margin: the smallest eigenvalue of (Hess_S w + w I)/w, with w = 1/r (the gauge function is convex iff this is positive semidefinite) at least 0.02 on an icosphere L=3, (b) the winding-index critical-point count equal to exactly 2 (two +1, no -1) on icosphere L=3, 4 (4 samples per edge) and 5 (4 samples per edge). About 50 minutes of 3 parallel searches in four stages (1.062 to 1.076 to 1.090 to 1.100). One stage that relaxed the margin to 0.01 and checked only to L=4 reached 1.105 but turned out to have extra critical points (5 index +1 and 3 index -1 triangles at L=5): rejected, and the acceptance test was made stricter.
+
+Result (`tools/gomboc-spike-verify/pronounced-shape.json`, also embedded in the page): r_max/r_min = 1.10 (radial function, 0.957 to 1.051 about the CoM; the sampled support-function range is 0.9566 to 1.0512). That is a moderate improvement over Sloan's 1.06, short of the 1.12 to 1.2 asked for: the search was still improving slowly when stopped, a gradient-based optimiser or higher degree could go further, not tried.
+
+Verification (same methods as section 2):
+
+* Winding index of the tangential gradient of h: two triangles with index +1, none with -1, total 2, at icosphere L=5 (20480 triangles, 6 samples per edge) and L=6 (81920 triangles, 4 samples per edge).
+* Stable point (minimum of CoM height) at direction (-0.942763447, 0.327967415, -0.060286458) (theta 160.8, phi 93.5 deg), h = 0.953936, Hessian eigenvalues 3.30 and 48.3; unstable point (maximum) at (0.561514417, -0.797389286, -0.221069867) (theta 305.2, phi 102.8 deg), h = 1.051222, eigenvalues -0.571 and -0.124; tangential gradient norm 5e-16 at both; the two points are about 141 degrees apart (not antipodal). Count: 1 stable, 1 unstable, 0 saddles, min - saddle + max = 2.
+* Root finding from icosphere starts (the section 2 method) found the maximum but not the minimum (96 percent of starts failed in the stiff flat region), so the minimum was located by pattern search plus Newton starting in the winding-index triangle (`refine.mjs`). The winding method, not root finding, is the evidence for "exactly two".
+* Convexity (icosphere L=4 normals, `convex.mjs`): all principal radii of curvature positive, rho from 0.478 to 10.44, Gaussian curvature from 0.089 to 2.26 (Sloan beta = 0.03: 0.19 to 1.56). Sampled, not a proof.
+* The valley minimum is much stiffer than Sloan's (3.3 versus 0.0014), which is why this body settles about as fast and ends closer to the exact point.
+
+Shape comparison (r radius about the CoM; unit mean radius):
+
+| shape | r_max/r_min | min Gaussian curvature | stable-point Hessian eigenvalues | inertia diagonal |
+|---|---|---|---|---|
+| Sloan beta = 0.03 | 1.062 | 0.19 | 0.0014, 4.5 | 0.4002 each |
+| pronounced (this section) | 1.10 | 0.089 | 3.3, 48.3 | 0.4007 each, yz = -0.008 |
+
+Visual check (headless screenshots): the pronounced body is visibly an egg or pebble with a flatter shoulder on one side and a rounder back (use "colour by radius"); it is still close to a sphere and there is no distinct ridge: the two curvature regimes of the real Gomboc blend smoothly here. It does not match the Wikipedia photo more than moderately.
+
+## 9. Dynamics of the pronounced shape (page defaults: c = 2.0)
+
+`batch.mjs` with `SHAPEFILE=newshape.json` (same seeds machinery; step 1/180 s, because the stiff flat-belly direction has a restoring frequency of about 150 rad/s and at 1/120 s two of 50 rolls ended with a sustained numerical jitter that blocked rest detection).
+
+* 60 random rolls (random orientation, flick 3 to 14 radii/s), g = 654, c = 2.0, step 1/180 s: strict rest rule (|omega| < 0.05 for 1.5 s) fired in 55 of 60 (time to rest mean 27.2 s, sd 5.8, range 15.5 to 41.4); angle from the stable point 0.17 deg mean (max 0.63) at detection; 30 s after the run ends all 60 are within 0.93 deg of the stable point (mean 0.03 deg); swings mean 37 (20 to 62); minimum normal force 0.86 of m g. The other 5 never met the strict rule in 300 s although they sit within 0.01 to 0.63 deg of the stable point: a low-level numerical ringing (|omega| about 0.02 to 0.1) that does not decay even at step 1/240 (one case checked; 1/360 not finished). I treat it as an integrator artifact of the stiff body, not physics; the page therefore also declares rest when the body is within 1.5 deg of the stable point with |omega| < 0.2 for 3 s (pronounced shape only). No roll ended anywhere else: 60 of 60 and 10 of 10 end at the same body point.
+* 10 rolls started balanced on the unstable point with a 0.005 to 0.025 rad/s nudge: 10 of 10 right themselves, time to rest mean 21.0 s (16.6 to 24.2), 0.13 deg at detection, 0.001 deg 30 s later, swings 22 to 64.
+* An earlier 50-roll run at step 1/120 s detected only 48 of 50 (same artifact, worse), which is why this shape runs at 1/180 s.
+* Page driver (`fastRoll` in the page, under the CSP): see round 2 checks below.
+* Sloan shape at the new default c = 2.0, 3 page rolls: 19.9, 17.6, 16.5 s, ending 0.7 to 1.5 degrees from the stable point; UI "Skip to rest" ends with `result: 1` for both shapes.
+
+## 10. What is exact and what is approximated (round 2 additions)
+
+* Exact: both surfaces (Sloan analytic; the harmonic body is an explicit formula with 117 stored coefficients rounded to 9 significant digits), their CoM (zero by construction, quadrature confirms to 1e-17), the equilibrium counts (winding index, sampled), the rolling equations.
+* Approximated or convenience: the pronounced body is a numerical construction verified on sampled grids, not a published one; convexity is sampled; the equilibrium locations are numerical to 1e-12 (gradient norm); the rolling resistance is viscous and its default (2.0) is chosen for speed; step 1/180 s for the pronounced body (a numerical jitter limit, see section 9); time-lapse.
+
+## Low-poly search log
+
+Context: the owner mentions a prize for a low-poly shape that behaves as a Gomboc (one stable and one unstable equilibrium). I searched once for prize rules and found none: no URL, no terms, no deadline, and I do not guess any. What the literature search returned (all unverified beyond the abstracts):
+
+* Monostatic polytope (Wikipedia): https://en.wikipedia.org/wiki/Monostatic_polytope; Reshetov, "A unistable polyhedron with 14 faces" (IJCGA 2014, https://research.nvidia.com/publication/2014-03_unistable-polyhedron-14-faces.md, https://research.nvidia.com/sites/default/files/pubs/2014-03_A-unistable-polyhedron/polytop-ijcga-rev2.pdf): the best known homogeneous monostable polyhedron (one stable face; it has more than one unstable vertex, so it is not a Gomboc). Earlier: Guy and Knowlton 19 faces, Bezdek 18 faces; arXiv:2008.02090 (Conway and Guy problems) and arXiv:2103.12769, arXiv:2103.13727 (best known F and V bounds, F <= 14 for monostable). Mathworld: https://mathworld.wolfram.com/UnistablePolyhedron.html.
+* A search snippet defined a "polyhedral gomboc" as one stable plus one unstable equilibrium; I found no existence or non-existence result for it. Note (Poincare-Hopf, S - H + U = 2) that S = U = 1 forces zero saddles (edge equilibria). Whether a convex polyhedron with H = 0 and S = U = 1 exists I did not establish; nothing below claims it.
+
+Tool: `tools/gomboc-spike-verify/poly-equilibria.mjs` exports `polyEquilibria(vertices)` (uniform density; hull, merges coplanar triangles, volume-centroid CoM; stable = face equilibria, unstable = vertex equilibria, saddle = edge equilibria; returns S, U, H, Poincare-Hopf check S+U-H, F, V, E, positions) and generators `fibonacciMesh(radialFn, N)` (Fibonacci-sphere directions scaled by a radial function, e.g. `new Gomboc.Shape(spec).r` from `core.js`), `cube()`, `tetra()`. CLI: `node poly-equilibria.mjs vertices.json` prints the counts; `node poly-test-gomboc.mjs 30,50,100` reproduces the table below. It only counts the static equilibria of the polyhedron; it does not simulate settling.
+
+| # | candidate | generator and parameters | V / F | stable S | unstable U | saddle H | S+U-H | settle behaviour |
+|---|---|---|---|---|---|---|---|---|
+| 1 | cube (counter sanity check) | `cube()` | 8 / 6 | 6 | 8 | 12 | 2 | not simulated |
+| 2 | tetrahedron (sanity check) | `tetra()` | 4 / 4 | 4 | 4 | 6 | 2 | not simulated |
+| 3 | Sloan beta 0.03 hull | `fibonacciMesh`, N=30 | 30 / 56 | 47 | 30 | 75 | 2 | not simulated |
+| 4 | Sloan beta 0.03 hull | N=50 | 50 / 96 | 86 | 50 | 134 | 2 | not simulated |
+| 5 | Sloan beta 0.03 hull | N=100 | 100 / 196 | 171 | 100 | 269 | 2 | cannon drops (300): 48 distinct rest facets, top rest 9.9 percent |
+| 6 | Sloan beta 0.03 hull | N=200 | 200 / 396 | 294 | 198 | 490 | 2 | cannon: 91 distinct facets |
+| 7 | Sloan beta 0.03 hull | N=500 | 500 / 996 | 568 | 412 | 978 | 2 | cannon: 115 distinct facets |
+| 8 | Sloan beta 0.03 hull | N=1000, 2000 | 1000 / 1996, 2000 / 3996 | 859 (1000), 1152 (2000) from the section 5 static count | | | | cannon: 109 and 127 distinct facets |
+| 9 | pronounced hull | `fibonacciMesh`, N=30 | 30 / 56 | 47 | 30 | 75 | 2 | not simulated |
+| 10 | pronounced hull | N=50 | 50 / 96 | 82 | 50 | 130 | 2 | not simulated |
+| 11 | pronounced hull | N=100 | 100 / 196 | 159 | 100 | 257 | 2 | not simulated |
+| 12 | pronounced hull | N=200 | 200 / 396 | 244 | 163 | 405 | 2 | not simulated |
+| 13 | pronounced hull | N=500 | 500 / 996 | 412 | 312 | 722 | 2 | not simulated |
+
+Negative results so far: uniformly sampled (Fibonacci) hulls of these two smooth Gomboc bodies never come close to S = U = 1 for any N tried: S falls from 84 percent of the faces (N = 30: 47 of 56) to about 40 percent (N = 500) and stays in the hundreds, and nearly every vertex is an unstable equilibrium up to N = 200. Simply sampling the smooth surface is the wrong route for a low-poly Gomboc: the faceting creates one stable face per facet whose foot falls inside it. Facet shapes and angles must be optimised (as in Bezdek, Conway-Guy, Reshetov) rather than sampled. No search has been run yet; this section is to be kept current as candidates are tried.

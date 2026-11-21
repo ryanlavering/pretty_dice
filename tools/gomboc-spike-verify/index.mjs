@@ -1,6 +1,6 @@
 import fs from 'fs'; import vm from 'vm'; import {icosphere,sph} from './verify.mjs';
 const G=vm.runInNewContext(fs.readFileSync('core.js','utf8')+';Gomboc');
-const beta=+process.argv[2]||0.02, L=+process.argv[3]||5, K=+process.argv[4]||6; const S=new G.Shape(beta); const {V,T}=icosphere(L); const r={h:0,x:[0,0,0],n:[0,0,0]};
+const beta=+process.argv[2]||0.02, L=+process.argv[3]||5, K=+process.argv[4]||6; const S=(process.env.SHAPEFILE?new G.Shape(JSON.parse(fs.readFileSync(process.env.SHAPEFILE,'utf8'))):new G.Shape(beta)); const {V,T}=icosphere(L); const r={h:0,x:[0,0,0],n:[0,0,0]};
 function field(u){ S.support(u,null,r); const d=r.x[0]*u[0]+r.x[1]*u[1]+r.x[2]*u[2]; return [r.x[0]-d*u[0],r.x[1]-d*u[1],r.x[2]-d*u[2]]; }
 let plus=0,minus=0,sum=0; const hits=[];
 for(const [a,b,c] of T){ const pts=[]; const P=[V[a],V[b],V[c]]; for(let e=0;e<3;e++){ const p=P[e],q=P[(e+1)%3]; for(let k=0;k<K;k++){ const t=k/K; const v=[p[0]*(1-t)+q[0]*t,p[1]*(1-t)+q[1]*t,p[2]*(1-t)+q[2]*t]; G.norm(v); pts.push(v); } }

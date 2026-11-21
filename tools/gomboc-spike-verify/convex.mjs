@@ -5,4 +5,4 @@ export function convexity(S,L){ const {V}=icosphere(L); const J=new Array(9), e1
   const tr=a+d,det=a*d-b*b,disc=Math.sqrt(Math.max(0,tr*tr/4-det)); const l1=tr/2-disc,l2=tr/2+disc; rmin=Math.min(rmin,l1); rmax=Math.max(rmax,l2); Kmin=Math.min(Kmin,1/(l1*l2)); Kmax=Math.max(Kmax,1/(l1*l2));
   S.support(u,null,r); hmin=Math.min(hmin,r.h); hmax=Math.max(hmax,r.h); const rr=Math.hypot(...r.x); rrmin=Math.min(rrmin,rr); rrmax=Math.max(rrmax,rr); }
  return {rhoMin:rmin,rhoMax:rmax,Kmin,Kmax,hmin,hmax,rmin:rrmin,rmax:rrmax}; }
-if(process.argv[1].endsWith('convex.mjs')) for(const b of (process.argv[2]||'0.02').split(',').map(Number)){ const S=new G.Shape(b); console.log('beta',b,JSON.stringify(convexity(S,4))); }
+if(process.argv[1].endsWith('convex.mjs')) for(const b of (process.argv[2]||'0.02').split(',').map(Number)){ const S=(process.env.SHAPEFILE?new G.Shape(JSON.parse(fs.readFileSync(process.env.SHAPEFILE,'utf8'))):new G.Shape(b)); console.log('beta',b,JSON.stringify(convexity(S,4))); }

@@ -1,5 +1,5 @@
 import fs from 'fs';
-const sets={}; for(const f of process.argv.slice(2)){ const j=JSON.parse(fs.readFileSync(f,'utf8')); const k=j.beta+' '+j.mode; (sets[k]=sets[k]||[]).push(...j.res); }
+const sets={}; for(const f of process.argv.slice(2)){ const j=JSON.parse(fs.readFileSync(f,'utf8')); const k=j.beta+' '+j.mode+' damp='+j.damp+' Q='+j.dampQ; (sets[k]=sets[k]||[]).push(...j.res); }
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length, sd=a=>Math.sqrt(mean(a.map(x=>(x-mean(a))**2)));
 for(const [k,r] of Object.entries(sets)){ const t=r.filter(x=>x.tRest!=null).map(x=>x.tRest), d1=r.map(x=>x.d1*57.2958), d2=r.map(x=>x.d2*57.2958), tu=r.map(x=>x.turns);
  console.log(k,'n=',r.length,'rested',t.length,'| time to rest mean',mean(t).toFixed(1),'sd',sd(t).toFixed(1),'min',Math.min(...t).toFixed(1),'max',Math.max(...t).toFixed(1),

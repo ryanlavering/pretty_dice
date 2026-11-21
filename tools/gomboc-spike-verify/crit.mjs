@@ -22,8 +22,9 @@ export function findCritical(S,L){
     R.type=R.ev[0]>0?'min':R.ev[1]<0?'max':'saddle'; }
   return {roots,starts:V.length};
 }
-if(process.argv[1].endsWith('crit.mjs')){ const beta=+process.argv[2]||0.02; const S=new G.Shape(beta);
+if(process.argv[1].endsWith('crit.mjs')){ const beta=+process.argv[2]||0.02; const S=(process.env.SHAPEFILE?new G.Shape(JSON.parse(fs.readFileSync(process.env.SHAPEFILE,'utf8'))):new G.Shape(beta));
  for(const L of (process.argv[3]||'3,4,5').split(',').map(Number)){ const {roots,starts}=findCritical(S,L); const c={min:0,max:0,saddle:0}; roots.forEach(R=>c[R.type]++);
   console.log(`beta=${beta} starts=${starts} (icosphere L=${L}): distinct critical points=${roots.length} min=${c.min} max=${c.max} saddle=${c.saddle} chi=${c.min-c.saddle+c.max} failedStarts=${roots.fails||0}`);
+  if(process.env.OUT){ const sj=JSON.parse(fs.readFileSync(process.env.SHAPEFILE,'utf8')); const mn=roots.find(R=>R.type==='min'), mx=roots.find(R=>R.type==='max'); fs.writeFileSync(process.env.OUT,JSON.stringify({Lmax:sj.Lmax,flat:sj.flat,stable:mn.u,unstable:mx.u,c:sj.c})); }
   for(const R of roots) console.log('  ',R.type,'h='+R.h.toFixed(9),JSON.stringify(sph(R.u)),'hess eig',R.ev.map(x=>x.toFixed(5)).join(','),'basin starts',R.n); }
 }

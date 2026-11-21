@@ -26,7 +26,7 @@ button:hover{background:var(--btnh)}
 button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 label{display:flex;align-items:center;gap:5px;color:var(--mute);font-size:12.5px;white-space:nowrap}
 input[type=range]{width:90px}
-#note{right:16px;top:16px;width:min(300px,calc(100vw - 32px));font-size:12px;color:var(--mute)}
+#note{right:16px;top:16px;width:min(300px,calc(100vw - 32px));max-height:calc(100vh - 210px);overflow:auto;font-size:12px;color:var(--mute)}
 #note b{color:var(--ink)}
 #note summary{cursor:pointer;color:var(--ink);font-weight:600}
 @media (max-width:760px){#note{display:none}#hud{padding:8px 10px}#result{font-size:20px}}
@@ -36,7 +36,7 @@ input[type=range]{width:90px}
 <canvas id="c"></canvas>
 <div class="panel" id="hud">
   <h1>Gömböc d1 (spike)</h1>
-  <div class="sub">one stable, one unstable rest, always rolls <b>1</b></div>
+  <div class="sub">one stable, one unstable rest, always rolls <b>1</b> <span id="shapeInfo"></span></div>
   <div id="result">result: -</div>
   <div id="status">at rest on its stable point. Press Roll, or drag the table to flick it.</div>
   <table>
@@ -52,9 +52,9 @@ input[type=range]{width:90px}
 </div>
 <div class="panel" id="note">
   <details open><summary>What is real here</summary>
-  <p><b>Exact:</b> the surface is Sloan's analytic Gömböc, r&#8308; = 1 + 4&beta; sin&phi; cos[&theta; - (3&pi;/2)(cos&phi; - cos&sup3;&phi;/3)] (arXiv:2306.14914), and the body rolls under the full rigid-body rolling-without-slipping equations (Newton-Euler with a no-slip contact on the true support function), RK4 at 120 Hz.</p>
-  <p><b>Approximated:</b> support function and contact curvature are found by Newton iteration with finite differences (about 1e-9); rolling resistance is a linear torque; no slipping or bouncing; the table is infinite; time runs faster than real so it settles within seconds.</p>
-  <p><b>Shape:</b> &beta; only about 3% of the radius: it really is almost a sphere. The red dot marks the stable point, the blue dot the unstable one.</p></details>
+  <p><b>Exact:</b> the surfaces are analytic: the original shape is Sloan's Gömböc r&#8308; = 1 + 4&beta; sin&phi; cos[&theta; - (3&pi;/2)(cos&phi; - cos&sup3;&phi;/3)] (arXiv:2306.14914), and the "more pronounced" body is my own numerical construction (a degree-10 spherical-harmonic series for r&#8308;, optimised for flatness; see the design note). Both were checked to have exactly one stable and one unstable equilibrium and to be convex. The body rolls under the full rigid-body rolling-without-slipping equations (Newton-Euler on the true support function), RK4.</p>
+  <p><b>Physical vs convenience:</b> the "rolling resistance" is a viscous torque, a stand-in for real rolling friction. The default (2.0) is 3.3 times the value of the first version so the roll ends in about 20 s of simulated time instead of 60; at every setting tested the body ends at the same point, only the time and the number of wobbles change. Time also runs faster than real (speed selector), and "Skip to rest" fast-forwards. No slipping, bouncing or air; the table is infinite; contact curvature uses finite differences (about 1e-9).</p>
+  <p><b>Shapes:</b> Sloan's body deviates only about 3% from a sphere (r_max/r_min 1.06). The pronounced body has r_max/r_min = 1.10 (try "colour by radius": blue is the smallest radius, red the largest). Red dot: stable point (the "1"); blue dot: unstable point.</p></details>
 </div>
 <div class="panel" id="bar">
   <button class="primary" id="bRoll">Roll</button>
@@ -64,19 +64,39 @@ input[type=range]{width:90px}
   <label><input type="checkbox" id="cNormal" checked> contact / normal</label>
   <label><input type="checkbox" id="cTrail" checked> trail</label>
   <label><input type="checkbox" id="cCmp"> plain sphere beside it</label>
-  <label>&beta; <input type="range" id="rBeta" min="0.012" max="0.036" step="0.002" value="0.030"><span id="vBeta">0.030</span></label>
+  <label><input type="checkbox" id="cRad"> colour by radius</label>
+  <label>shape <select id="sShape"><option value="sloan">Sloan near-sphere (original)</option><option value="egg">More pronounced body</option></select></label>
+  <label id="lBeta">&beta; <input type="range" id="rBeta" min="0.012" max="0.036" step="0.002" value="0.030"><span id="vBeta">0.030</span></label>
+  <label>rolling resistance <input type="range" id="rDamp" min="0.3" max="4" step="0.1" value="2.0"><span id="vDamp">2.0</span></label>
+  <button id="bSkip" title="Roll if idle and run the clock fast until it stops">Skip to rest</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ---- Goemboc core: shape, support function, rolling dynamics (no dependencies) ----
+// Real spherical harmonics, degrees 2..Lmax (degree 0,1 excluded: degree 1 would move the centre of mass), orthonormal on the unit sphere.
+const SH=(function(){
+ function make(Lmax){ const terms=[]; for(let l=2;l<=Lmax;l++) for(let m=0;m<=l;m++){ let f=1; for(let k=l-m+1;k<=l+m;k++) f/=k; // (l-m)!/(l+m)!
+   let nrm=Math.sqrt((2*l+1)/(4*Math.PI)*f)*(m>0?Math.SQRT2:1); terms.push({l,m,c:0,n:nrm,type:'c'}); if(m>0) terms.push({l,m,c:0,n:nrm,type:'s'}); }
+  const N=terms.length; const Q=[]; for(let l=0;l<=Lmax;l++) Q.push(new Float64Array(l+1));
+  const mc=new Float64Array(Lmax+1), ms=new Float64Array(Lmax+1);
+  function eval(x,y,z,out){ // fills out[i] = Y_i(x,y,z)
+    mc[0]=1; ms[0]=0; for(let m=1;m<=Lmax;m++){ mc[m]=mc[m-1]*x-ms[m-1]*y; ms[m]=ms[m-1]*x+mc[m-1]*y; }
+    let df=1; for(let m=0;m<=Lmax;m++){ Q[m][m]=df; df*=(2*m+1); if(m+1<=Lmax) Q[m+1][m]=z*(2*m+1)*Q[m][m]; for(let l=m+2;l<=Lmax;l++) Q[l][m]=((2*l-1)*z*Q[l-1][m]-(l+m-1)*Q[l-2][m])/(l-m); }
+    for(let i=0;i<N;i++){ const t=terms[i]; const q=Q[t.l][t.m]*t.n; out[i]=t.type==='c'?q*mc[t.m]:q*ms[t.m]; } }
+  return {N,terms,eval,Lmax}; }
+ return {make}; })();
+
 const Gomboc=(function(){
 const PI=Math.PI;
 // Sloan (2023) second construction: r^4 = 1 + 4*beta*sin(phi)*cos(theta - P(phi)), P(phi)=(3pi/2)(cos phi - cos^3 phi/3).
 // With u=(x,y,z) a unit vector: sin(phi)cos(theta-P) = x cosP + y sinP, cos(phi)=z (smooth everywhere, poles included).
-function Shape(beta){
-  const b4=4*beta; const S=this; S.beta=beta;
+function Shape(arg){
+  const S=this; let beta=null; if(typeof arg==='number'){ beta=arg; } S.beta=beta;
   // radial function about the construction origin O
-  S.r=function(x,y,z){ const c=z, P=1.5*PI*(c-c*c*c/3); return Math.sqrt(Math.sqrt(1+b4*(x*Math.cos(P)+y*Math.sin(P)))); };
+  if(beta!==null){ const b4=4*beta; S.r=function(x,y,z){ const c=z, P=1.5*PI*(c-c*c*c/3); return Math.sqrt(Math.sqrt(1+b4*(x*Math.cos(P)+y*Math.sin(P)))); }; }
+  else { // spherical-harmonic body: r^4 = 1 + sum_{l=2..Lmax} c_i Y_i (no degree 1 => centre of mass exactly at the origin)
+    const shb=SH.make(arg.Lmax), cf=Float64Array.from(arg.c), buf=new Float64Array(shb.N), N=shb.N; S.sh=arg;
+    S.r=function(x,y,z){ shb.eval(x,y,z,buf); let s=1; for(let i=0;i<N;i++) s+=cf[i]*buf[i]; return Math.sqrt(Math.sqrt(s)); }; }
   // quadrature: volume, centroid c, second moments about c (Gauss-Legendre in cos(phi), uniform in theta)
   const NZ=160, NT=320; const {nodes,weights}=gaussLegendre(NZ);
   let V=0, cx=0,cy=0,cz=0; const M=[0,0,0,0,0,0]; // xx,yy,zz,xy,xz,yz about O
@@ -145,7 +165,7 @@ function matvec(M,v){ return [M[0]*v[0]+M[1]*v[1]+M[2]*v[2],M[3]*v[0]+M[4]*v[1]+
 function solve3(A,b){ const [a,bb,c,d,e,f,g,h,i]=A; const det=a*(e*i-f*h)-bb*(d*i-f*g)+c*(d*h-e*g);
   return [ (b[0]*(e*i-f*h)-bb*(b[1]*i-f*b[2])+c*(b[1]*h-e*b[2]))/det, (a*(b[1]*i-f*b[2])-b[0]*(d*i-f*g)+c*(d*b[2]-b[1]*g))/det, (a*(e*b[2]-b[1]*h)-bb*(d*b[2]-b[1]*g)+b[0]*(d*h-e*g))/det ]; }
 function Body(shape,opt){
-  opt=opt||{}; const B=this; B.S=shape; B.g=opt.g||9.81; B.damp=opt.damp!=null?opt.damp:0.35; // rolling dissipation: torque = -damp*Iavg*om  (1/s)
+  opt=opt||{}; const B=this; B.S=shape; B.g=opt.g||9.81; B.damp=opt.damp!=null?opt.damp:0.35; B.dampQ=opt.dampQ||0; // rolling dissipation: torque = -damp*Iavg*om  (1/s)
   B.q=[1,0,0,0]; B.om=[0,0,0]; B.pos=[0,0]; B.t=0; B.guess=null; B.rs={h:0,x:[0,0,0],n:[0,0,0]}; B.J=[0,0,0,0,0,0,0,0,0]; B.minN=1e9; B.Fz=0;
   B.Ib=shape.I; B.m=1;
   const nb=[0,0,0], pw=[0,0,0];
@@ -162,7 +182,7 @@ function Body(shape,opt){
     const m=B.m, pp=p[0]*p[0]+p[1]*p[1]+p[2]*p[2];
     const A=[Iw[0]+m*(pp-p[0]*p[0]),Iw[1]-m*p[0]*p[1],Iw[2]-m*p[0]*p[2], Iw[3]-m*p[1]*p[0],Iw[4]+m*(pp-p[1]*p[1]),Iw[5]-m*p[1]*p[2], Iw[6]-m*p[2]*p[0],Iw[7]-m*p[2]*p[1],Iw[8]+m*(pp-p[2]*p[2])];
     const Iom=matvec(Iw,om), wIw=cross(om,Iom), pdw=cross(pd,om), ppdw=cross(p,pdw), pxg=cross(p,[0,0,-B.g*m]);
-    const rhs=[-wIw[0]+m*ppdw[0]-pxg[0]-B.damp*B.S.Iavg*om[0], -wIw[1]+m*ppdw[1]-pxg[1]-B.damp*B.S.Iavg*om[1], -wIw[2]+m*ppdw[2]-pxg[2]-B.damp*B.S.Iavg*om[2]];
+    const dm=B.damp+B.dampQ*Math.hypot(om[0],om[1],om[2]); const rhs=[-wIw[0]+m*ppdw[0]-pxg[0]-dm*B.S.Iavg*om[0], -wIw[1]+m*ppdw[1]-pxg[1]-dm*B.S.Iavg*om[1], -wIw[2]+m*ppdw[2]-pxg[2]-dm*B.S.Iavg*om[2]];
     const al=solve3(A,rhs); const pxa=cross(p,al);
     const F=[m*(pdw[0]+pxa[0]), m*(pdw[1]+pxa[1]), m*(pdw[2]+pxa[2]+B.g)]; // contact force (F = m(a_G - g))
     const vG=cross(p,om);
@@ -200,8 +220,8 @@ return {Shape,Body,qrot,qconjrot,qmul,norm,basis,cross,matvec};
 
 /* ---------- page: scene, loop, UI ---------- */
 (function(){
-const DT=1/120, G_EFF=654, DAMP=0.6;       // sim step; gravity in body radii/s^2 (a 1.5 cm radius body: 9.81/0.015); rolling-resistance rate 1/s
-const STABLE=[-1,0,0], UNSTABLE=[1,0,0];
+let DAMP=2.0, DT=1/120; const G_EFF=654, NEWSHAPE={"Lmax":10,"flat":1.101654667538496,"stable":[-0.9427634473,0.3279674152,-0.0602864581],"unstable":[0.561514417,-0.7973892861,-0.2210698668],"c":[0.00269636355,-0.0104247824,0.171392318,-0.00792808581,-0.000280830509,0.018519053,-0.209444923,0.0185183803,0.00402134509,0.00593948041,-0.00146614912,-0.00618415495,-0.00423936327,0.00695752089,-0.14661091,0.00420164726,-0.00307227389,-0.000853051514,0.00270439793,-0.000874098997,0.00110333409,-0.0143057321,0.101495689,-0.00121168812,-0.0018774272,-0.00921345806,0.00151474258,0.000173049948,0.00335454317,0.00210495401,-0.000570050267,0.0000644511231,0.00166712196,-0.00587607747,0.0702929426,0.000910677312,0.00187685203,-0.00310230019,-0.00370333273,0.00308191399,6.67667029e-17,-0.000288313843,-0.00132156085,0.00217044942,0.00062153892,0.00860709825,-0.0345669729,0.00149426713,0.00573654117,0.00212501908,0.00279137423,0.000539732284,-0.00566749091,0.00311237739,-0.000145862627,0.000342436976,-0.00108475041,-0.00114701479,-0.000170762985,-0.0013061417,-0.0000650190397,0.000606102379,-0.0178954372,-0.00127136222,-0.00109078714,0.00477265646,1.61518349e-17,0.00161811193,0.000249360655,-3.85623256e-18,0.0038187129,-0.000315509947,0.000145375858,-0.00074059554,0.000792550236,0.000196375356,-0.000751313467,-0.0031087616,0.00655345886,0.00582047634,-0.0000201153027,-0.0123757467,-0.00171112723,0.00171216299,0.00358490825,-0.000708435551,0.000244582887,-0.000214287133,0.00054491851,0.00243054138,-0.0000812806472,0.000172664169,-0.000126808171,-0.0000621372388,-0.0000097035439,-0.000313597703,-0.000278664622,-0.000538172079,0.00436189396,0.0100702538,0.00366580624,-0.00443006394,-0.00146518119,-0.00171070822,-0.000131013946,-0.000551035482,-0.00135362214,-0.000824679112,-0.000194783515,0.000249880464,-0.000552506814,-0.0000698667149,0.000666026494,0.000316683051,0.000251811621,0.00000878510659,0.000136429083]};       // sim step; gravity in body radii/s^2 (a 1.5 cm radius body: 9.81/0.015); rolling-resistance rate 1/s
+let STABLE=[-1,0,0], UNSTABLE=[1,0,0];
 const ang=(a,b)=>Math.acos(Math.max(-1,Math.min(1,a[0]*b[0]+a[1]*b[1]+a[2]*b[2])));
 const $=id=>document.getElementById(id);
 function icosphere(L){ const t=(1+Math.sqrt(5))/2; const V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(v=>{const l=Math.hypot(v[0],v[1],v[2]);return [v[0]/l,v[1]/l,v[2]/l];});
@@ -222,14 +242,15 @@ const world=new THREE.Group(); world.rotation.x=-Math.PI/2; scene.add(world);
   const tx=new THREE.CanvasTexture(c); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.repeat.set(150,150); tx.anisotropy=4;
   const m=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({map:tx,roughness:.9,metalness:0})); m.receiveShadow=true; world.add(m); })();
 
-function Actor(beta,label,offX){
-  const A=this; A.label=label; A.beta=beta; A.shape=new Gomboc.Shape(beta); A.body=new Gomboc.Body(A.shape,{g:G_EFF,damp:DAMP});
+function Actor(spec,label,offX){
+  const A=this; A.label=label; A.shape=new Gomboc.Shape(spec); A.body=new Gomboc.Body(A.shape,{g:G_EFF,damp:DAMP});
   const V=ICO.V, n=V.length, pos=new Float32Array(3*n), col=new Float32Array(3*n), p=[0,0,0];
   const base=dark?[[.86,.80,.68],[.72,.66,.54]]:[[.9,.85,.74],[.76,.7,.58]];
   for(let i=0;i<n;i++){ const u=V[i]; A.shape.point(u[0],u[1],u[2],p); pos[3*i]=p[0];pos[3*i+1]=p[1];pos[3*i+2]=p[2];
     const th=Math.atan2(u[1],u[0])+Math.PI, ph=Math.acos(u[2]); const v=Math.sin(8*th)*Math.sin(6*ph); let k=Math.min(1,Math.max(0,(v+0.18)/0.36)); k=k*k*(3-2*k); let c=[base[0][0]+(base[1][0]-base[0][0])*k,base[0][1]+(base[1][1]-base[0][1])*k,base[0][2]+(base[1][2]-base[0][2])*k];
     const ds=ang(u,STABLE), du=ang(u,UNSTABLE); if(ds<0.2) c=ds<0.15?[.85,.12,.1]:[.97,.97,.97]; else if(du<0.12) c=[.15,.45,.95];
     col[3*i]=c[0];col[3*i+1]=c[1];col[3*i+2]=c[2]; }
+  A.colBase=Float32Array.from(col); A.colRad=new Float32Array(3*n); { let mn=1e9,mx=0; const rr=new Float32Array(n); for(let i=0;i<n;i++){ rr[i]=Math.hypot(pos[3*i],pos[3*i+1],pos[3*i+2]); mn=Math.min(mn,rr[i]); mx=Math.max(mx,rr[i]); } for(let i=0;i<n;i++){ const t=mx>mn?(rr[i]-mn)/(mx-mn):0.5; A.colRad[3*i]=0.15+0.8*t; A.colRad[3*i+1]=0.35+0.4*(1-Math.abs(2*t-1)); A.colRad[3*i+2]=0.95-0.8*t; } }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   const idx=new Uint32Array(ICO.T.length*3); ICO.T.forEach((f,i)=>{idx[3*i]=f[0];idx[3*i+1]=f[1];idx[3*i+2]=f[2];}); geo.setIndex(new THREE.BufferAttribute(idx,1)); geo.computeVertexNormals();
   A.mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.15})); A.mesh.castShadow=true; world.add(A.mesh);
@@ -239,6 +260,7 @@ function Actor(beta,label,offX){
   A.lCom=mkLine(0xff5544,2); A.lVert=mkLine(0xffd23f,2); A.trail=mkLine(0x4aa3ff,1200); A.trailN=0; A.trailBuf=A.trail.geometry.attributes.position.array;
   A.body.pos[0]=offX||0; A.reset();
 }
+Actor.prototype.setRad=function(on){ const a=this.mesh.geometry.attributes.color; a.array.set(on?this.colRad:this.colBase); a.needsUpdate=true; };
 Actor.prototype.reset=function(){ const B=this.body; B.pos[0]=this.offX0||B.pos[0]; B.placeDown(STABLE,0.7); B.om=[0,0,0]; B.guess=null; this.trailN=0; this.swing=0; this.dir=0; this.prevD=null; this.restT=0; this.sync(); };
 Actor.prototype.sync=function(){ const B=this.body, I=B.info(); this.h=I.h; this.nb=I.nb; this.p=I.p; const q=B.q;
   this.mesh.position.set(B.pos[0],B.pos[1],I.h); this.mesh.quaternion.set(q[1],q[2],q[3],q[0]);
@@ -247,13 +269,18 @@ Actor.prototype.sync=function(){ const B=this.body, I=B.info(); this.h=I.h; this
   a=this.lVert.geometry.attributes.position.array; a[0]=cx;a[1]=cy;a[2]=cz;a[3]=cx;a[4]=cy;a[5]=cz+2.6; this.lVert.geometry.attributes.position.needsUpdate=true; };
 Actor.prototype.pushTrail=function(){ const B=this.body; const x=B.pos[0]+this.p[0], y=B.pos[1]+this.p[1]; if(this.trailN>=1200){ this.trailBuf.copyWithin(0,3,3*1200); this.trailN=1199; } const k=3*this.trailN; this.trailBuf[k]=x; this.trailBuf[k+1]=y; this.trailBuf[k+2]=0.012; this.trailN++; this.trail.geometry.setDrawRange(0,this.trailN); this.trail.geometry.attributes.position.needsUpdate=true; };
 
-let beta=0.03; let main=new Actor(beta,'gomboc',0), cmp=null;
-function setBeta(b){ beta=b; world.remove(main.mesh,main.dot,main.lCom,main.lVert,main.trail); const was=cmp!==null; main=new Actor(b,'gomboc',0); if(was){ killCmp(); makeCmp(); } resetStats(false); $('vBeta').textContent=b.toFixed(3); setIdle(); }
+let beta=0.03, shapeKind='sloan'; const specNow=()=>shapeKind==='sloan'?beta:{c:NEWSHAPE.c,Lmax:NEWSHAPE.Lmax};
+let main=new Actor(specNow(),'gomboc',0), cmp=null;
+function rebuild(){ DT=shapeKind==='sloan'?1/120:1/180; world.remove(main.mesh,main.dot,main.lCom,main.lVert,main.trail); const was=cmp!==null; if(shapeKind==='sloan'){ STABLE=[-1,0,0]; UNSTABLE=[1,0,0]; } else { STABLE=NEWSHAPE.stable.slice(); UNSTABLE=NEWSHAPE.unstable.slice(); }
+  main=new Actor(specNow(),'gomboc',0); main.setRad($('cRad').checked); if(was){ killCmp(); makeCmp(); } resetStats(false); setIdle(); $('lBeta').style.display=shapeKind==='sloan'?'':'none'; $('shapeInfo').textContent=shapeKind==='sloan'?'near-sphere, r_max/r_min = '+flatOf(main.shape).toFixed(3):'pronounced body, r_max/r_min = '+flatOf(main.shape).toFixed(3); }
+function flatOf(S){ let mn=1e9,mx=0; for(const u of ICO3.V){ const r=S.r(u[0],u[1],u[2]); mn=Math.min(mn,r); mx=Math.max(mx,r);} return mx/mn; }
+const ICO3=icosphere(3);
+function setBeta(b){ beta=b; $('vBeta').textContent=b.toFixed(3); rebuild(); }
 function makeCmp(){ cmp=new Actor(0,'sphere',3); $('cmpRow').style.display=''; }
 function killCmp(){ if(!cmp) return; world.remove(cmp.mesh,cmp.dot,cmp.lCom,cmp.lVert,cmp.trail); cmp=null; $('cmpRow').style.display='none'; }
 
 /* state */
-let state='idle', tRoll=0, restHold=0, rolls=0, times=[], lastSwings=0, hist=[]; const MAXHIST=40;
+let state='idle', tRoll=0, restHold=0, restHold2=0, rolls=0, times=[], lastSwings=0, hist=[]; const MAXHIST=40;
 function resetStats(){ rolls=0; times=[]; hist=[]; lastSwings=0; $('nRolls').textContent='0'; $('tLast').textContent='-'; $('tMean').textContent='-'; $('swings').textContent='-'; $('hist').textContent=''; }
 function setIdle(){ state='idle'; $('result').textContent='result: -'; $('result').className=''; $('status').textContent='at rest on its stable point. Press Roll, or drag the table to flick it.'; }
 function lcg(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
@@ -261,10 +288,10 @@ function gauss(rnd){ return Math.sqrt(-2*Math.log(rnd()+1e-12))*Math.cos(2*Math.
 function randomRoll(A,rnd){ const B=A.body; const v=[gauss(rnd),gauss(rnd),gauss(rnd)]; Gomboc.norm(v); B.placeDown(v,rnd()*6.283); const sp=3+11*rnd(); const d=[gauss(rnd),gauss(rnd),0]; Gomboc.norm(d); B.setRollingVelocity([d[0]*sp,d[1]*sp]); B.om[2]+=gauss(rnd)*2; A.swing=0; A.dir=0; A.prevD=null; }
 function startRoll(kick){ // kick: optional function(A) applied to the actors instead of the random one
   const seed=(Math.random()*4294967296)>>>0; for(const A of [main,cmp]){ if(!A) continue; if(kick) kick(A,seed); else randomRoll(A,lcg(seed)); A.trailN=0; A.swing=0; A.dir=0; A.prevD=null; }
-  state='rolling'; tRoll=0; restHold=0; rolls++; $('nRolls').textContent=rolls; $('result').textContent='result: ...'; $('result').className=''; $('status').textContent='rolling...'; }
+  state='rolling'; tRoll=0; restHold=0; restHold2=0; rolls++; $('nRolls').textContent=rolls; $('result').textContent='result: ...'; $('result').className=''; $('status').textContent='rolling...'; }
 function observe(A,dt){ // every 0.05 sim s: swing counting (local maxima of the angle from the stable point, ignoring <1.1 deg wiggles)
   const d=ang(A.nb,STABLE); if(A.prevD!==null){ const nd=d>A.prevD+1e-4?1:d<A.prevD-1e-4?-1:0; if(nd){ if(A.dir===1&&nd===-1&&A.prevD>0.02) A.swing++; A.dir=nd; } } A.prevD=d; }
-function finishRoll(){ state='rest'; const d=ang(main.nb,STABLE); const t=tRoll-1.5; times.push(t); lastSwings=main.swing; const ok=d<0.1745;
+function finishRoll(){ state='rest'; ff=false; const d=ang(main.nb,STABLE); const t=tRoll-1.5; times.push(t); lastSwings=main.swing; const ok=d<0.1745;
   $('result').textContent=ok?'result: 1':'result: ? (did not reach the stable point)'; $('result').className='rest'; $('status').textContent=`came to rest ${(d*57.296).toFixed(2)} deg from the stable point after ${t.toFixed(1)} s`;
   $('tLast').textContent=t.toFixed(1)+' s'; $('tMean').textContent=(times.reduce((a,b)=>a+b,0)/times.length).toFixed(1)+' s'; $('swings').textContent=main.swing;
   hist.unshift(`#${rolls}: result ${ok?1:'?'} | ${t.toFixed(1)} s | ${(d*57.3).toFixed(2)} deg | ${main.swing} swings`); if(hist.length>MAXHIST) hist.pop(); $('hist').textContent=hist.join('\n'); $('hist').style.whiteSpace='pre';
@@ -272,7 +299,9 @@ function finishRoll(){ state='rest'; const d=ang(main.nb,STABLE); const t=tRoll-
 let acc=0, simStepCount=0, ff=false;
 function stepAll(){ main.body.step(DT); if(cmp) cmp.body.step(DT); simStepCount++; tRoll+=DT;
   if(simStepCount%6===0){ main.sync(); observe(main); if(cmp){ cmp.sync(); observe(cmp);} if(simStepCount%12===0&&$('cTrail').checked){ main.pushTrail(); if(cmp) cmp.pushTrail(); }
-    if(state==='rolling'){ const w=Math.hypot(main.body.om[0],main.body.om[1],main.body.om[2]); const w2=cmp?Math.hypot(cmp.body.om[0],cmp.body.om[1],cmp.body.om[2]):0; if(w<0.05&&w2<0.05){ restHold+=6*DT; if(restHold>1.5){ finishRoll(); } } else restHold=0; } } }
+    if(state==='rolling'){ const w=Math.hypot(main.body.om[0],main.body.om[1],main.body.om[2]); const w2=cmp?Math.hypot(cmp.body.om[0],cmp.body.om[1],cmp.body.om[2]):0; if(w<0.05&&w2<0.05){ restHold+=6*DT; if(restHold>1.5){ finishRoll(); } } else restHold=0;
+      /* fallback for the stiff pronounced body: low-level numerical ringing (|omega| up to 0.2) within 1.5 deg of the stable point also counts as rest after 3 s */
+      if(state==='rolling'){ if(shapeKind!=='sloan'&&w<0.2&&ang(main.nb,STABLE)<0.026){ restHold2+=6*DT; if(restHold2>3){ tRoll-=1.5; finishRoll(); } } else restHold2=0; } } } }
 function advance(real){ if(state!=='rolling'){ if(state==='idle'||state==='rest'){ /* keep ticking the physics gently so the body sits exactly at equilibrium */ } return; }
   acc+=real*(ff?64:+$('sSpeed').value); const t0=performance.now(), budget=ff?30:13; while(acc>=DT){ stepAll(); acc-=DT; if(performance.now()-t0>budget){ acc=Math.min(acc,DT*4); break; } } }
 
@@ -282,8 +311,12 @@ $('bNudge').onclick=()=>startRoll((A,seed)=>{ const B=A.body; const r=lcg(seed);
 $('bReset').onclick=()=>{ main.body.pos[0]=0;main.body.pos[1]=0; main.reset(); if(cmp){ cmp.body.pos[0]=3; cmp.body.pos[1]=0; cmp.reset(); } setIdle(); $('cmpAng').textContent='-'; };
 $('cCmp').onchange=e=>{ if(e.target.checked) makeCmp(); else killCmp(); };
 $('rBeta').oninput=e=>{ setBeta(+e.target.value); };
+$('sShape').onchange=e=>{ shapeKind=e.target.value; rebuild(); };
+$('rDamp').oninput=e=>{ DAMP=+e.target.value; $('vDamp').textContent=DAMP.toFixed(1); main.body.damp=DAMP; if(cmp) cmp.body.damp=DAMP; };
+$('bSkip').onclick=()=>{ if(state!=='rolling') startRoll(); ff=true; };
 $('cTrail').onchange=e=>{ if(!e.target.checked){ main.trailN=0; main.trail.geometry.setDrawRange(0,0); if(cmp){cmp.trailN=0;cmp.trail.geometry.setDrawRange(0,0);} } };
 $('cNormal').onchange=()=>{};
+$('cRad').onchange=()=>main.setRad($('cRad').checked);
 window.addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); startRoll(); } if(e.key==='f') ff=!ff; });
 
 /* drag to flick: screen right = world +x, screen up = world +y */
@@ -309,11 +342,11 @@ function frame(now){ const real=Math.min(0.1,(now-lastT)/1000); lastT=now; advan
 requestAnimationFrame(frame);
 
 /* test / debugging handle */
-function fastRoll(seed,opt){ opt=opt||{}; const A={body:new Gomboc.Body(main.shape,{g:G_EFF,damp:DAMP}),swing:0,dir:0,prevD:null}; const rnd=lcg(seed); randomRoll(A,rnd); const B=A.body; let hold=0,t=null,n=0;
+function fastRoll(seed,opt){ opt=opt||{}; const A={body:new Gomboc.Body(main.shape,{g:G_EFF,damp:opt.damp!=null?opt.damp:DAMP}),swing:0,dir:0,prevD:null}; const rnd=lcg(seed); randomRoll(A,rnd); const B=A.body; let hold=0,t=null,n=0;
   const nbOf=()=>Gomboc.qconjrot(B.q,[0,0,-1],[0,0,0]);
   for(let i=0;i<300/DT;i++){ B.step(DT); if(i%6===0){ A.nb=nbOf(); observe(A); const w=Math.hypot(B.om[0],B.om[1],B.om[2]); if(w<0.05){ hold+=6*DT; if(hold>1.5){ t=B.t-1.5; break; } } else hold=0; } }
   const d1=ang(nbOf(),STABLE); return {tRest:t,distRad:d1,swings:A.swing,minFz:B.minN}; }
-window.__gomboc={get main(){return main;},get cmp(){return cmp;},get state(){return state;},STABLE,UNSTABLE,fastRoll,startRoll,setBeta,
+window.__gomboc={setShape(k){ $('sShape').value=k; shapeKind=k; rebuild(); },get STABLE(){return STABLE;},setDamp(d){ DAMP=d; main.body.damp=d; },get main(){return main;},get cmp(){return cmp;},get state(){return state;},STABLE,UNSTABLE,fastRoll,startRoll,setBeta,
   info(){ const B=main.body; return {state,t:tRoll,rolls,times:times.slice(),om:B.om.slice(),nb:main.nb.slice(),distRad:ang(main.nb,STABLE),swings:main.swing,minFz:B.minN}; },
   step(n){ for(let i=0;i<n;i++) stepAll(); main.sync(); if(cmp) cmp.sync(); }, setFF(v){ ff=!!v; }};
 window.__ready=true;

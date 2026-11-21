@@ -15,7 +15,7 @@ export function landscape(S,V){ const h=new Float64Array(V.length); const r={h:0
 export function sph(u){ return {theta:((Math.atan2(u[1],u[0])*180/Math.PI)+360)%360, phi:Math.acos(u[2])*180/Math.PI}; }
 if(process.argv[1].endsWith('verify.mjs')){
  const beta=+process.argv[2]||0.02, levels=(process.argv[3]||'3,4,5,6').split(',').map(Number);
- const S=new G.Shape(beta);
+ const S=(process.env.SHAPEFILE?new G.Shape(JSON.parse(fs.readFileSync(process.env.SHAPEFILE,'utf8'))):new G.Shape(beta));
  // radial extremes of the shape about CoM
  for(const L of levels){ const {V,T}=icosphere(L); const {h,maxit}=landscape(S,V); const {cnt,list}=morse(h,V,T);
   console.log(`beta=${beta} icosphere L=${L} (${V.length} verts): minima=${cnt.min} maxima=${cnt.max} saddles=${cnt.saddle} multi=${cnt.multi}  chi=min-saddle+max=${cnt.min-cnt.saddle+cnt.max} (newton maxit ${maxit})`);
