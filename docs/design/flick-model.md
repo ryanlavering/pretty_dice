@@ -54,7 +54,7 @@ Effective launch up-speed (u/s, before the +-5% jitter; throwK then scales by sq
 | gesture speed (px/ms) | sp | base | at default g (x1.25) | at 1x realistic (x1.82) |
 |---|---|---|---|---|
 | <= 0.64 (min) | 7 | 8.0 | 10.0 | 14.6 |
-| 1.0 | 11 | 13.0 | 16.2 | 23.7 |
+| 1.0 | 11 | 13.0 | 16.2 | 23.6 |
 | 1.67 (typical: 200 px in 120 ms) | 18.3 | 16.4 | 20.5 | 29.8 |
 | 2.2 | 24 | 18.3 | 22.9 | 33.3 |
 | >= 2.7 (max) | 30 | 20.0 | 25.0 | 36.4 |
@@ -62,3 +62,18 @@ Effective launch up-speed (u/s, before the +-5% jitter; throwK then scales by sq
 So effective min/max at default gravity is 10.0..25.0 (gestures) against 13..20 for R / Roll / shake; at 1x realistic 14.6..36.4. The typical flick (base 16.4) matches today's random mean 16.5 (20.6 with boost). Constants at the top of the flick code: `FLICK_SPEED_LO/HI`, `FLICK_LAUNCH_MIN/MAX`, `FLICK_CURVE`, `FLICK_JITTER`.
 
 Slowest gesture check (sim, default gravity, 3 dice): slowest (70 px in 440 ms) gives mean per-die path 4.6 u (net 2.5 u), 1-2 bounces above 0.6 u (varies run to run), still airborne above 0.6 u up to 1.2 s; the median flick (200 px in 120 ms) gives path 12.7 u, net 4.7 u. The slowest is a short real throw, not a drop (die width ~1.6 u).
+
+## Sensitivity re-fit (owner feedback on 3c8f9e3)
+
+- **Hard flicks easier:** the launch height reaches `FLICK_LAUNCH_MAX` at gesture speed `FLICK_LAUNCH_SPEED_HI = 21` (about 1.9 px/ms, a typical-hard phone swipe) instead of 30 (2.7 px/ms). `t = clamp((sp - 7)/(21 - 7), 0, 1)`, `FLICK_CURVE = .7` (was `.5` on the 7..30 range), which keeps the lazy end as it was (1.0 px/ms still gives base 13.0) and makes the typical flick slightly stronger. The horizontal clamp (`sp` 7..30) is unchanged, so hard flicks still travel sideways as far as before; only the launch height saturates earlier.
+- **Smaller gestures register:** `FLICK_MIN_PX = 30` (touch) and `FLICK_MIN_PX_MOUSE = 36` CSS px (were 60 for both), duration under `FLICK_MAX_MS = 450` as before. CSS px already follow the device pixel ratio. Anything slower than 0.15 px/ms reads as the minimum speed (base 8), so a 30 px quick flick is the lazy little roll.
+- **Misfire guards (unchanged logic):** a flick needs `rolling`, button 0, one pointer, no pinch; a release under 8 px and 400 ms on a die is the tap-to-hold, a 500 ms press the die menu (it clears the flick), two pointers or a right-drag orbit never flick. The new minimum (30 px) is far above the 8 px tap/long-press slop.
+
+| gesture speed (px/ms) | sp | base | default g (x1.25) | 1x realistic (x1.82) |
+|---|---|---|---|---|
+| <= 0.64 (min; a 30 px quick flick) | 7 | 8.0 | 10.0 | 14.6 |
+| 1.0 | 11 | 13.0 | 16.2 | 23.6 |
+| 1.67 (typical) | 18.3 | 18.3 | 22.9 | 33.4 |
+| >= 1.9 (typical-hard) | 21 | 20.0 | 25.0 | 36.4 |
+
+Minimum registering gesture: 30 px (touch) / 36 px (mouse) within 450 ms, e.g. 30 px in 80 ms.

@@ -1338,13 +1338,15 @@ const FLICK_LIFT_GRAV_EXP=.12;     // extra lift for gravity above the default f
 function flickDepthFrac(sx,uy){ const s=Math.sin(Math.atan2(sx,uy)); return Math.min(FLICK_DEPTH_MAX,FLICK_DEPTH_AT_45*2*s*s); }   // 0 at vertical, FLICK_DEPTH_AT_45 at 45 deg, rising smoothly to the cap (2 sin^2 theta: zero slope at vertical)
 const FLICK_SPEED_LO=7, FLICK_SPEED_HI=30;   // the gesture-speed clamp (units/s; 11 per px/ms): lazy ~0.64 px/ms and below .. hard ~2.7 px/ms and above
 const FLICK_LAUNCH_MIN=8, FLICK_LAUNCH_MAX=20;   // gesture launch up-speed at default gravity before liftK: slowest .. fastest flick (the R key / Roll button / shake keep the random 13..20 and never use these)
-const FLICK_CURVE=.5;                       // speed->launch curve exponent (t^curve): .5 keeps a typical 1.7 px/ms flick at ~16.4 (today's 13..20 mean 16.5) while a lazy flick reaches down to MIN
+const FLICK_LAUNCH_SPEED_HI=21;            // gesture speed (sp) that already gives the full FLICK_LAUNCH_MAX: ~1.9 px/ms, a typical-hard phone swipe (the horizontal speed clamp stays 7..30, so hard flicks still go sideways as far as before)
+const FLICK_MIN_PX=30, FLICK_MIN_PX_MOUSE=36, FLICK_MAX_MS=450;   // a flick registers from this drag distance (CSS px) and within this duration; a < 8 px, < 400 ms release on a die is still the tap-to-hold, a 500 ms press the die menu (neither is a flick)
+const FLICK_CURVE=.7;                       // speed->launch curve exponent (t^curve): .5 keeps a typical 1.7 px/ms flick at ~16.4 (today's 13..20 mean 16.5) while a lazy flick reaches down to MIN
 const FLICK_JITTER=.05;                     // +-5% natural variation of a gesture throw
-function flickLaunchVy(sp,r){ const t=THREE.MathUtils.clamp((sp-FLICK_SPEED_LO)/(FLICK_SPEED_HI-FLICK_SPEED_LO),0,1); return (FLICK_LAUNCH_MIN+Math.pow(t,FLICK_CURVE)*(FLICK_LAUNCH_MAX-FLICK_LAUNCH_MIN))*(1+FLICK_JITTER*(2*r-1)); }
+function flickLaunchVy(sp,r){ const t=THREE.MathUtils.clamp((sp-FLICK_SPEED_LO)/(FLICK_LAUNCH_SPEED_HI-FLICK_SPEED_LO),0,1); return (FLICK_LAUNCH_MIN+Math.pow(t,FLICK_CURVE)*(FLICK_LAUNCH_MAX-FLICK_LAUNCH_MIN))*(1+FLICK_JITTER*(2*r-1)); }
 function flickLiftK(g=state.gravity){ return FLICK_LIFT_BOOST*Math.pow(Math.max(1,g/GRAV_DEF),FLICK_LIFT_GRAV_EXP); }
 let flick=null;           // roll view: a quick one-finger swipe throws the dice again
 const endPtr=e=>{ const fl=flick; flick=null; if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)<8&&performance.now()-fl.t<400){ const hi=pickDie(e.clientX,e.clientY); if(hi>=0&&toggleHold(hi)) { ptrs.delete(e.pointerId); return; } }   // a short tap on a settled die holds or releases it
-   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>60&&performance.now()-fl.t<450) dockRoll(true,flickVel(e.clientX-fl.x,e.clientY-fl.y,Math.max(30,performance.now()-fl.t)));   // PD-142.38.49: the swipe's direction and speed carry into the throw
+   if(fl&&e.type==='pointerup'&&ptrs.size===1&&!pinch&&rolling&&Math.hypot(e.clientX-fl.x,e.clientY-fl.y)>(e.pointerType==='mouse'?FLICK_MIN_PX_MOUSE:FLICK_MIN_PX)&&performance.now()-fl.t<FLICK_MAX_MS) dockRoll(true,flickVel(e.clientX-fl.x,e.clientY-fl.y,Math.max(30,performance.now()-fl.t)));   // PD-142.38.49: the swipe's direction and speed carry into the throw
   ptrs.delete(e.pointerId); pinch=null; dragging=false; orbiting=false; if(ptrs.size===1){ last=[...ptrs.values()][0]; } };
 cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('pointermove',e=>{

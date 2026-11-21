@@ -117,7 +117,7 @@ for (const type of ['touch', 'mouse']) {
     console.log(`FLICK launch vy (${type}) 0.3px/ms=${slow.toFixed(1)} 1.0=${mid.toFixed(1)} 1.67=${typ.toFixed(1)} 3.3=${fast.toFixed(1)}`);
     expect(lazy, 'slowest gesture >= the 8 x 1.25 minimum (less the 5% jitter)').toBeGreaterThan(8 * 1.25 * .94); expect(lazy).toBeLessThan(8 * 1.25 * 1.06); expect(lazy).toBeLessThan(slow + .01); expect(slow).toBeLessThan(mid); expect(mid).toBeLessThan(typ); expect(typ).toBeLessThan(fast);
     expect(fast / slow, 'a hard flick is clearly higher than a lazy one').toBeGreaterThan(1.5);
-    expect(typ, 'typical flick: within 10% of today\'s mean 16.5 x 1.25').toBeGreaterThan(16.5 * 1.25 * .9); expect(typ).toBeLessThan(16.5 * 1.25 * 1.1);
+    expect(typ, 'typical flick: at least today\'s mean 16.5 x 1.25 (-10%), slightly stronger is fine (PD-199 re-fit: about 18.3 x 1.25)').toBeGreaterThan(16.5 * 1.25 * .9); expect(typ).toBeLessThan(16.5 * 1.25 * 1.25);
     // same gesture, different rng: only the +-5% jitter
     const a = await vy(200, 120, 3), b = await vy(200, 120, 19); expect(Math.abs(a - b) / typ).toBeLessThan(.12);
     // a longer drag at the same duration is faster
@@ -151,3 +151,26 @@ test('slowest gesture still launches, travels and bounces (not a drop); airtime 
   expect(slowest.travel, 'travels (mean path of the dice) at least about a die width (1.6 u)').toBeGreaterThan(1.6);
   expect(slowest.bounces, 'lands and bounces back up at least once (1-2 seen)').toBeGreaterThanOrEqual(1);
 });
+
+// PD-199 sensitivity: small quick swipes register (30 px touch / 36 px mouse), a hard phone swipe reaches full strength, tiny movements and slow drags do not throw
+for (const type of ['touch', 'mouse']) {
+  test(`${type}: small gestures register lazily; jitter taps and slow drags do not throw; a typical-hard swipe reaches full strength`, async ({ app }) => {
+    await setup(app);
+    const run = async (dx, dy, ms, seed = 11) => { await reroll(app, seed); return flickRun(app, type, dx, dy, ms, seed); };
+    const minPx = type === 'mouse' ? 36 : 30;
+    expect((await run(6, 4, 50)).settled, 'a 6 px jitter tap does not throw').toBe(true);
+    expect((await run(minPx - 6, 0, 60)).settled, 'just under the minimum does not throw').toBe(true);
+    expect((await run(minPx + 2, 0, 600)).settled, 'a slow drag past the duration limit does not throw').toBe(true);
+    const little = await run(minPx + 2, 0, 80);
+    expect(little.settled, 'a short quick swipe throws').toBe(false);
+    const vyOf = async (dx, ms) => { let t = 0; for (const sd of [3, 7, 11, 19]) t += (await run(dx, 0, ms, sd)).my; return t / 4; };
+    const lazy = await vyOf(minPx + 2, 80), hard = await vyOf(190, 100);   // 1.9 px/ms: a typical-hard phone swipe
+    const hardest = await vyOf(300, 100);
+    console.log(`FLICK small (${type}) ${minPx + 2}px/80ms vy=${lazy.toFixed(1)}; 1.9px/ms vy=${hard.toFixed(1)}; 3px/ms vy=${hardest.toFixed(1)}`);
+    expect(lazy, 'a small quick flick is a lazy little roll (base ~8 x 1.25)').toBeLessThan(8 * 1.25 * 1.3);
+    expect(hard, 'full strength at ~1.9 px/ms: within 8% of the fastest').toBeGreaterThan(hardest * .92);
+    expect(hard).toBeGreaterThan(lazy + 8);
+    // a tap / pinch-like second pointer never throws: tiny moves are taps
+    expect((await run(0, 0, 50)).settled).toBe(true);
+  });
+}
