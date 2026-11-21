@@ -17,7 +17,7 @@ GROUPS = [
   ('Story Dice features', ['PD-160', 'PD-167', 'PD-166']),
   ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169', 'PD-178', 'PD-116', 'PD-20.7']),
   ('Reviewed and landed (4.1 so far)', ['PD-154', 'PD-157', 'PD-156', 'PD-158', 'PD-159', 'PD-162', 'PD-163', 'PD-165']),
-  ('Playtest and RC comment fixes (review on the rebuilt RC)', ['PD-191', 'PD-192', 'PD-195', 'PD-196', 'PD-197', 'PD-199', 'PD-200', 'PD-203']),
+  ('Playtest and RC comment fixes (review on the rebuilt RC)', ['PD-191', 'PD-192', 'PD-195', 'PD-196', 'PD-197', 'PD-199', 'PD-200', 'PD-203', 'PD-204', 'PD-205']),
 ]
 
 # (gate, done, note)
@@ -31,16 +31,16 @@ GATES = [
   ('Sentence generator rewrite (owner taste answers) landed', True, '4d2bf2f + a157f1e softened verbs (secret ?multipoop keeps them)'),
   ('Owner round with no new change requests (4.1 settled)', False, 'owner is reviewing the RC and sending comments; each becomes a card'),
   ('Test suite faster (PD-178): full run 14 min, goal met', True, 'reviewed; 24-26 min before'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT 41-16 @083c5a0: 582 passed, 0 failed, 12 skipped, twice (14.7 and 14.8 min); 41-15 flake causes fixed (PD-200 spec log check, reset-hook leak)'),
+  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT 41-18 @4e421e3: A2 591/0 and A3 591/0 (14.5 and 14.4 min, 12 skipped); A1 had one load timeout (games-wiring offline build, 8/8 alone). Real bugs found on the way: story log cache across games (3b14cfc), reset-hook leak'),
   ('Golden set stable', True, 're-baselined only for the owner-approved Antique removal and gravity row'),
   ('Artifact CSP spec and single-file build boot clean', True, 'rechecked at each publish'),
   ('Owner bugs from the phone: PD-186 dock stays tall after Story Dice (OK); PD-187 Story Dice draft design never overwrites the user design', False, 'PD-187 mitigation + PD-191/192 landed; owner retry on the rebuilt RC pending'),
-  ('Owner comments on the RC: PD-195 twitch, 196 sentence position, 197 Bag pick, 199 flick, 200 empty-box roll, 203 menu', False, 'all landed (PD-203 menu at 083c5a0); owner review on the rebuilt RC pending; flick feel and desktop sentence need a real device'),
+  ('Owner comments on the RC: PD-191/200/205 lobby, 196/204 sentence, 197 Bag pick, 199 flick+spin', False, 'PD-192, 195, 203 reviewed ok; the rest are landed and waiting for owner review on RC v6; flick feel needs a real device'),
   ('CHANGELOG 4.1 and README written', True, 'kept current by lanes (picture dice rename, better stories, known issue removed)'),
   ('Guide review and update (Story Dice, Whoopsie, desktop click, Craps secret, gravity)', True, '85f78b7: claims verified against the app, 7 screenshots refreshed, 3 added; owner skim optional'),
   ('Merge v4 backlog commits into v4.1; then ff main to v4.1', False, 'main is at 4.0.1; check ls-remote afterwards'),
   ('Annotated tag v4.1, push, verify with git ls-remote', False, 'never pipe a failing merge into tail'),
-  ('Release candidate artifact rebuilt at the final tested commit (review flag stripped, release tour on)', True, 'v5 at 083c5a0 (the clean-pair commit): https://claude.ai/artifact/2MHSPez2JBiNV3UuB15b8m'),
+  ('Release candidate artifact rebuilt at the final tested commit (review flag stripped, release tour on)', True, 'v6 at 4e421e3: https://claude.ai/artifact/2MHSPez2JBiNV3UuB15b8m (rebuild again if more commits land)'),
   ('Release artifact: final build at the tag with the release tour', False, 'python3 scripts/build-static.py --artifact --release-tour'),
   ('Cards: Review Complete moved to Done once on main', False, ''),
   ('Cleanup: remove v4.1 worktrees and lane branches after the artifact scan', False, 'also the stale ~/code/pretty_dice checkout: owner decides'),
@@ -49,7 +49,7 @@ GATES = [
 
 OWNER_QS = [
   'PD-20.7 (CI v5, sharding): stays in Needs Review until the first real GitHub run is green.',
-  'Review PD-191, 192, 195, 196, 197, 199, 200 and 203 on the rebuilt RC (v5, 083c5a0) (PD-199 flick feel and PD-196 desktop sentence need a real device).',
+  'Review PD-191, 197, 199, 200, 204 and 205 (PD-196 with 204) on the RC (v6, 4e421e3) (PD-199 flick feel and PD-196 desktop sentence need a real device).',
   'FYI decision for later: PD-201 default-gravity micro-hops (4.2 unless you want it in 4.1).',
   'Stale ~/code/pretty_dice checkout: now fast-forwarded to main; remove it or keep it?',
   'Final sign-off on the release candidate before the tag.',
