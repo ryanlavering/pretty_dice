@@ -4,10 +4,11 @@ title: 'Designs as look only: shape as suggestion, designs link to sets'
 status: To Do
 assignee: []
 created_date: '2026-11-21T00:26:00Z'
+updated_date: '2026-11-21T00:29:00Z'
 labels:
   - v4.2
 dependencies: []
-priority: medium
+priority: high
 ordinal: 395000
 ---
 
