@@ -1,10 +1,10 @@
 ---
 id: PD-195
 title: Dice twitch before settling at gravity >= 0.14
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-20T23:40:00Z'
-updated_date: '2026-11-21T00:56:00Z'
+updated_date: '2026-11-21T07:50:00Z'
 labels:
   - v4.1
 dependencies: []
