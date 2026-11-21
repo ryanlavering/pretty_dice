@@ -188,7 +188,7 @@ for (const how of ['button', 'enter', 'key r']) {
     await app.page.evaluate(() => { const b = document.getElementById('rollbox'); if (b) b.value = ''; document.querySelector('#paneltabs [data-pane=table]')?.click(); });   // an earlier test may have left a formula in the box and the Story preview on (its stale look snapshot would be restored)
     await app.reset(2000, { plain: true });
     await app.nav.toPlay();
-    const before = await mine(app);
+    const before = await mine(app), log0 = await app.run(pd => pd.bag.log.length);
     await toStorySetup(app);
     expect(await storyOn(app)).toMatchObject({ custom: true });
     const logN = await app.run(pd => pd.state.shape + '|' + pd.state.notation);
@@ -203,7 +203,7 @@ for (const how of ['button', 'enter', 'key r']) {
     if (before.shape === 'custom') expect(after.notation).toBe(before.notation);
     expect(after.n).toBe(before.n);
     expect(await app.run(pd => pd.state.substrate)).not.toBe('solid-story');
-    expect(await app.run(pd => JSON.stringify(pd.bag.log.slice(0, 3))), 'no 5d12 log entry').not.toMatch(/5d12/);
+    expect(await app.run((pd, n) => JSON.stringify(pd.bag.log.slice(Math.min(n, pd.bag.log.length))), log0), 'no 5d12 log entry').not.toMatch(/5d12/);
     await expect(app.page.locator('#paneltabs [data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.page.click('#paneltabs [data-pane=games]');
     expect(await gameSel(app).inputValue(), 'selection unchanged').toBe('story');
