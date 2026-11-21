@@ -978,7 +978,8 @@ function tableRoll(notation,launch=false,vel=null){ const p=parseNotation(notati
 let qbarSig='';
 /* the dock (PD-142.38 slice 2; was the quick roll bar): a formula box and the one Roll button. dockRoll is the single way to throw in roll view: the button, Enter in the box, R, a flick and a shake all call it */
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
-function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ startRoll(launch||(game?rolling:placed),false,vel); return; }
+function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ if(!game&&storyPrev){ syncGameLook(true); setPane('table'); }   /* PD-200: an empty box releases the game look too: the quick roll never throws the preview dice */
+    startRoll(launch||(game?rolling:placed),false,vel); return; }
   if(!game&&storyPrev&&!parseNotation(v,true).error){ syncGameLook(true); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
   const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }

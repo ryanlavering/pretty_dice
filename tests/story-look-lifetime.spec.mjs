@@ -181,3 +181,33 @@ for (const size of ['desktop', 'phone']) {
     await app.page.setViewportSize({ width: 1280, height: 800 });
   });
 }
+
+// PD-200: the same with an EMPTY formula box: Roll releases the game look and rolls the player's own dice.
+for (const how of ['button', 'enter', 'key r']) {
+  test(`PD-200 ${how}: quick roll with an empty box, Story Dice selected not started: own dice, no 5d12, selection kept`, async ({ shared: app }) => {
+    await app.page.evaluate(() => { const b = document.getElementById('rollbox'); if (b) b.value = ''; document.querySelector('#paneltabs [data-pane=table]')?.click(); });   // an earlier test may have left a formula in the box and the Story preview on (its stale look snapshot would be restored)
+    await app.reset(2000, { plain: true });
+    await app.nav.toPlay();
+    const before = await mine(app);
+    await toStorySetup(app);
+    expect(await storyOn(app)).toMatchObject({ custom: true });
+    const logN = await app.run(pd => pd.state.shape + '|' + pd.state.notation);
+    expect(logN).toContain('d');
+    await app.page.locator('#rollbox').fill('');
+    if (how === 'button') await app.page.locator('#rollbtn').click();
+    else if (how === 'enter') { await app.page.locator('#rollbox').focus(); await app.page.keyboard.press('Enter'); }
+    else { await app.page.locator('#rollbox').blur(); await app.page.keyboard.press('r'); }
+    await app.run(pd => { pd.step(30); pd.renderOnce(); });
+    const after = await mine(app);
+    expect(after.shape, 'the player\'s own dice, not the preview 5d12').toBe(before.shape);
+    if (before.shape === 'custom') expect(after.notation).toBe(before.notation);
+    expect(after.n).toBe(before.n);
+    expect(await app.run(pd => pd.state.substrate)).not.toBe('solid-story');
+    expect(await app.run(pd => JSON.stringify(pd.bag.log.slice(0, 3))), 'no 5d12 log entry').not.toMatch(/5d12/);
+    await expect(app.page.locator('#paneltabs [data-pane=table]')).toHaveAttribute('aria-selected', 'true');
+    await app.page.click('#paneltabs [data-pane=games]');
+    expect(await gameSel(app).inputValue(), 'selection unchanged').toBe('story');
+    await app.run(pd => { pd.step(30); pd.renderOnce(); });
+    expect(await storyOn(app), 'reopening Games previews again').toMatchObject({ custom: true });
+  });
+}

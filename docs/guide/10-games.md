@@ -86,7 +86,7 @@ Story Dice uses a temporary **game look**: plain white dice with the pictures on
 
 The game look stays on the table for as long as you are on the **Games** tab: after a game ends, or with a paused game and **Resume** after a reload. It is released, and your own dice and design come back exactly, when you pick another game or leave the Games tab (Table, Log, Design, or hide the panel). A game that is running keeps its dice wherever you go.
 
-If you type a formula in the dock (say `2d6`) and press **Roll** while Story Dice is only selected and not started, the preview is released and that formula rolls on your own dice. The selection stays, and opening the Games tab shows the preview again. (Known issue: with the roll box left empty, **Roll** throws the five preview picture dice instead and the preview stays; the log then names the pictures.)
+If you press **Roll** in the dock while Story Dice is only selected and not started, the preview is released and your own dice roll: the formula you typed (say `2d6`), or your current dice if the box is empty. The selection stays, and opening the Games tab shows the preview again.
 
 On a phone see [Phone versus desktop](08-phone-vs-desktop.md).
 
