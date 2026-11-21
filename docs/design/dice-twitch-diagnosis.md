@@ -38,4 +38,28 @@ Only above the default gravity (default feel and seeded outcomes untouched): `sl
 
 Spec `tests/dice-twitch.spec.mjs` (4 seeded rolls per case, counted in sim steps via `__pd.drift`): old code 24-115 hops per case (last hop 3.5-5.5 s); fix: lone d20 at 0.14x 3 hops (last 1.2 s, peak 1.2 u/s), all other cases 0 hops. Thresholds: lone die <= 3 hops and last hop < 2.5 s, pile <= 8 hops and < 3 s.
 
-Default gravity (not changed, report only): the same harness shows hops there too (lone d20 17 hops, last at 8.4 s; 9-die pile 27 hops, last at 6.7 s, firstRest 4.6 s). Quieting it would change default-gravity behaviour and seeded outcomes, so it is left for an owner decision.
+## Default gravity and residual motion (PD-201)
+Owner feedback after 4.1: wiggles still seen occasionally at all gravities. Findings, measured in sim steps with the live flow (steps until the roll settles, then `drift`):
+
+1. The 17 / 27 hops of the PD-195 note at default gravity were mostly NOT the resting twitch: the old harness never ran `finishRoll`, so it also counted (a) the deliberate topple of a cocked die (`finishRoll` sets `b.free`, damping .05, spin kick 2.5+ rad/s; the die then rocks for ~0.7 s and may be tried twice) and (b) a die still rocking onto its face while the rest of a pile sleeps (restitution .4; v up to 2 u/s, y moves 0.04 u, ends by ~4 s). Both are real settling motion, not a solver artefact; the harness now skips rolls where a die was freed and counts hops only after every die has been slow (< .15) for 20 steps in a row.
+2. The real residual twitch at default gravity is the same limit cycle as above, only smaller: creep of ~0.002 u/s, the die goes sleepy (state 1) for ~0.4 s, then a kick of 0.2-0.5 u/s (y moves 0.002 u) wakes it, so the 1 s sleep timer never completes until the 3.5 s damping. In a pile one slow die can do this while the others sleep, and it delays `restCheck`. Old code, 10 seeded rolls each: lone d20 16 hops (worst roll 6, last at 3.5 s), 9-die pile 71 hops (worst roll 63, last at 10 s, never asleep in one roll).
+3. Other candidates checked and not the cause / not needed: damping raised earlier (0.25/0.5 or 0.9/0.99 once slow) did not reduce the count and changed outcomes; a zero-restitution threshold for slow impacts reduced rocking only a little; contact stiffness 1e8, relaxation 2/5, friction relaxation: all just reshuffle the trajectories (chaotic), no systematic effect; 20 solver iterations at default: not needed once the sleep timer is short; hysteresis on the calm switch: no difference. The fixed 1/60 test step vs `step(1/60,dt,4)` in the live loop is not a factor (same limit cycle in both).
+
+### Fix at default gravity
+Same idea as 4.1 but only for the end phase: `sleepTimeLimit` is 0.1 s (instead of 1 s) while every die is slow (|v|^2+|w|^2 < 1; `calmNow`, set each step by `tuneSolver()`), at gravity >= default. Flight, tumble and impacts keep the 1 s limit and 10 iterations, so the slow-motion feel is untouched. Above default gravity nothing changes from 4.1 (0.1 s always, 20 iterations while slow). Below default gravity nothing changes at all: a first version applied the calm rule there too and changed the flight/settle at 1/64x (gravity.spec failed), and creep scales with g so the 1 s timer completes there anyway.
+
+### Numbers (tests/dice-twitch.spec.mjs: 10 seeded rolls per case, hops = steps with speed > .2 after sustained rest; worst roll)
+| case | old: hops (total), last hop | new |
+|---|---|---|
+| lone d20, default g | 6 (16), 3.5 s | 0 |
+| 9-die pile, default g | 63 (71), 10 s, not asleep | 0 |
+| lone d20 / pile, 0.14x | 0 / 0 | 0 / 0 |
+| lone d20 / pile, 1x | 0 / 0 | 0 / 0 |
+
+(With the new flow harness the 4.1 fix already gives 0 at 0.14x and 1x; the old "3 hops at 0.14x" came from the harness counting a topple.)
+
+### Seeded outcomes, default gravity (60 rolls: seeds 1-30, `1d20` and `6d6+3d20`, `reseed` + `simRoll`)
+Faces: 0 of 60 differ. Landing positions: 16 of 30 lone-d20 rolls and all 30 pile rolls differ slightly (sleeping earlier removes the last creep): below 0.005 u in all but 10 pile rolls, largest 0.106 u (pile seed 6, which also settles 0.5 s later); settle time (`simT`) differs in 8 of 60 rolls by up to 0.6 s. Bit-identical positions are not possible: any change to the end phase moves the resting pose by ~1e-3, and a later flick from that pose then lands elsewhere (tests/flick.spec.mjs resting-height lower bound lowered 25 -> 20 for that reason: 24.8% vs 25.3% for the (200,-200) flick).
+
+### Still visible by design
+A cocked die toppled by `finishRoll` rocks for about 0.7 s, and a die rolling onto its face rocks 2-3 times before it stops. Options if the owner still sees these: a higher damping for freed dice, a zero-restitution threshold for slow impacts (see item 3: small effect), or a settle-assist that sleeps the die once it is within a few degrees of flat.

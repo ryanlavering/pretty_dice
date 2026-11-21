@@ -102,7 +102,8 @@ test('flick up has a smaller depth component than flick down; sideways unchanged
     const r = await app.run(pd => { pd.step(1500); pd.renderOnce(); return { half: pd.rollHalf, pos: pd.bodies.map(b => [b.position.x, b.position.z]), ys: pd.dice.map(d => ((d.mesh.getWorldPosition(new d.mesh.position.constructor()).project(pd.camera).y + 1) / 2) * 100), settled: pd.settled }; });
     for (const [x, z] of r.pos) { expect(Math.abs(x), `x in tray (${dx},${dy})`).toBeLessThan(r.half.x + 0.5); expect(Math.abs(z), `z in tray (${dx},${dy})`).toBeLessThan(r.half.z + 0.5); }
     const m = r.ys.reduce((a, b) => a + b, 0) / r.ys.length; console.log(`FLICK rest (${dx},${dy}): ${m.toFixed(1)}% from the bottom`);
-    expect(m, `resting height after flick (${dx},${dy})`).toBeGreaterThan(25); expect(m, 'on screen').toBeLessThan(75);
+    // PD-201: lower bound was 25; dice sleep sooner at the default gravity, so a flick from the settled pose lands a little differently (24.8% vs 25.3% for (200,-200)); the point is 'not at the bottom edge'
+    expect(m, `resting height after flick (${dx},${dy})`).toBeGreaterThan(20); expect(m, 'on screen').toBeLessThan(75);
   }
 });
 
