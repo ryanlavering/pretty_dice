@@ -979,7 +979,7 @@ function tableRoll(notation,launch=false,vel=null){ const p=parseNotation(notati
 let qbarSig='';
 /* the dock (PD-142.38 slice 2; was the quick roll bar): a formula box and the one Roll button. dockRoll is the single way to throw in roll view: the button, Enter in the box, R, a flick and a shake all call it */
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
-function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){ if(!game&&storyPrev){ syncGameLook(true); setPane('table'); }   /* PD-200: an empty box releases the game look too: the quick roll never throws the preview dice */
+function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){   /* PD-205: in the Story Dice lobby an empty box rolls the story dice in place on the Games tab: the look is released only by leaving Games or choosing another game (PD-191) */
     startRoll(launch||(game?rolling:placed),false,vel); return; }
   if(!game&&storyPrev&&!parseNotation(v,true).error){ syncGameLook(true); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
   const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
@@ -1857,7 +1857,7 @@ const phoneMq=matchMedia('(max-width:760px)'), phoneUI=()=>phoneMq.matches;
 const roomTab={design:'look',play:'table'}, roomNow=()=>document.body.classList.contains('design')?'design':'play';   // PD-142.38 slice 5: the last tab per room is remembered
 const PANES=['look','table','games','log'];   // PD-142.38.41/.43: Design has no tabs (always Look; the strip holds Undo/Redo); Bag and Sets are the Bag view's tabs
 function setPane(name){ const room=roomNow();
-  if(name==='settings'||(name==='games'&&!game&&!SP.childNodes.length)){ name=roomTab[room]; if(name==='games'&&!game) name='table'; }
+  if(name==='settings'||(name==='games'&&!game&&!SP.childNodes.length)){ name=roomTab[room]; if(name==='games'&&!game&&!storyPrev) name='table'; }   // PD-205: the Story Dice lobby (preview on) keeps Games when a roll re-syncs the panes
   if(name==='games'&&room==='design') name='look';
   if(!PANES.includes(name)) return; roomTab[room]=name;
   const g=name==='games', lg=name==='log';

@@ -182,29 +182,34 @@ for (const size of ['desktop', 'phone']) {
   });
 }
 
-// PD-200: the same with an EMPTY formula box: Roll releases the game look and rolls the player's own dice.
+// PD-205 (reverses PD-200): in the Story Dice lobby an EMPTY box Roll rolls the story dice in place on the Games tab.
 for (const how of ['button', 'enter', 'key r']) {
-  test(`PD-200 ${how}: quick roll with an empty box, Story Dice selected not started: own dice, no 5d12, selection kept`, async ({ shared: app }) => {
-    await app.page.evaluate(() => { const b = document.getElementById('rollbox'); if (b) b.value = ''; document.querySelector('#paneltabs [data-pane=table]')?.click(); });   // an earlier test may have left a formula in the box and the Story preview on (its stale look snapshot would be restored)
+  test(`PD-205 ${how}: Roll in the Story Dice lobby rolls the story dice in place; leaving Games releases; reopening previews again`, async ({ shared: app }) => {
+    await app.page.evaluate(() => { const b = document.getElementById('rollbox'); if (b) b.value = ''; document.querySelector('#paneltabs [data-pane=table]')?.click(); });
     await app.reset(2000, { plain: true });
     await app.nav.toPlay();
-    const before = await mine(app), log0 = await app.run(pd => pd.bag.log.length);
+    const before = await mine(app);
     await toStorySetup(app);
-    expect(await storyOn(app)).toMatchObject({ custom: true });
-    const logN = await app.run(pd => pd.state.shape + '|' + pd.state.notation);
-    expect(logN).toContain('d');
+    const s0 = await storyOn(app); expect(s0).toMatchObject({ custom: true });
+    const sub0 = s0.sub, n0 = await app.run(pd => pd.state.shape + '|' + pd.state.notation);
     await app.page.locator('#rollbox').fill('');
     if (how === 'button') await app.page.locator('#rollbtn').click();
     else if (how === 'enter') { await app.page.locator('#rollbox').focus(); await app.page.keyboard.press('Enter'); }
     else { await app.page.locator('#rollbox').blur(); await app.page.keyboard.press('r'); }
     await app.run(pd => { pd.step(30); pd.renderOnce(); });
+    await expect(app.page.locator('#paneltabs [data-pane=games]')).toHaveAttribute('aria-selected', 'true');
+    expect(await gameSel(app).inputValue(), 'selection unchanged').toBe('story');
+    expect(await app.run(pd => !!pd.game)).toBe(false);
+    const s1 = await storyOn(app);
+    expect(s1.sub, 'still the story look').toBe(sub0);
+    expect(s1.n, 'same dice').toBe(s0.n);
+    expect(await app.run(pd => pd.state.shape + '|' + pd.state.notation), 'same story dice').toBe(n0);
+    await app.page.click('#paneltabs [data-pane=table]');
+    await app.run(pd => { pd.step(30); pd.renderOnce(); });
     const after = await mine(app);
-    expect(after.shape, 'the player\'s own dice, not the preview 5d12').toBe(before.shape);
-    if (before.shape === 'custom') expect(after.notation).toBe(before.notation);
+    expect(after.shape, 'leaving Games gives the player\'s own dice back').toBe(before.shape);
     expect(after.n).toBe(before.n);
     expect(await app.run(pd => pd.state.substrate)).not.toBe('solid-story');
-    expect(await app.run((pd, n) => JSON.stringify(pd.bag.log.slice(Math.min(n, pd.bag.log.length))), log0), 'no 5d12 log entry').not.toMatch(/5d12/);
-    await expect(app.page.locator('#paneltabs [data-pane=table]')).toHaveAttribute('aria-selected', 'true');
     await app.page.click('#paneltabs [data-pane=games]');
     expect(await gameSel(app).inputValue(), 'selection unchanged').toBe('story');
     await app.run(pd => { pd.step(30); pd.renderOnce(); });
