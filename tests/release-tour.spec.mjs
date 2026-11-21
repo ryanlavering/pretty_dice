@@ -4,6 +4,8 @@ import { test, expect } from './helpers/app.mjs';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 const tour = page => page.addInitScript(() => { window.__PD_RELEASE_TOUR = '4.1'; });
+// dots are positioned by a 400 ms render tick, so which dot is first in view varies: always address the entry by id
+const dot = (page, id) => page.locator(`.nfdot[data-feature=${id}]:not([hidden])`);
 const unseen = page => page.evaluate(() => window.__nf.unseen());
 
 test('normal build: no tour', async ({ app, page }) => {
@@ -17,14 +19,15 @@ test('flag set: six tour entries in the approved order, dots shown', async ({ ap
   expect(await page.evaluate(() => window.__nf.on)).toBe(true);
   expect(await unseen(page)).toEqual(['T1@1', 'T2@1', 'T3@1', 'T4@1', 'T5@1', 'T6@1']);
   await app.nav.toPlay();
-  await expect(page.locator('.nfdot:not([hidden])').first()).toBeVisible();
-  await page.locator('.nfdot:not([hidden])').first().click();
+  await expect(dot(page, 'T1')).toBeVisible();
+  await dot(page, 'T1').click();
   await expect(page.locator('.nfbox')).toContainText('Story Dice');
   await expect(page.locator('.nfbox .nfh')).toContainText("What's new in 4.1");
 });
 test('Prev and Next walk the tour, opening the tab each entry needs', async ({ app, page }) => {
   await tour(page); await app.open(); await app.nav.toPlay();
-  await page.locator('.nfdot:not([hidden])').first().click();
+  await expect(dot(page, 'T1')).toBeVisible();
+  await dot(page, 'T1').click();
   await expect(page.locator('.nfcount')).toHaveText('1 of 6');
   await page.locator('.nfnext').click();
   await expect(page.locator('.nfbox')).toContainText('5d12{noto#1}');
@@ -36,7 +39,8 @@ test('Prev and Next walk the tour, opening the tab each entry needs', async ({ a
 });
 test('Got it dismisses one; Skip tour dismisses all; both are remembered across a reload', async ({ app, page }) => {
   await tour(page); await app.open(); await app.nav.toPlay();
-  await page.locator('.nfdot:not([hidden])').first().click();
+  await expect(dot(page, 'T1')).toBeVisible();
+  await dot(page, 'T1').click();
   await page.locator('.nfbox .nfgot').click();
   expect((await unseen(page)).length).toBe(5);
   await page.reload(); await page.waitForFunction(() => window.__ready);
