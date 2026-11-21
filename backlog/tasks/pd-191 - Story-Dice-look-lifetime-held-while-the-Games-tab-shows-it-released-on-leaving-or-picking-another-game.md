@@ -3,10 +3,10 @@ id: PD-191
 title: >-
   Story Dice look lifetime: held while the Games tab shows it, released on
   leaving (or picking another game)
-status: Needs Review
+status: In Progress
 assignee: []
 created_date: '2026-11-20T19:57:00Z'
-updated_date: '2026-11-20T20:09:00Z'
+updated_date: '2026-11-21T07:44:00Z'
 labels:
   - v4.1
 dependencies: []
