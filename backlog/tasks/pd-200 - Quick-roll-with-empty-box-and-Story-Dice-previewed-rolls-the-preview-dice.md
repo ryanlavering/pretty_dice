@@ -1,10 +1,10 @@
 ---
 id: PD-200
 title: Quick roll with empty box and Story Dice previewed rolls the preview dice
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-21T00:16:00Z'
-updated_date: '2026-11-21T08:05:00Z'
+updated_date: '2026-11-21T15:56:00Z'
 labels:
   - v4.1
 dependencies: []

@@ -1,10 +1,10 @@
 ---
 id: PD-205
 title: 'Story Dice lobby: Roll rolls the story dice in place (no jump to Table)'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-21T07:44:00Z'
-updated_date: '2026-11-21T08:05:00Z'
+updated_date: '2026-11-21T15:56:00Z'
 labels:
   - v4.1
 dependencies: []
