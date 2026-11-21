@@ -431,14 +431,14 @@ const liveChipJ=()=>({colors:state.colors,substrate:state.substrate});
 /* ---------- UI ---------- */
 const DBL_MS=250;   // PD-142.38.40: a single tap waits this long for a second click before it acts, so a double-click never flashes the single-die state
 /* tap/double/long-press on one button: single() runs after DBL_MS (immediately for keyboard activation), add() on a double-click or a long press; either cancels a pending single */
-function tapOrAdd(b,{single,add,canAdd=()=>true,snap=null,restore=null}){ let t=0, lp=0, fired=false, dbl=false, saved, firedAt=0;   // PD-142.38.48: a second click inside the wait adds by itself (touch browsers send no dblclick); a slow double-click (the single already ran) puts the formula back first, so the result is always previous + 1 die
+function tapOrAdd(b,{single,add,canAdd=()=>true,snap=null,restore=null,slow=true}){ let t=0, lp=0, fired=false, dbl=false, saved, firedAt=0;   // PD-142.38.48: a second click inside the wait adds by itself (touch browsers send no dblclick); a slow double-click (the single already ran) puts the formula back first, so the result is always previous + 1 die
   const doAdd=()=>{ if(snap&&restore&&firedAt&&performance.now()-firedAt<900){ restore(saved); } firedAt=0; add(); };
   const runSingle=()=>{ t=0; if(snap) saved=snap(); firedAt=performance.now(); single(); };
-  b.addEventListener('click',e=>{ if(fired){ fired=false; return; } if(e.detail===0){ single(); return; } if(e.detail<2&&!t) firedAt=0; if(t){ clearTimeout(t); t=0; if(canAdd()){ dbl=true; doAdd(); } return; } if(!canAdd()){ single(); return; } if(e.detail>1&&firedAt&&performance.now()-firedAt<900) return; t=setTimeout(runSingle,DBL_MS); });
-  b.addEventListener('dblclick',()=>{ clearTimeout(t); t=0; if(dbl){ dbl=false; return; } if(canAdd()) doAdd(); });
+  b.addEventListener('click',e=>{ if(fired){ fired=false; return; } if(e.detail===0){ single(); return; } if(e.detail<2&&!t) firedAt=0; if(t){ clearTimeout(t); t=0; if(canAdd()){ dbl=true; doAdd(); } return; } if(!canAdd()){ single(); return; } if(slow&&e.detail>1&&firedAt&&performance.now()-firedAt<900) return; t=setTimeout(runSingle,DBL_MS); });
+  b.addEventListener('dblclick',()=>{ clearTimeout(t); t=0; if(dbl){ dbl=false; return; } if(slow&&canAdd()) doAdd(); });   // slow:false (PD-203 menu button) = only a double inside the wait counts, so a quick second visit to the button is two taps
   b.addEventListener('pointerdown',e=>{ fired=false; clearTimeout(lp); if(e.pointerType==='mouse'||!canAdd()) return; lp=setTimeout(()=>{ fired=true; add(); },480); });
   for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp));
-  b.addEventListener('contextmenu',e=>{ if(canAdd()) e.preventDefault(); }); }
+  b.addEventListener('contextmenu',e=>{ if(canAdd()) e.preventDefault(); }); return ()=>{ clearTimeout(t); t=0; }; }   // returns a cancel for a pending single
 for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.dataset.id=id; if(id==='rd12'||id==='set7') b.style.gridColumn='span 2'; if(DIE_CHIP[id]||id==='d100') b.append(chipEl(id,liveChipJ(),{flat:true})); b.append(s.label);
   const sides=/^d\d+$/.test(id)?+id.slice(1):0;
   /* PD-142.38.34/.40: the same semantics in Play and Design. Tap = ONE die of that shape, that shape selected, Custom collapsed (after a short wait for a double-click). Double-click / long press = ADD one die to the formula and select Custom with the full formula showing. Never rolls. */
@@ -1194,9 +1194,12 @@ function setFull(on,keep){ document.body.classList.toggle('full',on); if(!keep){
 const toggleFull=()=>setFull(!document.body.classList.contains('full'));
 /* Utility drawer: opens as a list, shown once as a pill when a session starts (not in test URLs), closes on an outside tap or Escape. */
 const drawerEl=$('drawer');
-function closeDrawer(){ drawerEl.classList.remove('open'); $('drawerbtn').setAttribute('aria-expanded','false'); }
+let drawerTapCancel=null;   // PD-203: closing the menu (an item pick, Escape) also cancels a menu-button tap still waiting for a possible double, so it cannot open the menu afterwards
+function closeDrawer(){ if(drawerTapCancel) drawerTapCancel(); drawerEl.classList.remove('open'); $('drawerbtn').setAttribute('aria-expanded','false'); }
 function openDrawer(){ drawerEl.classList.add('open'); $('drawerbtn').setAttribute('aria-expanded','true'); }
-$('drawerbtn').onclick=()=>{ if(drawerEl.classList.contains('open')) closeDrawer(); else openDrawer(); };
+const roomSwitch=()=>{ closeDrawer(); $(document.body.classList.contains('design')?'roll':'back').click(); };
+/* PD-203: a double-click / double-tap / long-press on the menu button is the Design | Play switch; a single tap waits for a possible double (tapOrAdd, PD-142.38.40) */
+drawerTapCancel=tapOrAdd($('drawerbtn'),{single:()=>{ if(drawerEl.classList.contains('open')) closeDrawer(); else openDrawer(); },add:roomSwitch,slow:false});
 dset($('resetview'),'<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg>','Reset view'); $('resetview').onclick=()=>{ resetView(); closeDrawer(); };
 for(const id of ['snd','info','spinbtn']) $(id).addEventListener('click',closeDrawer);
 document.addEventListener('pointerdown',e=>{ if(drawerEl.classList.contains('open')&&!drawerEl.contains(e.target)) closeDrawer(); },true);
@@ -1254,12 +1257,21 @@ function nfCollapse(){ nfOpen=null; nfBox.hidden=true; document.querySelectorAll
 function nfRetire(keys){ for(const k of keys) nfSeen.add(k); nfSave(); nfCollapse(); nfRender(); }
 function nfPlace(f,dot){ const r=dot.getBoundingClientRect(), w=Math.min(300,innerWidth-24); nfBox.hidden=false; const h=nfBox.offsetHeight;
   let x=Math.max(12,Math.min(innerWidth-w-12,r.left-w/2)), y=r.bottom+10; if(y+h>innerHeight-12) y=Math.max(12,r.top-h-10); nfBox.style.left=x+'px'; nfBox.style.top=y+'px'; }
-function nfShow(f,dot){ document.querySelectorAll('.nfdot.open').forEach(d=>d.classList.remove('open')); nfOpen=f; dot.classList.add('open'); nfBox.replaceChildren();
+let nfLast=null; try{ nfLast=sessionStorage.getItem('prettydice.nflast'); }catch{}   // PD-203: the last item opened (per-viewer convenience; memory first, session storage as a backup)
+function nfShow(f,dot){ nfLast=nfKey(f); try{ sessionStorage.setItem('prettydice.nflast',nfLast); }catch{} document.querySelectorAll('.nfdot.open').forEach(d=>d.classList.remove('open')); nfOpen=f; dot.classList.add('open'); nfBox.replaceChildren();
   const un=nfUnseen(), i=un.indexOf(f), hd=el('div','nfh'); hd.append(el('span','',f.card),el('small','','tap to collapse')); hd.onclick=nfCollapse;
   const nav=el('div','nfnav'), mk=(c,t,fn)=>{ const b=el('button',c,t); b.type='button'; b.onclick=fn; return b; };
   nav.append(mk('nfprev','Prev',()=>nfStep(-1)),el('span','nfcount',(i+1)+' of '+un.length),mk('nfnext','Next',()=>nfStep(1)));
   const got=el('button','nfgot','Got it'); got.type='button'; got.onclick=()=>{ const rest=un.filter(x=>x!==f), nx=rest.length?rest[i%rest.length]:null; nfRetire([nfKey(f)]); if(nx) nfGo(nx); };
-  nfBox.append(hd,el('div','',f.text),nav,got); nfPlace(f,dot); }
+  const clr=el('button','nfclear',NF_TOUR?'Skip tour':'Clear all'), say=el('span','nfhint'); clr.type='button'; nfDouble(clr,()=>nfRetire(NEW_FEATURES.map(nfKey)),()=>{ say.textContent=NF_TOUR?'Double-tap to skip the tour':'Double-tap to clear all'; });
+  const cw=el('div','nfclr'); cw.append(clr,say); nfBox.append(hd,el('div','',f.text),nav,got,cw); nfPlace(f,dot); }
+/* PD-203: clear-all must be deliberate: a double click / double tap or a ~600 ms press fires it; a single tap only shows the hint */
+function nfDouble(b,fire,hint){ let last=0,lp=0,fired=false;
+  b.addEventListener('pointerdown',()=>{ fired=false; clearTimeout(lp); lp=setTimeout(()=>{ fired=true; fire(); },600); });
+  for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp));
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+  b.addEventListener('click',()=>{ if(fired){ fired=false; return; } const now=performance.now(); if(last&&now-last<500){ last=0; fire(); } else { last=now; hint(); } }); }
+function nfResume(){ const un=nfUnseen(); if(un.length) nfGo(un.find(f=>nfKey(f)===nfLast)||un[0]); }
 // PD-163: Prev / Next walk the unseen entries in list order (wrapping); an anchor on the other room is reached with the existing Design | Play switch (#roomsw), then the callout opens once its dot is visible.
 function nfStep(dir){ const un=nfUnseen(); if(!un.length) return; const i=un.indexOf(nfOpen); nfGo(un[((i<0?(dir>0?-1:0):i)+dir+un.length)%un.length]); }
 function nfGo(f){ nfCollapse(); const inDesign=document.body.classList.contains('design'); if(f.room&&((f.room==='design')!==inDesign)) $('roomsw').click();
@@ -1273,15 +1285,15 @@ function nfRender(){ if(!NF_ON) return; const un=nfUnseen(), stack=new Map(); le
   for(const f of un){ const k=nfKey(f); let d=nfDots.get(k); if(!d){ d=el('button','nfdot'); d.type='button'; d.dataset.feature=f.id; d.setAttribute('aria-label','New: '+f.card); d.onclick=e=>{ e.stopPropagation(); if(nfOpen===f) nfCollapse(); else nfShow(f,d); }; document.body.append(d); nfDots.set(k,d); }
     const t=nfAnchor(f), r=t&&t.getBoundingClientRect(), vis=!!r&&r.width>0&&r.height>0&&getComputedStyle(t).visibility!=='hidden'&&getComputedStyle(t).display!=='none'&&r.bottom>0&&r.top<innerHeight;
     d.hidden=!vis; if(vis){ here++; const n=stack.get(t)||0; stack.set(t,n+1); d.style.left=(r.right-4-(n%6)*18)+'px'; d.style.top=(r.top+4+Math.floor(n/6)*18)+'px';   /* PD-142.38.67: more than six dots on one anchor wrap to a second row instead of running under the centred title toast */ } d.classList.toggle('later',nfOpen!==f&&nfCollapsedOnce.has(k)); }
-  const all=$('nfall'); if(all){ all.hidden=!un.length; const lb=NF_TOUR?'Skip tour':'Seen all'; all.querySelector('span').textContent=here===un.length?`${lb} (${un.length} new)`:`${lb} (${un.length} new, ${here} on this screen)`; all.title=here===un.length?'':'The others are on another tab or room: Design/Play, Look/Bag/Sets, Table/Games/Log'; } }
+  const all=$('nfall'); if(all){ all.hidden=!un.length; all.querySelector('span').textContent=`What's new (${un.length})`; all.title=here===un.length?'':'The others are on another tab or room: Design/Play, Look/Bag/Sets, Table/Games/Log'; } }
 const nfCollapsedOnce=new Set();
 if(NF_ON){ document.body.append(nfBox);
-  const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','',NF_TOUR?'Skip tour':'Seen all')); all.onclick=()=>{ closeDrawer(); nfRetire(NEW_FEATURES.map(nfKey)); }; $('dmenu').append(all);
+  const all=el('button','di'); all.id='nfall'; all.type='button'; all.setAttribute('role','menuitem'); all.append(el('span','',"What's new")); all.onclick=()=>{ closeDrawer(); nfResume(); }; $('dmenu').prepend(all);   // PD-203: first in the menu = the far end from Design | Play (the menu opens upward, so it is the top on screen)
   document.addEventListener('pointerdown',e=>{ if(nfOpen&&!e.target.closest('.nfbox,.nfdot')){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   addEventListener('keydown',e=>{ if(e.key==='Escape'&&nfOpen){ nfCollapsedOnce.add(nfKey(nfOpen)); nfCollapse(); } },true);
   setInterval(()=>{ nfRender(); if(nfOpen){ const d=nfDots.get(nfKey(nfOpen)); if(d&&!d.hidden) nfPlace(nfOpen,d); else nfCollapse(); } },400); nfRender(); }
 window.__nfEntries=NEW_FEATURES; window.__nf={ on:NF_ON, unseen:()=>nfUnseen().map(nfKey), render:nfRender };
-$('roomsw').onclick=()=>{ closeDrawer(); $(document.body.classList.contains('design')?'roll':'back').click(); };
+$('roomsw').onclick=roomSwitch;
 $('rand').onclick=()=>randomize();   // not randomize itself: the click event would arrive as noBuild and skip the rebuild
 $('roll').onclick=()=>goPlay();   // PD-142.38 slice 2: a pure switch; in roll view only the dock's Roll button throws
 addEventListener('keydown',e=>{

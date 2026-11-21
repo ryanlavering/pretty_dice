@@ -13,6 +13,7 @@ User-facing changes. Versions are git tags.
 - **Change a die's design during a game.** In a running game you can pick another design from the Bag, a set with the same dice, or press Randomize: only the look changes. Dice, values and holds stay put. Any design from the Bag works, whatever dice it was saved with (the game keeps its own dice and only takes the look); a set with different dice (another shape or count) is still declined with a message.
 
 ### Changed
+- **Menu shortcuts and What's new.** In review and tour builds the menu entry at the far end from Design | Play is now **What's new (n)**: it reopens the callouts where you left off instead of clearing them, and **Clear all** (**Skip tour** in the tour) is a link in the callout that needs a double click, double tap or long press. A double click, double tap or long press on the menu button switches Design | Play.
 - **Yacht: no more accidental scores.** On a touch screen, a tap on the scorecard only previews a box; long press it to score (the default; a **Score entry** menu under the card switches to double tap, and shows only on touch screens). A single tap never scores on a phone. With a mouse, a single click scores.
 - **Whoopsie! Undo.** After a Yacht score, a 3-second **Whoopsie! Undo** button with a countdown takes the score back. Computer players wait for the window to close.
 - **Start game** stays in view in the Games panel, and a tap on the phone's eye button says **Hold to look from above**.
@@ -74,7 +75,7 @@ Fixes from live play of 4.0.
 ### New: loading and diagnostics
 - **Boot progress screen** with a tumbling die, the step name, "step N of M" and the elapsed time, so a slow first load is no longer a blank page.
 - **Lag monitor** reports long freezes in a toast with copyable diagnostics; it sits clear of the Bag button.
-- **"New" callouts.** New or changed controls carry a pulsing dot with a short note; **Got it** dismisses one and **Seen all** the rest on screen.
+- **"New" callouts.** New or changed controls carry a pulsing dot with a short note; **Got it** dismisses one and **What's new** in the menu brings them back.
 
 ### Changed
 - **Showcase | Roll** is replaced by **Design | Play**; the round mode button is gone.

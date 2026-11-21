@@ -46,8 +46,13 @@ test('Got it dismisses one; Skip tour dismisses all; both are remembered across 
   await page.reload(); await page.waitForFunction(() => window.__ready);
   expect((await unseen(page)).length).toBe(5);
   await app.nav.openDrawer();
-  await expect(page.locator('#nfall')).toContainText('Skip tour');
+  await expect(page.locator('#nfall')).toHaveText("What's new (5)");   // PD-203: the entry resumes the tour; Skip tour is the double-click link in the callout
   await page.locator('#nfall').click();
+  await expect(page.locator('.nfbox')).toContainText('5d12{noto#1}');
+  await page.locator('.nfbox .nfclear').click();
+  await expect(page.locator('.nfhint')).toHaveText('Double-tap to skip the tour');
+  expect(await unseen(page)).toHaveLength(5);
+  await page.locator('.nfbox .nfclear').dblclick();
   expect(await unseen(page)).toEqual([]);
   await page.reload(); await page.waitForFunction(() => window.__ready);
   expect(await unseen(page)).toEqual([]);
@@ -59,7 +64,7 @@ test('review build: no tour entries even if the tour flag is also present', asyn
   await app.open();
   expect(await page.evaluate(() => window.__nf.on)).toBe(true);
   expect(await page.evaluate(() => window.__nfEntries.some(f => f.card === "What's new in 4.1"))).toBe(false);
-  await expect(page.locator('#nfall')).toContainText('Seen all');
+  await expect(page.locator('#nfall')).toContainText("What's new");
 });
 test('build-static: --release-tour writes the tour flag and no review flag; --artifact alone the reverse', async () => {
   const run = args => { execFileSync('python3', ['scripts/build-static.py', ...args], { stdio: 'pipe' }); };

@@ -1,5 +1,5 @@
 // PD-142.38.3: 'New' callouts. Review builds only (?new=1 here; the artifact build sets __PD_REVIEW). A pulsing dot on the control; press it for the comment;
-// tapping the dot / header / outside / Esc collapses it and keeps it unseen; 'Got it' and 'Seen all' retire it, and that persists across a reload.
+// tapping the dot / header / outside / Esc collapses it and keeps it unseen; 'Got it' and Clear all (double click) retire it, and that persists across a reload.
 import { test, expect } from './helpers/app.mjs';
 const dots = p => p.locator('.nfdot:not([hidden])');
 test('review flag off: nothing is rendered', async ({ app, page }) => {
@@ -27,11 +27,17 @@ test('dot expands to the comment, collapse keeps it unseen, Got it retires and p
   await page.reload(); await page.waitForFunction(() => window.__ready);
   expect((await page.evaluate(() => window.__nf.unseen())).length).toBe(n0 - 1);
 });
-test('Seen all in the drawer retires everything', async ({ app, page }) => {
+test('What\'s new in the drawer opens a callout; Clear all there needs a double click', async ({ app, page }) => {
   await app.open({ query: 'new=1' });
   await app.nav.openDrawer();
-  await expect(page.locator('#nfall')).toContainText('new');
+  await expect(page.locator('#nfall')).toContainText("What's new (");
   await page.locator('#nfall').click();
+  await expect(page.locator('.nfbox')).toBeVisible();
+  expect((await page.evaluate(() => window.__nf.unseen())).length).toBeGreaterThan(0);   // PD-203: no longer clears on click
+  await page.locator('.nfbox .nfclear').click();
+  await expect(page.locator('.nfhint')).toHaveText('Double-tap to clear all');
+  expect((await page.evaluate(() => window.__nf.unseen())).length).toBeGreaterThan(0);
+  await page.locator('.nfbox .nfclear').dblclick();
   expect(await page.evaluate(() => window.__nf.unseen())).toEqual([]);
   await expect(page.locator('.nfdot')).toHaveCount(0);
 });
@@ -71,17 +77,17 @@ for (const [w, h] of [[390, 740], [1280, 800]]) test(`every unseen callout has a
     await page.locator('#sheettabs [data-tab=sets]').click(); await snap(room + '/bag-sets'); await page.keyboard.press('Escape');
     await app.nav.openDrawer(); await snap(room + '/drawer');
     const label = await page.locator('#nfall').textContent(), un = (await page.evaluate(() => window.__nf.unseen())).length;
-    expect(label).toMatch(new RegExp(`^Seen all \\(${un} new(, \\d+ on this screen)?\\)$`));
+    expect(label).toBe(`What's new (${un})`);
     await app.nav.closeDrawer();
   }
   const un = (await page.evaluate(() => window.__nf.unseen())).map(k => k.split('@')[0]);
   expect(un.filter(id => !found[id]), 'entries with no screen state that shows their dot').toEqual([]);
   expect(covered, 'dots covered by another element').toEqual([]);
 });
-test('the drawer label counts the dots on this screen separately', async ({ app, page }) => {
+test('the drawer label counts the remaining items', async ({ app, page }) => {
   await app.open({ query: 'new=1' }); await app.nav.toDesign();
   await app.nav.openDrawer();
   const un = (await page.evaluate(() => window.__nf.unseen())).length, here = await page.locator('.nfdot:not([hidden])').count();
   expect(here).toBeLessThan(un);   // the 4.1 entries all live in Play, so none is on the Design screen
-  await expect(page.locator('#nfall')).toHaveText(`Seen all (${un} new, ${here} on this screen)`);
+  await expect(page.locator('#nfall')).toHaveText(`What's new (${un})`);
 });

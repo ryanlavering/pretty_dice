@@ -32,7 +32,7 @@ export const navFor = page => {
     async layout() { await this.openDrawer(); await click('#layout'); },
     async resetView() { await this.openDrawer(); await click('#resetview'); },
     async openDrawer() { if (!(await page.locator('#drawer.open').count())) await click('#drawerbtn'); await page.locator('#drawer.open').waitFor(); await page.waitForTimeout(260); },
-    async closeDrawer() { if (await page.locator('#drawer.open').count()) await click('#drawerbtn'); },
+    async closeDrawer() { if (await page.locator('#drawer.open').count()) { await click('#drawerbtn'); await page.locator('#drawer:not(.open)').waitFor(); } },   // PD-203: a single tap on the cube waits ~250 ms for a possible double, so wait for the close before the next tap
     async fullView(on = true) { const hidden = await page.evaluate(() => document.body.classList.contains('full')); if (on !== hidden) await click(on ? '#paneclose' : '#paneopen'); },
   };
 };
