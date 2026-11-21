@@ -59,9 +59,9 @@ const storyStart = async (p, players) => {
 // Roll, arrange and rate one story (rating index 0..4 = Bad..Great).
 const rollToTray = async p => {
   for (let tries = 0; tries < 4; tries++) {   // a Roll pressed too soon after the start or a rating can be ignored: wait for the button, press, and press again if no story tray shows up
-    await p.waitForFunction(() => { const b = document.getElementById('rollbtn'); return b && !b.disabled && /roll the dice/i.test(document.getElementById('dockhint')?.textContent || ''); }, null, { timeout: 60_000 });
+    await p.waitForFunction(() => { const b = document.getElementById('rollbtn'); return b && !b.disabled; }, null, { timeout: 60_000 });
     await p.evaluate(() => document.getElementById('rollbtn').click()); await p.waitForTimeout(1000);
-    if (await p.waitForSelector('#storytray .stile', { timeout: 40_000 }).then(() => true, () => false)) return;
+    if (await p.waitForSelector('#storytray .stile', { timeout: 100_000 }).then(() => true, () => false)) return;
   }
   throw new Error('the story tray never showed'); };
 const storyTurn = async (p, rating) => {
@@ -132,7 +132,7 @@ for (const [name, opt, steps] of SHOTS) {
     const clip = await steps(page);
     await page.screenshot({ path: `${OUT}${name}.png`, timeout: 180_000, ...(clip ? { clip } : {}) });
     n++; console.log('shot', name);
-  } catch (e) { console.error('FAILED', name, e.message.split('\n').slice(0, 3).join(' | ')); process.exitCode = 1; }
+  } catch (e) { console.error('FAILED', name, e.stack.split('\n').slice(0, 6).join(' | ')); process.exitCode = 1; }
   await close();
 }
 await browser.close(); server?.kill();
