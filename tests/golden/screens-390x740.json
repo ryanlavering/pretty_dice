@@ -4964,8 +4964,21 @@
      18,
      494,
      354,
-     257
+     283
     ]
+   },
+   "gamelook": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     682,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": true
    },
    "logpanel": {
     "tag": "div",
