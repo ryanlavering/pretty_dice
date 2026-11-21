@@ -77,3 +77,22 @@ Slowest gesture check (sim, default gravity, 3 dice): slowest (70 px in 440 ms) 
 | >= 1.9 (typical-hard) | 21 | 20.0 | 25.0 | 36.4 |
 
 Minimum registering gesture: 30 px (touch) / 36 px (mouse) within 450 ms, e.g. 30 px in 80 ms.
+
+## Spin follows the gesture (owner feedback on 923a37b)
+
+Today's spin (R key / Roll / shake, unchanged): `angularVelocity = (R*50, R*50, R*50)` with `R` uniform in +-0.5, i.e. each axis uniform +-25, mean magnitude about 24 rad/s, then scaled by `throwK(g)`.
+
+For gestures the same vector is multiplied by `spinScale`, on the same normalized speed as the launch mapping:
+
+    tc        = clamp((sp - 7)/(21 - 7), 0, 1)^FLICK_CURVE
+    spinScale = (FLICK_SPIN_MIN_FRAC + tc*(FLICK_SPIN_MAX_FRAC - FLICK_SPIN_MIN_FRAC)) * (1 +- FLICK_SPIN_JITTER)
+              = (0.45 + tc*0.65) * (1 +- 22%)
+
+| gesture speed (px/ms) | sp | tc | mean spin vs today (before jitter) |
+|---|---|---|---|
+| <= 0.64 (min) | 7 | 0 | 45% |
+| 1.0 | 11 | 0.42 | 72% |
+| 1.67 (typical) | 18.3 | 0.86 | 101% |
+| >= 1.9 | 21 | 1 | 110% |
+
+The +-22% jitter is on top of the already random direction of the spin vector, so the spin spread is wider than the +-5% launch-speed spread. Constants: `FLICK_SPIN_MIN_FRAC`, `FLICK_SPIN_MAX_FRAC`, `FLICK_SPIN_JITTER`.

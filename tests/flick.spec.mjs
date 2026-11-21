@@ -174,3 +174,48 @@ for (const type of ['touch', 'mouse']) {
     expect((await run(0, 0, 50)).settled).toBe(true);
   });
 }
+
+// PD-199 spin: a gesture's angular velocity follows its strength (lazy flick, gentle spin); R / Roll keep today's random spin
+const spinOf = (app, type, dx, ms, seed) => app.run((pd, a) => {
+  pd.canvas.setPointerCapture = () => {};
+  const r = pd.canvas.getBoundingClientRect(), x0 = r.left + r.width / 2, y0 = r.top + r.height / 2;
+  const ev = (t, x, y) => pd.canvas.dispatchEvent(new PointerEvent(t, { pointerId: 7, clientX: x, clientY: y, button: 0, bubbles: true, pointerType: a.type }));
+  const now = performance.now, t0 = now.call(performance); let t = t0; performance.now = () => t;
+  pd.reseed(a.seed); pd.simRoll();
+  pd.reseed(a.seed);
+  try { ev('pointerdown', x0, y0); t = t0 + a.ms; ev('pointermove', x0 + a.dx / 2, y0); ev('pointermove', x0 + a.dx, y0); ev('pointerup', x0 + a.dx, y0); } finally { performance.now = now; }
+  return { w: pd.bodies.map(b => Math.hypot(b.angularVelocity.x, b.angularVelocity.y, b.angularVelocity.z)), vy: pd.bodies.map(b => b.velocity.y), settled: pd.settled };
+}, { type, dx, ms, seed });
+const SEEDS = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29];
+const avg = a => a.reduce((s, v) => s + v, 0) / a.length;
+for (const type of ['touch', 'mouse']) {
+  test(`${type}: gesture spin scales with strength (gentle for lazy, today's for typical); spin spread wider than speed spread; R/Roll spin unchanged`, async ({ app }) => {
+    await setup(app);
+    const study = async (dx, ms) => { const w = [], vy = []; const seedMeans = [], seedVy = [];
+      for (const sd of SEEDS) { const r = await spinOf(app, type, dx, ms, sd); expect(r.settled, 'threw').toBe(false); w.push(...r.w); vy.push(...r.vy); seedMeans.push(avg(r.w)); seedVy.push(avg(r.vy)); }
+      return { w: avg(w), spreadW: (Math.max(...w) - Math.min(...w)) / avg(w), spreadV: (Math.max(...vy) - Math.min(...vy)) / avg(vy) }; };
+    const lazy = await study(70, 440), mid = await study(110, 110), typ = await study(200, 120), hard = await study(300, 100);   // 0.16, 1.0, 1.67, 3 px/ms
+    const rpath = []; for (const sd of SEEDS) rpath.push(...await app.run((pd, s) => { pd.reseed(s); pd.dockRoll(true); return pd.bodies.map(b => Math.hypot(b.angularVelocity.x, b.angularVelocity.y, b.angularVelocity.z)); }, sd));
+    const today = avg(rpath);
+    const f = o => `${o.w.toFixed(1)} (${(o.w / today * 100).toFixed(0)}%, spread ${(o.spreadW * 100).toFixed(0)}% vs speed ${(o.spreadV * 100).toFixed(0)}%)`;
+    console.log(`FLICK spin (${type}) today(R)=${today.toFixed(1)} lazy=${f(lazy)} 1.0=${f(mid)} typical=${f(typ)} hard=${f(hard)}`);
+    expect(lazy.w).toBeLessThanOrEqual(mid.w + 1); expect(mid.w).toBeLessThanOrEqual(typ.w + 1); expect(typ.w).toBeLessThanOrEqual(hard.w + 2);
+    expect(lazy.w, 'lazy gesture spin is gentle').toBeLessThan(typ.w * .6);
+    const sc = await app.run(pd => [7, 18.3, 21].map(sp => pd.flickSpinScale(sp, .5)));   // jitter-free model values: min 45%, typical 101% (within 10% of today), full 110%
+    expect(sc[0]).toBeCloseTo(.45, 2); expect(sc[1]).toBeGreaterThan(.9); expect(sc[1]).toBeLessThan(1.1); expect(sc[2]).toBeGreaterThan(sc[1]);
+    expect(lazy.w / typ.w, 'measured lazy/typical spin ratio (same rng draws) follows the model').toBeGreaterThan(sc[0] / sc[1] * .95); expect(lazy.w / typ.w).toBeLessThan(sc[0] / sc[1] * 1.05);
+    expect(typ.w / 24.0, 'typical flick spin about today\'s mean (uniform cube +-25: mean |w| 24; 30-sample noise ~5%)').toBeGreaterThan(.8); expect(typ.w / 24.0).toBeLessThan(1.2);
+    expect(typ.spreadW, 'spin is more random than launch speed').toBeGreaterThan(typ.spreadV * 2);
+    expect(today / 24.0, 'R / Roll spin unchanged (full random spin)').toBeGreaterThan(.85); expect(today / 24.0).toBeLessThan(1.15);
+  });
+}
+test('a lazy flick with low spin still settles with a valid face; leans stay rare (the PD-155 re-drop handles the few)', async ({ app }) => {
+  await setup(app);
+  let leans = 0, dice = 0;   // measured over 40 seeds x 3 dice: lazy 6 leaning dice (5%), typical 2, R key 2 (the app re-drops a leaning die)
+  for (const sd of [2, 3, 5, 7, 11, 13, 17, 19]) {
+    await reroll(app, sd); await flickRun(app, 'touch', 70, 0, 440, sd);
+    const r = await app.run(pd => { pd.step(2400); return { settled: pd.settled, leans: pd.leans.filter(Boolean).length, faces: pd.dice.length }; });
+    expect(r.settled, `settled after a lazy flick (seed ${sd})`).toBe(true); leans += r.leans; dice += r.faces;
+  }
+  expect(leans / dice, 'lean rate after lazy flicks stays low').toBeLessThan(.15);
+});
