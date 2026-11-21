@@ -3,10 +3,10 @@ id: PD-192
 title: >-
   Story Dice playtest fixes for 4.1: dock, eye hint, log, novice copy, start
   flow, scoring scale
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-20T20:08:00Z'
-updated_date: '2026-11-20T20:30:00Z'
+updated_date: '2026-11-21T07:47:00Z'
 labels:
   - v4.1
 dependencies: []
