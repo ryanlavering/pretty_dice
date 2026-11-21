@@ -1,7 +1,7 @@
 ---
 id: PD-162
 title: Hide Craps in the UI unless the secret code ?multipoop is in the querystring
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-19T17:42:00Z'
 updated_date: '2026-11-19T19:50:00Z'

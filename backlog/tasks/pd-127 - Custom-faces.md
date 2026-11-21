@@ -4,8 +4,9 @@ title: Custom faces
 status: To Do
 assignee: []
 created_date: '2026-11-12T17:54:00Z'
-updated_date: '2026-11-18T19:40:00Z'
-labels: []
+updated_date: '2026-11-20T01:14:00Z'
+labels:
+  - v4.2
 dependencies: []
 ordinal: 131000
 ---

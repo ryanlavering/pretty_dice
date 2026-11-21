@@ -3,7 +3,7 @@ id: PD-159
 title: >-
   Craps: let every player place and adjust bets before the roll, not only the
   shooter (bets while a bot shoots)
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-19T07:18:00Z'
 updated_date: '2026-11-19T19:50:00Z'

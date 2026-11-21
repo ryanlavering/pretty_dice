@@ -1,7 +1,7 @@
 ---
 id: PD-160
 title: 'Story dice: seeded glyph sets plus a hint and sentence generator'
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-19T08:21:00Z'
 updated_date: '2026-11-20T06:06:00Z'

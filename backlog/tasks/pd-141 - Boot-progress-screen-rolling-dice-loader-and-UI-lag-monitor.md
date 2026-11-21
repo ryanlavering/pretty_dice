@@ -1,7 +1,7 @@
 ---
 id: PD-141
 title: Boot progress screen, rolling-dice loader and UI lag monitor
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-13T16:58:00Z'
 updated_date: '2026-11-13T21:34:00Z'

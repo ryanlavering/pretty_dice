@@ -2,7 +2,7 @@
 
 User-facing changes. Versions are git tags.
 
-## 4.1 (unreleased)
+## 4.1 (2026-11-21)
 
 ### New
 - **Story Dice.** A new game: roll a set of picture dice (emoji, symbols, icons, hieroglyphs and more), put them in story order on numbered rings, and rate the story they tell with five buttons: Bad 0, Weak 3, Fair 5, Good 7, Great 10. After the roll the dice fly into rows facing the camera. The others at the table judge; computer players tell their own ridiculous ad-lib stories, and the game waits for a human rating, even at a table of only computer players (alone, you rate your own story). The dice stay editable until you submit and are then locked until the next roll. The sentence is drawn on the mat (it wraps) and the rating buttons sit in the dock, so you can play with the side pane closed. A game over screen shows the winner (or your total) and the scores, with **Play again** and **Done**; **End game** asks "End the game? Scores will be lost." first. The roll log keeps each roll's story and names picture dice instead of adding a meaningless sum. Dice you drag grow only a little and stay clear of their neighbours; the arrangement re-spreads when you resize the window or turn the phone, and uses one row on a landscape phone. A game with more than five dice splits into two rows.

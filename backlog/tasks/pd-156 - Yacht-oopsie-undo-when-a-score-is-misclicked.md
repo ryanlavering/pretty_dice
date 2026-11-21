@@ -3,10 +3,10 @@ id: PD-156
 title: >-
   Yacht (and scorecard games): accidental score entry; double-tap or long-press
   to score, plus a 2-second 'whoopsie' undo
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-19T02:39:00Z'
-updated_date: '2026-11-19T09:37:00Z'
+updated_date: '2026-11-20T06:45:00Z'
 labels:
   - v4.1
 milestone: m-2

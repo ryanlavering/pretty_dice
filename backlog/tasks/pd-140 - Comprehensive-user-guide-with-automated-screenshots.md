@@ -1,7 +1,7 @@
 ---
 id: PD-140
 title: Comprehensive user guide with automated screenshots
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-13T08:39:00Z'
 updated_date: '2026-11-13T21:37:00Z'

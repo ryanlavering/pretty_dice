@@ -3,10 +3,10 @@ id: PD-157
 title: >-
   BUG (live playtest of 4.0): a bot's roll with a leaning die gets stuck; the
   bot should apply Fix leaning die immediately
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-19T03:29:00Z'
-updated_date: '2026-11-19T05:41:00Z'
+updated_date: '2026-11-20T06:54:00Z'
 labels:
   - v4.1
 milestone: m-2

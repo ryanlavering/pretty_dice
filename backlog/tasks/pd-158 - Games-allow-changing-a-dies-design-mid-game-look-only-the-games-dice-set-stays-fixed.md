@@ -3,7 +3,7 @@ id: PD-158
 title: >-
   Games: allow changing a die's design mid-game (look only); the game's dice set
   stays fixed
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-19T05:22:00Z'
 updated_date: '2026-11-19T19:50:00Z'

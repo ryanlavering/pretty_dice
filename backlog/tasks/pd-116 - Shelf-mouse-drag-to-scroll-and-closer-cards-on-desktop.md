@@ -1,7 +1,7 @@
 ---
 id: PD-116
 title: Shelf: mouse drag to scroll, and cards as close together on desktop as on a phone
-status: Needs Review
+status: Done
 assignee: []
 created_date: '2026-11-12T01:30:00Z'
 updated_date: '2026-11-12T01:30:00Z'
