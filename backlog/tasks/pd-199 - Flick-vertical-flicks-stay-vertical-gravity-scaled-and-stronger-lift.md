@@ -1,10 +1,10 @@
 ---
 id: PD-199
 title: 'Flick: vertical flicks stay vertical; gravity-scaled and stronger lift'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-21T00:06:00Z'
-updated_date: '2026-11-21T07:57:00Z'
+updated_date: '2026-11-21T08:14:00Z'
 labels:
   - v4.1
 dependencies: []
