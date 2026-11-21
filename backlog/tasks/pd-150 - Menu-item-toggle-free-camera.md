@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-11-18T07:56:00Z'
 labels:
-  - v4.2
+  - v4.3
 dependencies: []
 priority: low
 ordinal: 339000
