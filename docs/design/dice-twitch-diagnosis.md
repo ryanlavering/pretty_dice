@@ -33,15 +33,9 @@ Mechanism: each step gravity adds g*dt to the contact velocity (13 u/s at 1x, 1.
 
 (The harness metric is loose: even at default gravity big piles show late hops in the same harness, which the owner does not report.)
 
-## Fix candidate (phase 2) and why it is NOT pushed
-Candidate, only above the default gravity (default feel and seeded outcomes untouched): `sleepTimeLimit` 1 s -> 0.1 s plus solver iterations 10 -> 20 (at roll start and live in `setGravity`). Spec `tests/dice-twitch.spec.mjs` (4 seeded rolls per case, 1 d20 and a 9-die pile, gravity 0.14 and 1, counted in sim steps): old code fails all 4 cases (24-115 hops, last hop 3.5-5.5 s, peak speed 2.4-17 u/s), candidate has 0 hops in all 4. physics.spec (23) and flick/dice-twitch pass.
+## Fix (option 2, applied)
+Only above the default gravity (default feel and seeded outcomes untouched): `sleepTimeLimit` 1 s -> 0.1 s, and solver iterations 10 -> 20 only while every die is slow (|v|^2+|w|^2 < 1), chosen each step by `tuneSolver()` in `src/main.js` (live loop, `simSteps`, `__pd.drift`). Flight, launch and impact keep 10 iterations, so the arc in gravity.spec is unchanged (the first attempt, 20 iterations always, dropped the 2x apex to 0.48 of default and failed that spec).
 
-BUT `gravity.spec.mjs` "a flick throws the same arc at low, default and high gravity" fails with the candidate: apex at 2x is 0.48 of the default apex (needs 0.75-1.25). Passes on unchanged code; passes with the iteration bump reverted (sleep-time change alone). So 20 iterations changes the launch/contact at 2x (the 10-iteration solver adds energy the arc calibration relies on). Per the lane rules the golden/physics spec is not re-recorded; stopped here.
+Spec `tests/dice-twitch.spec.mjs` (4 seeded rolls per case, counted in sim steps via `__pd.drift`): old code 24-115 hops per case (last hop 3.5-5.5 s); fix: lone d20 at 0.14x 3 hops (last 1.2 s, peak 1.2 u/s), all other cases 0 hops. Thresholds: lone die <= 3 hops and last hop < 2.5 s, pile <= 8 hops and < 3 s.
 
-Options:
-1. Sleep-time only (passes gravity.spec). Cuts hops a lot (pile 0/6 bad at 1x in the sweep; lone die at 1x still 17 hops in one of 4 rolls, last at 2.5 s). Relax the spec for the lone die accordingly.
-2. Sleep-time + iterations 20 applied only once all dice are slow (iterations stay 10 during flight/impact, 20 when every die has speed < 1 u/s): should fix the lone die without touching the launch arc. Needs one more experiment.
-3. Re-baseline the 2x apex in gravity.spec (owner decision; the old value rests on a solver artifact).
-4. Sub-stepping: costly, not reliable alone.
-
-Risk of sleeping at 0.1 s: a die asleep on a lean would freeze; sleeping dice wake on contact and in `setGravity`, lean/face checks are unchanged.
+Default gravity (not changed, report only): the same harness shows hops there too (lone d20 17 hops, last at 8.4 s; 9-die pile 27 hops, last at 6.7 s, firstRest 4.6 s). Quieting it would change default-gravity behaviour and seeded outcomes, so it is left for an owner decision.

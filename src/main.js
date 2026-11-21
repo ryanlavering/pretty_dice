@@ -1351,8 +1351,11 @@ let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retri
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
 let diceMat,matMat,ccDD,ccDM;
 const throwK=()=>Math.max(.5,Math.min(8,Math.sqrt(-gravityY()/GRAV_OLD)));   // PD-169: velocities and spins scale with sqrt(g) so a throw flies the same arc (same apex, same reach, same turns) at any gravity; exactly 1 at the default
+/* PD-195: above the default gravity a die resting on the mat creeps (solver residual ~ g*dt) and every ~0.35 s hops (v ~2.6 u/s) until the 3.5 s damping; a die must therefore go to sleep within 0.1 s of being slow (before the first hop), not after 1 s. Default gravity keeps the old 1 s. docs/design/dice-twitch-diagnosis.md */
+const sleepTimeFor=()=>state.gravity>GRAV_DEF*1.001?.1:1;
+function tuneSolver(){ if(!world) return; let calm=state.gravity>GRAV_DEF*1.001; if(calm) for(const b of bodies){ if(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()>=1){ calm=false; break; } } world.solver.iterations=calm?20:10; }   // 20 iterations only while every die is slow: flight, launch and impact keep the old 10 (the 2x arc in gravity.spec depends on it)
 function gravityY(){ const x=state.gravity; return Math.abs(x-GRAV_DEF)<1e-9?-GRAV_OLD:-x*GRAV_REAL; }   // the default is exactly the old -34
-function setGravity(x,persist=true){ x=+x; if(!isFinite(x)) return; state.gravity=Math.max(GRAV_LO,Math.min(GRAV_HI,x)); if(world){ world.gravity.set(0,gravityY(),0); bodies.forEach(b=>b.wakeUp&&b.wakeUp()); } if(persist) save(); syncGravityUI(); }
+function setGravity(x,persist=true){ x=+x; if(!isFinite(x)) return; state.gravity=Math.max(GRAV_LO,Math.min(GRAV_HI,x)); if(world){ world.gravity.set(0,gravityY(),0); bodies.forEach(b=>{ b.sleepTimeLimit=sleepTimeFor(); b.wakeUp&&b.wakeUp(); }); } if(persist) save(); syncGravityUI(); }
 function syncGravityUI(){ const x=state.gravity, el=$('gravity'); if(!el) return; if(document.activeElement!==el) el.value=gravToPos(x); $('gravityv').textContent=(x<.1?x.toFixed(3):x.toFixed(2))+'x realistic'+(Math.abs(x-GRAV_DEF)<1e-9?' (default)':''); }
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
@@ -1427,7 +1430,7 @@ function startRoll(launch=false,place=false,vel=null){        // launch: re-roll
   const hookHit=b=>b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; const c=e.contact; _ip.set(c.bi.position.x+c.ri.x,c.bi.position.y+c.ri.y,c.bi.position.z+c.ri.z); onImpact(Math.abs(c.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table',_ip); });
   const starts=[], dropH=3.5+5*state.rollZoom;   // drop height above the table grows as the camera zooms out
   bodies=dice.map((d,i)=>{
-    const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:1,
+    const b=new CANNON.Body({mass:1, material:diceMat, linearDamping:.04, angularDamping:.1, sleepSpeedLimit:.1, sleepTimeLimit:sleepTimeFor(),
       shape:new CANNON.ConvexPolyhedron({vertices:d.verts.map(v=>new CANNON.Vec3(v.x,v.y,v.z)), faces:d.faces.map(f=>[...f.idx])})});
     const {p,q}=poses[i]; d.mesh.position.copy(p); d.mesh.quaternion.copy(q);
     if(held.has(i)&&!place){ b.position.set(p.x,p.y,p.z); b.quaternion.set(q.x,q.y,q.z,q.w); hookHit(b); world.addBody(b); return b; }   // held: starts where it lies and is not thrown; the others may bump it (finishRoll puts it back to its face of record)
@@ -1670,7 +1673,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     const a=angVel.length()*dt; if(a>1e-6) spinBy(new THREE.Quaternion().setFromAxisAngle(angVel.clone().normalize(),a));
   }
   if(rolling&&world){
-    world.step(1/60,dt,4); rollT+=dt; tickRestore(dt);
+    tuneSolver(); world.step(1/60,dt,4); rollT+=dt; tickRestore(dt);
     if(!settled) assistSettle(dt); else if(leanRings.length){ pulseLeans(performance.now()/1000); refreshLeans(); }
     if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
@@ -1824,7 +1827,7 @@ startLoop();   // frames start only now, so the first (shader-compiling) frame n
 window.__ready=true; window.__bootDone&&window.__bootDone();
 if(new URLSearchParams(location.search).get('lab')==='thumbs'||window.__PD_LAB) startLab();
 /* Test API for the Playwright suite (tests/, docs/design/testing.md). Getters expose live module state. */
-const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ world.step(1/60); rollT+=1/60; tickRestore(1/60); if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
+const simSteps=n=>{ for(let i=0;i<n&&!settled;i++){ tuneSolver(); world.step(1/60); rollT+=1/60; tickRestore(1/60); if(!settled) assistSettle(1/60); if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} }); if(rollT>.6&&restCheck(1/60)) finishRoll(); } };
 
 /* ---------- games (PD-142.4/.5): panel, setup, scorecard; the engine is 'pd-games' ---------- */
 const GPstage=$('gamepanel'), SP=$('scorepane'), PT=$('paneltabs'), GKEY='prettydice.games';
@@ -2279,7 +2282,7 @@ document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
   corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
-  get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
+  get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
