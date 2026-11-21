@@ -94,10 +94,12 @@ test('[+] Blank and Random both open the same draft; Blank is a plain starting l
 test('Play puts the dice back as they last lay', async ({ shared: app }) => {
   await app.nav.toPlay(); await app.nav.roll();
   await app.run(pd => pd.simRoll());
-  const lay = () => app.run(pd => pd.dice.map(d => [d.mesh.position.x, d.mesh.position.z].map(v => +v.toFixed(2))));
+  const lay = () => app.run(pd => pd.dice.map(d => [d.mesh.position.x, d.mesh.position.z]));
   const a = await lay();
   await app.nav.toDesign(); await app.nav.toPlay();
-  expect(await lay()).toEqual(a);
+  // PD-201: the dice come back within ~1e-4 u of where they lay (all six, measured; a die at x=-1.3949 reads -1.40 instead of -1.39 after rounding to 2 decimals, so equality of rounded values was luck); the same place within 0.01 u (a die is ~1.6 u wide)
+  const b = await lay(); expect(b.length).toBe(a.length);
+  a.forEach((p, i) => { expect(Math.abs(b[i][0] - p[0]), `die ${i} x`).toBeLessThan(0.01); expect(Math.abs(b[i][1] - p[1]), `die ${i} z`).toBeLessThan(0.01); });
 });
 
 // Slice 6 (games-ui): the Games tab replaces the round Games button; the scorecard lives in the panel
