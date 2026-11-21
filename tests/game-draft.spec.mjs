@@ -40,8 +40,8 @@ test('S2: deselecting (another game, then leaving) leaves no draft and my design
   await app.run(pd => { pd.state.polish = 0.93; pd.applyLook(); }); await app.page.waitForTimeout(200);
   const before = await snap(app);
   await toLobby(app, 'story');
-  await pick(app, 'yahtzee'); await settle(app);
-  expect(await st(app)).toMatchObject({ draft: false, hold: { game: 'yahtzee', draft: false } });   // Yacht has no look: my design is live under the Yacht dice
+  await pick(app, 'farkle'); await settle(app);
+  expect(await st(app)).toMatchObject({ draft: false, hold: { game: 'farkle', draft: false } });   // Ten Thousand's d6 pips look is off by default (Yacht's is on, PD-188): my design is live under its dice
   expect(lookOf((await snap(app)).look)).toBe(lookOf(before.look));
   await app.page.click('#paneltabs [data-pane=table]'); await settle(app);
   expect(await app.run(pd => pd.bag.hold)).toBeNull();

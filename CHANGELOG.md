@@ -10,6 +10,7 @@ User-facing changes. Versions are git tags.
 - **Dice settle without wiggling at the default gravity too.** A die rocking on an edge now topples to flat instead of rocking or freezing leaning.
 - **Every game shows its own dice in the lobby and rolls them in place.** Fixes: picking a design or set in the Story lobby no longer loses your dice, and a reload mid-Yacht keeps your dice.
 - **The game look is a real draft.** In the Bag, the Story Dice look is a dashed draft you can pick, edit, rename and discard. **Save as design** makes a design with that look and a set with the game's dice that names it. It never overwrites a design. A reload mid-game brings it back on Resume.
+- **Yacht: Use d6 pips.** Yacht shows your design with d6 pips (a draft for this game: save it as a design or discard it). A setup checkbox, `Use d6 pips`, turns it on or off, and every other d6 game offers it too, off by default. Pick another design mid-game and it keeps the pips; End game gives you your design back.
 
 ## 4.1 (2026-11-21)
 

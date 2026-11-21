@@ -361,7 +361,13 @@ function plainLook(){   // Story dice start from the plain default design (what 
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.numSize=.9; repaint(); }   // numSize .9: glyphs must read on a phone
 /* PD-190: the game look is a real draft in bag.hold.draft (kind 'whole'), listed in the Bag as a dashed ghost; bag.active.draft==='game' while it is the live look. GAME_LOOKS says which games have one.
    plainLookJSON() builds the Story look as design JSON without leaving it on the live state (the draft goes live through loadLookNow, like any design). */
-const GAME_LOOKS={story:{kind:'whole',name:'Story Dice look'}};
+/* PD-188 (4.2 S5): kind 'tweak' = the player's design plus a look-only patch (d6 pips). The per-game toggle is gprefs.opts['<game>.look'] (a UI pref, not an engine option); on by default for Yacht only (owner Q3). */
+const PIPS_LOOK={kind:'tweak',name:'pips',patch:{numbers:{d6_style:'pips'}},pref:'look',label:'Use d6 pips'};
+const GAME_LOOKS={story:{kind:'whole',name:'Story Dice look'},yahtzee:{...PIPS_LOOK,default:true},farkle:{...PIPS_LOOK,default:false},pig:{...PIPS_LOOK,default:false},craps:{...PIPS_LOOK,default:false},liarsdice:{...PIPS_LOOK,default:false}};
+const gameLookOn=gid=>{ const L=GAME_LOOKS[gid]; if(!L) return false; if(!L.pref) return true; const v=gprefs.opts[gid+'.'+L.pref]; return v===undefined?!!L.default:!!v; };
+function tweakDraft(L,j,baseId,baseName){   // the design JSON j plus the patch, as a game draft; null when the patch changes nothing (the design already has pips)
+  const o=structuredClone(j); for(const k of Object.keys(L.patch)) o[k]={...o[k],...L.patch[k]}; if(canonD(o)===canonD(j)) return null;
+  const name=((baseName||'Design')+' '+L.name).slice(0,80); o.name=name; return {kind:'tweak',name,design:o,base:baseId||null}; }
 function plainLookJSON(){ const o=JSON.parse(snapshot()); plainLook(); const j=designToJSON(); Object.assign(state,o); state.colors=state.palettes[palKey()]||state.colors; legalRelief(); setSubstrate(state.substrate); return j; }   // the snapshot holds the paint: restoring it exactly keeps a never-edited design from showing Modified
 const lookHistoryReset=()=>{ clearTimeout(hTimer); hTimer=null; history=[snapshot()]; hIdx=0; syncHistoryUI(); };   // Undo must not cross a look swap (it would bring back the pre-game look)
 function loadLookNow(json,name,rebuild=false){ bagLoading++; try{ applyDesign(name!=null?{...json,name}:json); }finally{ bagLoading--; } if(rebuild) ensureFont(state.font).then(()=>buildDice()); lookHistoryReset(); }   // a look-only load whose state change is synchronous and which leaves the dice rebuild to the caller (a rebuild after the fact would drop the lobby's Play room)
@@ -686,7 +692,7 @@ async function activate(target,{skipSync=false}={}){   // target: a design id, o
   try{ if(!skipSync) syncLive();
     if(target==='gdraft'){ const gd=bag.hold&&bag.hold.draft; if(!gd) return; bag.active.draft='game'; await loadSlot(gd.design,gd.name); }   // PD-190: the game draft goes live again with its edits
     else if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
-    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
+    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id], td=bag.hold?tweakFollow(bag.hold,e,pe||e.design):null; if(td){ bag.active.draft='game'; await loadSlot(td.design,td.name); } else await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
     if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; if(inDesign){ designRoom=true; exitRoll(true); } gameSync(); renderGame(); }   // PD-180: a swap made in the Design room stays there (the dice were rebuilt to lie as they did; Play shows them)
     save();
   }finally{ actBusy=false; holdRoom=false; }   // PD-197: picking a design from the Bag keeps the room it was opened from (the rebuild used to drop an idle Play room into Design)
@@ -732,6 +738,7 @@ const bagOps={
     bag.designs.splice(k,1); delete bag.pending[id]; bag.jail=bag.jail.filter(j=>j.design!==id);
     bag.sets.forEach(st=>{ if(st.design===id) delete st.design; st.terms.forEach(t=>{ if(t.design===id) delete t.design; }); });
     if(bag.active.design===id) bag.active.design=bag.designs[Math.min(k,bag.designs.length-1)].id;
+    if(bag.hold&&bag.hold.draft&&bag.hold.draft.base===id) bag.hold.draft.base=bag.active.draft?null:bag.active.design;
     if(wasActive) await activate(bag.active.design,{skipSync:true}); else save(); return true; },
   move(id,to){ const k=bag.designs.findIndex(d=>d.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.designs.length-1,to)); const [e]=bag.designs.splice(k,1); bag.designs.splice(to,0,e); save(); },
   async addLoaded(obj){ if(!obj||obj.format!=='pretty-dice') throw new Error(obj&&obj.format==='pretty-dice-bag'?'That is a bag file: use Add to the bag > From a file':'Not a pretty-dice design file');
@@ -2009,11 +2016,13 @@ function scorePress(td,cat){ const mode=scoreModeOf(); if(mode!=='long') return;
   td.addEventListener('pointerdown',e=>{ off(); if(!isTouchy(e)) return; t=setTimeout(()=>{ lpAt=Date.now(); gameScore(cat); },450); }); for(const ev of ['pointerup','pointerleave','pointercancel']) td.addEventListener(ev,off); td.addEventListener('contextmenu',e=>e.preventDefault()); }
 const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine state is plain JSON (hidden dice included; same device, not a security boundary)
 const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
-function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
-async function startGame(id,players,options,botSeats=[],resume=null){
-  const info=GAMES.listGames().find(g=>g.id===id);
+function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state,look:!!game.look})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
+async function startGame(id,players,options,botSeats=[],resume=null,look=null){
+  const info=GAMES.listGames().find(g=>g.id===id), GL=GAME_LOOKS[id];
+  if(resume&&look!==null&&GL&&GL.pref){ gprefs.opts[id+'.'+GL.pref]=!!look; gsave(); }   // PD-188: Resume keeps the game's own look choice (an older save has none: off)
+  if(bag.hold&&bag.hold.game===id&&bag.hold.draft&&!gameLookOn(id)) dropGameDraft(bag.hold);
   if(bag.hold){ const h=bag.hold, wake=h.paused&&resume&&h.wake&&h.draft; if(h.game!==id||(h.paused&&!resume)){ dropGameDraft(h); h.draftOff=false; } h.phase='game'; h.game=id; if(wake){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); bag.active.draft='game'; loadLookNow(h.draft.design,h.draft.name); } delete h.paused; delete h.wake; } else bag.hold=newHold(id,'game');   // PD-190: Resume after a reload brings the draft back live with its edits; a fresh start gets a fresh one   // PD-206: the lobby's hold carries on into the game (mine kept); no lobby, a new one
-  whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
+  whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null,look:!!GL&&gameLookOn(id)}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); enterGameDraft(id); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); if(bag.hold.draft) lookHistoryReset(); paneAuto=true; renderGame(); }   // PD-190: the game's look is a draft in the hold (already there from the lobby); ending the game puts the player's design back
 function endGame(){ if(!game) return; gendAsk=false; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); releaseHold(); if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
@@ -2091,8 +2100,13 @@ function restoreMyLook(h){   // the player's look comes back exactly as they lef
   if(h&&h.snap){ const o=JSON.parse(h.snap), sh=state.shape, no=state.notation; Object.assign(state,o); state.shape=sh; state.notation=no; state.colors=state.palettes[palKey()]||state.colors; legalRelief(); setSubstrate(state.substrate); $('dname').value=h.dname||''; lookHistoryReset(); return; }
   const e=activeEntry(); if(!e) return; const pe=bag.pending[e.id]; loadLookNow(pe||e.design,pe?null:e.name); normalizeActive(); }
 function dropGameDraft(h){ if(!h.draft) return; const live=bag.active.draft==='game'; h.draft=null; if(live){ bag.active.draft=false; restoreMyLook(h); } }
-function enterGameDraft(gid,live=true){ const h=bag.hold, L=GAME_LOOKS[gid]; if(!h||!L||h.draft||h.draftOff) return; if(live){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); }
-  const j=plainLookJSON(); j.name=L.name; h.draft={kind:L.kind,name:L.name,design:j,base:null}; if(live){ bag.active.draft='game'; loadLookNow(j,L.name); } }
+function enterGameDraft(gid,live=true){ const h=bag.hold, L=GAME_LOOKS[gid]; if(!h||!L||h.draft||h.draftOff||!gameLookOn(gid)) return; if(live) syncLive();
+  let d; if(L.kind==='tweak'){ const j=designToJSON(), e=bag.active.draft?null:activeEntry(); d=tweakDraft(L,j,e&&e.id,e?(j.name||e.name):(bag.draft&&bag.draft.name)||'Draft'); if(!d) return; }   // PD-188: the player's design (pending edits included) plus the patch; no draft when it already has pips
+  else{ const j=plainLookJSON(); j.name=L.name; d={kind:L.kind,name:L.name,design:j,base:null}; }
+  if(live){ h.dname=$('dname').value; h.snap=snapshot(); } h.draft=d; if(live){ bag.active.draft='game'; loadLookNow(d.design,d.name); } }
+function tweakFollow(h,e,src){   // PD-188 #4 / Q5: a pick of design e while a tweak game look is on: the draft is rebuilt as e plus the patch (null: e already has it, no draft)
+  const L=GAME_LOOKS[h.game]; if(!L||L.kind!=='tweak'||h.draftOff||!gameLookOn(h.game)) return null;
+  h.draft=tweakDraft(L,{...structuredClone(src),shape:'custom',notation:state.notation},e.id,e.name); h.snap=null; h.dname=e.name; return h.draft; }
 function lobbyOn(gid,notation,key,deal=null,story=null){ if(game||!bag) return; let h=bag.hold; if(h&&h.phase!=='lobby') return; if(h&&h.key===key&&h.game===gid) return;
   let live=true;
   if(!h) h=bag.hold=newHold(gid,'lobby'); else if(h.game!==gid){ if(h.draft) live=bag.active.draft==='game'; dropGameDraft(h); h.draftOff=false; }   // another game in the selector: the old game's look goes, mine stays
@@ -2241,7 +2255,7 @@ function renderGameBody(){
   const hd=(title,closeFn,closeLbl)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:closeLbl||'Close',onclick:closeFn,type:'button'})));
   if(!game&&sset) return renderStorySets();
   if(!game||game.setup){ hd('Games',()=>{ if(game) game.setup=false,renderGame(); else closeGamesUI(); });
-    if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+keptGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state)}))); }
+    if(!game){ const sv=gsaved(); if(sv) GP.append(gel('div',{className:'row'},gel('button',{className:'big',type:'button',textContent:'Resume '+keptGames().find(g=>g.id===sv.id).name,onclick:()=>startGame(sv.id,sv.state.players,sv.state.options,sv.state.bots||[],sv.state,sv.look===true)}))); }
     const games=keptGames(), g=games.find(x=>x.id===gprefs.gameId)||games[0];
     const sel=gel('select',{ariaLabel:'Game',onchange:()=>{ gprefs.gameId=sel.value; gsave(); renderGame(); }}); for(const x of games) sel.append(gel('option',{value:x.id,textContent:x.name,selected:x.id===g.id}));
     GP.append(gel('div',{className:'row'},gel('label',{textContent:'Game'}),sel));
@@ -2254,6 +2268,7 @@ function renderGameBody(){
       else if(o.type==='choice'){ const se=gel('select',{ariaLabel:o.label,onchange:()=>{ const x=+se.value; gprefs.opts[g.id+'.'+o.id]=x; opts[o.id]=x; gsave(); renderGame(); }}); for(const c of o.choices) se.append(gel('option',{value:c.value,textContent:c.label,selected:c.value===v})); GP.append(gel('label',{className:'row'},gel('span',{textContent:o.label}),se)); }
       else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
         for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
+    { const L=GAME_LOOKS[g.id]; if(!game&&L&&L.pref){ const cb=gel('input',{type:'checkbox',id:'gamelook',checked:gameLookOn(g.id),onchange:()=>{ gprefs.opts[g.id+'.'+L.pref]=cb.checked; gsave(); const h=bag.hold; if(h&&h.game===g.id){ if(cb.checked) h.draftOff=false; else dropGameDraft(h); h.key=''; } renderGame(); }}); GP.append(gel('label',{className:'row'},cb,gel('span',{textContent:L.label}))); } }   // PD-188: the game look toggle: rebuilds or drops the draft in place
     const sfit=g.id==='story'?storyFit(opts):null;   // too many faces for the glyph pool: preview (and offer) the closest set that fits, never the plain d6s
     if(!game){ if(g.id!=='story') lobbyOn(g.id,g.dice.count+'d'+g.dice.sides,g.id+'|'+g.dice.count+'|'+g.dice.sides); else if(sfit&&!sfit.short){ const so=sfit.ok?opts:{...opts,dice:sfit.dice,sides:sfit.sides}; lobbyOn('story',so.dice+'d'+so.sides,JSON.stringify([so.dice,so.sides,so.seed,so.packs]),makeStoryDeal(so),{count:so.dice,sides:so.sides,packs:[...so.packs],seed:so.seed,dice:'different',order:'shuffled'}); } else lobbyOff(); }   // the story dice show on the mat while setting up
     if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length;
