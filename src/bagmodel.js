@@ -41,8 +41,11 @@ export function parseBag(obj){
   out.jail=(Array.isArray(obj.jail)?obj.jail:[]).filter(j=>j&&ref(j.design)).map(j=>({...structuredClone(j),design:ref(j.design)}));
   for(const [k,v] of Object.entries(obj.pending&&typeof obj.pending==='object'?obj.pending:{})){ if(ref(k)&&designOK(v)) out.pending[ref(k)]=structuredClone(v); else dropped.push(`pending edits for "${k}": design missing or invalid`); }
   if(obj.draft!=null){ if(designOK(obj.draft)) out.draft=structuredClone(obj.draft); else dropped.push('the random draft was not a valid design'); }
-  const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null, draft:!!(a.draft&&out.draft)};
-  { const h=obj.hold; if(h&&typeof h.game==='string'&&(h.phase==='lobby'||h.phase==='game')&&h.mine&&SHAPES[h.mine.shape]&&typeof h.mine.notation==='string') out.hold={game:h.game,phase:h.phase,key:String(h.key||''),mine:{shape:h.mine.shape,notation:h.mine.notation,set:typeof h.mine.set==='string'?h.mine.set:null,rollSet:typeof h.mine.rollSet==='string'?h.mine.rollSet:null},draft:null}; }   // PD-206: the game hold (local state only; bagFileJSON strips it, boot drops it)
+  { const h=obj.hold; if(h&&typeof h.game==='string'&&(h.phase==='lobby'||h.phase==='game')&&h.mine&&SHAPES[h.mine.shape]&&typeof h.mine.notation==='string'){
+      const g=h.draft, draft=g&&typeof g==='object'&&(g.kind==='whole'||g.kind==='tweak')&&typeof g.name==='string'&&designOK(g.design)?{kind:g.kind,name:g.name.slice(0,80),design:structuredClone(g.design),base:typeof g.base==='string'?g.base:null}:null;
+      if(g&&!draft) dropped.push('the game draft was not a valid design');
+      out.hold={game:h.game,phase:h.phase,key:String(h.key||''),mine:{shape:h.mine.shape,notation:h.mine.notation,set:typeof h.mine.set==='string'?h.mine.set:null,rollSet:typeof h.mine.rollSet==='string'?h.mine.rollSet:null},draft,...(h.draftOff?{draftOff:true}:{}),...(h.wake?{wake:true}:{})}; } }   // PD-206/PD-190: the game hold and its draft (local state only; bagFileJSON strips it, boot keeps it only for a paused game)
+  const a=obj.active||{}; out.active={design:ref(a.design)||out.designs[0].id, set:sets.has(a.set)?a.set:null, draft:a.draft==='game'?!!(out.hold&&out.hold.draft)&&'game':!!(a.draft&&out.draft)};
   out.log=(Array.isArray(obj.log)?obj.log:[]).slice(-LOG_MAX); out.roller=typeof obj.roller==='string'?obj.roller.slice(0,24):'';
   { const I=obj.init&&Array.isArray(obj.init.rows)?obj.init:null; if(I){ out.init={rows:I.rows.filter(r=>r&&typeof r.name==='string'&&Number.isFinite(+r.total)).slice(0,60).map(r=>({name:r.name.slice(0,30),total:+r.total})),turn:Math.max(0,Math.floor(+I.turn)||0),round:Math.max(1,Math.floor(+I.round)||1)}; } }
   return {bag:out, dropped};

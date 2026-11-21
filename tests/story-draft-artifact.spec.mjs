@@ -15,7 +15,9 @@ const ready = page => page.waitForFunction(() => window.__ready === true && wind
 const LITE = process.env.PD_NOLITE ? '' : '?lite';   // same render profile as the other specs (no shadows/AA, no per-frame draw)
 let t0 = Date.now(); const lap = l => { if (process.env.PD_PROFILE) console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${l}`); };
 // what the player owns: every persisted key except the roll log (and the roller name a boot adds) (a played round legitimately adds to those)
-const stored = page => page.evaluate(() => { const o = {}; for (const k of Object.keys(localStorage)) if (/^prettydice\.(v1|bag\.v1)$/.test(k)) o[k] = localStorage.getItem(k); const b = JSON.parse(o['prettydice.bag.v1']); delete b.log; delete b.roller; o['prettydice.bag.v1'] = JSON.stringify(b); return o; });
+// PD-190: while a game runs, the settings store holds the game's look and the bag store carries the hold (with the game draft) and active.draft 'game': what the player owns is the designs, pending edits, sets and random draft.
+const stored = page => page.evaluate(() => { const o = {}; for (const k of Object.keys(localStorage)) if (/^prettydice\.(v1|bag\.v1)$/.test(k)) o[k] = localStorage.getItem(k); const b = JSON.parse(o['prettydice.bag.v1']); delete b.log; delete b.roller; delete b.hold; if (b.active.draft === 'game') b.active.draft = false; o['prettydice.bag.v1'] = JSON.stringify(b); return o; });
+const owned = page => page.evaluate(() => { const b = JSON.parse(localStorage.getItem('prettydice.bag.v1')); return JSON.stringify({ d: b.designs, p: b.pending, s: b.sets, r: b.draft }); });
 const live = page => page.evaluate(() => { const pd = window.__pd; return { sub: pd.state.substrate, cols: [...pd.state.palettes.shared], active: JSON.stringify(pd.bag.active), pending: Object.keys(pd.bag.pending).join() }; });
 
 test('PD-187 (artifact, UI): Story Dice round, mid-game pick, Randomize, reload: the player\'s designs are never overwritten', async ({ page }) => {
@@ -39,12 +41,14 @@ test('PD-187 (artifact, UI): Story Dice round, mid-game pick, Randomize, reload:
 
   // Story Dice from the Games tab: setup preview, start, roll
   await nav.openGames(); await page.selectOption('#scorepane select >> nth=0', 'story'); await page.waitForTimeout(800);
-  expect(await stored(page)).toEqual(before);                     // the setup preview writes nothing
+  const own0 = await owned(page);
+  expect(await owned(page)).toBe(own0);                           // the setup preview changes none of the player's designs, edits, sets or draft
   await nav.roll(); await page.waitForTimeout(1500);
-  expect((await live(page)).sub).toBe('solid');                   // the game's plain look is live
-  expect(await stored(page)).toEqual(before);                     // ...and nothing of it is persisted
+  expect((await live(page)).sub).toBe('solid');                   // the game's plain look is live (the game draft)
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('prettydice.bag.v1')).active.draft)).toBe('game');
+  expect(await owned(page)).toBe(own0);                           // ...and none of it is written into the player's designs
   await page.evaluate(() => window.__pd.simRoll({ rerolls: 6 }));
-  expect(await stored(page)).toEqual(before);
+  expect(await owned(page)).toBe(own0);
 
   lap('round1 done');
   // reload mid-game: the player's saved look comes back, not the game's

@@ -78,7 +78,7 @@ for (const id of ['pig', 'yahtzee', 'farkle', 'liarsdice']) {
 }
 
 // PD-187 mitigation (4.1): while the game look is live nothing in the bag may write it into the player's design or drop their unsaved edits.
-test('PD-187: Save / Copy JSON / menu Save / Revert / Undo mid-Story leave the design and its unsaved edits alone; the Bag shows the player\'s picture and a dashed game tile', async ({ app, page, context }) => {
+test('PD-187: Save / Copy JSON / menu Save / Revert / Undo mid-Story leave the design and its unsaved edits alone; the Bag shows the player\'s picture and a live dashed game ghost', async ({ app, page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await app.open({ seed: 192, plain: true });
   await addDesign(app, 'Mine', 'swirl');
@@ -92,43 +92,48 @@ test('PD-187: Save / Copy JSON / menu Save / Revert / Undo mid-Story leave the d
   const dice0 = await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length }));
   expect(dice0.n).toBeGreaterThan(0);
 
-  // the Bag: the player's own tile and header show the player's design (not the white game look), plus one dashed inert game tile
-  await expect(page.locator('#bagname')).toHaveText('Mine');
+  // PD-190: the Bag shows the game draft as a live dashed ghost (header: draft name, Save as design / Discard); the player's own tile keeps the player's picture and Modified dot
+  await expect(page.locator('#bagname')).toHaveText('Story Dice look');
+  await expect(page.locator('#bagpos')).toContainText('draft for this game');
   const cards = page.locator('#cards .card');
-  await expect(cards.filter({ hasText: 'Story Dice look (draft)' })).toHaveCount(1);
-  const game = cards.filter({ hasText: 'Story Dice look (draft)' });
-  await expect(game).toHaveClass(/ghost/); await expect(game).toHaveAttribute('title', 'Temporary look for this game; saving comes later');
+  const game = cards.filter({ hasText: 'Story Dice look' });
+  await expect(game).toHaveCount(1);
+  await expect(game).toHaveClass(/ghost/); await expect(game).toHaveClass(/\bon\b/); await expect(game).toHaveAttribute('title', 'Draft look for this game: edit it, Save as design, or Discard');
+  await expect(cards.filter({ hasText: 'Mine' }).locator('.dot')).toHaveCount(1);   // the player's design still shows its own unsaved edits
   expect(await app.run(pd => pd.bag.active.design)).toBe(myId);
-  await game.dispatchEvent('click'); await page.waitForTimeout(300);
-  expect(await app.run(pd => pd.bag.active.design), 'the game tile is not selectable').toBe(myId);
-  expect(await app.run(pd => pd.state.substrate), 'still the game look').toBe('solid');
-  await expect(page.locator('#bagact')).toBeHidden();   // no Save/Revert block for the temporary look
+  expect(await app.run(() => !document.querySelector('#bagact').hidden)).toBe(true); await expect(page.locator('#dkeep')).toHaveText('Save as design'); await expect(page.locator('#ddiscard')).toHaveText('Discard');
   expect(await app.run(pd => !!document.querySelector('#bagth').style.backgroundImage)).toBe(true);
 
-  // Save bag file and Copy JSON
+  // the tile menus (PD-190): the player's design acts on its own pending edits only; the ghost offers Save as design / Rename / Discard
   await app.nav.openBag();
-  await expect(page.locator('#tiles .tile.ghost.inert')).toHaveCount(1);
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
-  const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
-  expect(file.designs.find(d => d.id === myId).design.substrate, 'saved design keeps its own look').toBe('swirl');
-  await page.click('#sheetcopy'); await page.waitForTimeout(300);
-  // the tile menu has no Save / Revert for the active design now; the direct calls are no-ops too
-  await page.locator(`#tiles .tile[data-id="${myId}"] .dots`).click();
-  await expect(page.locator('#cardmenu button', { hasText: /^(Save|Revert)/ })).toHaveCount(0);
-  await page.keyboard.press('Escape');
-  await app.run(async pd => { await pd.bagOps.save(pd.bag.active.design); await pd.bagOps.save(); await pd.bagOps.saveCopy(); await pd.bagOps.revert(pd.bag.active.design); await pd.bagOps.revert(); });
-  await page.click('#sheetclose');
+  await expect(page.locator('#tiles .tile.ghost')).toHaveCount(1);
+  await page.locator(`#tiles .tile[data-id="${myId}"] .dots`).click(); await page.waitForTimeout(300);
+  expect(await app.run(() => [...document.querySelectorAll('#cardmenu button')].map(b => b.textContent).slice(0, 3))).toEqual(['Save', 'Save as copy', 'Revert']);
+  await page.keyboard.press('Escape'); await page.mouse.click(5, 5);
+  await page.locator('#tiles .tile[data-id="gdraft"] .dots').click(); await page.waitForTimeout(300);
+  expect(await app.run(() => [...document.querySelectorAll('#cardmenu button')].map(b => b.textContent))).toEqual(['Save as design', 'Rename…', 'Discard (use my design)']);
+  await page.keyboard.press('Escape'); await page.mouse.click(5, 5);
   const mid = await mine(app);
   expect(mid.designs).toEqual(before.designs); expect(mid.pending).toBe(before.pending); expect(mid.sets).toBe(before.sets);
   expect(await app.run(pd => JSON.stringify(pd.bag.pending[pd.bag.active.design]))).toBe(myPic);
+
+  // Save bag file and Copy JSON: the player's pending edits are saved into the player's design (memo S7), the game look goes nowhere
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#sheetsave')]);
+  const file = JSON.parse(await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8'));
+  expect(file.designs.find(d => d.id === myId).design.substrate, 'saved design keeps its own look').toBe('swirl');
+  expect(JSON.stringify(file.designs.find(d => d.id === myId).design), 'the pending edits were saved into the design').toBe(myPic);
+  expect(JSON.stringify(file)).not.toContain('Story Dice look'); expect(file.hold).toBeUndefined();
+  await page.click('#sheetcopy'); await page.waitForTimeout(300);
+  await page.click('#sheetclose');
+  expect(await app.run(pd => ({ sub: pd.state.substrate, draft: pd.bag.active.draft, pending: Object.keys(pd.bag.pending).length, saved: JSON.stringify(pd.bag.designs.find(d => d.id === pd.bag.active.design).design) }))).toEqual({ sub: 'solid', draft: 'game', pending: 0, saved: myPic });
 
   // Undo mid-game cannot bring back the pre-game look or dice count
   await app.run(async pd => { await pd.undo(); await pd.undo(); }); await page.waitForTimeout(400);
   expect(await app.run(pd => ({ shape: pd.state.shape, notation: pd.state.notation, n: pd.dice.length, sub: pd.state.substrate }))).toEqual({ ...dice0, n: dice0.n, sub: 'solid' });
 
   await endIt(app);
-  expect(await mine(app)).toEqual(before);   // the design and its pending edits are exactly as before the game
-  await expect(page.locator('#cards .card', { hasText: 'Story Dice look (draft)' })).toHaveCount(0);
+  expect(await app.run(pd => ({ sub: pd.state.substrate, polish: pd.state.polish, pending: Object.keys(pd.bag.pending).length, draft: pd.bag.active.draft, hold: pd.bag.hold }))).toEqual({ sub: 'swirl', polish: 0.93, pending: 0, draft: false, hold: null });   // the player's (now saved) design is live again
+  await expect(page.locator('#cards .card', { hasText: 'Story Dice look' })).toHaveCount(0);
 });
 
 const setupStory = async app => { await app.run(pd => { pd.openGames(); }); await app.page.selectOption('#scorepane select >> nth=0', 'story'); await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); };

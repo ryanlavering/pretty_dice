@@ -9,6 +9,7 @@ User-facing changes. Versions are git tags.
 - **Sets can carry a look.** A set can name a design: picking the set brings that look; Keep my look turns it off.
 - **Dice settle without wiggling at the default gravity too.** A die rocking on an edge now topples to flat instead of rocking or freezing leaning.
 - **Every game shows its own dice in the lobby and rolls them in place.** Fixes: picking a design or set in the Story lobby no longer loses your dice, and a reload mid-Yacht keeps your dice.
+- **The game look is a real draft.** In the Bag, the Story Dice look is a dashed draft you can pick, edit, rename and discard. **Save as design** makes a design with that look and a set with the game's dice that names it. It never overwrites a design. A reload mid-game brings it back on Resume.
 
 ## 4.1 (2026-11-21)
 
