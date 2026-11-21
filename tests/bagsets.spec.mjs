@@ -241,7 +241,7 @@ test('a set can be copied, and edited inline without touching the live Custom se
   await expect(ed.locator('.senote')).toHaveValue('1d12+3');
   await ed.locator('button[aria-label="Add a d6"]').click();                    // steppers
   await expect(ed.locator('.senote')).toHaveValue('1d6+1d12+3');
-  await ed.locator('select').selectOption('amethyst');                          // dice use: the next dice take another design
+  await ed.locator('.row2:not(.selook) select').selectOption('amethyst');                          // dice use: the next dice take another design
   await ed.locator('button[aria-label="Add a d4"]').click();
   await expect(ed.locator('.senote')).toHaveValue('1d6+1d12+1d4@amethyst+3');
   await expect(ed.locator('.tch button')).toHaveCount(3);                       // one chip per term

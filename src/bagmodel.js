@@ -35,6 +35,7 @@ export function parseBag(obj){
   const sets=new Set();
   for(const st of (Array.isArray(obj.sets)?obj.sets:[])){ if(!st||typeof st.id!=='string'||!Array.isArray(st.terms)){ dropped.push('a set without an id or terms'); continue; }
     const copy=structuredClone(st); copy.terms=copy.terms.map(t=>{ if(t&&t.design&&!ref(t.design)){ dropped.push(`set ${st.name||st.id}: design "${t.design}" is missing, using the active design`); const {design,...r}=t; return r; } return t&&t.design?{...t,design:ref(t.design)}:t; });
+    if(copy.design!==undefined){ if(typeof copy.design==='string'&&ref(copy.design)) copy.design=ref(copy.design); else { if(copy.design) dropped.push(`set ${st.name||st.id}: design "${copy.design}" is missing, the set keeps your current look`); delete copy.design; } }   // PD-202 part 2: the set's look link
     sets.add(copy.id); out.sets.push(copy); }
   out.characters=(Array.isArray(obj.characters)?obj.characters:[]).filter(c=>c&&typeof c.id==='string').map(c=>structuredClone(c));
   out.jail=(Array.isArray(obj.jail)?obj.jail:[]).filter(j=>j&&ref(j.design)).map(j=>({...structuredClone(j),design:ref(j.design)}));

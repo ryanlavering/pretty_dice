@@ -181,3 +181,19 @@ test("tiger's eye: the upper half of the swirl-scale slider is compressed so the
   expect(r.hi, 'busy end squeezed').toBeLessThan(2); expect(r.hi).toBeGreaterThan(r.mid);
   expect(r.marbleHi, 'other stones keep the full range').toBeCloseTo(3.5, 5);
 });
+
+test('PD-202 set look link: parse, remap, dangling, 4.1 round trip', async ({ shared: app }) => {
+  const r = await app.run(pd => {
+    const d = (n, sub) => ({ ...pd.designToJSON(), substrate: sub, name: n });
+    const file = { format: 'pretty-dice-bag', version: 1, name: 'B', designs: [{ id: 'a b', name: 'A', design: d('A', 'solid') }, { id: 'c', name: 'C', design: d('C', 'swirl') }],
+      sets: [{ id: 's1', name: 'S1', terms: [{ count: 2, sides: 6 }], mod: 0, design: 'c' }, { id: 's2', name: 'S2', terms: [{ count: 1, sides: 8 }], mod: 0, design: 'gone' },
+        { id: 's3', name: 'S3', terms: [{ count: 1, sides: 4 }], mod: 0, design: 'a b' }, { id: 's4', name: 'S4', terms: [{ count: 1, sides: 4 }], mod: 0 }], active: { design: 'c' } };
+    const { bag, dropped } = pd.parseBag(file), out = pd.parseBag(JSON.parse(JSON.stringify(bag))).bag;
+    return { links: bag.sets.map(s => s.design), dropped, ids: bag.designs.map(x => x.id), again: out.sets.map(s => s.design), hasKey: 'design' in bag.sets[3] || 'design' in bag.sets[1] };
+  });
+  expect(r.ids).toEqual(['a-b', 'c']);                                   // 'a b' is re-slugged: the link follows the new id
+  expect(r.links).toEqual(['c', undefined, 'a-b', undefined]);
+  expect(r.hasKey).toBe(false);
+  expect(r.dropped.join('|')).toMatch(/set S2: design "gone" is missing/);
+  expect(r.again).toEqual(r.links);                                      // a 4.2 file reloads unchanged; a 4.1 file (no field) is the s4 case
+});
