@@ -2,6 +2,8 @@
 import { test, expect } from './helpers/app.mjs';
 
 const mine = app => app.run(pd => ({ look: JSON.stringify(pd.designToJSON()), designs: pd.bag.designs.map(d => d.id + ':' + JSON.stringify(d.design)), active: JSON.stringify(pd.bag.active), pending: JSON.stringify(pd.bag.pending), draft: JSON.stringify(pd.bag.draft), sets: pd.bag.sets.length, setIds: pd.bag.sets.map(s => s.id).join() }));
+// PD-206 (4.2 S3, intended): the look is compared without the dice. After a game the mat holds the player's own dice again (a pick mid-game used to leave the game's dice behind: the 4.1 P4 bug)
+const lookOf = j => { const o = JSON.parse(j); delete o.shape; delete o.notation; return JSON.stringify(o); };
 async function addDesign(app, name, sub) { await app.run(async (pd, a) => { const j = pd.designToJSON(); j.substrate = a.sub; j.colors = a.cols; j.name = a.name; await pd.bagOps.addLoaded(JSON.parse(JSON.stringify(j))); }, { name, sub, cols: sub === 'swirl' ? ['#aa2233', '#33aa44', '#2233aa'] : ['#112233', '#445566', '#778899'] }); await app.page.waitForTimeout(700); }
 async function startGame(app, id) {
   await app.run(pd => { pd.openGames(); });
@@ -50,7 +52,7 @@ test('PD-187: a design picked mid-game is kept after the game; the other design 
   await endIt(app);
   const after = await mine(app);
   expect(after.designs).toEqual(preDesigns); expect(after.pending).toBe('{}'); expect(after.sets).toBe(pre.sets);
-  expect(after.look).toBe(picked.look); expect(await app.run(pd => pd.bag.active.design)).toBe(await app.run(pd => pd.bag.designs[2].id));   // the pick became the design after the game
+  expect(lookOf(after.look)).toBe(lookOf(picked.look)); expect(JSON.parse(after.look).shape).toBe(JSON.parse(pre.look).shape); expect(await app.run(pd => pd.bag.active.design)).toBe(await app.run(pd => pd.bag.designs[2].id));   // the pick became the design after the game
 });
 
 test('PD-187: Randomize mid-game is the player\'s own draft and stays; their design is untouched', async ({ app }) => {
@@ -62,7 +64,7 @@ test('PD-187: Randomize mid-game is the player\'s own draft and stays; their des
   const rnd = await mine(app);
   await endIt(app);
   const after = await mine(app);
-  expect(after.look).toBe(rnd.look); expect(after.designs).toEqual(pre.designs); expect(after.sets).toBe(pre.sets);
+  expect(lookOf(after.look)).toBe(lookOf(rnd.look)); expect(JSON.parse(after.look).shape).toBe(JSON.parse(pre.look).shape); expect(after.designs).toEqual(pre.designs); expect(after.sets).toBe(pre.sets);
 });
 
 for (const id of ['pig', 'yahtzee', 'farkle', 'liarsdice']) {

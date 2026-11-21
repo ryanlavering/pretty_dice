@@ -76,7 +76,7 @@ try{ const saved=JSON.parse(localStorage.getItem(STORE)||'{}');
   if(!Array.isArray(state.off)||state.off.length!==3) state.off=[...DEFAULTS.off];
   if(Array.isArray(state.palettes)) state.palettes={};
 }catch{}
-function save(){ try{ const {colors,...rest}=lookSnap?{...state,...JSON.parse(lookSnap)}:state; localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); scheduleBagUI(); }
+function save(){ try{ const {colors,...rest}=lookSnap?{...state,...JSON.parse(lookSnap)}:state; if(bag&&bag.hold&&bag.hold.mine){ rest.shape=bag.hold.mine.shape; rest.notation=bag.hold.mine.notation; }   /* PD-206 I4: while a game's dice are on the mat the settings store keeps the player's own */ localStorage.setItem(STORE,JSON.stringify(rest)); }catch{} saveBag(); scheduleBagUI(); }
 /* One palette (3 colours) is shared by every substrate and stone type, so switching substrate keeps the colours (PD-61).
    Only Randomize makes new colours, using the logic of the substrate that is active at that moment (metal picks a metal, a stone picks its own palette).
    Substrates that use fewer than 3 colours (solid plastic, metal) still get 3, so every other substrate has a full set to show.
@@ -328,7 +328,7 @@ function applyLook(){
 const repaint=r=>{ if(state.paintMode!=='custom'&&state.substrate==='marble'&&STONES[state.stone]&&STONES[state.stone].paint) state.paint=STONES[state.stone].paint; else if(state.paintMode!=='custom') state.paint=pickPaint(state.colors,state.substrate,r||mulberry32(state.seed),state.paintMode); };
 function randomize(noBuild){
   enterDraft(); checkpoint(); state.seed=(rng()*1e9)|0; const r=mulberry32(state.seed), oldShape=state.shape, f=(v,d)=>+v.toFixed(d);
-  if(state.randshape&&!gameRun()) state.shape=pick(Object.keys(SHAPES),r);   // a running game keeps its dice (PD-158)
+  if(state.randshape&&!diceOwned()) state.shape=pick(Object.keys(SHAPES),r);   // a running game keeps its dice (PD-158)
   if(state.randsub) state.substrate=pick(Object.keys(SUBSTRATES),r);
   if(state.substrate==='marble') state.stone=pick(STONE_KEYS,r);
   state.palettes.shared=freshPalette(state.substrate,r); state.colors=state.palettes.shared; state.stoneAccent=f(r(),2);
@@ -350,7 +350,7 @@ function randomize(noBuild){
   ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); if(wasRoll&&state.shape!==oldShape) startRoll(); });   // a new shape in roll view is thrown straight onto the mat   // geometry/atlas depend on radius, font and number settings
 }
 function blankDraft(){   // slice 4c: [+] Blank opens the same draft Random does, starting from a plain off-white die
-  enterDraft(); checkpoint(); const oldShape=state.shape, gk=gameRun()?{shape:state.shape,notation:state.notation}:null;   // PD-187: a running game keeps its dice
+  enterDraft(); checkpoint(); const oldShape=state.shape, gk=diceOwned()?{shape:state.shape,notation:state.notation}:null;   // PD-187: a running game (or the lobby's game dice) keeps its dice
   Object.assign(state,Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])]))); if(gk){ state.shape=gk.shape; state.notation=gk.notation; } state.substrate='solid'; setSubstrate('solid');
   state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); checkpoint();
   const tok=buildTok+1; buildTok=tok; ensureFont(state.font).then(()=>{ if(buildTok!==tok) return; buildDice(state.shape===oldShape); });
@@ -382,7 +382,7 @@ function checkpoint(){                                   // record the current d
 const scheduleCheckpoint=()=>{ if(hIdx<0) return; clearTimeout(hTimer); hTimer=setTimeout(checkpoint,500); syncHistoryUI(); };   // coalesces slider drags
 function syncHistoryUI(){ $('undo').disabled=!(hIdx>0||hTimer); $('redo').disabled=!(hIdx>=0&&hIdx<history.length-1); }
 async function restore(snap){
-  const o=JSON.parse(snap), oldShape=state.shape; if(gameRun()){ o.shape=state.shape; o.notation=state.notation; }   /* PD-187: undo never changes a running game's dice */
+  const o=JSON.parse(snap), oldShape=state.shape; if(diceOwned()){ o.shape=state.shape; o.notation=state.notation; }   /* PD-187: undo never changes a running game's dice */
   Object.assign(state,o); legalRelief(); setSubstrate(state.substrate);
   const tok=++buildTok; await ensureFont(state.font); if(buildTok===tok) buildDice(state.shape===oldShape); syncHistoryUI();
 }
@@ -519,7 +519,7 @@ function refreshChips(){ const sig=state.colors.join()+state.substrate;
   const sj=stepChipJ(), ssig=(stepDesign||'')+'|'+(sj.colors||[]).join()+sj.substrate; if(ssig===stepSig) return; stepSig=ssig;
   document.querySelectorAll('#steppers .step').forEach((d,i)=>{ d.querySelector('.chip').style.backgroundImage=dieChip(sj,shapeOfSides(STEP_TYPES[i]),null,true); }); }
 /* PD-202: a design's stored shape/notation are its suggested dice. The chip exists in the DOM only while it would show something (Design room, a saved design, no game dice on the mat). */
-function suggestion(){ if(!bag||bag.active.draft||gameRun()||lookSnap||!document.body.classList.contains('design')) return null; const e=activeEntry(), d=e&&e.design; if(!d||!SHAPES[d.shape]) return null;
+function suggestion(){ if(!bag||bag.active.draft||diceOwned()||lookSnap||!document.body.classList.contains('design')) return null; const e=activeEntry(), d=e&&e.design; if(!d||!SHAPES[d.shape]) return null;
   const custom=d.shape==='custom'; if(custom&&(typeof d.notation!=='string'||parseNotation(d.notation).error)) return null;
   if(d.shape===state.shape&&(!custom||d.notation===state.notation)) return null;
   return {shape:d.shape,notation:custom?d.notation:null,label:custom?d.notation:(/^d\d+$/.test(d.shape)?d.shape:SHAPES[d.shape].label)}; }
@@ -648,7 +648,7 @@ $('savejson').onclick=()=>{ const a=document.createElement('a'); a.href=URL.crea
    shape and notation travel with the look but do not count as edits (shape is only the preview shape). */
 const entryOf=id=>bag&&bag.designs.find(d=>d.id===id);
 const activeEntry=()=>entryOf(bag.active.design);
-function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; return dj; }
+function liveJSON(){ const dj=designToJSON(), e=activeEntry(); if(!bag.active.draft&&e) dj.name=dj.name||e.name; if(bag.hold&&bag.hold.mine){ dj.shape=bag.hold.mine.shape; dj.notation=bag.hold.mine.notation; } return dj; }   // PD-206: while a game's dice are on the mat, what the bag stores (pending edits, the draft) carries the player's own dice, never the game's
 /* PD-187: what the bag shows and saves as the active design: the player's own picture while the game look is live */
 function viewJSON(){ if(!lookSnap) return liveJSON(); if(bag.active.draft) return bag.draft||liveJSON(); const e=activeEntry(), p=bag.pending[e.id]; return {...(p||e.design),name:(p&&p.name)||e.name}; }
 const frozenId=id=>!!lookSnap&&(!id||id==='draft'||(!bag.active.draft&&id===bag.active.design));   // PD-187: while the game look is live, the active design is read-only (Save/Revert would write or drop the game look)
@@ -661,11 +661,12 @@ function syncLive(){ if(!bag||bagLoading||lookSnap) return;   // PD-187: the gam
   const e=activeEntry(); if(!e) return;
   if(isLiveModified()) bag.pending[e.id]=liveJSON();
   else delete bag.pending[e.id]; }   /* PD-202 I3: the stored shape/notation (the suggestion) change only on an explicit save */   // a running game's dice are the game's, not the design's preview shape (PD-187)   // PD-142.38.37: the roll set on the mat (Custom / Standard 7 and its formula) is a draft outside the bag: it is never written into the saved design, so editing it cannot make the bag look modified
-function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); return structuredClone(bag); }
+function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); const b=structuredClone(bag); delete b.hold; return b; }   // PD-206 S3: the hold is not stored yet: a reload drops it anyway, and the settings store already carries the player's own dice (save()). S4 stores it with the game draft
 function saveBag(){ if(!bag||bagLoading) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
 /* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
 function initBag(){
   try{ const raw=localStorage.getItem(BAG_STORE); if(raw){ bag=parseBag(JSON.parse(raw)).bag; } }catch{ bag=null; }
+  if(bag&&bag.hold) bag.hold=null;   // PD-206: a hold does not survive a reload (the settings store already holds the player's own dice, see save())
   if(!bag){ const dj=designToJSON(), name=dj.name||'Design 1'; bag=emptyBag(); bag.designs.push({id:slug(name,'design-1'), name, preview_shape:dj.shape, design:{...dj,name}}); bag.active.design=bag.designs[0].id; }
   saveBag();
 }
@@ -676,6 +677,7 @@ function normalizeActive(){ const e=activeEntry(); if(e&&!bag.active.draft&&!bag
 let actBusy=false, actNext=null;
 /* PD-154/158: a running game fixes the dice SET (shape and count); the look may change. gameDiceFixed(fits) is true (and says why) when the pick does not fit the game's dice. */
 const gameRun=()=>!!game&&!game.setup;
+function diceOwned(){ return gameRun()||!!(bag&&bag.hold); }   // PD-206: a game's dice are on the mat (running, or shown in the lobby): the player's own are in bag.hold.mine
 function gameDiceFixed(fits){ if(!gameRun()||fits) return false; gameMsg='The game fixes the dice: only a design or set with the same dice fits (end the game to pick another)'; renderGame(); return true; }
 function sameDiceAsGame(notation){ const dd=game.info.dice, p=parseNotation(notation||'',true); return !p.error&&!p.mod&&!(p.group>1)&&p.terms.length>0&&p.terms.every(t=>t.sides===dd.sides&&!t.keep)&&p.terms.reduce((a,t)=>a+t.count,0)===dd.count; }
 // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
@@ -698,7 +700,7 @@ function addEntry(json,name,afterId){ name=uniqueName(bag.designs.map(d=>d.name)
   const at=afterId?bag.designs.findIndex(d=>d.id===afterId)+1:bag.designs.length; bag.designs.splice(at,0,e); return e; }
 const bagOps={
   async save(id){ if(frozenId(id)) return; if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),p.name||e.name); e.design={...p,name:e.name}; e.preview_shape=p.shape; delete bag.pending[id]; save(); return; }
-    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); if(rollSetId||gameRun()){ j.shape=e.design.shape; j.notation=e.design.notation; }   /* I3: set or game dice on the mat are not this design's suggestion */ e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),j.name||e.name); e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
+    if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); if(rollSetId||diceOwned()){ j.shape=e.design.shape; j.notation=e.design.notation; }   /* I3: set or game dice on the mat are not this design's suggestion */ e.name=uniqueName(bag.designs.filter(x=>x!==e).map(d=>d.name),j.name||e.name); e.design={...j,name:e.name}; e.preview_shape=j.shape; delete bag.pending[e.id]; $('dname').value=e.name; save(); },
   isOther(id){ return bag.active.draft||bag.active.design!==id; },
   async saveCopy(id){ if(frozenId(id)) return; if(id&&this.isOther(id)){ const e=entryOf(id), p=bag.pending[id]; if(!p) return; delete bag.pending[id]; addEntry(p,`${e.name} copy`,id); save(); return; }
     if(bag.active.draft) return this.keep(); const e=activeEntry(), j=liveJSON(); delete bag.pending[e.id];
@@ -723,7 +725,7 @@ const bagOps={
   move(id,to){ const k=bag.designs.findIndex(d=>d.id===id); if(k<0) return; to=Math.max(0,Math.min(bag.designs.length-1,to)); const [e]=bag.designs.splice(k,1); bag.designs.splice(to,0,e); save(); },
   async addLoaded(obj){ if(!obj||obj.format!=='pretty-dice') throw new Error(obj&&obj.format==='pretty-dice-bag'?'That is a bag file: use Add to the bag > From a file':'Not a pretty-dice design file');
     const {bag:inc}=parseBag(obj); syncLive(); const d=inc.designs[0].design, e=addEntry(d,d.name||newDesignName()); await activate(e.id,{skipSync:true}); return e.id; },
-  async addBlank(){ syncLive(); lookDrop(); const gk=gameRun()?{shape:state.shape,notation:state.notation}:null, keepShape=state.shape, keepNot=state.notation; bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); state.shape=keepShape; state.notation=keepNot;   /* PD-202: New keeps the dice */ state.substrate='solid'; setSubstrate('solid'); state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); applyLook();   // a plain off-white plastic die: a neutral starting point (Randomize is the way to get a surprise)
+  async addBlank(){ syncLive(); lookDrop(); const gk=diceOwned()?{shape:state.shape,notation:state.notation}:null, keepShape=state.shape, keepNot=state.notation; bagLoading++; try{ const d=Object.fromEntries(DESIGN_KEYS.map(k=>[k,structuredClone(DEFAULTS[k])])); Object.assign(state,d); state.shape=keepShape; state.notation=keepNot;   /* PD-202: New keeps the dice */ state.substrate='solid'; setSubstrate('solid'); state.palettes.shared=['#efe9dc','#efe9dc','#efe9dc']; state.colors=state.palettes.shared; state.seed=(rng()*1e9)|0; repaint(); applyLook();   // a plain off-white plastic die: a neutral starting point (Randomize is the way to get a surprise)
     await ensureFont(state.font); buildDice(); }finally{ bagLoading--; } const name=newDesignName(), e=addEntry({...designToJSON(),...(gk?{shape:DEFAULTS.shape,notation:DEFAULTS.notation}:{}),name},name); bag.active.draft=false; bag.active.design=e.id; $('dname').value=name; history=[snapshot()]; hIdx=0; syncHistoryUI(); save(); return e.id; },
 };
 /* The background picture pass borrows the live state for a moment, so anything that changes the live design waits for it to finish. */
@@ -733,7 +735,7 @@ for(const k of ['save','saveCopy','revert','keep','discard','duplicate','remove'
 /* Add a parsed bag to this one (ids that clash get -2, -3 ...), or replace this one. Returns {added, dropped}. */
 async function importBag(obj,{replace=false}={}){
   const {bag:inc,dropped}=parseBag(obj); await idleThumbs();
-  if(replace){ bag=inc; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(bag.active.draft?bag.draft:(pe||e.design),bag.active.draft?'':(pe?null:e.name)); normalizeActive(); save(); return {added:inc.designs.length,dropped}; }
+  if(replace){ lobbyOff(); bag=inc; const e=activeEntry(), pe=bag.pending[e.id]; await loadSlot(bag.active.draft?bag.draft:(pe||e.design),bag.active.draft?'':(pe?null:e.name)); normalizeActive(); save(); return {added:inc.designs.length,dropped}; }
   syncLive();
   const taken=new Set(bag.designs.map(d=>d.id)), map=new Map();
   for(const d of inc.designs){ const id=uniqueId(d.id,taken); taken.add(id); map.set(d.id,id); bag.designs.push({...d,id}); }
@@ -752,7 +754,8 @@ const bagFileName=()=>`${slug(bag.name,'pretty-dice-bag')}.bag.json`;
 /* Is the bag changed since it was last saved to a file (or loaded from one)? Compared by content, so it survives reloads and undoing a change clears it. */
 const BAG_SAVED='prettydice.bagsaved.v1';
 /* What a bag FILE holds: every design in its current state (outstanding edits folded in) and no pending section, so a loaded file comes in clean. The live session keeps its pending edits, so Revert still works after saving. */
-function bagFileJSON(){ const b=bagToJSON();
+function bagFileJSON(){ const b=bagToJSON(); delete b.hold;   // PD-206: the game hold is local state, never in a bag file
+ 
   for(const e of b.designs){ const p=b.pending[e.id]; if(p){ e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; } }
   b.pending={}; return b; }
 function bagSig(){ const {designs,sets,characters,jail,draft,name}=bagFileJSON(); return JSON.stringify({designs,sets:sets.map(({last,...r})=>r),characters,jail,draft:draft&&(({shape,notation,...r})=>r)(draft),name}); }   // the draft's shape and roll formula are the mat's, not the bag's
@@ -974,6 +977,7 @@ const setOps={
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
     const look=st.table?lookupTable(st.table,total):null; addLog({set:st.name,notation:setNotation(st),total:glyphOnly?'':String(total),detail,items,modText,quick:true,...(look?{lookup:look}:{})}); showQuick(st.name,total,items,modText,look); return total; }
 };
+{ const open=setOps.open; setOps.open=function(...a){ if(lobbyHold()){ lobbyOff(); setPane('table'); } return open.apply(this,a); }; }   // PD-206 I9: a set pick in the lobby releases the hold first (the player's dice back), then the set's dice go on the mat
 /* roll lines: a mini die chip in front of each term's text, like the set list */
 const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.design):liveChipJ(); };
 /* a group roll (PD-142.14.1.2): the same terms rolled N separate times, each with the modifier added; one line per roll */
@@ -993,7 +997,7 @@ let qbarSig='';
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
 function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){   /* PD-205: in the Story Dice lobby an empty box rolls the story dice in place on the Games tab: the look is released only by leaving Games or choosing another game (PD-191) */
     startRoll(launch||(game?rolling:placed),false,vel); return; }
-  if(!game&&storyPrev&&!parseNotation(v,true).error){ syncGameLook(true); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
+  if(!game&&lobbyHold()&&!parseNotation(v,true).error){ lobbyOff(); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
   const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
@@ -1415,8 +1419,8 @@ function syncGravityUI(){ const x=state.gravity, el=$('gravity'); if(!el) return
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
 const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
-let storyDeal=null, storyPrev=null;   // storyPrev: the setup preview (the story dice on the mat before Start), with what to restore   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
-let game=null, gameSnap=null, gameAwaiting=false, gameMsg='', gendAsk=false;   // the running game (see the games section near the end)
+let storyDeal=null, holdRolling=false;   // holdRolling: whether the mat was rolling when the lobby took it (put back on release); the lobby itself is bag.hold   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
+let game=null, gameAwaiting=false, gameMsg='', gendAsk=false;   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
 function dropHoldRings(){ for(const m of holdRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } holdRings=[]; }
 function clearHolds(){ held.clear(); heldPose={}; restoring=null; dropHoldRings(); updateHoldUI(); }
@@ -1891,7 +1895,7 @@ const phoneMq=matchMedia('(max-width:760px)'), phoneUI=()=>phoneMq.matches;
 const roomTab={design:'look',play:'table'}, roomNow=()=>document.body.classList.contains('design')?'design':'play';   // PD-142.38 slice 5: the last tab per room is remembered
 const PANES=['look','table','games','log'];   // PD-142.38.41/.43: Design has no tabs (always Look; the strip holds Undo/Redo); Bag and Sets are the Bag view's tabs
 function setPane(name){ const room=roomNow();
-  if(name==='settings'||(name==='games'&&!game&&!SP.childNodes.length)){ name=roomTab[room]; if(name==='games'&&!game&&!storyPrev) name='table'; }   // PD-205: the Story Dice lobby (preview on) keeps Games when a roll re-syncs the panes
+  if(name==='settings'||(name==='games'&&!game&&!SP.childNodes.length)){ name=roomTab[room]; if(name==='games'&&!game&&!lobbyHold()) name='table'; }   // PD-205: the Story Dice lobby (preview on) keeps Games when a roll re-syncs the panes
   if(name==='games'&&room==='design') name='look';
   if(!PANES.includes(name)) return; roomTab[room]=name;
   const g=name==='games', lg=name==='log';
@@ -1900,7 +1904,7 @@ function setPane(name){ const room=roomNow();
   if(!(g||lg)) $('settingspane').dataset.tab=name;
   PT.querySelectorAll('button[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); paneKey=room+':'+name; if(!paneRaf) paneRaf=requestAnimationFrame(()=>{ paneRaf=0; if(paneKey!==paneSeen){ paneSeen=paneKey; $('gamestab').closest('aside').scrollTop=0; } }); }   /* PD-142.38.55: syncMode re-applies the pane on every shape tap and mode sync (and a Play rebuild passes through the Design room for a moment), so only a room or tab that has really changed by the next frame goes back to the top */
 function applyRoomPane(){ try{ setPane('settings'); }catch{} }
-function resetUiState(){ rollSetId=null; if(!game&&storyPrev){ storyPrev=null; storyDeal=null; lookDrop(); }   /* a Story preview or the set whose dice were on the mat must not outlive a test: its stale look snapshot got restored, or its roll was logged under that set, in the next test */
+function resetUiState(){ rollSetId=null; if(!game&&lobbyHold()){ bag.hold=null; storyDeal=null; lookDrop(); }   /* a Story preview or the set whose dice were on the mat must not outlive a test: its stale look snapshot got restored, or its roll was logged under that set, in the next test */
   roomTab.design='look'; roomTab.play='table'; editSet=null; sheetTab='designs'; applyRoomPane(); }   /* test hook (shared.reset), no use in the app: the remembered tab per room back to Look / Table, and no half-open Bag set editor */
 PT.querySelectorAll('button[data-pane]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pane;
   if(n==='games'&&!game){ document.dispatchEvent(new CustomEvent('pd-open-games')); return; } setPane(n); syncGameLook(); });   // PD-191: opening Games always redraws it (the story dice come back with the setup); any other tab releases them   // slice 6: the Games tab replaces the round Games button
@@ -1916,7 +1920,7 @@ function placeSwitch(){ if(!stripReady) return; const ph=phoneUI(), tp=$('topstr
 peekHandle($('stripmid')); stripReady=true; placeSwitch(); phoneMq.addEventListener('change',placeSwitch); addEventListener('resize',placeSwitch);   // resize too: a viewport change must always re-place the strip contents
 addEventListener('blur',()=>holdTop(false));
 const rollSum=st=>['craps','shutbox','bunco','shipcaptain'].includes(game&&game.id)&&st.dice?st.dice.reduce((a,b)=>a+b,0):null;   // games that use the roll sum keep it in their status text now the big total is hidden
-function closeGamesUI(){ sset=null; storyPreviewOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
+function closeGamesUI(){ sset=null; lobbyOff(); document.body.classList.toggle('game',!!game); GPstage.hidden=true; GPstage.classList.remove('strip'); GPstage.textContent=''; SP.textContent=''; $('gamestab').textContent='Games'; setPane('settings'); document.body.classList.remove('gstrip'); GP=SP; renderDock(); }
 let gcollapsed=false;   // the Scorecard button folds the table on the desktop side panel; on phones the scorecard has its own tab, so it is never folded
 let gprefs={suggest:true,names:['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6'],count:1,gameId:'yahtzee',opts:{},bots:[false,false,false,false,false,false]};
 try{ Object.assign(gprefs,JSON.parse(localStorage.getItem(GKEY)||'{}')); }catch{}
@@ -1995,11 +1999,12 @@ const GSAVE=GKEY+'.game';   // a game in progress survives a reload: the engine 
 const gsaved=()=>{ try{ const j=JSON.parse(localStorage.getItem(GSAVE)||'null'); return j&&j.id&&j.state&&keptGames().some(g=>g.id===j.id)?j:null; }catch{ return null; } };
 function gsaveGame(){ try{ if(game&&!game.setup&&(whoop||GAMES.status(game.state).phase!=='over')) localStorage.setItem(GSAVE,JSON.stringify({id:game.id,state:whoop?whoop.prev:game.state})); else if(game&&!game.setup&&!whoop) localStorage.removeItem(GSAVE); }catch{} }
 async function startGame(id,players,options,botSeats=[],resume=null){
-  const info=GAMES.listGames().find(g=>g.id===id); gameSnap={shape:state.shape,notation:state.notation};
+  const info=GAMES.listGames().find(g=>g.id===id);
+  if(bag.hold){ if(bag.hold.game==='story'&&id!=='story') lookRestore(); bag.hold.phase='game'; bag.hold.game=id; } else bag.hold=newHold(id,'game');   // PD-206: the lobby's hold carries on into the game (mine kept); no lobby, a new one
   whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
-  if(id==='story'){ storyPrev=null; lookSwap(); }   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
+  if(id==='story') lookSwap();   // plain look for the game (already swapped when started from the setup preview); ending the game puts the player's look back
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); if(lookSnap) lookHistoryReset(); paneAuto=true; renderGame(); }
-function endGame(){ if(!game) return; gendAsk=false; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); if(gameSnap){ state.shape=gameSnap.shape; state.notation=gameSnap.notation; gameSnap=null; lookRestore(); buildDice(); syncUI(); } if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
+function endGame(){ if(!game) return; gendAsk=false; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); releaseHold(); if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
 // ---- hidden information (Liar's Dice, PD-142.37): the UI only ever draws from status(state, viewer) ----
 const botLock=()=>!!game&&!game.setup&&GAMES.status(game.state).botTurn;   // a bot's turn: the human buttons that would act for it stay shut
 const humanSeats=()=>game.state.players.map((_,i)=>i).filter(i=>!(game.state.bots||[]).includes(i));
@@ -2066,11 +2071,17 @@ function renderLiars(S,st,over){
 const storyTray=createStoryTray(stage); let storySalt=0;
 function makeStoryDeal(o){ const dice=Array.from({length:o.dice},()=>({faces:o.sides})), fp=fingerprint(dice,'set'+o.seed,o.packs); return {fp,glyphs:dealTerms([{count:o.dice,sides:o.sides,faces:{kind:'deal',packs:[...new Set(o.packs)].sort(),seed:o.seed,dice:'different',order:'shuffled'}}])[0]}; }   // PD-166: the same deal as the set formula {packs#seed}, so a Story set plays as it previews
 const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the glyph showing on each rolled die (face value v is the v-th face of its die)
-function storyPreviewOn(o){ const key=JSON.stringify([o.dice,o.sides,o.seed,o.packs]); if(storyPrev&&storyPrev.key===key) return;
-  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=makeStoryDeal(o); state.shape='custom'; state.notation=o.dice+'d'+o.sides; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }   // the story dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
-/* PD-191: the story look (setup preview, with the player's own look parked in lookSnap) is held only while the Games tab shows it and no game runs; leaving the tab, the Design room or the panel releases it. A running game never calls this (storyPrev is null then). */
-function syncGameLook(leaving){ if(!storyPrev||game) return; if(leaving||roomNow()!=='play'||SP.hidden||document.body.classList.contains('full')) storyPreviewOff(); }
-function storyPreviewOff(){ if(!storyPrev) return; const p=storyPrev, inSetup=!game&&!SP.hidden; storyPrev=null; storyDeal=null; lookRestore(); buildDice(); if(p.rolling) startRoll(false,true); syncUI(); if(inSetup) setPane('games'); }
+/* PD-206: every game's own dice show on the mat while its setup is open (the lobby), held in bag.hold. hold.mine is the one record of the player's own dice; it is captured when the hold is created and
+   never rewritten (a re-key, or another game in the selector, keeps it). The hold is released (mine back on the mat) by leaving the Games tab, the Design room, Full view, Close, a typed formula or a set pick; a design pick or Randomize keeps it and never touches the dice (D1). */
+const lobbyHold=()=>{ const h=bag&&bag.hold; return h&&h.phase==='lobby'?h:null; };
+function newHold(gid,phase){ holdRolling=rolling; return {game:gid,phase,key:'',mine:{shape:state.shape,notation:state.notation,set:bag.active.set,rollSet:rollSetId},draft:null}; }
+function lobbyOn(gid,notation,key,deal=null){ if(game||!bag) return; let h=bag.hold; if(h&&h.phase!=='lobby') return; if(h&&h.key===key&&h.game===gid) return;
+  if(!h) h=bag.hold=newHold(gid,'lobby'); else if(h.game==='story'&&gid!=='story') lookRestore();   // another game in the selector: the old game's look goes, mine stays
+  h.game=gid; h.key=key; if(gid==='story') lookSwap(); rollSetId=null; storyDeal=deal; state.shape='custom'; state.notation=notation; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }   // the dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
+function releaseHold(){ const h=bag&&bag.hold; if(!h) return; bag.hold=null; lookRestore(); state.shape=h.mine.shape; state.notation=h.mine.notation; bag.active.set=h.mine.set; rollSetId=h.mine.rollSet; buildDice(); syncUI(); lookHistoryReset(); }
+function lobbyOff(){ if(!lobbyHold()||game) return; const rl=holdRolling, inSetup=!SP.hidden; storyDeal=null; releaseHold(); if(rl) startRoll(false,true); if(inSetup) setPane('games'); }
+/* PD-191: the lobby is held only while the Games tab shows it and no game runs; leaving the tab, the Design room or the panel releases it. */
+function syncGameLook(leaving){ if(!lobbyHold()||game) return; if(leaving||roomNow()!=='play'||SP.hidden||document.body.classList.contains('full')) lobbyOff(); }
 var storyFly=null, storyLogE=null, storyRings=null;   // storyFly: the dice flying up into the line facing the player (3D arrangement view); storyLogE: this turn's roll-log entry, rewritten as the order changes
 function storyOrderText(st){ const g=storyGlyphs(st), names=st.order.filter(x=>x!==null).map(i=>g[i].n[0]); return names.length?names.join(' → ')+(names.length<st.order.length?' …':''):''; }
 function storyLogOrder(st){ if(!bag) return; const key=game.state.turn.round+':'+game.state.turn.player+':'+game.state.tellings.reduce((a,t)=>a+t.length,0);
@@ -2118,7 +2129,7 @@ function storySync(){
   if(d3){ storyTray.root.classList.add('d3'); if(!storyFly) storyFlyStart(st); }
 }
 function storyDone(){ endGame(); document.dispatchEvent(new CustomEvent('pd-open-games')); }
-function storyPlayAgain(){ if(!game||game.id!=='story') return; const S=game.state, snap=gameSnap; startGame('story',S.players.slice(),{...S.options,seed:1+Math.floor(rng()*999999)},(S.bots||[]).slice()); if(snap) gameSnap=snap; }   // PD-192: same players and options, a fresh set number; the look to restore at the end stays the player's own
+function storyPlayAgain(){ if(!game||game.id!=='story') return; const S=game.state; startGame('story',S.players.slice(),{...S.options,seed:1+Math.floor(rng()*999999)},(S.bots||[]).slice()); }   // PD-192: same players and options, a fresh set number; the look to restore at the end stays the player's own
 function storyRate(rating){ const r=GAMES.act(game.state,{type:'rate',rating}); if(!r.ok){ gameMsg=r.error; renderGame(); return; } game.state=r.state; const e=r.events.find(x=>x.type==='scored'); gameMsg='+'+(e?e.points:0)+' ('+rating+')'; gflash=rating==='good'||rating==='great'?'bank':rating==='bad'?'bust':null; storySalt=0; renderGame(); }
 // ---- Story Dice sets editor (PD-166): Story sets are bag sets with one glyph-face term (src/storysets.js); this view lists, edits and saves them from the Games panel ----
 let sset=null;   // null (closed) | {view:'list'} | {view:'edit', id:null|setId, d:draft, orig:json, err}
@@ -2129,12 +2140,11 @@ function ssSave(){ const S=sset, d=S.d, err=draftError(d); if(err){ S.err=err; r
   if(id&&setOps.find(id)){ if(!setOps.edit(id,{name:d.name,terms:t,mod:0})) return null; } else { id=setOps.create({name:d.name,terms:t,mod:0}); }
   const st=setOps.find(id); S.id=id; S.d.name=st.name; S.orig=JSON.stringify(S.d); S.err=''; return id; }
 function ssUse(d){ gprefs.gameId='story'; Object.assign(gprefs.opts,{'story.dice':d.count,'story.sides':d.sides,'story.seed':d.seed,'story.packs':[...d.packs]}); gsave(); sset=null; renderGame(); }
-function ssRoll(){ const id=ssSave(); if(!id) return; storyPreviewOff(); sset=null; closeGamesUI(); setOps.open(id,{roll:true}); }
-function ssPreviewMat(d){ const err=draftError(d); if(err){ storyPreviewOff(); return; } const note=draftFormula(d), key='sset|'+note; if(storyPrev&&storyPrev.key===key) return;
-  if(!storyPrev) storyPrev={rolling}; lookSwap(); storyPrev.key=key; storyDeal=null; state.shape='custom'; state.notation=note; buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }
+function ssRoll(){ const id=ssSave(); if(!id) return; lobbyOff(); sset=null; closeGamesUI(); setOps.open(id,{roll:true}); }
+function ssPreviewMat(d){ const err=draftError(d); if(err){ lobbyOff(); return; } const note=draftFormula(d); lobbyOn('story',note,'sset|'+note); }
 function renderStorySets(){
   const S=sset, hd=(title,back,label)=>GP.append(gel('div',{className:'gh'},gel('h2',{textContent:title}),gel('button',{textContent:label,onclick:back,type:'button',className:'ssback'})));
-  const leave=()=>{ storyPreviewOff(); sset=null; renderGame(); };
+  const leave=()=>{ lobbyOff(); sset=null; renderGame(); };
   GP.textContent=''; GP.hidden=false;
   if(S.view==='list'){ hd('Story Dice sets',leave,'Back');
     const list=bag.sets.filter(isStorySet), box=gel('div',{className:'ssets'});
@@ -2146,7 +2156,7 @@ function renderStorySets(){
       row.append(main,pen,dots); box.append(row); }
     if(!list.length) box.append(gel('div',{className:'setempty',textContent:'No Story Dice sets yet. Make one: pick the glyph packs, the dice and a seed.'}));
     GP.append(gel('div',{className:'setact'},gel('button',{type:'button',id:'ssnew',className:'big',textContent:'New Story set',onclick:()=>ssOpenEdit(null)})),box);
-    GP.append(gel('div',{className:'gstat'},gel('small',{textContent:'Story sets are saved in the bag (Bag > Sets) like any other set.'}))); storyPreviewOff(); return; }
+    GP.append(gel('div',{className:'gstat'},gel('small',{textContent:'Story sets are saved in the bag (Bag > Sets) like any other set.'}))); lobbyOff(); return; }
   const d=S.d, dirty=JSON.stringify(d)!==S.orig, err=S.err||draftError(d), pv=previewOf(d), note=draftFormula(d);
   hd(S.id?'Edit Story set':'New Story set',()=>{ if(!dirty){ sset={view:'list'}; renderGame(); return; } openMenu(GP.querySelector('.ssback'),[{head:'Discard your changes?'},{label:'Discard',danger:true,run:()=>{ sset={view:'list'}; renderGame(); }},{label:'Keep editing',run:()=>{}}]); },'Close');
   const host=gel('div',{className:'seted sseditor'+(dirty?' dirty':'')}), lab=t=>gel('div',{className:'selab',textContent:t});
@@ -2223,7 +2233,7 @@ function renderGameBody(){
       else if(o.type==='multi'){ const list=o.id==='packs'?PACK_LIST:o.choices, have=new Set(v); GP.append(gel('div',{className:'row'},gel('span',{textContent:o.label+' (pick any)'})));
         for(const c of list){ const cb=gel('input',{type:'checkbox',checked:have.has(c.id),onchange:()=>{ const next=list.filter(x=>x.id===c.id?cb.checked:have.has(x.id)).map(x=>x.id), pk=next.length?next:['noto']; gprefs.opts[g.id+'.'+o.id]=pk; gsave(); renderGame(); }}); GP.append(gel('label',{className:'row',title:c.blurb+' · '+c.credit},cb,gel('span',{textContent:c.name+' ('+c.count+') · '+c.license}))); } } }
     const sfit=g.id==='story'?storyFit(opts):null;   // too many faces for the glyph pool: preview (and offer) the closest set that fits, never the plain d6s
-    if(!game){ if(sfit&&!sfit.short) storyPreviewOn(sfit.ok?opts:{...opts,dice:sfit.dice,sides:sfit.sides}); else storyPreviewOff(); }   // the story dice show on the mat while setting up
+    if(!game){ if(g.id!=='story') lobbyOn(g.id,g.dice.count+'d'+g.dice.sides,g.id+'|'+g.dice.count+'|'+g.dice.sides); else if(sfit&&!sfit.short){ const so=sfit.ok?opts:{...opts,dice:sfit.dice,sides:sfit.sides}; lobbyOn('story',so.dice+'d'+so.sides,JSON.stringify([so.dice,so.sides,so.seed,so.packs]),makeStoryDeal(so)); } else lobbyOff(); }   // the story dice show on the mat while setting up
     if(g.id==='story'){ const need=opts.dice*opts.sides, have=poolFor(opts.packs).length;
       if(sfit&&sfit.ok) GP.append(gel('div',{className:'gstat'},gel('small',{textContent:need+' faces from '+have+' glyphs'})));
       else if(sfit) GP.append(gel('div',{className:'story-warn',role:'alert'},gel('b',{textContent:'Not enough glyphs for '+opts.dice+' × d'+opts.sides}),gel('span',{textContent:' needs '+need+' different faces, but the chosen packs have only '+have+'. '+(sfit.short?'Even 3 × d6 needs 18, so add a glyph pack.':'The mat shows '+sfit.dice+' × d'+sfit.sides+' ('+sfit.dice*sfit.sides+' faces), the closest set that fits. Add a glyph pack to keep your choice.')}),

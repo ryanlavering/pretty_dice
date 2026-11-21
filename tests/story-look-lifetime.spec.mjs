@@ -15,12 +15,14 @@ const own = async (app, before, dock0, box0) => {
   expect(await dock(app), 'dock back to its height').toBe(dock0);
   if (box0 !== null) expect(await box(app), 'formula box back').toBe(box0);
 };
+// PD-206 (4.2 S3, intended): another game in the selector re-keys the lobby to that game's own dice (Yacht 5d6) instead of releasing; the Story look is gone, and leaving Games gives the player's own back
+const yachtThenTable = async app => { await pick(app, 'yahtzee'); await app.run(pd => { pd.step(20); pd.renderOnce(); }); expect(await app.run(pd => ({ n: pd.state.notation, sub: pd.state.substrate }))).toMatchObject({ n: '5d6' }); expect(await app.run(pd => pd.state.substrate)).not.toBe('solid-story'); await app.page.click('#paneltabs [data-pane=table]'); };
 const leaves = {
   table: app => app.page.click('#paneltabs [data-pane=table]'),
   log: app => app.page.click('#paneltabs [data-pane=log]'),
   design: app => app.nav.toDesign(),
   close: app => app.page.locator('#scorepane').getByRole('button', { name: 'Close' }).click(),
-  yacht: app => pick(app, 'yahtzee'),
+  yacht: yachtThenTable,
   full: app => app.nav.fullView(true),
 };
 for (const size of ['desktop', 'phone']) {
@@ -112,7 +114,7 @@ test('PD-192 B1: leaving by the Table tab or another game releases a selected ga
   await app.page.click('#paneltabs [data-pane=games]'); await app.run(pd => { pd.step(30); pd.renderOnce(); });
   expect(await gameSel(app).inputValue(), 'selection kept').toBe('story');
   expect(await storyOn(app), 'previewed again on reopen').toMatchObject({ custom: true });
-  await pick(app, 'yahtzee'); await app.run(pd => { pd.step(20); pd.renderOnce(); });
+  await yachtThenTable(app); await app.run(pd => { pd.step(20); pd.renderOnce(); });
   await own(app, before, dock0, null);
 });
 

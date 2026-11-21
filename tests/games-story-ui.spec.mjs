@@ -72,7 +72,8 @@ test('story dice setup preview: picking Story Dice shows the dice, another game 
   expect(await app.run(pd => pd.state.notation)).toBe('5d12');
   await app.page.selectOption('#scorepane select >> nth=2', '20'); expect(await app.run(pd => pd.state.notation)).toBe('5d20');   // an option change rebuilds the preview
   await app.page.selectOption('#scorepane select >> nth=0', 'pig'); await app.page.waitForTimeout(500);
-  expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);
+  // PD-206 (4.2 S3, intended): another game in the selector shows that game's own dice (Pig 1d6) in the lobby; the look is the player's again
+  expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual({ ...before, shape: 'custom', n: '1d6' });
   await app.page.selectOption('#scorepane select >> nth=0', 'story'); expect(await app.run(pd => pd.state.shape)).toBe('custom');
   await app.page.click('#scorepane button:has-text("Close")'); await app.page.waitForTimeout(500);
   expect(await app.run(pd => ({ shape: pd.state.shape, n: pd.state.notation, sub: pd.state.substrate, draft: pd.bag.active.draft }))).toEqual(before);

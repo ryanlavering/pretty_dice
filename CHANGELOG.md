@@ -8,6 +8,7 @@ User-facing changes. Versions are git tags.
 - **Designs are looks.** Picking a design no longer changes your dice; a Suggested chip offers the design's dice.
 - **Sets can carry a look.** A set can name a design: picking the set brings that look; Keep my look turns it off.
 - **Dice settle without wiggling at the default gravity too.** A die rocking on an edge now topples to flat instead of rocking or freezing leaning.
+- **Every game shows its own dice in the lobby and rolls them in place.** Fixes: picking a design or set in the Story lobby no longer loses your dice, and a reload mid-Yacht keeps your dice.
 
 ## 4.1 (2026-11-21)
 
