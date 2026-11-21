@@ -68,8 +68,8 @@ def card_files():
                 # a YAML folded/literal scalar ("title: >-" or "|") keeps its text on the indented lines below
                 mm = re.search(r'^%s:[ \t]*([>|][-+]?)[ \t]*\n((?:[ \t]+.*\n?)+)' % k, t, re.M)
                 if mm:
-                    return ' '.join(l.strip() for l in mm.group(2).splitlines() if l.strip())
-                return (re.search(r'^%s:[ \t]*(.*)$' % k, t, re.M) or [None, ''])[1].strip().strip("'\"")
+                    return ' '.join(l.strip() for l in mm.group(2).splitlines() if l.strip()).replace("''", "'")
+                return (re.search(r'^%s:[ \t]*(.*)$' % k, t, re.M) or [None, ''])[1].strip().strip("'\"").replace("''", "'")
             cards[m.group(1)] = dict(id=m.group(1), title=g('title'), status=g('status'), prio=g('priority'),
                                      labels=re.findall(r'^  - (\S+)$', t.split('---')[1], re.M))
     return cards
