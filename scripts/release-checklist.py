@@ -17,6 +17,7 @@ GROUPS = [
   ('Story Dice features', ['PD-160', 'PD-167', 'PD-166']),
   ('Carried into 4.1', ['PD-155', 'PD-164', 'PD-168', 'PD-169', 'PD-178', 'PD-116', 'PD-20.7']),
   ('Reviewed and landed (4.1 so far)', ['PD-154', 'PD-157', 'PD-156', 'PD-158', 'PD-159', 'PD-162', 'PD-163', 'PD-165']),
+  ('Playtest and RC comment fixes (review on the rebuilt RC)', ['PD-191', 'PD-192', 'PD-195', 'PD-196', 'PD-197', 'PD-199', 'PD-200', 'PD-203']),
 ]
 
 # (gate, done, note)
@@ -26,19 +27,21 @@ GATES = [
   ('PD-166 Story Dice set editor (Games menu) landed; PD-161 glyph controls moved to 4.2', True, 'landed bf9c717; owner review pending'),
   ('PD-155 bad-6 self-check as backup', True, 'landed; card stays open as a watch item'),
   ('PD-168 sound extracted from main.js (rest of factoring moved to 4.2 as PD-177)', True, 'golden unchanged'),
-  ('PD-164 release tingles: owner picks the 5 to 10 highlights', False, 'needs the final feature list'),
-  ('Owner round with no new change requests (4.1 settled)', False, 'comment-free review of a normal Dev artifact'),
+  ('PD-164 release tingles: owner picks the highlights', True, 'six picks; tour landed b421d2c; build with --release-tour; menu behaviour being reworked in PD-203'),
+  ('Sentence generator rewrite (owner taste answers) landed', True, '4d2bf2f + a157f1e softened verbs (secret ?multipoop keeps them)'),
+  ('Owner round with no new change requests (4.1 settled)', False, 'owner is reviewing the RC and sending comments; each becomes a card'),
   ('Test suite faster (PD-178): full run 14 min, goal met', True, 'reviewed; 24-26 min before'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT 41-11 @cb9488a: 513 passed, 0 failed, twice (11.7 and 11.5 min); earlier checkpoints found and fixed a real boot-watchdog dock bug plus test flakes'),
+  ('Full suite green on the release candidate (two clean runs, --retries=0)', False, 'last clean pair: CHECKPOINT 41-14 @c7935dc (549/0 twice). 41-15 @2f7a301 run A1: 574 passed, 2 failed (PD-200 spec log check; games-story-ui story log entry), lane diagnosing; rerun the pair after PD-203 lands'),
   ('Golden set stable', True, 're-baselined only for the owner-approved Antique removal and gravity row'),
   ('Artifact CSP spec and single-file build boot clean', True, 'rechecked at each publish'),
-  ('Owner bugs from the phone: PD-186 dock stays tall after Story Dice (OK); PD-187 Story Dice draft design never overwrites the user design', False, 'PD-187 reworked (mid-game picks accepted); owner re-check on Dev artifact v15 pending'),
-  ('CHANGELOG 4.1 and README written', True, '882ad13'),
-  ('Guide review and update (Story Dice, Whoopsie, desktop click, Craps secret, gravity if in)', False, 'guide lane; desktop and phone shots'),
+  ('Owner bugs from the phone: PD-186 dock stays tall after Story Dice (OK); PD-187 Story Dice draft design never overwrites the user design', False, 'PD-187 mitigation + PD-191/192 landed; owner retry on the rebuilt RC pending'),
+  ('Owner comments on the RC: PD-195 twitch, 196 sentence position, 197 Bag pick, 199 flick, 200 empty-box roll, 203 menu', False, 'all landed except PD-203 (in progress); owner review pending; flick feel and desktop sentence need a real device'),
+  ('CHANGELOG 4.1 and README written', True, 'kept current by lanes (picture dice rename, better stories, known issue removed)'),
+  ('Guide review and update (Story Dice, Whoopsie, desktop click, Craps secret, gravity)', True, '85f78b7: claims verified against the app, 7 screenshots refreshed, 3 added; owner skim optional'),
   ('Merge v4 backlog commits into v4.1; then ff main to v4.1', False, 'main is at 4.0.1; check ls-remote afterwards'),
   ('Annotated tag v4.1, push, verify with git ls-remote', False, 'never pipe a failing merge into tail'),
-  ('Release candidate artifact built (review flag stripped, no tingles yet)', True, 'https://claude.ai/artifact/2MHSPez2JBiNV3UuB15b8m, built at cb9488a'),
-  ('Release artifact: final build at the tag with release tingles (PD-164)', False, 'then enable release tingles (PD-164) for the new version'),
+  ('Release candidate artifact rebuilt at the final tested commit (review flag stripped, release tour on)', False, 'interim v4 at b2d50d6 is published; rebuild after the clean pair: https://claude.ai/artifact/2MHSPez2JBiNV3UuB15b8m'),
+  ('Release artifact: final build at the tag with the release tour', False, 'python3 scripts/build-static.py --artifact --release-tour'),
   ('Cards: Review Complete moved to Done once on main', False, ''),
   ('Cleanup: remove v4.1 worktrees and lane branches after the artifact scan', False, 'also the stale ~/code/pretty_dice checkout: owner decides'),
   ('Memory and notes: update pretty-dice memory files and docs/design/integrator-workflow.md', False, ''),
@@ -46,8 +49,8 @@ GATES = [
 
 OWNER_QS = [
   'PD-20.7 (CI v5, sharding): stays in Needs Review until the first real GitHub run is green.',
-  'PD-164 release tingles: pick the 5 to 10 highlights (a proposed list comes with the release candidate).',
-  'Re-check PD-186 (dock retracts) and PD-187 (draft design) on the Dev artifact once the lanes land.',
+  'Review PD-191, 192, 195, 196, 197, 199, 200 and 203 on the rebuilt RC (PD-199 flick feel and PD-196 desktop sentence need a real device).',
+  'FYI decision for later: PD-201 default-gravity micro-hops (4.2 unless you want it in 4.1).',
   'Stale ~/code/pretty_dice checkout: now fast-forwarded to main; remove it or keep it?',
   'Final sign-off on the release candidate before the tag.',
 ]
