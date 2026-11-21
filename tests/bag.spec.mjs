@@ -25,11 +25,12 @@ test('a bag with several designs saves, reloads and survives a page reload', asy
       sets: [{ id: 'mixed', name: 'Mixed', terms: [{ count: 1, sides: 20, design: 'amethyst' }, { count: 2, sides: 6, design: 'bone' }], mod: { flat: 2, stats: [] } }],
       characters: [{ id: 'vex', name: 'Vex', stats: { wis: 3 } }],
       active: { design: 'bone', set: 'mixed' }, log: [{ t: '2026-11-11T19:02:11Z', set: 'mixed', dice: [[20, 12]], mod: 2, total: 14 }] };
+    const shape0 = pd.state.shape;
     await pd.importBag(file, { replace: true });
-    return { file, shape: pd.state.shape, substrate: pd.state.substrate };
+    return { file, shape0, shape: pd.state.shape, substrate: pd.state.substrate };
   });
   // the active design is now live in the app
-  expect(before.shape).toBe('d6'); expect(before.substrate).toBe('solid');
+  expect(before.shape).toBe(before.shape0); expect(before.substrate).toBe('solid');
   await page.reload(); await app.ready();
   const after = await app.run(pd => ({ bag: pd.bagToJSON(), shape: pd.state.shape }));
   expect(after.bag.name).toBe('Test bag');
@@ -39,7 +40,7 @@ test('a bag with several designs saves, reloads and survives a page reload', asy
   expect(after.bag.characters).toEqual(before.file.characters);
   expect(after.bag.log).toEqual(before.file.log);
   expect(after.bag.active).toEqual({ design: 'bone', set: 'mixed', draft: false });
-  expect(after.shape).toBe('d6');
+  expect(after.shape).toBe(before.shape0);   // PD-202 (4.2, intended change): Replace brings the look, the dice stay
 });
 
 test('export then re-import reproduces the bag; import adds and renames id clashes', async ({ shared: app }) => {

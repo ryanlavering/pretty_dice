@@ -60,10 +60,11 @@ test('PD-197: Play idle, a design saved with other dice applies its look only; t
   expect(await dice(app)).toEqual(d0);
 });
 
-test('PD-197: Design room, picking a design loads its own shape and formula', async ({ shared: app }) => {
+test('PD-197 (4.2, intended change: designs are looks): Design room, picking a design keeps the formula', async ({ shared: app }) => {
   await app.reset(76); await twoDesigns(app, D8);
+  await app.run(pd => { pd.state.shape = 'custom'; pd.state.notation = '3d8'; });   // the player's own formula; the design suggests the d8 shape
   expect((await dice(app))[1]).toBe('3d8');
   await pickFirst(app);
   expect(await room(app)).toBe('design');
-  expect((await dice(app))[1]).not.toBe('3d8');
+  expect((await dice(app))[1]).toBe('3d8');   // PD-202: the design's own dice are only a suggestion
 });

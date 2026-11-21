@@ -86,8 +86,10 @@ test.describe('desktop', () => {
     const saved = JSON.parse(await readFile(await dl.path(), 'utf8'));
     expect(saved.format).toBe('pretty-dice');
     saved.shape = saved.shape === 'd12' ? 'd8' : 'd12';
+    const dice0 = await app.run(pd => pd.state.shape);
     await page.setInputFiles('#jsonfile', { name: 'design.json', mimeType: 'application/octet-stream', buffer: Buffer.from('﻿' + JSON.stringify(saved)) });   // BOM + octet-stream, as phones hand it over
-    await expect.poll(() => app.run(pd => pd.state.shape)).toBe(saved.shape);
+    await expect.poll(() => app.run(pd => pd.bag.designs.length)).toBe(2);
+    expect(await app.run(pd => pd.state.shape)).toBe(dice0);   // PD-202 (4.2, intended change): Load design brings the look, the file's shape is only a suggestion
     // it lands as a new design at the end of the bag; the original design is untouched
     const r = await app.run(pd => ({ n: pd.bag.designs.length, last: pd.bag.designs.at(-1), active: pd.bag.active.design }));
     expect(r.n).toBe(2);

@@ -90,9 +90,10 @@ test('shelf and sheet show the bag; tapping a card picks it', async ({ app, page
   await app.run(SETUP);
   await expect(page.locator('#cards .card[data-id]')).toHaveCount(3);
   await expect(page.locator('#cards .card.on .nm')).toHaveText('Bone');
+  const dice0 = await app.run(pd => pd.state.shape);
   await page.locator('#cards .card[data-id="gold"]').click();
   await expect.poll(() => app.run(pd => pd.bag.active.design)).toBe('gold');
-  await expect.poll(() => app.run(pd => pd.state.shape)).toBe('d8');
+  await expect.poll(() => app.run(pd => pd.state.shape)).toBe(dice0);   // PD-202 (4.2, intended change): a design is a look, picking it never changes the dice
   await app.nav.openBag();
   await expect(page.locator('#tiles .tile[data-id]')).toHaveCount(3);
   // let the background picture pass finish first: each finished picture re-renders the tiles (renderBag), and one landing mid-drag
@@ -124,11 +125,12 @@ test('menu actions work on a modified design that is not active @quick', async (
 test('design pictures are a d20 whatever the preview shape, appear without reopening, and the live design is left alone', async ({ app, page }) => {
   test.setTimeout(180_000); expect.configure({ timeout: 60_000 });
   await app.open({ query: 'thumbs=1' });
+  const shape0 = await app.run(pd => pd.state.shape);
   await app.run(SETUP);   // bone (d6, active), amethyst (d20), gold (d8)
   await expect.poll(() => page.locator('#cards .card[data-id] .th').evaluateAll(n => n.map(e => /^url\("data:image\/(webp|jpeg)/.test(e.style.backgroundImage))), { timeout: 60000 }).toEqual([true, true, true]);
   await expect(page.locator('#bagth')).toHaveCSS('background-image', /data:image/);
   const r = await app.run(pd => ({ shape: pd.state.shape, active: pd.bag.active.design, mod: pd.isModified('bone'), n: Object.keys(pd.thumbs).length }));
-  expect(r).toEqual({ shape: 'd6', active: 'bone', mod: false, n: 3 });
+  expect(r).toEqual({ shape: shape0, active: 'bone', mod: false, n: 3 });   // PD-202 (4.2): importing the bag no longer sets the live dice from the active design
 });
 
 test('clicking a name on the shelf edits it in place and leaves it Modified until saved', async ({ app, page }) => {

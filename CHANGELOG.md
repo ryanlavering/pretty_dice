@@ -2,6 +2,11 @@
 
 User-facing changes. Versions are git tags.
 
+## 4.2 (unreleased)
+
+### Changed
+- **Designs are looks.** Picking a design no longer changes your dice; a Suggested chip offers the design's dice.
+
 ## 4.1 (2026-11-21)
 
 ### New

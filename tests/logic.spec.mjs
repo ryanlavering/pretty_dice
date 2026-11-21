@@ -56,7 +56,8 @@ test('design JSON keeps a custom set and its name', async ({ shared: app }) => {
     pd.state.shape = 'd20'; pd.state.notation = 'd20'; $('dname').value = ''; await pd.buildDice(); await pd.loadDesign(JSON.parse(j));
     return { shape: pd.state.shape, notation: pd.state.notation, name: $('dname').value, dice: pd.dice.length, saved: JSON.parse(j).name };
   });
-  expect(r).toEqual({ shape: 'custom', notation: '3d8+2d6+4', name: 'Giant club attack', dice: 5, saved: 'Giant club attack' });
+  // PD-202 (4.2, intended change): loadDesign brings the look and name; the file's shape/notation are only a suggestion, the live dice stay
+  expect(r).toEqual({ shape: 'd20', notation: 'd20', name: 'Giant club attack', dice: 1, saved: 'Giant club attack' });
 });
 
 test('loading a bad design clamps ranges and rejects unknown shapes/colours', async ({ shared: app }) => {
