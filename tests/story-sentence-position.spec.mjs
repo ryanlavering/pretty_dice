@@ -1,4 +1,4 @@
-// PD-196: on desktop the finished story's sentence sits clear below the lowest ring / arranged glyph row (not crowding the circles).
+// PD-196/PD-204: on desktop the finished story's sentence sits clear below the lowest ring / arranged glyph row, floating in the blank band (not crowding the circles or the dock).
 import { test, expect } from './helpers/app.mjs';
 const shot = process.env.STORY_SHOT;
 
@@ -18,8 +18,9 @@ test('story sentence clears the rings at desktop sizes', async ({ shared: app })
     await app.page.waitForTimeout(600);
     if (shot) await app.page.screenshot({ path: `${shot}/sent-${vp.width}x${vp.height}.png` });
     const g = await app.page.evaluate(() => { const t = document.querySelector('#storytray .ssent').getBoundingClientRect(), rs = [...document.querySelectorAll('#storytray .sring, #storytray .stile.placed')].map(e => e.getBoundingClientRect());
-      return { top: Math.round(t.top), lowest: Math.round(Math.max(...rs.map(r => r.bottom))) }; });
+      const dk = document.querySelector('#dock, .dock, #bottombar, #bar'); return { top: Math.round(t.top), bottom: Math.round(t.bottom), H: innerHeight, dockTop: dk ? Math.round(dk.getBoundingClientRect().top) : innerHeight - 76, lowest: Math.round(Math.max(...rs.map(r => r.bottom))) }; });
     console.log(vp.width, vp.height, JSON.stringify(g));
-    expect(g.top - g.lowest).toBeGreaterThanOrEqual(vp.width >= 1000 ? 24 : 0);
+    expect(g.top - g.lowest).toBeGreaterThanOrEqual(vp.width >= 1000 && vp.height >= 720 ? 32 : vp.width >= 1000 ? 16 : 0);
+    expect(Math.min(g.dockTop, g.H - 76) - g.bottom).toBeGreaterThanOrEqual(20);
   }
 });
