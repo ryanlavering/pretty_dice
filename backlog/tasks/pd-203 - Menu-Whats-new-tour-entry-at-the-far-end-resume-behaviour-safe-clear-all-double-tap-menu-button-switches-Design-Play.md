@@ -3,9 +3,10 @@ id: PD-203
 title: >-
   Menu: What's new tour entry at the far end, resume behaviour, safe clear-all,
   double-tap menu button switches Design/Play
-status: To Do
+status: Review Complete
 assignee: []
 created_date: '2026-11-21T01:07:00Z'
+updated_date: '2026-11-21T08:06:00Z'
 labels:
   - v4.1
 dependencies: []
