@@ -11,7 +11,12 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden}
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 .panel{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;backdrop-filter:blur(6px)}
-#hud{left:16px;top:16px;width:min(330px,calc(100vw - 32px))}
+#tog{position:fixed;left:12px;top:10px;z-index:6;display:flex;gap:6px}
+#tog button{padding:4px 10px;font-size:12.5px;opacity:.9}
+#tog button.off{opacity:.55;text-decoration:line-through}
+.hide-info #hud,.hide-info #note{display:none}
+.hide-ctl #bar{display:none}
+#hud{left:12px;top:48px;width:min(330px,calc(100vw - 32px))}
 #hud h1{font-size:16px;margin:0 0 2px}
 #hud .sub{color:var(--mute);font-size:12px;margin-bottom:8px}
 #result{font-size:26px;font-weight:700;letter-spacing:.2px;min-height:34px}
@@ -26,7 +31,7 @@ button:hover{background:var(--btnh)}
 button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
 label{display:flex;align-items:center;gap:5px;color:var(--mute);font-size:12.5px;white-space:nowrap}
 input[type=range]{width:90px}
-#note{right:16px;top:16px;width:min(300px,calc(100vw - 32px));max-height:calc(100vh - 210px);overflow:auto;font-size:12px;color:var(--mute)}
+#note{right:12px;top:48px;width:min(300px,calc(100vw - 32px));max-height:calc(100vh - 250px);overflow:auto;font-size:12px;color:var(--mute)}
 #note b{color:var(--ink)}
 #note summary{cursor:pointer;color:var(--ink);font-weight:600}
 @media (max-width:760px){#note{display:none}#hud{padding:8px 10px}#result{font-size:20px}}
@@ -34,6 +39,7 @@ input[type=range]{width:90px}
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="tog"><button id="tInfo" title="Show or hide the info panels (I)">Info</button><button id="tCtl" title="Show or hide the controls (C)">Controls</button></div>
 <div class="panel" id="hud">
   <h1>Gömböc d1 (spike)</h1>
   <div class="sub">one stable, one unstable rest, always rolls <b>1</b> <span id="shapeInfo"></span></div>
@@ -269,9 +275,9 @@ Actor.prototype.sync=function(){ const B=this.body, I=B.info(); this.h=I.h; this
   a=this.lVert.geometry.attributes.position.array; a[0]=cx;a[1]=cy;a[2]=cz;a[3]=cx;a[4]=cy;a[5]=cz+2.6; this.lVert.geometry.attributes.position.needsUpdate=true; };
 Actor.prototype.pushTrail=function(){ const B=this.body; const x=B.pos[0]+this.p[0], y=B.pos[1]+this.p[1]; if(this.trailN>=1200){ this.trailBuf.copyWithin(0,3,3*1200); this.trailN=1199; } const k=3*this.trailN; this.trailBuf[k]=x; this.trailBuf[k+1]=y; this.trailBuf[k+2]=0.012; this.trailN++; this.trail.geometry.setDrawRange(0,this.trailN); this.trail.geometry.attributes.position.needsUpdate=true; };
 
-let beta=0.03, shapeKind='sloan'; const specNow=()=>shapeKind==='sloan'?beta:{c:NEWSHAPE.c,Lmax:NEWSHAPE.Lmax};
+let beta=0.03, shapeKind='sloan'; const shapeData=()=>NEWSHAPE; const specNow=()=>shapeKind==='sloan'?beta:{c:shapeData().c,Lmax:shapeData().Lmax};
 let main=new Actor(specNow(),'gomboc',0), cmp=null;
-function rebuild(){ DT=shapeKind==='sloan'?1/120:1/180; world.remove(main.mesh,main.dot,main.lCom,main.lVert,main.trail); const was=cmp!==null; if(shapeKind==='sloan'){ STABLE=[-1,0,0]; UNSTABLE=[1,0,0]; } else { STABLE=NEWSHAPE.stable.slice(); UNSTABLE=NEWSHAPE.unstable.slice(); }
+function rebuild(){ DT=shapeKind==='sloan'?1/120:1/180; world.remove(main.mesh,main.dot,main.lCom,main.lVert,main.trail); const was=cmp!==null; if(shapeKind==='sloan'){ STABLE=[-1,0,0]; UNSTABLE=[1,0,0]; } else { STABLE=shapeData().stable.slice(); UNSTABLE=shapeData().unstable.slice(); }
   main=new Actor(specNow(),'gomboc',0); main.setRad($('cRad').checked); if(was){ killCmp(); makeCmp(); } resetStats(false); setIdle(); $('lBeta').style.display=shapeKind==='sloan'?'':'none'; $('shapeInfo').textContent=shapeKind==='sloan'?'near-sphere, r_max/r_min = '+flatOf(main.shape).toFixed(3):'pronounced body, r_max/r_min = '+flatOf(main.shape).toFixed(3); }
 function flatOf(S){ let mn=1e9,mx=0; for(const u of ICO3.V){ const r=S.r(u[0],u[1],u[2]); mn=Math.min(mn,r); mx=Math.max(mx,r);} return mx/mn; }
 const ICO3=icosphere(3);
@@ -349,6 +355,15 @@ function fastRoll(seed,opt){ opt=opt||{}; const A={body:new Gomboc.Body(main.sha
 window.__gomboc={setShape(k){ $('sShape').value=k; shapeKind=k; rebuild(); },get STABLE(){return STABLE;},setDamp(d){ DAMP=d; main.body.damp=d; },get main(){return main;},get cmp(){return cmp;},get state(){return state;},STABLE,UNSTABLE,fastRoll,startRoll,setBeta,
   info(){ const B=main.body; return {state,t:tRoll,rolls,times:times.slice(),om:B.om.slice(),nb:main.nb.slice(),distRad:ang(main.nb,STABLE),swings:main.swing,minFz:B.minN}; },
   step(n){ for(let i=0;i<n;i++) stepAll(); main.sync(); if(cmp) cmp.sync(); }, setFF(v){ ff=!!v; }};
+
+/* panel toggles: Info (HUD + note) and Controls, keys I and C, remembered in localStorage (try/catch) */
+(function(){ const b=document.body; let st={info:innerWidth>=760,ctl:true};
+  try{ const j=JSON.parse(localStorage.getItem('gomboc-ui')||'null'); if(j&&typeof j==='object'){ st.info=innerWidth>=760?j.info!==false:!!j.infoMobile&&false; st.ctl=j.ctl!==false; } }catch(e){}
+  function apply(){ b.classList.toggle('hide-info',!st.info); b.classList.toggle('hide-ctl',!st.ctl); $('tInfo').classList.toggle('off',!st.info); $('tCtl').classList.toggle('off',!st.ctl); try{ localStorage.setItem('gomboc-ui',JSON.stringify({info:st.info,ctl:st.ctl})); }catch(e){} }
+  const flip=k=>{ st[k]=!st[k]; apply(); };
+  $('tInfo').onclick=()=>flip('info'); $('tCtl').onclick=()=>flip('ctl');
+  addEventListener('keydown',e=>{ if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return; if(e.key==='i'||e.key==='I') flip('info'); else if(e.key==='c'||e.key==='C') flip('ctl'); });
+  apply(); })();
 window.__ready=true;
 })();
 </script>
