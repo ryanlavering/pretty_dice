@@ -70,10 +70,10 @@ const flight = (app, x, vel) => app.run((pd, a) => {
   const b = pd.bodies, y0 = pd.TABLE_Y, x0 = b[0].position.x, vy0 = b[0].velocity.y; let top = -1e9, reach = 0, air = 0, left = false;
   for (let i = 0; i < 1500; i++) { pd.drift(1); const y = b[0].position.y; top = Math.max(top, y - y0);
     if (y - y0 > 3) left = true; if (left && y - y0 < 1.4) { reach = Math.abs(b[0].position.x - x0); air = i / 60; break; } }
-  return { top, reach, air, vy0, g: -pd.worldGravityY };
+  return { top, reach, air, vy0, g: -pd.worldGravityY, lk: pd.flickLiftK() / pd.flickLiftK(pd.GRAV.DEF) };
 }, { x, vel });
 
-test('a flick throws the same arc at low, default and high gravity (apex within 25%, launch speed and airtime scale with sqrt g)', async ({ app, page }) => {
+test('a flick throws the same arc at low, default and high gravity (PD-199: the arc is the same up to the extra lift above default gravity; launch speed and airtime scale with sqrt g)', async ({ app, page }) => {
   await app.open({ query: 'seed=5' });
   const vel = { x: 22, z: 0 };
   const def = await flight(app, 'def', vel);
@@ -81,9 +81,10 @@ test('a flick throws the same arc at low, default and high gravity (apex within 
   for (const x of [1 / 64, .25, 2]) {
     await page.reload(); await app.ready();
     const f = await flight(app, x, vel);
-    expect(f.top / def.top, `apex at ${x}x`).toBeGreaterThan(.75); expect(f.top / def.top, `apex at ${x}x`).toBeLessThan(1.25);
-    const k = Math.sqrt(f.g / 34); expect(f.vy0 / def.vy0, `launch speed at ${x}x scales with sqrt(g)`).toBeGreaterThan(k * .9); expect(f.vy0 / def.vy0).toBeLessThan(k * 1.1);
-    expect(f.air * k / def.air, `airtime at ${x}x`).toBeGreaterThan(.7); expect(f.air * k / def.air).toBeLessThan(1.3);
+    const L = f.lk;   // PD-199: higher gravity adds lift on top of the equalisation: apex x L^2, launch speed x L, airtime x L
+    expect(f.top / def.top / (L * L), `apex at ${x}x`).toBeGreaterThan(.6); expect(f.top / def.top / (L * L), `apex at ${x}x`).toBeLessThan(1.4);
+    const k = Math.sqrt(f.g / 34) * L; expect(f.vy0 / def.vy0, `launch speed at ${x}x scales with sqrt(g)`).toBeGreaterThan(k * .9); expect(f.vy0 / def.vy0).toBeLessThan(k * 1.1);
+    expect(f.air * Math.sqrt(f.g / 34) / def.air / L, `airtime at ${x}x`).toBeGreaterThan(.6); expect(f.air * Math.sqrt(f.g / 34) / def.air / L).toBeLessThan(1.4);
   }
 });
 

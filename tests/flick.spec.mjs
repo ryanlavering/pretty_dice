@@ -56,7 +56,31 @@ test('flick up the screen throws the dice away from the viewer, down toward', as
   await setup(app);
   const dir = async dy => { await reroll(app, 11); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
   const up = await dir(-200), down = await dir(200);
-  expect(up).toBeLessThan(-2.5); expect(down).toBeGreaterThan(4);   // .38.65: up is biased toward "up the screen" so its depth is smaller (was about -6.3, now about -3.5)
+  expect(Math.abs(up), 'PD-199: a straight up flick is vertical, no drift toward the back').toBeLessThan(2.5); expect(down).toBeGreaterThan(4);
+});
+// PD-199: depth share falls to zero at vertical, 45 degrees keeps the old 0.55, lift is 1.25x the old at default gravity and grows with gravity.
+test('flick model: vertical has no depth, 45 degrees has more; lift x1.25 and monotonic in gravity', async ({ app }) => {
+  await setup(app);
+  const m = await app.run(pd => {
+    const out = { frac: {}, vel: {}, lift: {} };
+    for (const a of [0, 10, 20, 45, 70]) { const r = a * Math.PI / 180; out.frac[a] = pd.flickDepthFrac(Math.sin(r), Math.cos(r)); }
+    const n = v => Math.hypot(v.x, v.z);
+    out.vel.vert = n(pd.flickVel(0, -200, 120)); out.vel.a45 = n(pd.flickVel(200, -200, 120));
+    for (const g of [pd.GRAV.LO, pd.GRAV.DEF, .1, .25, .5, 1, 2]) out.lift[g] = pd.flickLiftK(g);
+    return out; });
+  console.log('FLICK model', JSON.stringify(m));
+  expect(m.frac[0]).toBeLessThan(1e-9); expect(m.frac[45]).toBeCloseTo(.55, 6);
+  expect(m.frac[10]).toBeLessThan(m.frac[20]); expect(m.frac[20]).toBeLessThan(m.frac[45]); expect(m.frac[45]).toBeLessThan(m.frac[70]);
+  expect(m.vel.vert, 'a vertical flick has ~zero table-plane velocity').toBeLessThan(1e-6);
+  expect(m.vel.a45, 'a 45 degree flick has depth the vertical one lacks').toBeGreaterThan(m.vel.vert + 3);
+  const gs = Object.keys(m.lift).map(Number).sort((a, b) => a - b);
+  for (let i = 1; i < gs.length; i++) expect(m.lift[gs[i]]).toBeGreaterThanOrEqual(m.lift[gs[i - 1]] - 1e-12);
+  expect(m.lift[gs[gs.length - 1]]).toBeGreaterThan(m.lift[gs[1]] + .3);   // strictly more above default
+  const def = await app.run(pd => pd.GRAV.DEF);
+  expect(m.lift[def], 'default gravity: exactly the +25%').toBeCloseTo(1.25, 9);
+  // the throw itself: mean launch speed at default gravity sits in 1.25 x the old 13..20 range
+  await reroll(app, 11); const r = await flickRun(app, 'mouse', 0, -200, 120);
+  expect(r.my).toBeGreaterThan(13 * 1.25 - .01); expect(r.my).toBeLessThan(20 * 1.25 + .01);
 });
 
 // PD-142.38.65: an up flick is read as more "up" than "in": its toward-the-back component is smaller than a down flick's toward-the-viewer one,
@@ -71,7 +95,7 @@ test('flick up has a smaller depth component than flick down; sideways unchanged
   expect(nrm(sideV), 'sideways keeps its full speed').toBeGreaterThan(nrm(downV) * 0.95); expect(nrm(downV)).toBeGreaterThan(12);
   const depth = async dy => { await reroll(app, 11); const r = await flickRun(app, 'mouse', 0, dy, 120); return r.v.reduce((s, q) => s + q[2], 0) / r.v.length; };
   const up = await depth(-200);
-  expect(up).toBeLessThan(-2.5);   // still throws away from the viewer
+  expect(Math.abs(up)).toBeLessThan(2.5);   // PD-199: a straight up flick is vertical
   await reroll(app, 11); const side = await flickRun(app, 'mouse', 200, 0, 120); expect(side.mx).toBeGreaterThan(3);
   for (const [dx, dy] of [[0, -250], [200, -200], [-200, -200], [0, 250], [250, 0]]) {
     await reroll(app, 11); await flickRun(app, 'mouse', dx, dy, 90);
