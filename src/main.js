@@ -673,13 +673,14 @@ function sameDiceAsGame(notation){ const dd=game.info.dice, p=parseNotation(nota
 let gameKeep=null;   // while a design loads into a running game its shape and notation stay the game's   // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
-  const gr=gameRun(), keep=gr?{shape:state.shape,notation:state.notation}:null, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed, inDesign=designRoom&&gameRun(); gameKeep=keep;   // PD-158: in a game only the look changes; the dice stay where they lie
+  const gr=gameRun(), stayPlay=!gr&&rolling&&!designRoom, keep=gr||stayPlay?{shape:state.shape,notation:state.notation}:null, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed, inDesign=designRoom&&gameRun(); gameKeep=keep; if(stayPlay) holdRoom=true;   // PD-197: in Play (idle or in a game) a pick changes only the look; the Design room loads the whole design
   try{ if(!skipSync) syncLive(); lookDrop();
     if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
     else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id]; await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
     if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; if(inDesign){ designRoom=true; exitRoll(true); } gameSync(); renderGame(); }   // PD-180: a swap made in the Design room stays there (the dice were rebuilt to lie as they did; Play shows them)
     save();
-  }finally{ actBusy=false; gameKeep=null; }
+  }finally{ actBusy=false; gameKeep=null; holdRoom=false; }   // PD-197: picking a design from the Bag keeps the room it was opened from (the rebuild used to drop an idle Play room into Design)
+  if(stayPlay&&!rolling) startRoll(false,true);   // placed unrolled, as goPlay does
   if(actNext!=null){ const n=actNext; actNext=null; await activate(n); }
 }
 /* Randomize works on a draft, never on a saved design: the first Randomize moves the live look into the single draft slot. */
