@@ -19,6 +19,8 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-actio
 #hud{left:12px;top:48px;width:min(330px,calc(100vw - 32px))}
 #hud h1{font-size:16px;margin:0 0 2px}
 #hud .sub{color:var(--mute);font-size:12px;margin-bottom:8px}
+#rigor{font-size:11.5px;border-radius:6px;padding:4px 7px;margin:2px 0 6px;background:rgba(80,170,110,.18);border:1px solid rgba(80,170,110,.5)}
+#rigor.approx{background:rgba(230,150,40,.18);border-color:rgba(230,150,40,.6)}
 #result{font-size:26px;font-weight:700;letter-spacing:.2px;min-height:34px}
 #result.rest{color:var(--acc)}
 #status{color:var(--mute);font-size:13px;min-height:18px}
@@ -43,6 +45,7 @@ input[type=range]{width:90px}
 <div class="panel" id="hud">
   <h1>Gömböc d1 (spike)</h1>
   <div class="sub">one stable, one unstable rest, always rolls <b>1</b> <span id="shapeInfo"></span></div>
+  <div id="rigor"></div>
   <div id="result">result: -</div>
   <div id="status">at rest on its stable point. Press Roll, or drag the table to flick it.</div>
   <table>
@@ -74,6 +77,8 @@ input[type=range]{width:90px}
   <label>shape <select id="sShape"><option value="sloan">Sloan near-sphere (original)</option><option value="egg">More pronounced body</option></select></label>
   <label id="lBeta">&beta; <input type="range" id="rBeta" min="0.012" max="0.036" step="0.002" value="0.030"><span id="vBeta">0.030</span></label>
   <label>rolling resistance <input type="range" id="rDamp" min="0.3" max="4" step="0.1" value="2.0"><span id="vDamp">2.0</span></label>
+  <label>mode <select id="sMode"><option value="exact">Exact (verified)</option><option value="approx">Approximate (CoM nudge)</option></select></label>
+  <label id="lNudge" style="display:none">CoM nudge <input type="range" id="rNudge" min="0" max="0.5" step="0.05" value="0.20"><span id="vNudge">0.20</span>% of radius</label>
   <button id="bSkip" title="Roll if idle and run the clock fast until it stops">Skip to rest</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -114,7 +119,9 @@ function Shape(arg){
   // covariance about CoM, per unit mass: S_c = M/V - c c^T ; inertia (unit mass) = tr(S)E - S
   const Sx=[M[0]/V-c[0]*c[0],M[3]/V-c[0]*c[1],M[4]/V-c[0]*c[2], M[3]/V-c[0]*c[1],M[1]/V-c[1]*c[1],M[5]/V-c[1]*c[2], M[4]/V-c[0]*c[2],M[5]/V-c[1]*c[2],M[2]/V-c[2]*c[2]];
   const tr=Sx[0]+Sx[4]+Sx[8]; S.I=[tr-Sx[0],-Sx[1],-Sx[2], -Sx[3],tr-Sx[4],-Sx[5], -Sx[6],-Sx[7],tr-Sx[8]];
-  S.Iavg=(S.I[0]+S.I[4]+S.I[8])/3;
+  S.Iavg=(S.I[0]+S.I[4]+S.I[8])/3; S.c0=c.slice();
+  // approximate mode: move the centre of mass by vec (body frame, in body-radius units). The surface point relative to the CoM is r*u - c, so c += vec. Inertia is not re-referenced (change is O(|vec|^2)).
+  S.setNudge=function(vec){ c[0]=S.c0[0]+vec[0]; c[1]=S.c0[1]+vec[1]; c[2]=S.c0[2]+vec[2]; };
   // surface point (relative to CoM) for unit direction u
   S.point=function(x,y,z,out){ const r=S.r(x,y,z); out[0]=r*x-c[0]; out[1]=r*y-c[1]; out[2]=r*z-c[2]; return out; };
   // f(u0 + a e1 + b e2) = (x.u) at surface point in direction n = normalize(.) ; maximised => support function h(u)
@@ -256,7 +263,7 @@ function Actor(spec,label,offX){
     const th=Math.atan2(u[1],u[0])+Math.PI, ph=Math.acos(u[2]); const v=Math.sin(8*th)*Math.sin(6*ph); let k=Math.min(1,Math.max(0,(v+0.18)/0.36)); k=k*k*(3-2*k); let c=[base[0][0]+(base[1][0]-base[0][0])*k,base[0][1]+(base[1][1]-base[0][1])*k,base[0][2]+(base[1][2]-base[0][2])*k];
     const ds=ang(u,STABLE), du=ang(u,UNSTABLE); if(ds<0.2) c=ds<0.15?[.85,.12,.1]:[.97,.97,.97]; else if(du<0.12) c=[.15,.45,.95];
     col[3*i]=c[0];col[3*i+1]=c[1];col[3*i+2]=c[2]; }
-  A.colBase=Float32Array.from(col); A.colRad=new Float32Array(3*n); { let mn=1e9,mx=0; const rr=new Float32Array(n); for(let i=0;i<n;i++){ rr[i]=Math.hypot(pos[3*i],pos[3*i+1],pos[3*i+2]); mn=Math.min(mn,rr[i]); mx=Math.max(mx,rr[i]); } for(let i=0;i<n;i++){ const t=mx>mn?(rr[i]-mn)/(mx-mn):0.5; A.colRad[3*i]=0.15+0.8*t; A.colRad[3*i+1]=0.35+0.4*(1-Math.abs(2*t-1)); A.colRad[3*i+2]=0.95-0.8*t; } }
+  A.posBase=Float32Array.from(pos); A.colBase=Float32Array.from(col); A.colRad=new Float32Array(3*n); { let mn=1e9,mx=0; const rr=new Float32Array(n); for(let i=0;i<n;i++){ rr[i]=Math.hypot(pos[3*i],pos[3*i+1],pos[3*i+2]); mn=Math.min(mn,rr[i]); mx=Math.max(mx,rr[i]); } for(let i=0;i<n;i++){ const t=mx>mn?(rr[i]-mn)/(mx-mn):0.5; A.colRad[3*i]=0.15+0.8*t; A.colRad[3*i+1]=0.35+0.4*(1-Math.abs(2*t-1)); A.colRad[3*i+2]=0.95-0.8*t; } }
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('color',new THREE.BufferAttribute(col,3));
   const idx=new Uint32Array(ICO.T.length*3); ICO.T.forEach((f,i)=>{idx[3*i]=f[0];idx[3*i+1]=f[1];idx[3*i+2]=f[2];}); geo.setIndex(new THREE.BufferAttribute(idx,1)); geo.computeVertexNormals();
   A.mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.15})); A.mesh.castShadow=true; world.add(A.mesh);
@@ -275,10 +282,12 @@ Actor.prototype.sync=function(){ const B=this.body, I=B.info(); this.h=I.h; this
   a=this.lVert.geometry.attributes.position.array; a[0]=cx;a[1]=cy;a[2]=cz;a[3]=cx;a[4]=cy;a[5]=cz+2.6; this.lVert.geometry.attributes.position.needsUpdate=true; };
 Actor.prototype.pushTrail=function(){ const B=this.body; const x=B.pos[0]+this.p[0], y=B.pos[1]+this.p[1]; if(this.trailN>=1200){ this.trailBuf.copyWithin(0,3,3*1200); this.trailN=1199; } const k=3*this.trailN; this.trailBuf[k]=x; this.trailBuf[k+1]=y; this.trailBuf[k+2]=0.012; this.trailN++; this.trail.geometry.setDrawRange(0,this.trailN); this.trail.geometry.attributes.position.needsUpdate=true; };
 
-let beta=0.03, shapeKind='sloan'; const shapeData=()=>NEWSHAPE; const specNow=()=>shapeKind==='sloan'?beta:{c:shapeData().c,Lmax:shapeData().Lmax};
+let beta=0.03, shapeKind='sloan', approx=false, nudgePct=0.20; const NUDGE_SAFE={sloan:0.5,egg:0.2}; /* offline winding-index check: largest nudge (percent of radius toward the stable point) that keeps exactly 1 stable + 1 unstable; the pronounced body gets extra equilibria at 0.5 */ const shapeData=()=>NEWSHAPE; const specNow=()=>shapeKind==='sloan'?beta:{c:shapeData().c,Lmax:shapeData().Lmax};
 let main=new Actor(specNow(),'gomboc',0), cmp=null;
+function applyNudge(){ const e=approx?nudgePct/100:0; const d=STABLE.map(x=>x*e); main.shape.setNudge(d); main.body.guess=null; const a=main.mesh.geometry.attributes.position, b=main.posBase; for(let i=0;i<a.count;i++){ a.array[3*i]=b[3*i]-d[0]; a.array[3*i+1]=b[3*i+1]-d[1]; a.array[3*i+2]=b[3*i+2]-d[2]; } a.needsUpdate=true; main.mesh.geometry.computeBoundingSphere(); if(state!=='rolling'){ main.body.placeDown(STABLE,0.7); main.body.om=[0,0,0]; } main.sync(); rigorLabel(); }
+function rigorLabel(){ const el=$('rigor'); const name=shapeKind==='sloan'?'Sloan near-sphere (beta '+beta.toFixed(3)+')':'pronounced body'; if(!approx){ el.className=''; el.textContent='rigor: EXACT surface ('+name+'): 1 stable + 1 unstable equilibrium verified by gradient winding index; exact rolling equations. Convenience: viscous rolling resistance, time-lapse.'; } else { const bad=nudgePct>NUDGE_SAFE[shapeKind]+1e-9; el.className='approx'; el.textContent='rigor: APPROXIMATE - centre of mass nudged '+nudgePct.toFixed(2)+'% of the radius toward the stable point; not a true homogeneous Gomboc.'+(bad?' Beyond the verified-safe nudge for this shape (offline check finds extra equilibria).':' Offline check at this nudge: still 1 stable + 1 unstable.')+' Convenience: viscous rolling resistance, time-lapse.'; } }
 function rebuild(){ DT=shapeKind==='sloan'?1/120:1/180; world.remove(main.mesh,main.dot,main.lCom,main.lVert,main.trail); const was=cmp!==null; if(shapeKind==='sloan'){ STABLE=[-1,0,0]; UNSTABLE=[1,0,0]; } else { STABLE=shapeData().stable.slice(); UNSTABLE=shapeData().unstable.slice(); }
-  main=new Actor(specNow(),'gomboc',0); main.setRad($('cRad').checked); if(was){ killCmp(); makeCmp(); } resetStats(false); setIdle(); $('lBeta').style.display=shapeKind==='sloan'?'':'none'; $('shapeInfo').textContent=shapeKind==='sloan'?'near-sphere, r_max/r_min = '+flatOf(main.shape).toFixed(3):'pronounced body, r_max/r_min = '+flatOf(main.shape).toFixed(3); }
+  main=new Actor(specNow(),'gomboc',0); main.setRad($('cRad').checked); applyNudge(); if(was){ killCmp(); makeCmp(); } resetStats(false); setIdle(); $('lBeta').style.display=shapeKind==='sloan'?'':'none'; $('shapeInfo').textContent=shapeKind==='sloan'?'near-sphere, r_max/r_min = '+flatOf(main.shape).toFixed(3):'pronounced body, r_max/r_min = '+flatOf(main.shape).toFixed(3); }
 function flatOf(S){ let mn=1e9,mx=0; for(const u of ICO3.V){ const r=S.r(u[0],u[1],u[2]); mn=Math.min(mn,r); mx=Math.max(mx,r);} return mx/mn; }
 const ICO3=icosphere(3);
 function setBeta(b){ beta=b; $('vBeta').textContent=b.toFixed(3); rebuild(); }
@@ -317,6 +326,8 @@ $('bNudge').onclick=()=>startRoll((A,seed)=>{ const B=A.body; const r=lcg(seed);
 $('bReset').onclick=()=>{ main.body.pos[0]=0;main.body.pos[1]=0; main.reset(); if(cmp){ cmp.body.pos[0]=3; cmp.body.pos[1]=0; cmp.reset(); } setIdle(); $('cmpAng').textContent='-'; };
 $('cCmp').onchange=e=>{ if(e.target.checked) makeCmp(); else killCmp(); };
 $('rBeta').oninput=e=>{ setBeta(+e.target.value); };
+$('sMode').onchange=e=>{ approx=e.target.value==='approx'; $('lNudge').style.display=approx?'':'none'; applyNudge(); setIdle(); };
+$('rNudge').oninput=e=>{ nudgePct=+e.target.value; $('vNudge').textContent=nudgePct.toFixed(2); applyNudge(); };
 $('sShape').onchange=e=>{ shapeKind=e.target.value; rebuild(); };
 $('rDamp').oninput=e=>{ DAMP=+e.target.value; $('vDamp').textContent=DAMP.toFixed(1); main.body.damp=DAMP; if(cmp) cmp.body.damp=DAMP; };
 $('bSkip').onclick=()=>{ if(state!=='rolling') startRoll(); ff=true; };
@@ -352,7 +363,7 @@ function fastRoll(seed,opt){ opt=opt||{}; const A={body:new Gomboc.Body(main.sha
   const nbOf=()=>Gomboc.qconjrot(B.q,[0,0,-1],[0,0,0]);
   for(let i=0;i<300/DT;i++){ B.step(DT); if(i%6===0){ A.nb=nbOf(); observe(A); const w=Math.hypot(B.om[0],B.om[1],B.om[2]); if(w<0.05){ hold+=6*DT; if(hold>1.5){ t=B.t-1.5; break; } } else hold=0; } }
   const d1=ang(nbOf(),STABLE); return {tRest:t,distRad:d1,swings:A.swing,minFz:B.minN}; }
-window.__gomboc={setShape(k){ $('sShape').value=k; shapeKind=k; rebuild(); },get STABLE(){return STABLE;},setDamp(d){ DAMP=d; main.body.damp=d; },get main(){return main;},get cmp(){return cmp;},get state(){return state;},STABLE,UNSTABLE,fastRoll,startRoll,setBeta,
+window.__gomboc={setShape(k){ $('sShape').value=k; shapeKind=k; rebuild(); },get STABLE(){return STABLE;},setApprox(on,pct){ $('sMode').value=on?'approx':'exact'; approx=!!on; if(pct!=null){ nudgePct=pct; $('rNudge').value=pct; } $('lNudge').style.display=approx?'':'none'; applyNudge(); },setDamp(d){ DAMP=d; main.body.damp=d; },get main(){return main;},get cmp(){return cmp;},get state(){return state;},STABLE,UNSTABLE,fastRoll,startRoll,setBeta,
   info(){ const B=main.body; return {state,t:tRoll,rolls,times:times.slice(),om:B.om.slice(),nb:main.nb.slice(),distRad:ang(main.nb,STABLE),swings:main.swing,minFz:B.minN}; },
   step(n){ for(let i=0;i<n;i++) stepAll(); main.sync(); if(cmp) cmp.sync(); }, setFF(v){ ff=!!v; }};
 
@@ -364,6 +375,7 @@ window.__gomboc={setShape(k){ $('sShape').value=k; shapeKind=k; rebuild(); },get
   $('tInfo').onclick=()=>flip('info'); $('tCtl').onclick=()=>flip('ctl');
   addEventListener('keydown',e=>{ if(e.target&&/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return; if(e.key==='i'||e.key==='I') flip('info'); else if(e.key==='c'||e.key==='C') flip('ctl'); });
   apply(); })();
+rigorLabel();
 window.__ready=true;
 })();
 </script>

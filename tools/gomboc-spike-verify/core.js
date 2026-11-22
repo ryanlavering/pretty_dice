@@ -34,7 +34,9 @@ function Shape(arg){
   // covariance about CoM, per unit mass: S_c = M/V - c c^T ; inertia (unit mass) = tr(S)E - S
   const Sx=[M[0]/V-c[0]*c[0],M[3]/V-c[0]*c[1],M[4]/V-c[0]*c[2], M[3]/V-c[0]*c[1],M[1]/V-c[1]*c[1],M[5]/V-c[1]*c[2], M[4]/V-c[0]*c[2],M[5]/V-c[1]*c[2],M[2]/V-c[2]*c[2]];
   const tr=Sx[0]+Sx[4]+Sx[8]; S.I=[tr-Sx[0],-Sx[1],-Sx[2], -Sx[3],tr-Sx[4],-Sx[5], -Sx[6],-Sx[7],tr-Sx[8]];
-  S.Iavg=(S.I[0]+S.I[4]+S.I[8])/3;
+  S.Iavg=(S.I[0]+S.I[4]+S.I[8])/3; S.c0=c.slice();
+  // approximate mode: move the centre of mass by vec (body frame, in body-radius units). The surface point relative to the CoM is r*u - c, so c += vec. Inertia is not re-referenced (change is O(|vec|^2)).
+  S.setNudge=function(vec){ c[0]=S.c0[0]+vec[0]; c[1]=S.c0[1]+vec[1]; c[2]=S.c0[2]+vec[2]; };
   // surface point (relative to CoM) for unit direction u
   S.point=function(x,y,z,out){ const r=S.r(x,y,z); out[0]=r*x-c[0]; out[1]=r*y-c[1]; out[2]=r*z-c[2]; return out; };
   // f(u0 + a e1 + b e2) = (x.u) at surface point in direction n = normalize(.) ; maximised => support function h(u)

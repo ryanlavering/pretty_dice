@@ -1,5 +1,6 @@
 // Reusable equilibrium counter for a convex polyhedron of uniform density, given its vertex list.
 //   import {polyEquilibria, fibonacciMesh} from './poly-equilibria.mjs';
+//   const r = polyEquilibria(vertices, {com:[x,y,z]});  // optional: use this centre of mass instead of the volume centroid (approximate mode / CoM nudge)
 //   const r = polyEquilibria(vertices);   // vertices: [[x,y,z],...]; non-extreme points are dropped by the hull
 //   r.S stable (face) equilibria, r.U unstable (vertex), r.H saddle (edge), r.poincareHopf (S+U-H must be 2), r.faces, r.verts.
 // Method: hull (hull.mjs, incremental), coplanar triangles merged into faces, centre of mass = volume centroid of the hull.
@@ -8,7 +9,7 @@
 // Varkonyi-Domokos classification; degenerate (non-generic) cases within `tol` are reported in r.degenerate.
 import {hull,fib,centroid} from './hull.mjs';
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], len=a=>Math.hypot(a[0],a[1],a[2]);
-export function polyEquilibria(vertices,opt={}){ const tol=opt.tol||1e-9; let P=vertices.map(v=>v.slice()); let tri=hull(P); const c=centroid(P,tri); P=P.map(p=>sub(p,c)); tri=hull(P);
+export function polyEquilibria(vertices,opt={}){ const tol=opt.tol||1e-9; let P=vertices.map(v=>v.slice()); let tri=hull(P); const c=opt.com||centroid(P,tri); P=P.map(p=>sub(p,c)); tri=hull(P);
   // merge coplanar triangles into faces
   const faces=[]; for(const t of tri){ let f=faces.find(g=>dot(g.n,t.n)>1-1e-9&&Math.abs(g.d-t.d)<1e-9); if(!f){ f={n:t.n,d:t.d,tris:[],vs:new Set()}; faces.push(f); } f.tris.push(t); t.v.forEach(i=>f.vs.add(i)); }
   const used=new Set(); faces.forEach(f=>f.vs.forEach(i=>used.add(i))); const verts=[...used];

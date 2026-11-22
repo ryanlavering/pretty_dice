@@ -249,3 +249,45 @@ C = F + E + V - 2 as defined by the owner. Prize terms (from arXiv:2609.07827 fo
 | inhomogeneous monostable tetrahedron etc. (five faces and five vertices suffice for every allowed face vector except tetrahedra) | 5 | | 5 | | | no | ref. [2] there |
 
 For comparison my sampled hulls (section Low-poly search log) have F, E, V = 56/84/30 up to 996/1494/500 with hundreds of stable faces, so they are nowhere near (1,0,1); an equal-sag tangent cover of a smooth seed, as in 2609.07827, is the only construction known to me that reaches (1,0,1) and needs tens of thousands of faces. This is the data set to test `poly-equilibria.mjs` against if the half-space list of the repository above is later downloaded (convert half-spaces to vertices first).
+
+---
+
+# Round 4 (public-mesh recipe, CoM nudge, rigor labels)
+
+First pass only; no long optimisers were run.
+
+## 15. Mesh pipeline (`tools/gomboc-spike-verify/mesh-pipeline.mjs`)
+
+`node mesh-pipeline.mjs model.stl|obj [--taubin N] [--nudge 0.001,0.003,0.005] [--hull-max 3000]` or `--gen sloan:0.03|pronounced [--level 4] [--stl out.stl]`. It loads binary or ASCII STL and OBJ, welds vertices, and reports each step: (1) closedness (open and non-manifold edges), (2) volume and volumetric centroid (signed tetrahedra), (3) Taubin smoothing (lambda 0.5 / mu -0.53, volume change reported), (4) recentring and radius range r_max/r_min, (5) equilibrium count of the radial function about the CoM (discrete Morse on vertex radii), (6) if the mesh is convex (hull volume = mesh volume) the exact polyhedron equilibria S, U, H with the Poincare-Hopf check (`poly-equilibria.mjs`, which now accepts `{com:[x,y,z]}`), (7) the same with the CoM nudged by each fraction of the mean radius toward the intended bottom (the minimum-radius direction). Meshes are never written into the repo.
+
+Validation on our own meshes (the exact smooth bodies sampled on an icosphere, level 4 = 2562 vertices / 5120 triangles, closed, convex):
+
+| body | CoM nudge | radial discrete Morse (min / max / saddle) | polyhedron S / U / H |
+|---|---|---|---|
+| Sloan beta 0.03 | 0 | 13 / 13 / 24 | 1154 / 1158 / 2310 |
+| | 0.1 percent | 11 / 11 / 20 | 1206 / 1172 / 2376 |
+| | 0.3 percent | 9 / 9 / 16 | 1312 / 1174 / 2484 |
+| | 0.5 percent | 7 / 7 / 12 | 1492 / 1180 / 2670 |
+| pronounced | 0 | 13 / 12 / 23 | 736 / 682 / 1416 |
+| | 0.1 percent | 10 / 12 / 20 | 746 / 697 / 1441 |
+| | 0.3 percent | 8 / 6 / 12 | 764 / 734 / 1496 |
+| | 0.5 percent | 4 / 4 / 6 | 796 / 766 / 1560 |
+
+Findings: (a) a sampled mesh of a verified smooth Gomboc is not mono-monostatic: 13 radial minima at 2562 vertices (the discrete count over-counts in the flat valley, as in section 2), and the polyhedron itself has hundreds to over a thousand stable faces, all consistent with the cannon-es result of section 5. (b) Taubin smoothing does not remove this (it changes the volume by 1 to 2 percent on these meshes with the plain uniform Laplacian and cannot undo faceting). (c) The CoM nudge reduces the radial-function minima (13 to 7 for Sloan, 13 to 4 for the pronounced body at 0.5 percent) but never reaches 1, and it increases the number of stable faces of the polyhedron. So the recipe's failsafe is cosmetic for a mesh: it only works because the page integrates the exact smooth surface, not a mesh. (Step 3's claim that a true Gomboc has exactly one minimum and one maximum of r holds for the smooth body, verified in section 2, not for its triangulation.)
+
+Nudge on the smooth bodies (winding index of the support-function gradient, `NUDGE=0.005 node index.mjs ...`, icosphere L=4, 6 samples/edge): Sloan beta 0.03 keeps exactly 1 stable + 1 unstable up to 0.5 percent; the pronounced body keeps them at 0.2 percent and develops extra equilibria (3 index +1 and 1 index -1 triangles) at 0.5 percent.
+
+## 16. Public models: not obtained
+
+* GrabCAD "Gomboc convex homogeneous three-dimensional body" (https://grabcad.com/library/gomboc-convex-homogeneous-three-dimensional-body-1), Thingiverse thing:5173406 (https://www.thingiverse.com/thing:5173406), the Printables page and the 3dgo.app mirrors: HTTP 403 to the standard fetch tool. I did not try to get around the blocks (a browser-spoofing attempt was refused by the environment, correctly). Author, licence, file formats and the claim of how the shape was obtained are therefore unverified.
+* From a web search snippet only (unverified): a MakerWorld Gomboc-inspired model forbids redistribution and commercial use (https://makerworld.com/models/2626210); the older Thingiverse model thing:10190 is described by its uploader as obsolete (https://3dgo.app/models/thingiverse/10190); the same page's notes mention a US design patent D614077 and Hungarian IP on the shape (commercial use may need clearance whatever the file licence says). I found no Printables licence information.
+* The owner must download a STEP/IGES/STL manually and check its licence; keep it out of git; then run `node mesh-pipeline.mjs <file> --taubin 20 --nudge 0.001,0.003,0.005` (convert STEP/IGES to STL first). Per Couey (section 11), commercial specimens' exact geometry is unpublished, so an "exact" claim on any such model should be treated as unverified until the pipeline reports exactly one radial minimum and one maximum on a fine, closed, convex mesh.
+
+## 17. Page: exact versus approximate modes
+
+New "mode" selector: "Exact (verified)" (default, no nudge) and "Approximate (CoM nudge)" with a slider of 0 to 0.5 percent of the radius (default 0.20), applied to the active shape by moving the body's centre of mass toward its stable point (the mesh is shifted accordingly; the inertia tensor is not re-referenced, an O(nudge squared) error). A rigor banner in the HUD shows, for every shape and mode, either "EXACT surface ... verified" or "APPROXIMATE - centre of mass nudged x percent ... not a true homogeneous Gomboc" with the offline equilibrium check for that nudge (safe up to 0.5 percent for Sloan, 0.2 percent for the pronounced body, a warning beyond). The rolling resistance, time-lapse and the ringing fallback remain the stated convenience. Page check: nudged 0.3 percent, 4 fast rolls per shape ended 0.2 to 0.7 deg (Sloan, 17.7 to 20.6 s) and 0 to 0.15 deg (pronounced, 18.5 to 30.5 s) from the stable point.
+
+## Low-poly search log additions (round 4)
+
+* Sampled meshes of the exact bodies at icosphere level 3 and 4 (642 / 2562 vertices): Sloan 0.03 level 4 S/U/H = 1154/1158/2310 (F 5120, E 7680, V 2562, C = 15,360); pronounced level 4 736/682/1416. Not mono-monostatic. A CoM nudge of 0.1 to 0.5 percent does not fix them (stable faces increase).
+* `mesh-pipeline.mjs` and `poly-equilibria.mjs {com}` are the reusable checkers for a later search or for the half-space polytope of arXiv:2609.07827 once converted to vertices.
