@@ -533,3 +533,56 @@ Results (plots `docs/design/img/gomboc-r9-basins-1.14.png`, `gomboc-r9-basins-1.
 ## Low-poly search log additions (round 9)
 
 Second-face persistence (face-graph, section 30): twisted stack 3 x 5-gon (F 20, E 32, V 14, C 64, S = 2): 0.74; 5 x 5-gon (F 20, E 32, V 14, C 64): 1.00; 6 x 5-gon (F 24, E 38, V 16, C 76): 0.71; round-5 random best (N = 14, F 18, E 27, V 11, C 54): 0.94. All S = 2: negative results for S = 1; persistence is the new distance-to-monostable measure for the search (smaller is better; 0 would mean one stable face).
+
+---
+
+# Round 10 (persistence as the cost: exact bodies to 1.18, first low-poly persistence search)
+
+Outcome: the round-7 ceiling of 1.105 for a true homogeneous body in the ring family was a limit of the noisy discrete count, not of the family. Optimising the persistence of the second minimum (and maximum) directly gives bodies that pass the winding-index check at icosphere L5 and L6 up to r_max/r_min 1.18 (best), versus 1.105 before. Rigor: NUMERICALLY verified, not proven (see the rigor column below). The body is convex by a support-function check (K min 0.023 to 0.077: very flat patches). Nothing above 1.18 passed.
+
+## 32. Method (`ring-pers.mjs`, run records in `tools/gomboc-spike-verify/runs/r10/`)
+
+Same 16-parameter ring family and CMA-ES as `ring-cma.mjs` (section 25), zero CoM shift (degree-1 part removed analytically, uniform density). The cost replaces the winding index by persistence: r = F^(1/4) is sampled on an icosphere; the largest finite persistence pair of the sublevel filtration (second minimum) plus that of the superlevel filtration (second maximum) is the "badness"; cost = |ratio - target| x 10 + 300 (or 1000 to 1500 in later runs) x persistence + 50 x max(0, 0.02 - convexity margin), 12 to 16 members per generation, 450 to 1200 generations, 4 processes. Evaluation is about 15 times faster than the winding loop at L4 (about 50 evaluations per second), about 12 per second at L5.
+
+## 33. Results
+
+| run | start | target | L of persistence | cost persistence reached | winding at L5 (6/edge) / L6 (4/edge) | convexity K min | tolerance M (grid points, ball 3%) | verdict |
+|---|---|---|---|---|---|---|---|---|
+| p_1.12_s1 | bistable 1.12 | 1.12 | L4 | 0 | +2/-0, +2/-0 | 0.077 | 7 | EXACT, numerically verified |
+| p_1.15_s2 | bistable 1.16 | 1.15 | L4 | 0 | +2/-0, +2/-0 | 0.023 | 8 | EXACT, numerically verified |
+| q_1.18 | 1.15 body | 1.18 | L4 | 1e-4 | +3/-1 | not run | not run | fails: L4 persistence overfits the grid |
+| q_1.22 (ratio 1.21) | 1.15 body | 1.22 | L4 | 3e-4 | +8/-6 | not run | not run | fails (stuck at 1.21 with persistence at the floor on the L4 grid) |
+| r_1.18_s2 | 1.15 body | 1.18 | L5 | 4e-5 | +3/-1 | not run | not run | fails (one near-degenerate extra pair) |
+| r_1.22_s1 (ratio 1.21) | 1.15 body | 1.22 | L5 | 2e-4 | +7/-5 | not run | not run | fails |
+| t_1.16_s2 | 1.15 body | 1.16 | L5 | 0 | +2/-0, +2/-0 | 0.061 | 21 | EXACT, numerically verified (best margins) |
+| t_1.17_s1 | 1.15 body | 1.17 | L5 | 0 | +2/-0, +2/-0 | 0.025 | 15 | EXACT, numerically verified |
+| u_1.19 | 1.17 body | 1.19 | L5 | 5e-5 | +6/-4 | not run | not run | fails |
+| u_1.21 (ratio 1.198) | 1.17 body | 1.21 | L5 | 1e-4 | +3/-1 | not run | not run | fails |
+| w_1.18 s5 (from t_1.17_s1) | 1.17 body | 1.18 | L5 | 8e-6 | +2/-0, +2/-0 | 0.038 | 10 | EXACT, numerically verified: BEST, r_max/r_min 1.180 |
+| w_1.18 s6 (same start) | 1.17 body | 1.18 | L5 | 9e-6 | +3/-1, +3/-1 (D = 0.5 percent) | 0.029 | 15 | fails at the origin (tolerance region M starts 0.5 percent away) |
+
+Independent persistence check on the support function (not on r), icosphere L6, uniform density: 1.12 body 6e-5; 1.15 body 1.6e-4; 1.16 body 1e-4; 1.17 body 1.2e-4; 1.18 body 2.6e-4; for comparison the old 1.105 body shows 7.5e-4 (valley artefacts). All are at or below the artefact floor (about 3e-4), i.e. one stable minimum within the sampling resolution. Behaviour with the page physics (`roll-harness.mjs`, shift 0, 30 or 20 random rolls, g 654, resistance 2.0): 1.15: 30/30 end at the one stable point, mean settle 19.3 s; 1.16: 20/20, 21.0 s; 1.18: 20/20, 23.0 s.
+
+Lessons:
+* The persistence cost removes the noise that blocked round 7: bodies from 1.12 to 1.17 were reached with zero measured persistence and the winding verified without re-polishing.
+* The grid at which persistence is computed matters: at L4 the search overfits (1.18 and 1.21 bodies from L4 runs show +3/-1 and +8/-6 at L5). At L5 the search lands on bodies that have an extra stable/saddle pair of persistence below the floor (1e-5 to 1e-4) just beyond 1.18: such a pair is a real second stable point of tiny depth (and the winding index counts it), so persistence at the floor is a necessary but not a sufficient condition; the winding index at L5/L6 remains the arbiter.
+* Seed lottery at the edge: from the same start at 1.18, one seed passes (K min 0.038, M 10 points) and one fails by +3/-1 (M excludes the origin by 0.5 percent). 1.19 and 1.21 did not pass in any run, so about 1.18 is the practical edge of this 16-parameter family at this budget. This is a search limit, not a proof of a maximum.
+* Margins are small: the tolerance region M (a CoM move that keeps one stable point) extends only 2 to 2.5 percent toward -x and 1 percent toward +y; the 1.16 body has the largest M (21 points) and K min 0.061, the 1.18 body is the most pronounced but flatter (K min 0.038).
+* Rigor: winding index at two grid resolutions plus floor-level persistence is numerical evidence on a finite grid with a degree-12 spherical-harmonic fit of the exact family; it is not a proof (an even flatter extra pair below the grid resolution cannot be excluded), and a certified count (interval arithmetic) was not attempted.
+
+## 34. Low-poly: persistence as the cost (`poly-pers.mjs`, `lowpoly-pers.mjs`)
+
+* Start from the monostable smooth body (1.15): its convex hull on N Fibonacci points (the polyhedron "approximation" of a monostable surface) has persistence of the second stable face 0.00096 (N 1500), 0.0021 (800), 0.0036 (400), 0.0077 (200), 0.012 (120), 0.020 (80), 0.035 (50) in units of the radius (face height range 0.11 to 0.13), but with 547 to 86 stable faces (S): the persistence is small because the sampled valley is flat, not because the polyhedron is monostable. Persistence is therefore only meaningful together with S and the height range.
+* First attempt (cost = p2 + 0.0005 x (S - 1)) was gamed: vertices became unconstrained (a height range of 39 for N = 24, p2 0.97, normalised 0.025). Constraining the vertex radius to 0.8 to 1.25 of the body and the face-height range to 0.15 to 0.6 (cost p2 + 0.02 (S - 1) + range penalties), annealing the positions of N points from the Fibonacci hull of the 1.15 body, 100 s each: N = 24: p2 0.088, S = 5, 44 faces; N = 40: 0.085, S = 7, 56 faces; N = 80: 0.091, S = 8, 70 faces (height range 0.37 to 0.45, i.e. pronouncedness about 1.4 to 1.6 of the face heights spread).
+* Versus round 9: second-face persistence 0.71 to 1.00 (S = 2 twisted stacks, pronounced) and 0.94: the search is about 10 times closer (0.085 to 0.09) but at S = 5 to 8 stable faces and 44 to 70 faces: negative result for monostability (S = 1 not reached), positive for the measure (persistence moves smoothly under vertex moves, and the annealing could reduce it by a factor 10 at fixed pronouncedness). The pairing of low persistence with large S shows the polyhedral problem is dominated by the count, so the next cost should be S first and persistence second (or use the face-graph analogue of D).
+
+## 35. Page (`tools/gomboc-spike.html`)
+
+Two new selectable shapes, "Exact body 1.16 (verified numerically)" and "Exact body 1.18 (verified numerically)", with the rigor banner "EXACT surface, uniform density ... VERIFIED NUMERICALLY (not a mathematical proof): winding index +2/-0 at L5 and L6, persistence at the sampling floor, K min, tolerance" and an Info paragraph; the banner in Approximate mode says any nudge is unverified. Sloan, the pronounced body, the five approximate bodies and the Info/Controls toggles are untouched. Page check under the CSP: `ready: true`, `errors: []`; page-driver rolls (3 per body) end 0.0 to 0.38 degrees from the marked stable point in 35 to 59 s of wall time (software GL).
+
+## 36. Next steps (recommendation)
+
+1. Ship the 1.16 body (largest tolerance) and 1.18 (most pronounced) as the exact bodies; the five approximate CoM-shift bodies are now redundant for most purposes (they remain on the page).
+2. To go beyond 1.18: add parameters to the family (higher harmonics in the ring angle, a second spiral), use persistence at L5 plus an L5 winding index in the cost for the last steps (about 10 times slower), and use more seeds (the seed lottery at the edge is large); expect diminishing returns: the tolerance region is already about 2 percent of the radius.
+3. Certify one body (interval arithmetic or exhaustive critical-point solve) if the "mathematically verified" label is wanted.
+4. Low-poly: switch the cost to the count first (S of the face graph, with persistence as the smooth tie-breaker), start from the monostable hull at N = 24 to 80, and allow vertex moves that keep the height range.
