@@ -2,6 +2,7 @@
 import { test, expect } from './helpers/app.mjs';
 
 const st = app => app.run(pd => ({ draft: pd.bag.active.draft, hold: pd.bag.hold ? { game: pd.bag.hold.game, phase: pd.bag.hold.phase, kind: pd.bag.hold.draft && pd.bag.hold.draft.kind, name: pd.bag.hold.draft && pd.bag.hold.draft.name, base: pd.bag.hold.draft && pd.bag.hold.draft.base } : null, d6: pd.state.d6Style, design: pd.bag.active.design, notation: pd.state.notation }));
+const clearPrefs = app => app.run(pd => { for (const k of Object.keys(pd.gprefs.opts)) if (k.endsWith('.look')) delete pd.gprefs.opts[k]; });
 async function addDesign(app, name, sub, d6) { return app.run(async (pd, a) => { const j = pd.designToJSON(); j.substrate = a.sub; j.name = a.name; j.numbers = { ...j.numbers, d6_style: a.d6 }; return pd.bagOps.addLoaded(JSON.parse(JSON.stringify(j))); }, { name, sub, d6 }); }
 const pick = (app, id) => app.page.selectOption('#scorepane select >> nth=0', id);
 const settle = app => app.run(pd => { pd.step(20); pd.renderOnce(); });
@@ -13,8 +14,9 @@ const useBagActivate = async (app, id) => { await app.nav.openBag(); await app.p
 const baseNumbers = async app => { const id = await addDesign(app, 'Base', 'solid', 'numbers'); await useBagActivate(app, id); return id; };
 
 test('lobby: Yacht shows "<A> pips" live by default; the toggle drops it and brings it back', async ({ shared: app }) => {
-  await app.reset(188, { plain: true });
+  await app.reset(188, { plain: true }); await clearPrefs(app);
   const a = await baseNumbers(app);
+  const pend0 = await app.run(pd => Object.keys(pd.bag.pending));   // the shared page may carry other tests' pending edits: assert only on what this test adds
   await toLobby(app, 'yahtzee');
   expect(await st(app)).toMatchObject({ draft: 'game', hold: { game: 'yahtzee', phase: 'lobby', kind: 'tweak', base: a }, d6: 'pips', notation: '5d6' });
   expect((await st(app)).hold.name).toMatch(/ pips$/);
@@ -26,12 +28,12 @@ test('lobby: Yacht shows "<A> pips" live by default; the toggle drops it and bri
   await expect(ghost(app)).toHaveCount(0);
   await app.page.check('#gamelook'); await settle(app);
   expect(await st(app)).toMatchObject({ draft: 'game', hold: { kind: 'tweak' }, d6: 'pips' });
-  expect(await app.run(pd => pd.bagToJSON().pending)).toEqual({});   // never Modified
+  expect(await app.run(pd => Object.keys(pd.bagToJSON().pending))).toEqual(pend0);   // never Modified: no pending entry added (none for the base design)
   await expect(app.page.locator('#modbadge')).toBeHidden();
 });
 
 test('other d6 games offer the toggle, off by default; Story does not', async ({ shared: app }) => {
-  await app.reset(189, { plain: true }); await baseNumbers(app);
+  await app.reset(189, { plain: true }); await clearPrefs(app); await baseNumbers(app);
   await toLobby(app, 'farkle');
   await expect(app.page.locator('#gamelook')).not.toBeChecked();
   expect(await st(app)).toMatchObject({ draft: false, hold: { kind: null }, d6: 'numbers' });
@@ -44,7 +46,7 @@ test('other d6 games offer the toggle, off by default; Story does not', async ({
 });
 
 test('pick B mid-game -> B + pips; End game -> B; the pick in the lobby follows too', async ({ shared: app }) => {
-  await app.reset(190, { plain: true }); const b = await addDesign(app, 'Bee', 'swirl', 'numbers');
+  await app.reset(190, { plain: true }); await clearPrefs(app); const b = await addDesign(app, 'Bee', 'swirl', 'numbers');
   await baseNumbers(app);
   await toLobby(app, 'yahtzee');
   await app.nav.roll(); await app.run(pd => pd.startGame('yahtzee', ['P1'], {}, [])); await app.page.waitForTimeout(300);
@@ -60,7 +62,7 @@ test('pick B mid-game -> B + pips; End game -> B; the pick in the lobby follows 
 });
 
 test('lobby pick B: draft rebuilt as B + pips and listed; leaving restores B', async ({ shared: app }) => {
-  await app.reset(191, { plain: true }); const b = await addDesign(app, 'Lobbee', 'swirl', 'numbers'); await baseNumbers(app);
+  await app.reset(191, { plain: true }); await clearPrefs(app); const b = await addDesign(app, 'Lobbee', 'swirl', 'numbers'); await baseNumbers(app);
   await toLobby(app, 'yahtzee');
   await useBagActivate(app, b);
   expect(await st(app)).toMatchObject({ draft: 'game', hold: { name: 'Lobbee pips', base: b }, d6: 'pips', design: b });
@@ -69,7 +71,7 @@ test('lobby pick B: draft rebuilt as B + pips and listed; leaving restores B', a
 });
 
 test('base design already pips -> no draft; picking a numbers design then rebuilds one', async ({ shared: app }) => {
-  await app.reset(192, { plain: true }); const p = await addDesign(app, 'Dots', 'swirl', 'pips'); const n = await addDesign(app, 'Nums', 'solid', 'numbers');
+  await app.reset(192, { plain: true }); await clearPrefs(app); const p = await addDesign(app, 'Dots', 'swirl', 'pips'); const n = await addDesign(app, 'Nums', 'solid', 'numbers');
   await useBagActivate(app, p);
   await toLobby(app, 'yahtzee');
   expect(await st(app)).toMatchObject({ draft: false, hold: { game: 'yahtzee', kind: null }, d6: 'pips', design: p });
@@ -81,7 +83,7 @@ test('base design already pips -> no draft; picking a numbers design then rebuil
 });
 
 test('Save as design keeps B+pips as a design; Discard goes back to my design', async ({ shared: app }) => {
-  await app.reset(193, { plain: true }); await baseNumbers(app);
+  await app.reset(193, { plain: true }); await clearPrefs(app); await baseNumbers(app);
   await toLobby(app, 'yahtzee');
   await app.run(async pd => { await pd.bagOps.discard(); }); await settle(app);
   expect(await st(app)).toMatchObject({ draft: false, d6: 'numbers' });
