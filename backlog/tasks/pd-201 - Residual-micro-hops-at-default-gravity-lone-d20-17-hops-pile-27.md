@@ -1,10 +1,10 @@
 ---
 id: PD-201
 title: Residual micro-hops at default gravity (lone d20 17 hops, pile 27)
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-21T00:20:00Z'
-updated_date: '2026-11-22T04:25:00Z'
+updated_date: '2026-11-22T07:00:00Z'
 labels:
   - v4.2
 dependencies: []
