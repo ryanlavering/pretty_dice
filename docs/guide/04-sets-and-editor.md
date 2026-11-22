@@ -30,6 +30,10 @@ Dice are written `<count>d<sides>`; the count may be left off. Letters can be up
 | `d20 adv` | `2d20kh1` | advantage; `dis` gives `2d20kl1` |
 | `d20 adv+5` | `2d20kh1+5` | advantage with a modifier: put `adv` or `dis` right after the die, then the modifier. `d20+5 adv` is not understood |
 | `4d6kh` | `4d6kh1` | a keep with no number keeps one |
+| `d20r1+5` | `1d20r1+5` | **r**eroll: a die that shows 1 is rolled again, once, and the new value stands (the halfling "reroll a 1") |
+| `4d6r<=2` | `4d6r<=2` | reroll each die that shows 2 or less; also `r<3`, `r>5`, `r>=5` (`r1` means exactly 1) |
+| `d20 adv r1` | `2d20r1kh1` | rerolls come first, then keep or drop; `r` may be written before or after `kh`/`kl`/`adv` |
+| `4x d20r1+2` | `4x 1d20r1+2` | works in a group: every die in every roll |
 
 When dice are dropped (by keep, drop, `adv` or `dis`) the table marks them with a grey ring, they do not count, and the breakdown shows them in parentheses: `5+6+5+(3) = 16`.
 
@@ -52,7 +56,9 @@ A die can carry small pictures instead of numbers. Add a **face block** in curly
 
 The pack names are `noto` (Everyday pictures), `symbols`, `memes`, `gameicons` (Fantasy and adventure), `fontawesome` (Plain icons) and `hiero` (Hieroglyphs); join several with `&`. The seed is a number from 1 to 999999 (left off it means 1). The same text deals the same pictures on every device, and adding a die at the end keeps the faces of the dice before it. Glyph faces work on d6, d8, d12 and d20 only. Unless you ask for `!same`, no picture repeats, so the packs must hold enough: five d12 need 60 pictures, and the box says so ("Set needs 60 faces; ... holds ...") if not. A face counts in totals by its position on the die (1 to the number of sides), so keep highest, `adv` and the rest work on glyph dice too. The [Story Dice sets editor](10-games.md#story-dice-sets) builds this text for you.
 
-Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "advantage" and "disadvantage" spelled out (use `adv` or `dis`, or the buttons). A bad entry shows a message such as `d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)` or `Too many dice (101); max 24`.
+A rerolled die shows its first value in the breakdown, the roll log and Copy: `1→14 + 5 = 19`. The final value counts for the total and for Natural 20 / Natural 1; the die on the table still shows the first face. Rerolls are not extra dice, so they do not count toward the 24-dice limit. A condition that matches every face (`d6r<7`) or none, or `r` with no number, is refused with a message; `r` does not work on `d%` or on dice with custom faces.
+
+Not understood yet: exploding dice (`d20!`), and the words "advantage" and "disadvantage" spelled out (use `adv` or `dis`, or the buttons). A bad entry shows a message such as `d7 not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)` or `Too many dice (101); max 24`.
 
 ## Save it as a set
 

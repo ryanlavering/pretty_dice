@@ -110,8 +110,10 @@ function parseNotation(str,strict=false){
   { const am=String(str).toLowerCase().match(/^(.*[+-]\s*\d+)\s*(adv|dis)\s*$/); if(am&&/(^|[^\d])d20(?!\d)/.test(am[1])) str=am[1].replace(/(^|[^\d])d20(?!\d)/,'$1d20'+am[2]); }   /* PD-142.14.2.1.1: "d20+5 adv" = "d20adv+5" */
   const toks=String(str).toLowerCase().replace(/\s+/g,'').replace(/-/g,'+-').split('+').filter(Boolean);
   if(!toks.length) return {error:'Enter some dice, e.g. 4d6+2d10+3'};
-  for(const t of toks){
-    let m;
+  for(let t of toks){
+    let m, reroll=null;
+    { const hi=t.search(/[{@]/), head=hi<0?t:t.slice(0,hi), tail=hi<0?'':t.slice(hi), rm=head.match(/r(<=|>=|<|>)?(\d*)(?!\d)/);   /* PD-142.42.1: r1 r<N r<=N r>N r>=N, once per die, before keep/drop; may sit before or after kh/kl/adv */
+      if(rm&&/^\d*d(\d+|%)/.test(head)){ if(rm[2]==='') return {error:'r needs a number, e.g. d20r1 or 4d6r<=2'}; reroll={op:rm[1]||'=',v:+rm[2]}; t=head.replace(rm[0],'')+tail; } }
     if((m=t.match(/^(\d*)d(\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:\{([^{}]*)\})?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const sides=m[2]==='%'?100:+m[2]; let design=null, keep=null;
       if(m[5]){ if(count>1||sides!==20) return {error:`"${m[5]}" goes on a single d20, e.g. d20${m[5]}`}; count=2; keep={mode:m[5]==='adv'?'h':'l',n:1}; }   /* PD-142.2: d20adv = 2d20kh1, d20dis = 2d20kl1 */
       else if(m[3]){ const q=m[4]===''?1:+m[4], dropping=m[3][0]==='d', n=dropping?count-q:q;
@@ -122,7 +124,9 @@ function parseNotation(str,strict=false){
       if(m[6]!==undefined){ if(sides===100) return {error:"Custom faces don't work on d% (two dice); use d10"}; if(!FACE_SIDES.includes(sides)) return {error:`Custom faces are not supported on d${sides} yet (use d6, d8, d12 or d20)`};
         const fb=parseFaceBlock(m[6]); if(fb.error) return fb; faces=fb.faces; }
       if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
-      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(keep?{keep}:{}),...(faces?{faces}:{})}); }
+      if(reroll){ if(sides===100) return {error:"Reroll (r) doesn't work on d% (two dice); use d10"}; if(faces) return {error:"Reroll (r) doesn't work with custom faces"};
+        const hit=range(1,sides).filter(v=>rerollHit(reroll,v)).length, txt=rerollTxt({reroll}); if(hit===sides) return {error:`${txt} would reroll every face of a d${sides}`}; if(!hit) return {error:`${txt} never matches a face of a d${sides}`}; }
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(reroll?{reroll}:{}),...(keep?{keep}:{}),...(faces?{faces}:{})}); }
     else if(/^-?\d+$/.test(t)) mod+=+t;
     else return {error:`Can't read "${t}"`};
   }
@@ -132,11 +136,18 @@ function parseNotation(str,strict=false){
   return group>1?{terms,mod,group}:{terms,mod};
 }
 const keepTxt=t=>t.keep?`k${t.keep.mode}${t.keep.n}`:'';
-const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}${t.faces?fmtFaces(t.faces):''}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const rerollTxt=t=>t.reroll?`r${t.reroll.op==='='?'':t.reroll.op}${t.reroll.v}`:'';   // normal form puts r before any keep: 2d20r1kh1
+const rerollHit=(r,v)=>r.op==='<'?v<r.v:r.op==='<='?v<=r.v:r.op==='>'?v>r.v:r.op==='>='?v>=r.v:v===r.v;
+/* PD-142.42.1 per-die reroll: each die matching the condition is re-evaluated ONCE (the new value stands) before keep/drop; draw() supplies the new value. Returns the final values and the originals (undefined where a die kept its value). */
+function applyReroll(vals,t,draw){ const orig=[]; if(!t.reroll) return {vals,orig}; const out=vals.map((v,i)=>{ if(!rerollHit(t.reroll,v)) return v; orig[i]=v; return draw(i,v); }); return {vals:out,orig}; }
+const dieTxt=(v,o)=>o!==undefined?`${o}→${v}`:v;
+/* the values of one term in a simulated roll (quick roll / group): rerolls come from the same stream, after the first throw of the term */
+function drawTerm(t,rnd){ const raw=[]; for(let i=0;i<t.count;i++) raw.push(1+Math.floor(rnd()*t.sides)); return applyReroll(raw,t,()=>1+Math.floor(rnd()*t.sides)); }
+const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${rerollTxt(t)}${keepTxt(t)}${t.faces?fmtFaces(t.faces):''}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
 /* keep-highest / keep-lowest (PD-142.2): the dice that count and the ones set aside; ties keep the earlier die */
 function keepSum(vals,keep){ const idx=vals.map((_,i)=>i); if(keep&&keep.n<vals.length) idx.sort((a,b)=>keep.mode==='h'?vals[b]-vals[a]||a-b:vals[a]-vals[b]||a-b);
   const kept=new Set(keep&&keep.n<vals.length?idx.slice(0,keep.n):idx); return {sum:vals.reduce((a,v,i)=>a+(kept.has(i)?v:0),0),kept}; }
-const keepLine=(t,vals,ks,names,noSum)=>`${t.count}d${t.sides===100?'%':t.sides}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:v; return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1&&!noSum?' = '+ks.sum:''}`;   // noSum: glyph-only dice have no meaningful total. names: glyph names beside the values (PD-167)
+const keepLine=(t,vals,ks,names,noSum,orig=[])=>`${t.count}d${t.sides===100?'%':t.sides}${rerollTxt(t)}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:dieTxt(v,orig[i]); return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1&&!noSum?' = '+ks.sum:''}`;   // noSum: glyph-only dice have no meaningful total. names: glyph names beside the values (PD-167)
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -448,7 +459,7 @@ for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('but
     if(playRoom()){ dockLoad(sides,true); forceCustom=$('rollbox').value; shapeSelSync(); return; }
     checkpoint();
     const base=state.shape==='custom'?state.notation:(/^d\d+$/.test(state.shape)?'1'+state.shape:state.notation), pp=parseNotation(base,true), terms=pp.error?[]:pp.terms.map(t=>({...t}));
-    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.design&&!t.faces); if(t) t.count++; else terms.push({count:1,sides});
+    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.reroll&&!t.design&&!t.faces); if(t) t.count++; else terms.push({count:1,sides});
     state.notation=fmtNotation(terms,pp.error?0:pp.mod,pp.error?1:pp.group); state.shape='custom'; rebuildKeepMode(); };
   const single=()=>{ if(playRoom()){
       if(!sides){ state.shape=id; forceCustom=id==='custom'?$('rollbox').value:null; if(id!=='custom') $('rollbox').value=''; const was=rolling; holdRoom=was&&!designRoom; try{ buildDice(); } finally { holdRoom=false; } if(was) startRoll(false,true); syncUI(); formulaSync(); return; }   // rebuild and put the dice down unrolled: it never throws
@@ -466,7 +477,7 @@ const STEP_TYPES=[4,6,8,10,100,12,14,16,20];
 const playRoom=()=>!document.body.classList.contains('design')&&!!$('rollbox');   // PD-142.38.23: in Play the Custom set control and the dock formula box are two views of one formula
 let forceCustom=null;   // PD-142.38.34: after a double-click / long press the Custom set stays selected for as long as the formula is the one it produced
 const selShape=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(forceCustom!==null&&v===forceCustom.trim()) return 'custom';
-    if(v){ const p=parseNotation(v,true); if(!p.error&&p.terms.length===1&&!p.mod&&!(p.group>1)){ const t=p.terms[0]; if(t.count===1&&!t.keep&&!t.design&&!t.faces&&document.querySelector(`#shapes [data-id="d${t.sides}"]`)) return 'd'+t.sides; } return 'custom'; } }
+    if(v){ const p=parseNotation(v,true); if(!p.error&&p.terms.length===1&&!p.mod&&!(p.group>1)){ const t=p.terms[0]; if(t.count===1&&!t.keep&&!t.reroll&&!t.design&&!t.faces&&document.querySelector(`#shapes [data-id="d${t.sides}"]`)) return 'd'+t.sides; } return 'custom'; } }
   return state.shape; };
 function shapeSelSync(){ const sel=selShape(); document.querySelectorAll('#shapes button').forEach(b=>b.classList.toggle('on',b.dataset.id===sel)); $('customctl').hidden=sel!=='custom'; }
 const curNotation=()=>{ if(playRoom()){ const v=$('rollbox').value.trim(); if(v&&!parseNotation(v,true).error) return v; } return state.notation; };
@@ -474,7 +485,7 @@ let stepDesign=null;   // the design the + / − buttons add dice of (null = the
 const sameDesign=(a,b)=>(a||null)===(b||null);
 function counts(){ const p=parseNotation(curNotation()), c={}; STEP_TYPES.forEach(t=>c[t]=0); if(!p.error) p.terms.filter(t=>!t.faces&&sameDesign(t.design,stepDesign)).forEach(t=>c[t.sides]+=t.count); return {c,mod:p.error?0:p.mod}; }
 function setCounts(c,mod){ const play=playRoom(); if(!play) checkpoint(); const p=parseNotation(curNotation()), others=p.error?[]:p.terms.filter(t=>t.faces||!sameDesign(t.design,stepDesign));
-  const oldKeep=t=>{ const o=p.error?null:p.terms.find(x=>x.sides===t&&!x.faces&&sameDesign(x.design,stepDesign)&&x.keep); return o&&o.keep.n<c[t]?{keep:o.keep}:{}; };   // the + / − buttons keep an existing keep-highest/lowest while it still makes sense
+  const oldKeep=t=>{ const o=p.error?null:p.terms.find(x=>x.sides===t&&!x.faces&&sameDesign(x.design,stepDesign)&&(x.keep||x.reroll)); return o?{...(o.reroll?{reroll:o.reroll}:{}),...(o.keep&&o.keep.n<c[t]?{keep:o.keep}:{})}:{}; };   // the + / − buttons keep an existing keep-highest/lowest while it still makes sense
   const mine=STEP_TYPES.filter(t=>c[t]>0).map(t=>stepDesign?{count:c[t],sides:t,design:stepDesign,...oldKeep(t)}:{count:c[t],sides:t,...oldKeep(t)}), terms=stepDesign?[...others,...mine]:[...mine,...others]; if(!terms.length) return;
   const n=fmtNotation(terms,mod,p.error?1:p.group); if(parseNotation(n).error){ $('noterr').textContent=parseNotation(n).error; return; }
   if(play){ $('rollbox').value=n; $('rollbox').classList.remove('bad'); formulaSync(); return; }   // Play: edit the formula only; Roll throws it
@@ -686,7 +697,7 @@ let actBusy=false, actNext=null;
 const gameRun=()=>!!game&&!game.setup;
 function diceOwned(){ return gameRun()||!!(bag&&bag.hold); }   // PD-206: a game's dice are on the mat (running, or shown in the lobby): the player's own are in bag.hold.mine
 function gameDiceFixed(fits){ if(!gameRun()||fits) return false; gameMsg='The game fixes the dice: only a design or set with the same dice fits (end the game to pick another)'; renderGame(); return true; }
-function sameDiceAsGame(notation){ const dd=game.info.dice, p=parseNotation(notation||'',true); return !p.error&&!p.mod&&!(p.group>1)&&p.terms.length>0&&p.terms.every(t=>t.sides===dd.sides&&!t.keep)&&p.terms.reduce((a,t)=>a+t.count,0)===dd.count; }
+function sameDiceAsGame(notation){ const dd=game.info.dice, p=parseNotation(notation||'',true); return !p.error&&!p.mod&&!(p.group>1)&&p.terms.length>0&&p.terms.every(t=>t.sides===dd.sides&&!t.keep&&!t.reroll)&&p.terms.reduce((a,t)=>a+t.count,0)===dd.count; }
 // PD-154: loading a design or set replaces the shape and count, so a running game refuses it (the long-press swap on one die stays: it is look-only)
 async function activate(target,{skipSync=false}={}){   // target: a design id, or 'draft'. Latest request wins while one is loading.
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
@@ -994,7 +1005,7 @@ const setOps={
     let total=st.mod||0;
     if(st.group>1){ const g=rollGroup(st.design?st.terms.map(t=>t.design?t:{...t,design:st.design}):st.terms,st.mod||0,st.group,()=>rng()), shown=g.totals.join(' · '); st.last={total:shown,at:Date.now()};
       addLog({set:st.name,notation:setNotation(st),total:shown,items:g.items,modText:'',quick:true}); showQuick(st.name,shown,g.items,''); return shown; }
-    const dealt=dealTerms(st.terms), glyphOnly=!st.mod&&st.terms.every((t,ti)=>dealt[ti]), items=st.terms.map((t,ti)=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rng()*t.sides)); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design||st.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep},r,ks,dealt[ti]?r.map((v,i)=>faceName(dealt[ti][i][v-1])):null,glyphOnly).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
+    const dealt=dealTerms(st.terms), glyphOnly=!st.mod&&st.terms.every((t,ti)=>dealt[ti]), items=st.terms.map((t,ti)=>{ const {vals:r,orig}=drawTerm(t,()=>rng()); const ks=keepSum(r,t.keep); total+=ks.sum; return {sides:t.sides,design:t.design||st.design,text:keepLine({count:t.count,sides:t.sides,keep:t.keep,reroll:t.reroll},r,ks,dealt[ti]?r.map((v,i)=>faceName(dealt[ti][i][v-1])):null,glyphOnly,orig).replace(/^\d+d\d+/,m=>t.count+dieName(t.sides))}; });
     const modText=st.mod?`${st.mod>0?'+':''}${st.mod}`:'', detail=items.map(i=>i.text).join('  ·  ')+(modText?'  ·  '+modText:''); st.last={total,at:Date.now()};
     const look=st.table?lookupTable(st.table,total):null; addLog({set:st.name,notation:setNotation(st),total:glyphOnly?'':String(total),detail,items,modText,quick:true,...(look?{lookup:look}:{})}); showQuick(st.name,total,items,modText,look); return total; }
 };
@@ -1002,11 +1013,11 @@ const setOps={
 /* roll lines: a mini die chip in front of each term's text, like the set list */
 const designChipJ=id=>{ const e=id&&entryOf(id); return e?(bag.pending[e.id]||e.design):liveChipJ(); };
 /* a group roll (PD-142.14.1.2): the same terms rolled N separate times, each with the modifier added; one line per roll */
-function groupLine(terms,mod,vals,n){ const ks=terms.map((t,i)=>keepSum(vals[i],t.keep)), total=ks.reduce((a,k)=>a+k.sum,0)+mod;
-  const parts=terms.map((t,i)=>vals[i].map((v,j)=>ks[i].kept.has(j)?v:`(${v})`).join('+')).join(' + ');
+function groupLine(terms,mod,vals,n,origs=[]){ const ks=terms.map((t,i)=>keepSum(vals[i],t.keep)), total=ks.reduce((a,k)=>a+k.sum,0)+mod;
+  const parts=terms.map((t,i)=>vals[i].map((v,j)=>{ const s=dieTxt(v,(origs[i]||[])[j]); return ks[i].kept.has(j)?s:`(${s})`; }).join('+')).join(' + ');
   return {total,item:{sides:terms[0].sides,design:terms[0].design,text:`#${n}: ${parts}${mod?` ${mod>0?'+':'−'} ${Math.abs(mod)}`:''}${vals.flat().length>1||mod?' = '+total:''}`}}; }
 function rollGroup(terms,mod,group,rnd){ const totals=[], items=[];
-  for(let g=0;g<group;g++){ const vals=terms.map(t=>{ const r=[]; for(let i=0;i<t.count;i++) r.push(1+Math.floor(rnd()*t.sides)); return r; }), l=groupLine(terms,mod,vals,g+1); totals.push(l.total); items.push(l.item); }
+  for(let g=0;g<group;g++){ const dr=terms.map(t=>drawTerm(t,rnd)), vals=dr.map(d=>d.vals), l=groupLine(terms,mod,vals,g+1,dr.map(d=>d.orig)); totals.push(l.total); items.push(l.item); }
   return {totals,items}; }
 function rollItemsEl(items,modText){ const f=document.createDocumentFragment();
   for(const it of items){ const sp=el('span','rt'); if(it.sides){ const c=chipEl(it.sides,designChipJ(it.design),{label:null}), e=it.design&&entryOf(it.design); if(e) c.title=e.name; sp.append(c); } sp.append(it.text); f.append(sp); }
@@ -1023,7 +1034,7 @@ function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?i
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
-function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; formulaSync(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.design&&!t.faces); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
+function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; formulaSync(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.reroll&&!t.design&&!t.faces); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
 function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const one={count:2,sides:20,keep:{mode,n:1}};   // PD-142.38.46: like the Custom set Adv/Dis chips: a tap REPLACES the box with d20adv / d20dis; double-click or long press ADDS that term to the formula (never modifies an existing die)
   if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value=fmtNotation([one],0,1); formulaSync(); return; }
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); }
@@ -1465,7 +1476,7 @@ function dieScreen(i){ const r=cv.getBoundingClientRect(), v=new THREE.Vector3()
 function dieSwapOK(i){ const d=dice[i]; if(!d||!rolling||!settled||!bodies[i]||!d.mesh.visible) return false; if(game&&game.info&&game.info.allowDesignSwap===false) return false; return !!bag&&bag.designs.length>0; }
 function dieTerms(i){   // the notation split so die i can carry its own design: {terms, mod, at} or null when this layout is not supported
   const d=dice[i]; let p; if(state.shape==='custom'){ p=parseNotation(state.notation); if(p.error) return null; } else { const m=/^d(\d+)$/.exec(state.shape); if(!m||!SIDES[+m[1]]) return null; p={terms:[{count:1,sides:+m[1]}],mod:0,group:1}; }
-  if((p.group||1)>1||d.part) return null; const ti=state.shape==='custom'?d.term:0, t=p.terms[ti]; if(!t||t.keep||t.faces||t.sides===100) return null;
+  if((p.group||1)>1||d.part) return null; const ti=state.shape==='custom'?d.term:0, t=p.terms[ti]; if(!t||t.keep||t.reroll||t.faces||t.sides===100) return null;
   const c=state.shape==='custom'?dice.slice(0,i).filter(x=>x.term===ti).length:0; return {p,ti,t,c}; }
 function dieDesignOf(i){ return dice[i].design||(bag&&!bag.active.draft?bag.active.design:null); }
 function reskinDie(i,designId){
@@ -1491,7 +1502,7 @@ cv.addEventListener('contextmenu',e=>{ if(!rolling) return; const hi=pickDie(e.c
 function startRoll(launch=false,place=false,vel=null){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(game&&!place&&!gameBeforeRoll()) return; if(state.sound) audioInit();
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  gameCallout=null; placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; $('result').classList.remove('on'); designRoom=false; syncMode(); syncDock();
+  gameCallout=null; placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; rerollMemo=new Map(); $('result').classList.remove('on'); designRoom=false; syncMode(); syncDock();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
@@ -1587,6 +1598,8 @@ function faceCheck(why){ if(!rolling||!world||!settled||!recFaces||restoring||pl
   if(!bad.length) return false;
   bad.forEach(i=>faceWarn(i,recFaces[i],now[i].label,why)); recFaces=now.map(p=>p.label); finishRoll(); return true; }
 function reconcileParts(parts,why){ const now=readResult(); now.forEach((p,i)=>{ if(parts[i]&&p.label!==parts[i].label){ faceWarn(i,parts[i].label,p.label,why); parts[i]=p; } }); return parts; }
+let rerollMemo=new Map(), rerollFinal=new Map();   // PD-142.42.1: the new value of a re-evaluated die, kept so finishRoll running twice (face check) shows the same one; rerollFinal: die index -> final value (decides NATURAL 1 / 20)
+function physReroll(vals,t,key,idx){ return applyReroll(vals,t,(j,v)=>{ const k=key+'|'+j, m=rerollMemo.get(k); if(m&&m.orig===v) return m.val; const val=1+Math.floor(rng()*t.sides); rerollMemo.set(k,{orig:v,val}); return val; }); }
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
   const parts=readResult();
@@ -1600,23 +1613,26 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans(); recFaces=parts.map(p=>p.label);
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
-  droppedDice=new Set();
+  droppedDice=new Set(); rerollFinal=new Map();
   let main, sub='', subItems=null, subMod='', storyText='', glyphLog=false;
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), G=P.group||1;
     if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[])), perI=Array.from({length:G},()=>P.terms.map(()=>[]));
       dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; per[d.copy][d.term].push(t===0?100:t); perI[d.copy][d.term].push(i); } else if(d.part!=='ones'){ per[d.copy][d.term].push(fmt(d,parts[i])); perI[d.copy][d.term].push(i); } });
-      per.forEach((v,c)=>v.forEach((vals,ti)=>{ const k=keepSum(vals,P.terms[ti].keep).kept; perI[c][ti].forEach((di,j)=>{ if(!k.has(j)) droppedDice.add(di); }); }));
-      const ls=per.map((v,c)=>groupLine(P.terms,P.mod,v,c+1)); main=ls.map(l=>l.total).join(' · '); subItems=ls.map(l=>l.item); sub=subItems.map(i=>i.text).join('  ·  '); }
+      const rr=per.map((v,c)=>v.map((vals,ti)=>{ const r=physReroll(vals,P.terms[ti],c+'|'+ti); r.orig.forEach((o,j)=>{ if(o!==undefined) rerollFinal.set(perI[c][ti][j],r.vals[j]); }); return r; }));
+      per.forEach((v,c)=>v.forEach((vals,ti)=>{ const k=keepSum(rr[c][ti].vals,P.terms[ti].keep).kept; perI[c][ti].forEach((di,j)=>{ if(!k.has(j)) droppedDice.add(di); }); }));
+      const ls=per.map((v,c)=>groupLine(P.terms,P.mod,rr[c].map(r=>r.vals),c+1,rr[c].map(r=>r.orig))); main=ls.map(l=>l.total).join(' · '); subItems=ls.map(l=>l.item); sub=subItems.map(i=>i.text).join('  ·  '); }
     else {
     const groups=P.terms.map(()=>[]);
     const gI=P.terms.map(()=>[]), gN=P.terms.map(()=>[]);
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); gN[d.term].push(null); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); gN[d.term].push(d.glyphs?faceName(d.glyphs[parts[i].label-1]):null); } });
+    const rr=groups.map((g,i)=>{ const r=physReroll(g,P.terms[i],'0|'+i); r.orig.forEach((o,j)=>{ if(o!==undefined) rerollFinal.set(gI[i][j],r.vals[j]); }); return r; }), origs=rr.map(r=>r.orig);
+    groups.forEach((g,i)=>{ groups[i]=rr[i].vals; });
     const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     ks.forEach((k,ti)=>gI[ti].forEach((di,j)=>{ if(!k.kept.has(j)) droppedDice.add(di); }));   // dice dropped by keep/drop/adv/dis: they do not count, so no nat 20 / nat 1 effect for them
     main=String(total); const glyphOnly=G===1&&!P.mod&&gN.every(a=>a.length&&a.every(Boolean)); glyphLog=glyphOnly;
     if(P.terms.some(t=>t.faces)){ const ids=[]; dice.forEach((d,i)=>{ if(d.glyphs&&P.terms[d.term].faces&&!droppedDice.has(i)) ids.push(d.glyphs[parts[i].label-1].id); }); if(ids.length) storyText=sentenceFor(ids,0).text; }   // PD-167: a set with glyph faces reads as a sentence
-    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep||P.terms.some(t=>t.faces)){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i],gN[i].some(Boolean)?gN[i]:null,glyphOnly)})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||(P.terms.length>1&&!glyphOnly)?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
+    if(P.terms.length>1||P.terms[0].count>1||P.mod||P.terms[0].keep||P.terms[0].reroll||P.terms.some(t=>t.faces)){ subItems=P.terms.map((t,i)=>({sides:t.sides,design:t.design,text:keepLine(t,groups[i],ks[i],gN[i].some(Boolean)?gN[i]:null,glyphOnly,origs[i])})); subMod=(P.mod?`${P.mod>0?'+':''}${P.mod}`:'')+(P.mod||(P.terms.length>1&&!glyphOnly)?` = ${total}`:'');   /* PD-142.14.2.1.4: a modifier or a second term ends in '= total', like 3d6 does */
       sub=subItems.map(i=>i.text).join('  ·  ')+(subMod?'  ·  '+subMod:''); }
     }
   }
@@ -1631,7 +1647,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); if(storyText){ const d4=document.createElement('div'); d4.className='brk look'; d4.textContent=storyText; R.append(d4); }
   { const look=logRoll(main,sub,subItems,subMod,storyText,glyphLog); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
   showDropped();
-  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:rerollFinal.has(i)?{...p,label:rerollFinal.get(i)}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>goDesign();
 /* PD-142.38 slice 4: two rooms. Design | Play is a pure switch, it never throws. designRoom is the room the owner chose; it matters in a game, where the dice stay on the mat while the Design room shows the look (a running game survives the visit, and Play carries a dot) */
@@ -2402,7 +2418,7 @@ document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(
 { const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
   corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},TOPGLARE,topGlareLook,get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
-  keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
+  keepSum,applyReroll,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},

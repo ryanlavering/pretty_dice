@@ -5,6 +5,7 @@ User-facing changes. Versions are git tags.
 ## 4.2 (unreleased)
 
 ### Added
+- **Roll notation: per-die reroll (`d20r1`, `4d6r<=2`).** `r1`, `r<N`, `r<=N`, `r>N` and `r>=N` roll a die again once when it matches, before keep/drop; the log shows `1→14`, and the final die decides Natural 20 / Natural 1. Works in groups (`4x d20r1+2`).
 - **Sets can carry a look.** In the set editor, a **Look** row (with two or more designs in the bag) names a design: picking the set brings that look, and **Keep my look** (the default) turns it off. The set list and the quick-roll chip show the linked design.
 - **Yacht: Use d6 pips.** Yacht shows your design with d6 pips as a draft for this game (save it as a design or discard it). A setup checkbox, **Use d6 pips**, turns it on or off; Ten Thousand, Pig and Liar's Dice offer it too, off by default. Pick another design mid-game and it keeps the pips; End game gives you your design back.
 
