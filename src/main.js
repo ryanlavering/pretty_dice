@@ -1759,14 +1759,14 @@ function updateFx(dt){
     key.intensity=BASE_KEY*(1-.7*fx.dim); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*fx.dim); }
 }
 /* PD-149: top-down glare. Seen from straight above, the key light and the room's overhead panels mirror in the die faces and wash the numbers out. While topBlend>0 the key light dims and swings lower, and the dice's environment reflection and specular ease off. It is applied around the draw call only and undone straight after, so the perspective view (topBlend=0), the fx light effects and every stored value are untouched. */
-const TOPGLARE={key:.7, lower:.45, env:.3, envMetal:.4, spec:.55, coat:.5};   // fractions removed at topBlend=1 (lower = how far the key light's height drops; metals live on the room reflection, so it goes further for them)
-const topGlareLook=k=>({key:1-TOPGLARE.key*k, y:1-TOPGLARE.lower*k, env:m=>1-(TOPGLARE.env+TOPGLARE.envMetal*m)*k, spec:1-TOPGLARE.spec*k, coat:1-TOPGLARE.coat*k});
+const TOPGLARE={key:.15, lower:.3, env:0, envMetal:.3, spec:1, coat:1, rough:.15, roughMetal:.5, sheen:1};   // fractions removed at topBlend=1 (lower = how far the key light's height drops; rough = roughness added; metals live on the room reflection, so they keep a little more of it)
+const topGlareLook=k=>({key:1-TOPGLARE.key*k, y:1-TOPGLARE.lower*k, env:m=>1-Math.min(1,TOPGLARE.env+TOPGLARE.envMetal*m)*k, spec:1-TOPGLARE.spec*k, coat:1-TOPGLARE.coat*k, rough:m=>(TOPGLARE.rough+TOPGLARE.roughMetal*m)*k, sheen:1-TOPGLARE.sheen*k});
 function topGlareOn(k){
   if(!(k>.001)) return null;
-  const f=topGlareLook(k), i0=key.intensity, y0=key.position.y, ms=dice.map(d=>d.mat).filter(Boolean), s0=ms.map(m=>[m.envMapIntensity,m.specularIntensity,m.clearcoat]);
+  const f=topGlareLook(k), i0=key.intensity, y0=key.position.y, ms=dice.map(d=>d.mat).filter(Boolean), s0=ms.map(m=>[m.envMapIntensity,m.specularIntensity,m.clearcoat,m.roughness,m.sheen]);
   key.intensity=i0*f.key; key.position.y=y0*f.y;
-  ms.forEach(m=>{ m.envMapIntensity*=f.env(m.metalness||0); m.specularIntensity*=f.spec; m.clearcoat*=f.coat; });
-  return ()=>{ key.intensity=i0; key.position.y=y0; ms.forEach((m,i)=>{ [m.envMapIntensity,m.specularIntensity,m.clearcoat]=s0[i]; }); };
+  ms.forEach(m=>{ m.envMapIntensity*=f.env(m.metalness||0); m.specularIntensity*=f.spec; m.clearcoat*=f.coat; m.roughness=Math.min(1,m.roughness+f.rough(m.metalness||0)); m.sheen*=f.sheen; });
+  return ()=>{ key.intensity=i0; key.position.y=y0; ms.forEach((m,i)=>{ [m.envMapIntensity,m.specularIntensity,m.clearcoat,m.roughness,m.sheen]=s0[i]; }); };
 }
 const clock=new THREE.Clock();
 const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)

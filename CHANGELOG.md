@@ -16,7 +16,7 @@ User-facing changes. Versions are git tags.
 - **Dice sleep sooner and cocked dice topple at default gravity and above.** A die rocking on an edge now falls flat instead of rocking or freezing leaning, and flat dice stop moving about 0.1 s after they are all slow.
 
 ### Fixed
-- Top-down view: less glare on the dice faces (the key light dims and drops, and the reflections ease off, only while you hold the top-down view).
+- Top-down view: matte dice, no specular or room-reflection wash (while you hold the top-down view the dice lose their shine and the key light eases off, so numbers stay readable; the normal view is unchanged).
 - Picking a design in the Story Dice lobby, or pressing Randomize there, no longer leaves the story dice as your own dice.
 - Picking a set while a game's dice are shown in the lobby no longer brings back stale dice when you leave.
 - A reload in the middle of a Yacht game now gives you your own dice back when the game ends.
