@@ -14,7 +14,7 @@ ROOTS = [os.path.join(HERE, '..')]
 
 GROUPS = [
   ('A. Designs, sets and game looks (the 4.2 headline; review on the RC)', ['PD-202', 'PD-206', 'PD-190', 'PD-188']),
-  ('B. Physics and view', ['PD-201', 'PD-149']),
+  ('B. Physics and view', ['PD-201']),
   ('C. Roll notation and quick roll box', ['PD-142.42.1', 'PD-142.2', 'PD-142.42.2', 'PD-142.42.3', 'PD-142.42', 'PD-198']),
   ('Owner review follow-ups (landed, to re-review)', ['PD-212', 'PD-213', 'PD-214', 'PD-215']),
   ('Carried over', ['PD-20.7']),
@@ -31,18 +31,19 @@ GATES = [
   ('S5 Yacht Use d6 pips (PD-188)', True, '3a5c20e + ad548b8; golden screens re-recorded as approved (new row)'),
   ('S6 guide pages, CHANGELOG, screenshots', True, '60e0443; update again for reroll, history, glare'),
   ('PD-201 dice settle: cocked dice topple, hop-free rest at default gravity', True, '52b9cd7 + 5a21b5c; four golden files re-recorded as approved'),
-  ('PD-149 top-down glare: settled via the lighting lab (or slips to 4.3 and the two commits bb146a6 + 9874851 are reverted)', False, 'owner dislikes the matte rework (washed out); lab https://claude.ai/artifact/2Vsxbh3Fvcz9XFMBufBiYs, branch v42-lighttune; owner tunes lights'),
+  ('PD-149 top-down glare slipped to 4.3 (owner call); the two commits reverted from v4.2', True, 'revert 196836c + 0cc5ecf; lab and suggested lights kept on the card for 4.3'),
   ('PD-142.42.1 per-die reroll shorthand r landed; PD-212 physics reroll (ring 0.5 s, re-throw, manual chip) landed', True, '4fb69fc + 23c6e7d (golden screens re-recorded as approved); PD-142.2 audit: only exploding dice missing'),
   ('PD-198 quick roll history + visible history control landed', True, '7c9f12f + 49ac78d'),
   ('PD-213 Bag remembers its tab, PD-214 set row relabel, pips fix, PD-215 mat follows the formula landed', True, 'be142c1, 4badeac, f59ef56, 8046702 + f937dc2'),
-  ('Decide: PD-142.42.2 longhand and PD-142.42.3 chained rolls in 4.2 or 4.3', False, 'larger, design draft docs/design/roll-triggers.md; owner call'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT G @8046702: 704 pass x2, the one failure (nav-tabs chip test, stale vs PD-215) fixed in f937dc2 and re-run green (nav-tabs 10, owner-comments 30). Earlier: E @7c9f12f 679/679 x2, F @23c6e7d 693/693 x2. Real bugs found on the way: active.draft restore (77cdd4e), pips lost after Save as design (f59ef56)'),
+  ('PD-142.42.2/.3/.42 (longhand, chained rolls) moved to 4.3', True, 'owner decision 2026-11-22'),
+  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT H @0cc5ecf (final head: tour + PD-149 revert): 706 pass x2. Earlier: G @8046702 704 x2 (nav-tabs stale assertion fixed f937dc2), E @7c9f12f 679/679 x2, F @23c6e7d 693/693 x2. Real bugs found on the way: active.draft restore (77cdd4e), pips lost after Save as design (f59ef56)'),
   ('Golden set stable (only owner-approved re-records)', True, 'approvals: PD-201 four files, S3 label, S5 pips row'),
-  ('Review build of the tested head for owner review (Dev artifact)', True, 'v25 at f937dc2: https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
-  ('Release candidate artifact (review flag stripped, 4.2 release tour: owner picks highlights first)', False, 'tour entries for 4.2 not chosen yet'),
+  ('Review build of the tested head for owner review (Dev artifact)', True, 'v26 at 0cc5ecf (PD-149 removed, tour added): https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
+  ('4.2 release tour entries (owner-picked four highlights) built and tested', True, '0fc0b37; release-tour spec 8, TOUR_VERSION 4.2'),
+  ('Release candidate artifact (review flag stripped, with the 4.2 tour)', False, 'build after the re-reviews'),
   ('Artifact CSP spec and single-file build boot clean', True, 'csptest ready:true at 7c9f12f; recheck at each publish'),
-  ('Owner review of Needs Review cards on the RC', False, 'Needs Review: PD-202 (set row), 188, 198, 142.42.1/212, 215; 206, 190, 201 ok'),
-  ('Guide and CHANGELOG 4.2 complete (reroll, history, glare lines)', True, 'S6 60e0443 + lane lines for glare, reroll (guide 04), history (guide 05/08); owner skim optional'),
+  ('Owner review of Needs Review cards on the RC', False, 'Needs Review: PD-202 (set row), 188, 198, 142.42.1/212, 213, 214, 215; 206, 190, 201 ok'),
+  ('Guide and CHANGELOG 4.2 complete (reroll, history, glare lines)', True, 'S6 60e0443 + lane lines for reroll (guide 04), history (guide 05/08); owner skim optional'),
   ('Owner round with no new change requests; final sign-off', False, ''),
   ('Merge v4 backlog commits into v4.2; then ff main to v4.2', False, 'wait for sign-off'),
   ('Annotated tag v4.2, push, verify with git ls-remote', False, 'wait for sign-off'),
@@ -54,11 +55,6 @@ GATES = [
 ]
 
 OWNER_QS = [
-  'Yacht: after End game the lobby (with its draft) stays on the Games tab and your own design returns when you leave Games. OK, or return it at once?',
-  'PD-210 memo polish (the On the mat line and the Look: (from set) status line) stays 4.3 unless you want it in 4.2.',
-  'Gomboc: approximate body with a ~3% centre-of-mass shift as an extra d1 option, or keep researching the exact body (level-set painting and face-flow path plots)? The app d1 is the Mobius strip (PD-211, 4.3).',
-  'PD-142.42.2 and PD-142.42.3 (longhand triggers, chained rolls): in 4.2 or 4.3?',
-  'PD-149 glare: tune the lights in the lighting lab and send me Copy settings (or let it slip to 4.3).',
   'PD-20.7 (CI v5, sharding): stays in Needs Review until the first green GitHub run.',
   'Final sign-off on the release candidate before the tag.',
 ]
