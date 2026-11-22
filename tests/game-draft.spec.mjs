@@ -261,3 +261,44 @@ test('Rename on the ghost renames the draft (the ghost menu itself is asserted i
   await app.run(pd => pd.bagOps.rename('gdraft', 'My story look'));
   expect(await app.run(pd => pd.bag.hold.draft.name)).toBe('My story look');
 });
+
+// Checkpoint-C regression: a player whose look is an unsaved random draft gets exactly that back after a game look (whole or tweak) and after a lobby.
+const draftState = app => app.run(pd => { pd.bagToJSON(); return { draft: pd.bag.active.draft, pending: JSON.stringify(pd.bag.pending), rdraft: JSON.stringify(pd.bag.draft), design: pd.bag.active.design, look: JSON.stringify(pd.designToJSON()) }; });
+for (const [gid, pref] of [['story', null], ['yahtzee', null], ['farkle', true]]) {
+  for (const how of ['lobby-leave', 'start-end']) {
+    test(`a random draft is still the live draft after ${gid} ${how}${pref ? ' (pips on)' : ''}`, async ({ shared: app }) => {
+      await app.reset(300, { plain: true }); await addDesign(app, 'Mine', 'swirl'); await setOwn(app);
+      if (pref) await app.run((pd, g) => { pd.gprefs.opts[g + '.look'] = true; }, gid);
+      await app.run(pd => pd.randomize()); await app.page.waitForTimeout(300);
+      await app.run(pd => { pd.state.polish = 0.61; pd.applyLook(); }); await app.page.waitForTimeout(200);
+      const before = await draftState(app);
+      expect(before.draft).toBe(true);
+      await toLobby(app, gid);
+      expect((await app.run(pd => pd.bag.active.draft))).toBe('game');   // the game look is live over it
+      if (how === 'start-end') { await app.nav.roll(); await app.run(pd => pd.simRoll({ rerolls: 6 })); await endIt(app); await settle(app); }
+      await app.page.click('#paneltabs [data-pane=table]'); await settle(app);
+      const after = await draftState(app);
+      expect(after.draft, 'the random draft is live again').toBe(true);
+      expect(after.pending).toBe(before.pending); expect(after.rdraft).toBe(before.rdraft); expect(after.design).toBe(before.design);
+      expect(lookOf(after.look)).toBe(lookOf(before.look));
+      expect(await app.run(pd => pd.bag.hold)).toBeNull();
+    });
+  }
+}
+
+test('reload mid-game keeps a random draft as the player\'s look (it comes back as the draft, not the design)', async ({ app }) => {
+  await app.open({ seed: 301, plain: true });
+  await addDesign(app, 'Mine', 'swirl'); await setOwn(app);
+  await app.run(pd => pd.randomize()); await app.page.waitForTimeout(300);
+  await app.run(pd => { pd.state.polish = 0.61; pd.applyLook(); }); await app.page.waitForTimeout(200);
+  const before = await draftState(app);
+  await startStory(app);
+  await app.page.reload(); await app.ready();
+  const mid = await draftState(app);
+  expect(mid.draft).toBe(true); expect(lookOf(mid.look)).toBe(lookOf(before.look)); expect(mid.rdraft).toBe(before.rdraft);
+  await app.run(pd => pd.openGames());
+  await app.page.click('#scorepane button:has-text("Resume")'); await app.page.waitForTimeout(500);
+  await endIt(app);
+  const after = await draftState(app);
+  expect(after.draft).toBe(true); expect(lookOf(after.look)).toBe(lookOf(before.look)); expect(after.rdraft).toBe(before.rdraft);
+});

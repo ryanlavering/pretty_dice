@@ -661,17 +661,19 @@ function syncLive(){ if(!bag||bagLoading) return;
   const e=activeEntry(); if(!e) return;
   if(isLiveModified()) bag.pending[e.id]=liveJSON();
   else delete bag.pending[e.id]; }   /* PD-202 I3: the stored shape/notation (the suggestion) change only on an explicit save */   // a running game's dice are the game's, not the design's preview shape (PD-187)   // PD-142.38.37: the roll set on the mat (Custom / Standard 7 and its formula) is a draft outside the bag: it is never written into the saved design, so editing it cannot make the bag look modified
-function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); const b=structuredClone(bag); if(b.hold&&!((b.hold.phase==='game'||b.hold.paused)&&b.hold.draft)) delete b.hold; else if(b.hold&&b.hold.paused) b.hold.phase='game'; return b; }   // PD-190: only a running game's hold (with its draft) survives a reload; a lobby hold is dropped (the settings store already carries the player's own dice, save())
+function bagToJSON(){ syncLive(); bag.log=bag.log.slice(-LOG_MAX); const b=structuredClone(bag); if(b.hold&&!((b.hold.phase==='game'||b.hold.paused)&&b.hold.draft)) delete b.hold; else if(b.hold&&b.hold.paused) b.hold.phase='game'; if(b.active.draft==='game'&&bag.hold&&bag.hold.prev) b.active.prev=true; else delete b.active.prev; return b; }   // PD-190: only a running game's hold (with its draft) survives a reload; a lobby hold is dropped (the settings store already carries the player's own dice, save())
 function saveBag(){ if(!bag||bagLoading) return; try{ localStorage.setItem(BAG_STORE,JSON.stringify(bagToJSON())); }catch{} }
 /* Boot: restore the stored bag, or turn today's saved state into a bag of one (the first run with the bag). */
 function initBag(){
   let wasGame=false;
   try{ const raw=localStorage.getItem(BAG_STORE); if(raw){ const j=JSON.parse(raw); wasGame=!!(j&&j.active&&j.active.draft==='game'); bag=parseBag(j).bag; } }catch{ bag=null; }
+  const wasPrev=!!(bag&&bag.active.prev); if(bag) delete bag.active.prev;   // the look under the game look was the random draft
   if(bag&&bag.hold){ let sg=null; try{ sg=JSON.parse(localStorage.getItem('prettydice.games.game')||'null'); }catch{}   // PD-190 R2: a paused game keeps its hold (and its draft); anything else is dropped
-    if(bag.hold.phase==='game'&&bag.hold.draft&&sg&&sg.id===bag.hold.game){ bag.hold.paused=true; bag.hold.wake=wasGame||!!bag.hold.wake; bag.hold.phase='lobby'; bag.hold.key=''; } else bag.hold=null; }
+    if(bag.hold.phase==='game'&&bag.hold.draft&&sg&&sg.id===bag.hold.game){ bag.hold.paused=true; bag.hold.wake=wasGame||!!bag.hold.wake; bag.hold.prev=wasPrev; bag.hold.phase='lobby'; bag.hold.key=''; } else bag.hold=null; }
   /* PD-190: a paused game's hold comes back as a lobby hold: opening Games shows the game's dice and adopts the draft; the game itself waits for Resume */
   if(bag&&bag.active.draft==='game') bag.active.draft=false;
-  if(bag&&wasGame){ const e=activeEntry(); if(e){ const pe=bag.pending[e.id]; loadLookNow(pe||e.design,pe?null:e.name,true); normalizeActive(); save(); } }   // the settings store held the game look: put the player's own design back (the draft waits in the hold; Resume brings it back)
+  if(bag&&wasGame&&wasPrev&&bag.draft){ bag.active.draft=true; loadLookNow(bag.draft,bag.draft.name||''); buildDice(); save(); }
+  else if(bag&&wasGame){ const e=activeEntry(); if(e){ const pe=bag.pending[e.id]; loadLookNow(pe||e.design,pe?null:e.name); buildDice(); normalizeActive(); save(); } }   // the settings store held the game look: put the player's own design back (the draft waits in the hold; Resume brings it back)
   if(!bag){ const dj=designToJSON(), name=dj.name||'Design 1'; bag=emptyBag(); bag.designs.push({id:slug(name,'design-1'), name, preview_shape:dj.shape, design:{...dj,name}}); bag.active.design=bag.designs[0].id; }
   saveBag();
 }
@@ -690,9 +692,9 @@ async function activate(target,{skipSync=false}={}){   // target: a design id, o
   if(!bag) return; await idleThumbs(); if(actBusy){ actNext=target; return; } actBusy=true;
   const gr=gameRun(), stayPlay=!gr&&rolling&&!designRoom, poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null, res=$('result'), html=res.innerHTML, wasOn=res.classList.contains('on'), wasPlaced=placed, inDesign=designRoom&&gameRun(); if(stayPlay) holdRoom=true;   // PD-197: in Play (idle or in a game) a pick changes only the look; the Design room loads the whole design
   try{ if(!skipSync) syncLive();
-    if(target==='gdraft'){ const gd=bag.hold&&bag.hold.draft; if(!gd) return; bag.active.draft='game'; await loadSlot(gd.design,gd.name); }   // PD-190: the game draft goes live again with its edits
+    if(target==='gdraft'){ const gd=bag.hold&&bag.hold.draft; if(!gd) return; goLive(bag.hold); await loadSlot(gd.design,gd.name); }   // PD-190: the game draft goes live again with its edits
     else if(target==='draft'){ if(!bag.draft) return; bag.active.draft=true; await loadSlot(bag.draft,''); }
-    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id], td=bag.hold?tweakFollow(bag.hold,e,pe||e.design):null; if(td){ bag.active.draft='game'; await loadSlot(td.design,td.name); } else await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
+    else{ const e=entryOf(target); if(!e) return; bag.active.draft=false; bag.active.design=e.id; { const pe=bag.pending[e.id], td=bag.hold?tweakFollow(bag.hold,e,pe||e.design):null; if(td){ goLive(bag.hold); await loadSlot(td.design,td.name); } else await loadSlot(pe||e.design,pe?null:e.name); } normalizeActive(); }
     if(gr&&game&&!game.setup){ pendingLay={n:dice.length,poses}; startRoll(false,true); res.innerHTML=html; res.classList.toggle('on',wasOn); placed=wasPlaced; if(inDesign){ designRoom=true; exitRoll(true); } gameSync(); renderGame(); }   // PD-180: a swap made in the Design room stays there (the dice were rebuilt to lie as they did; Play shows them)
     save();
   }finally{ actBusy=false; holdRoom=false; }   // PD-197: picking a design from the Bag keeps the room it was opened from (the rebuild used to drop an idle Play room into Design)
@@ -725,7 +727,7 @@ const bagOps={
     h.draftOff=true;
     if(wasLive){ h.draft=null; bag.active.draft=false; bag.active.design=e.id; $('dname').value=e.name; save(); }   // the live look already is the new design
     else { await activate(e.id,{skipSync:true}); h.draft=null; save(); } },   // activate keeps the room and a running game's dice where they lie
-  async discardGame(){ const h=bag.hold; if(!h||!h.draft) return; const wasLive=bag.active.draft==='game'; h.draftOff=true; if(wasLive) await activate(bag.active.design); h.draft=null; save(); },   // Discard = use my design (for the rest of this round)
+  async discardGame(){ const h=bag.hold; if(!h||!h.draft) return; const wasLive=bag.active.draft==='game'; h.draftOff=true; if(wasLive){ if(h.prev&&bag.draft) await activate('draft'); else await activate(bag.active.design); } h.draft=null; save(); },   // Discard = use my design (for the rest of this round)
   async duplicate(id){ syncLive(); const e=entryOf(id); if(!e) return; const c=addEntry(structuredClone(bag.pending[id]||e.design),`${e.name} copy`,id); await activate(c.id); return c.id; },
   rename(id,name){ name=String(name||'').trim().slice(0,80); if(!name) return; name=uniqueName(bag.designs.filter(d=>d.id!==id).map(d=>d.name),name);   // a rename is an outstanding edit like any other: it shows Modified until saved
     if(id==='gdraft'){ const gd=bag.hold&&bag.hold.draft; if(gd){ gd.name=name; if(bag.active.draft==='game') $('dname').value=name; } save(); return; }
@@ -772,7 +774,7 @@ const bagFileName=()=>`${slug(bag.name,'pretty-dice-bag')}.bag.json`;
 /* Is the bag changed since it was last saved to a file (or loaded from one)? Compared by content, so it survives reloads and undoing a change clears it. */
 const BAG_SAVED='prettydice.bagsaved.v1';
 /* What a bag FILE holds: every design in its current state (outstanding edits folded in) and no pending section, so a loaded file comes in clean. The live session keeps its pending edits, so Revert still works after saving. */
-function bagFileJSON(){ const b=bagToJSON(); delete b.hold; if(b.active.draft==='game') b.active.draft=false;   // PD-206: the game hold is local state, never in a bag file
+function bagFileJSON(){ const b=bagToJSON(); delete b.hold; delete b.active.prev; if(b.active.draft==='game') b.active.draft=false;   // PD-206: the game hold is local state, never in a bag file
  
   for(const e of b.designs){ const p=b.pending[e.id]; if(p){ e.name=p.name||e.name; e.design={...p,name:e.name}; e.preview_shape=p.shape; } }
   b.pending={}; return b; }
@@ -2021,7 +2023,7 @@ async function startGame(id,players,options,botSeats=[],resume=null,look=null){
   const info=GAMES.listGames().find(g=>g.id===id), GL=GAME_LOOKS[id];
   if(resume&&look!==null&&GL&&GL.pref){ gprefs.opts[id+'.'+GL.pref]=!!look; gsave(); }   // PD-188: Resume keeps the game's own look choice (an older save has none: off)
   if(bag.hold&&bag.hold.game===id&&bag.hold.draft&&!gameLookOn(id)) dropGameDraft(bag.hold);
-  if(bag.hold){ const h=bag.hold, wake=h.paused&&resume&&h.wake&&h.draft; if(h.game!==id||(h.paused&&!resume)){ dropGameDraft(h); h.draftOff=false; } h.phase='game'; h.game=id; if(wake){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); bag.active.draft='game'; loadLookNow(h.draft.design,h.draft.name); } delete h.paused; delete h.wake; } else bag.hold=newHold(id,'game');   // PD-190: Resume after a reload brings the draft back live with its edits; a fresh start gets a fresh one   // PD-206: the lobby's hold carries on into the game (mine kept); no lobby, a new one
+  if(bag.hold){ const h=bag.hold, wake=h.paused&&resume&&h.wake&&h.draft; if(h.game!==id||(h.paused&&!resume)){ dropGameDraft(h); h.draftOff=false; } h.phase='game'; h.game=id; if(wake){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); goLive(h); loadLookNow(h.draft.design,h.draft.name); } delete h.paused; delete h.wake; } else bag.hold=newHold(id,'game');   // PD-190: Resume after a reload brings the draft back live with its edits; a fresh start gets a fresh one   // PD-206: the lobby's hold carries on into the game (mine kept); no lobby, a new one
   whoopClear(); gpv=null; gcollapsed=false; game={id,info,state:resume||GAMES.newGame(id,{players,options,bots:botSeats}),setup:false,ack:null,look:!!GL&&gameLookOn(id)}; storyDeal=id==='story'?makeStoryDeal(game.state.options):null; storyTray.hide(); storySalt=0; lbid=null; gameMsg=''; gameAwaiting=false; gsel.clear(); gtiles.clear(); cbet.chip=null; cbet.who=null; cbet.ready=false;
   state.shape='custom'; state.notation=(id==='story'?game.state.options.dice:info.dice.count)+'d'+(id==='story'?game.state.options.sides:info.dice.sides); enterGameDraft(id); buildDice(); startRoll(false,true); if(info.hidden) hideDice(true); if(resume) gameSync(); syncUI(); if(bag.hold.draft) lookHistoryReset(); paneAuto=true; renderGame(); }   // PD-190: the game's look is a draft in the hold (already there from the lobby); ending the game puts the player's design back
 function endGame(){ if(!game) return; gendAsk=false; whoopClear(); gpv=null; storyDeal=null; storyTray.hide(); const wasPlay=!designRoom; try{ localStorage.removeItem(GSAVE); }catch{} clearTimeout(botTimer); for(const d of dice) d.mesh.visible=true; game=null; gameAwaiting=false; clearHolds(); releaseHold(); if(wasPlay&&designRoom) goPlay(); closeGamesUI(); }   // exitRoll with no game drops to Design; ending a game keeps the player in Play (PD-142.14.3.1.6)
@@ -2096,14 +2098,18 @@ const storyGlyphs=st=>st.dice.map((v,i)=>storyDeal.glyphs[i][v-1]);   // the gly
 const lobbyHold=()=>{ const h=bag&&bag.hold; return h&&h.phase==='lobby'?h:null; };
 function newHold(gid,phase){ holdRolling=rolling; return {game:gid,phase,key:'',mine:{shape:state.shape,notation:state.notation,set:bag.active.set,rollSet:rollSetId},draft:null}; }
 /* PD-190: the game draft (hold.draft, kind 'whole'): built as design JSON, live through loadLookNow like any design pick; dropped with the hold unless saved. draftOff = the player discarded it for this round. */
+/* the game look goes live over the player's own look, which is a saved design (plus pending edits) or the random draft: h.prev remembers which, so leaving puts the same kind of look back */
+const goLive=h=>{ if(bag.active.draft!=='game') h.prev=bag.active.draft===true; bag.active.draft='game'; };
+const leaveLive=h=>{ bag.active.draft=!!(h&&h.prev&&bag.draft); };
 function restoreMyLook(h){   // the player's look comes back exactly as they left it (h.snap, taken when the draft went live: a re-load of the design would change a never-edited design's paint); the dice stay as they are
   if(h&&h.snap){ const o=JSON.parse(h.snap), sh=state.shape, no=state.notation; Object.assign(state,o); state.shape=sh; state.notation=no; state.colors=state.palettes[palKey()]||state.colors; legalRelief(); setSubstrate(state.substrate); $('dname').value=h.dname||''; lookHistoryReset(); return; }
+  if(bag.active.draft===true&&bag.draft){ loadLookNow(bag.draft,bag.draft.name||''); return; }   // no snapshot (after a reload) and the player's look was the random draft
   const e=activeEntry(); if(!e) return; const pe=bag.pending[e.id]; loadLookNow(pe||e.design,pe?null:e.name); normalizeActive(); }
-function dropGameDraft(h){ if(!h.draft) return; const live=bag.active.draft==='game'; h.draft=null; if(live){ bag.active.draft=false; restoreMyLook(h); } }
+function dropGameDraft(h){ if(!h.draft) return; const live=bag.active.draft==='game'; h.draft=null; if(live){ leaveLive(h); restoreMyLook(h); } }
 function enterGameDraft(gid,live=true){ const h=bag.hold, L=GAME_LOOKS[gid]; if(!h||!L||h.draft||h.draftOff||!gameLookOn(gid)) return; if(live) syncLive();
   let d; if(L.kind==='tweak'){ const j=designToJSON(), e=bag.active.draft?null:activeEntry(); d=tweakDraft(L,j,e&&e.id,e?(j.name||e.name):(bag.draft&&bag.draft.name)||'Draft'); if(!d) return; }   // PD-188: the player's design (pending edits included) plus the patch; no draft when it already has pips
   else{ const j=plainLookJSON(); j.name=L.name; d={kind:L.kind,name:L.name,design:j,base:null}; }
-  if(live){ h.dname=$('dname').value; h.snap=snapshot(); } h.draft=d; if(live){ bag.active.draft='game'; loadLookNow(d.design,d.name); } }
+  if(live){ h.dname=$('dname').value; h.snap=snapshot(); } h.draft=d; if(live){ goLive(h); loadLookNow(d.design,d.name); } }
 function tweakFollow(h,e,src){   // PD-188 #4 / Q5: a pick of design e while a tweak game look is on: the draft is rebuilt as e plus the patch (null: e already has it, no draft)
   const L=GAME_LOOKS[h.game]; if(!L||L.kind!=='tweak'||h.draftOff||!gameLookOn(h.game)) return null;
   h.draft=tweakDraft(L,{...structuredClone(src),shape:'custom',notation:state.notation},e.id,e.name); h.snap=null; h.dname=e.name; return h.draft; }
@@ -2111,10 +2117,10 @@ function lobbyOn(gid,notation,key,deal=null,story=null){ if(game||!bag) return; 
   let live=true;
   if(!h) h=bag.hold=newHold(gid,'lobby'); else if(h.game!==gid){ if(h.draft) live=bag.active.draft==='game'; dropGameDraft(h); h.draftOff=false; }   // another game in the selector: the old game's look goes, mine stays
   h.game=gid; h.key=key; h.story=story; rollSetId=null; storyDeal=deal; state.shape='custom'; state.notation=notation;
-  if(h.paused&&h.wake&&h.draft&&h.game===gid&&bag.active.draft!=='game'){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); bag.active.draft='game'; loadLookNow(h.draft.design,h.draft.name); h.wake=false; }   // a paused game's draft comes back live when its lobby opens
+  if(h.paused&&h.wake&&h.draft&&h.game===gid&&bag.active.draft!=='game'){ syncLive(); h.dname=$('dname').value; h.snap=snapshot(); goLive(h); loadLookNow(h.draft.design,h.draft.name); h.wake=false; }   // a paused game's draft comes back live when its lobby opens
   else if(h.draft&&bag.active.draft!=='game') h.draft.design={...h.draft.design,shape:'custom',notation}; else enterGameDraft(gid,live);
   buildDice(); startRoll(false,true); lookHistoryReset(); syncUI(); setPane('games'); }   // the dice rest on the mat like at game start (Play room, not rolling for real); the new build must not drop the setup panel
-function releaseHold(){ const h=bag&&bag.hold; if(!h) return; const live=bag.active.draft==='game'; bag.hold=null; if(live){ bag.active.draft=false; restoreMyLook(h); } state.shape=h.mine.shape; state.notation=h.mine.notation; bag.active.set=h.mine.set; rollSetId=h.mine.rollSet; buildDice(); syncUI(); lookHistoryReset(); }
+function releaseHold(){ const h=bag&&bag.hold; if(!h) return; const live=bag.active.draft==='game'; bag.hold=null; if(live){ leaveLive(h); restoreMyLook(h); } state.shape=h.mine.shape; state.notation=h.mine.notation; bag.active.set=h.mine.set; rollSetId=h.mine.rollSet; buildDice(); syncUI(); lookHistoryReset(); }
 function lobbyOff(){ if(!lobbyHold()||game) return; const rl=holdRolling, inSetup=!SP.hidden; storyDeal=null; releaseHold(); if(rl) startRoll(false,true); if(inSetup) setPane('games'); }
 /* PD-191: the lobby is held only while the Games tab shows it and no game runs; leaving the tab, the Design room or the panel releases it. */
 function syncGameLook(leaving){ if(!lobbyHold()||game) return; if(leaving||roomNow()!=='play'||SP.hidden||document.body.classList.contains('full')) lobbyOff(); }
