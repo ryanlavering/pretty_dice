@@ -291,3 +291,61 @@ New "mode" selector: "Exact (verified)" (default, no nudge) and "Approximate (Co
 
 * Sampled meshes of the exact bodies at icosphere level 3 and 4 (642 / 2562 vertices): Sloan 0.03 level 4 S/U/H = 1154/1158/2310 (F 5120, E 7680, V 2562, C = 15,360); pronounced level 4 736/682/1416. Not mono-monostatic. A CoM nudge of 0.1 to 0.5 percent does not fix them (stable faces increase).
 * `mesh-pipeline.mjs` and `poly-equilibria.mjs {com}` are the reusable checkers for a later search or for the half-space polytope of arXiv:2609.07827 once converted to vertices.
+
+---
+
+# Round 5 (public mesh thing:10190, procedural fit, tipping-graph search)
+
+## 18. The public mesh (Part A)
+
+Source: Thingiverse thing:10190 "gomboc reverse-engineered" (https://www.thingiverse.com/thing:10190/files), owner-supplied binary STL (15,776 triangles, "Exported from blender"); the owner states the licence permits use with attribution. The file was read from the owner's upload path and is not in the repo; attribution: Thingiverse thing:10190, author as listed on that page (not verified by me, the page returned 403 earlier).
+
+Tools added: `mesh-pipeline.mjs` (now rescales to mean radius 1 so tolerances are scale-free), `mesh-radial.mjs` (bbox, ray-cast r(u)), `radial-morse.mjs`, `mesh-equilibria.mjs` (exact S/U/H directly on the mesh, no hull; O(F*V)), `fit-sh.mjs`.
+
+Results:
+
+* Closed manifold: 7,890 welded vertices, 15,776 triangles, 0 open and 0 non-manifold edges; volume 1.223e-3 (units of the STL); 4 triangles have flipped (inward) winding. Volumetric centroid (0, 0.07492, 0); the bounding-box centre differs from it by 8.9e-3.
+* Bounding box 0.1187 x 0.1326 x 0.1480 (x, y, z). The mesh is exactly mirror symmetric in x and in z: all 7,890 vertices have partners (two mirror planes), so it is a symmetric egg-like body, with a broad dome at the top (+y; lowest radius, r = 0.829 of the mean at (-0.035, 0.999, 0)) and a narrow rounded tip at the bottom (-y; highest radius 1.085). r_max/r_min = 1.309 (ray-cast about the centroid; vertex radii give the same 1.31): far more pronounced than anything in the earlier rounds (1.06 and 1.10).
+* Star-shaped except at the tips: of 10,242 ray directions, 43 rays have more than one outward hit and 24 miss (thin tip regions); I filled them from neighbours.
+* Convexity: not convex. Measured as the height of each vertex above the plane of its worst triangle (units of the mean radius): 5,627 of 7,890 vertices above 1e-6, 4,499 above 1e-3, 3,143 above 1e-2, 559 above 5e-2; median 4.6e-3, 99th percentile 0.24, max 0.27. Part of this is mesh noise (the reverse-engineered facets), part may be real concavity; slivers inflate the largest values.
+* Equilibria of the mesh itself used as a polyhedron (`mesh-equilibria.mjs`, with CoM nudges 0 / 0.1 / 0.3 / 0.5 percent toward the lowest-radius direction): S = 60 stable triangles (36 distinct orientations after merging within 3 deg), U = 666 unstable vertices (442 distinct), H = 716 saddle edges (364 distinct); the nudges leave S at 60 and reduce U to 594 (402 distinct) at 0.5 percent. The Poincare-Hopf sum S+U-H is 10, 3, -4, 6, not 2, because the mesh is not convex. The stable rests include groups of four mirror-symmetric faces on the sides, not only the top dome. The vertex-radius discrete Morse count of the pipeline gives 134 minima and 183 maxima (46 and 93 at a 0.5 percent nudge), the ray-cast radial function on a regular icosphere gives 26 minima and 101 maxima at 10,242 directions and 11 minima, 13 maxima, 20 saddles at 642 directions (including four mirror-symmetric minima at r about 1.05 near the z axis).
+* Page dynamics: not run; given the above the body is not mono-monostatic, so I did not add it as a mesh body.
+
+Verdict: this mesh is NOT mono-monostatic, not even approximately in the radial-function sense: it has a clear top dome as global minimum and bottom tip as global maximum, but additionally several symmetric local minima around the equator (stable resting positions) and a very large number of facet-scale extrema. This is consistent with the unverified snippet calling it a crude approximation. It is a good ridge-like egg (r_max/r_min 1.31, crest-like arcs of local maxima along the x = 0 and z = 0 meridians, r about 1.08) to study, not a Gomboc.
+
+## 19. Procedural fit (Part B)
+
+`fit-sh.mjs` fits r^4 of the ray-cast radius with real spherical harmonics (degree 0 to Lmax, degree 1 reported as the CoM check):
+
+| Lmax | parameters (l = 2..Lmax) | rms radial error | max radial error | fitted r_max/r_min | degree-1 residual |
+|---|---|---|---|---|---|
+| 4 | 21 | 2.89 percent | 9.3 percent | 1.352 | 7.3e-3 |
+| 6 | 45 | 2.09 | 8.2 | 1.361 | 2.0e-2 |
+| 8 | 77 | 1.30 | 5.9 | 1.320 | 8.5e-3 |
+| 10 | 117 | 0.99 | 4.9 | 1.298 | 3.9e-4 |
+| 12 | 165 | 0.76 | 3.9 | 1.288 | 6.2e-4 |
+| 14 | 221 | 0.60 | 3.6 | 1.316 | 2.6e-4 |
+
+(Errors relative to the mean radius; the sample r_max/r_min is 1.309.) The fit converges slowly because of the narrow tips. Properties of the fitted bodies (winding index of the support-function gradient at icosphere L=4, 6 samples per edge, and the support-function convexity test): degree 8: 22 index +1 and 24 index -1 triangles, convex (K min 0.007); degree 10: 34 and 40, non-convex (K min -0.29); degree 12: 54 and 60, non-convex (K min -0.67). So the fitted smooth bodies are neither mono-monostatic nor (from degree 10) convex: the target itself is not a Gomboc, and a closer fit only reproduces its extra equilibria. No third shape was added to the page. Ridges: the fit and the raw samples show crest-like arcs along two symmetry meridians, not isolated ridges; I could not turn this into a compact explicit ridge model with the work done. A one-line description of what the mesh is: an egg with two mirror planes, 1.31 radius ratio, flat-ish top dome, narrow bottom tip.
+
+## 20. Tipping-graph search (Part C)
+
+`tipping-graph.mjs`: for a convex polyhedron of uniform density (hull, merged coplanar faces, CoM = volume centroid) each face either is a sink (foot of the perpendicular from the CoM inside the face = stable) or the body tips over the boundary edge(s) whose outer side contains the foot. A face can have several tipping edges; two policies are implemented: `steepest` (the neighbour with the lowest CoM height; default) and `worst` (largest moment arm). `terminal(f)` follows next() to a sink or reports a cycle. Fitness = 10 per extra sink + fraction of faces ending in a non-lowest sink + 5 per cyclic-face fraction; zero means one sink for all faces. Check (`tipping-test.mjs`): the number of sinks equals the exact stable-face count S of `poly-equilibria.mjs` for the cube (6), tetrahedron (4) and the Fibonacci hulls of Sloan 0.03 (N=30: 47, 100: 171, 200: 294) and the pronounced body (N=100: 159), under both policies; no cycles, and every tipping step lowers the CoM height (0 violations). Both policies gave identical results on these convex hulls.
+
+Search (`tipping-search.mjs N seconds seed`: simulated annealing on N points, one-vertex Gaussian moves, uniform density, 80 s per run, 0.1 to 0.8 million steps): best candidates, every run:
+
+| start | N points | steps | best S | U | H | F | E | V | C = F+E+V-2 |
+|---|---|---|---|---|---|---|---|---|---|
+| sphere shell | 14 | 548,494 | 2 | 5 | 5 | 18 | 27 | 11 | 54 |
+| sphere shell | 16 | 391,658 | 2 | 4 | 4 | 18 | 27 | 11 | 54 |
+| sphere shell | 20 | 337,659 | 2 | 6 | 6 | 20 | 30 | 12 | 60 |
+| sphere shell | 24 | 306,949 | 2 | 6 | 6 | 24 | 36 | 14 | 72 |
+| sphere shell | 30 | 205,887 | 2 | 5 | 5 | 32 | 48 | 18 | 96 |
+| sphere shell | 40 | 183,355 | 2 | 7 | 7 | 36 | 54 | 20 | 108 |
+| sphere shell | 60 | 101,237 | 2 | 6 | 6 | 34 | 51 | 19 | 102 |
+| elongated cloud (z x4, larger moves) | 14 | 762,165 | 2 | 5 | 5 | 12 | 18 | 8 | 36 |
+| elongated | 19 | 484,666 | 2 | 7 | 7 | 24 | 36 | 14 | 72 |
+| elongated (z x3, hot) | 19 | 468,960 | 2 | 5 | 5 | 16 | 24 | 10 | 48 |
+| elongated | 30 | 294,783 | 2 | 5 | 5 | 22 | 33 | 13 | 66 |
+
+Negative result: every run reached two stable faces (a bistable polyhedron) and none reached one, for N from 14 to 60 in these budgets; S+U-H = 2 held everywhere. The acceptance rate was 96 to 98 percent (the cost is flat at 2 sinks), so the annealing was close to a random walk once S = 2 was reached. Assessment: the tipping fitness is cheap and exact for sinks (about 10 to 60 thousand evaluations per second at N = 14 to 60) and a valid first filter, but with one-vertex Gaussian moves on a compact cloud it cannot reach monostability: the known monostable polyhedra (Conway-Guy 19 faces, Bezdek, Reshetov 14 faces; see Low-poly log) are extreme, needle-like shapes. A promising next step would be a structured parametrisation (spiral or tapered family with a few parameters), a cost that rewards the lowest-sink basin size (fraction of faces draining to it) rather than the count alone, and basin-hopping with large moves. The heuristic only finds one-sink candidates; a mono-monostatic answer also needs U = 1 (and H = 0), which `poly-equilibria.mjs` checks, and the best found candidates have U = 4 to 7. For scale: the certified mono-monostatic polytope of arXiv:2609.07827 has F = 56,946 (C = 341,664) and is vastly beyond this search; for prize purposes none of the candidates above counts (S = 2).

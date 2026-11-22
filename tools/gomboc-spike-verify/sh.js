@@ -1,6 +1,6 @@
 // Real spherical harmonics, degrees 2..Lmax (degree 0,1 excluded: degree 1 would move the centre of mass), orthonormal on the unit sphere.
 const SH=(function(){
- function make(Lmax){ const terms=[]; for(let l=2;l<=Lmax;l++) for(let m=0;m<=l;m++){ let f=1; for(let k=l-m+1;k<=l+m;k++) f/=k; // (l-m)!/(l+m)!
+ function make(Lmax,lmin=2){ const terms=[]; for(let l=lmin;l<=Lmax;l++) for(let m=0;m<=l;m++){ let f=1; for(let k=l-m+1;k<=l+m;k++) f/=k; // (l-m)!/(l+m)!
    let nrm=Math.sqrt((2*l+1)/(4*Math.PI)*f)*(m>0?Math.SQRT2:1); terms.push({l,m,c:0,n:nrm,type:'c'}); if(m>0) terms.push({l,m,c:0,n:nrm,type:'s'}); }
   const N=terms.length; const Q=[]; for(let l=0;l<=Lmax;l++) Q.push(new Float64Array(l+1));
   const mc=new Float64Array(Lmax+1), ms=new Float64Array(Lmax+1);
