@@ -437,3 +437,56 @@ Result: all eight configurations converge to the same combinatorial type S = 2, 
 2. Twist is the missing ingredient in the 10190 mesh (psi = 0, D2 symmetry): put the optimisation effort into P(t) and Q(t) first.
 3. For low-poly: the twisted-stack family gets to (2,2,2); the next step is a cost that rewards the basin of the lowest stable face (fraction of faces draining to it) plus D-like CoM slack on non-uniform density (Conway-Guy style), because uniform-density polyhedra do not respond to CoM nudges.
 4. Do not add any of these shapes to the page yet: none passes the rigorous (2,0) check beyond the existing Sloan and pronounced bodies.
+
+---
+
+# Round 7 (push the exact body toward the photo: constrained CMA-ES on the ring family)
+
+Outcome: the targets 1.15 and 1.20 were NOT reached with exactly one stable and one unstable equilibrium. The best exact, convex, verified body found is r_max/r_min = 1.105 (about the same as the round-2 body, 1.10). Beyond about 1.11 to 1.12 in this family the equilibrium count breaks (one extra stable/saddle pair) and the CoM distance D jumps to about 3 percent of the radius. No shape was added to the page (threshold was 1.15), so no new CSP run.
+
+## 25. Method (`ring-cma.mjs`, `cma-chain.sh`, `verify-finalist.sh`; run records in `tools/gomboc-spike-verify/runs/`)
+
+* Family (extended from section 23): r^4 = 1 + A(t) cos(theta - P(t)) + B(t) cos(2 theta - Q(t)) + C3 cos(3 theta) + elongation terms in t = cos(phi); P(t) = p1 t + p3 t^3 + p5 t^5 (spiral), Q(t) = q0 + q2 t^2 + q4 t^4 (oval twist), 16 free parameters, start Sloan beta 0.03; the degree-1 part of F is removed analytically so the CoM is exactly at the origin (so D = 0 iff the winding index of grad F is (2, 0)).
+* Objective (minimised): -r_max/r_min + 20 x badness (|plus - 2| + minus of the winding index) + 50 x max(0, margin - convexity margin) + 1000 if invalid; convexity margin = min over normals of lambda_min(Hess_S w + w I)/w with w = F^(-1/4) (positive = strictly convex, 1 = sphere). Evaluation is analytic (about 16 evaluations per second on the loaded machine), winding on icosphere L3 with 3 samples per edge in the main runs.
+* CMA-ES implemented in node (standard weighted recombination, rank-one and rank-mu updates, step-size control; population 12, 500 generations = 8,000 evaluations per run, about 12 minutes each under machine load).
+* Verification of finalists (`verify-finalist.sh`): spherical-harmonic projection (degree 12), winding index at icosphere L5 (6 samples/edge) and L6 (4), support-function convexity on L4 normals, tolerance region M of the CoM (`cm-tolerance.mjs`, ball 3 percent, step 0.5 percent, level 4, 5 samples/edge).
+
+## 26. Results
+
+Best feasible ratio versus the convexity-margin requirement (main runs; seeds, final parameter vectors are in `runs/max_*.json`):
+
+| seed | required margin | best ratio | convexity margin reached | winding at L3 |
+|---|---|---|---|---|
+| 3 | 0.00 | 1.1090 | 0.000 | 2/0 |
+| 5 | 0.02 | 1.1055 | 0.020 | 2/0 |
+| 1 | 0.05 | 1.1049 | 0.050 | 2/0 |
+| 2 | 0.05 | 1.0998 | 0.050 | 2/0 |
+| 4 | 0.10 | 1.0980 | 0.101 | 2/0 |
+| 6 | 0.20 | 1.0896 | 0.200 | 2/0 |
+
+So the convexity margin costs little up to 0.05 (1.109 to 1.105) and then about 0.01 of ratio per 0.1 of margin; the binding constraint at the top is not convexity but the equilibrium count (below).
+
+Finer verification of those finalists: the L3 loop overfits the coarse grid. At icosphere L5/K6 the seed-1 body (1.105) shows index +2/-1 (total 1, inconsistent: a near-degenerate pair), the seed-3 body (1.109, margin 0) +8/-7. Re-polishing at L4/K4 (120 generations, `runs/pol_*.json`) from the seed-5 solution gives the verified body: r_max/r_min 1.105 (support-function ratio 1.0460/0.9463 = 1.105), winding index +2/-0 at L5 (6 samples/edge) and L6 (4 samples/edge), support-function convexity K min = 0.051 (rho from 0.62 to 20.4: a very flat patch), tolerance region M of 27 grid points at L4 with extents x -1.5 to +0.5 percent, y +-0.5 percent, z +-3 percent (cut by the ball) and D reported 0.5 percent by the L4 sampler, which at P = 0 itself counts +4/-3: the valley is so flat that the L4 grid cannot resolve it (the finer L5/L6 index says (2,0)), so D = 0 is established only at L5/L6 resolution. Data: `ring-best-1.105.json`, `ring-best-1.105-shape.json`. This body has no better pronouncedness than the round-2 body and its CoM tolerance is similar to it (about 1.5 percent toward -x, 0.5 percent toward +x).
+
+Continuation by target (`cma-chain.sh`: from the seed-3 solution, target ratio 1.12, 1.14, 1.16 in turn, margin 0, 200 generations each):
+
+| target | achieved ratio | winding at L3 | convexity margin | at L5/L6 | tolerance region M |
+|---|---|---|---|---|---|
+| 1.12 | 1.1200 | +2/-1 | 0.224 | +3/-1 (one extra stable-saddle pair), total index 2 | 1 grid point at the ball edge; D = 2.96 percent |
+| 1.14 | 1.1400 | +2/-1 | 0.120 | +3/-1 | 1 grid point at the ball edge; D = 2.96 percent |
+| 1.16 | 1.1600 | +2/-1 | 0.087 | not verified | not verified |
+
+The path breaks between 1.11 and 1.12: the bodies stay convex with comfortable margins (0.09 to 0.22) but acquire a second stable face with a saddle (bistable) and D jumps from 0 to about 3 percent. A polishing run at L4/K4 that wandered to ratio 1.298 found a convex body (K min 0.068, rho up to 8.1) that is also bistable (+3/-1 at L5 and L6) and has M empty within the 3 percent ball (best badness 1): so very pronounced convex bodies exist in the family, but they have two stable points and need a CoM move larger than 3 percent.
+
+What constrains it: (1) the equilibrium count, not convexity (convex margins up to 0.2 stay available at 1.09 to 1.16); (2) D>0 beyond ratio about 1.11 to 1.12 (the CoM move needed is about 3 percent or more); (3) the tolerance region M shrinks with ratio (Sloan 1.06: 111 grid points; the ring bodies: 27 at 1.105; 1 at 1.12 to 1.14), so real bodies close to the limit are very sensitive; (4) at 1.105 the verified body already needs L5/L6 sampling to be trusted (flat valley, rho_max = 20). The family used 16 parameters with explicit twist terms in P(t) and Q(t); twisting (p5, q4) did not buy extra pronouncedness beyond 1.11 in these runs, and a 48-member-population restart with larger initial steps (killed early for budget) was running at 1.09 when stopped, so these are first-pass optima, not proofs of optimality.
+
+## 27. What D taught about shape (for the low-poly search)
+
+* D is a good continuous leverage on smooth bodies: it rises smoothly with pronouncedness once the count breaks and is flat at 0 inside the feasible set; but it is blind below the sampling resolution of the winding grid (the 1.105 body: L4 says 0.5 percent, L5/L6 says 0). Use fine grids and treat D below 0.5 percent as unresolved.
+* The feasible set is a thin sliver: tolerance M shrinks from about 111 to 27 to 1 grid points while the ratio goes 1.06, 1.105, 1.12. Real (physical) Gomboc-like shapes near the limit have almost no room.
+* Convex bistable bodies with large ratio exist (1.16 to 1.30). For the low-poly search this suggests the cost "fraction of faces draining to the lowest stable face" (large basin for the main sink) plus D-like slack for non-uniform density: bistable shapes with a dominant basin are cheap to find and the second stable basin might be removed by moving mass (Conway-Guy style), whereas uniform-density polyhedra do not respond to CoM nudges (section 22).
+* No polyhedral search was started this round.
+
+## 28. Recommendation
+
+The exact-body route in this family saturates at about 1.11. To get 1.15 or more with one stable point the next experiments are: (a) extend the family beyond the single-spiral form (the 1.298 bistable body shows what can be reached; look at which feature creates the second basin and add a counter-term); (b) minimise D directly at fine resolution (L5) for bodies with ratio 1.15 to 1.3 and accept a small non-uniform-density correction of about 3 percent of the radius if that is acceptable for a game piece (the page's approximate mode with the rigor label already supports a CoM nudge up to 0.5 percent; a 3 percent mode would need a distinct, clearly labelled body); (c) keep the rigorous label for anything D > 0.
