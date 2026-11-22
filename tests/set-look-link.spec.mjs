@@ -1,5 +1,5 @@
 // PD-202 part 2 (4.2): a set may name a design. Picking the set brings that look (look-only, every time) unless the set has
-// no link ("Keep my look"). Memo: docs/design/designs-sets-model.md rows #11, #13, edge cases E2-E5.
+// no link ("Follow selection"). Memo: docs/design/designs-sets-model.md rows #11, #13, edge cases E2-E5.
 import { test, expect } from './helpers/app.mjs';
 
 const SETUP = async pd => {
@@ -67,7 +67,7 @@ test('#13 in a running game a same-dice linked set applies the look only; other 
   expect(await app.run(pd => pd.state.substrate)).toBe('swirl');
 });
 
-test('set editor Look row: shown with 2+ designs, writes set.design; Keep my look clears it', async ({ app, page }) => {
+test('set editor Look row: shown with 2+ designs, writes set.design; Follow selection clears it', async ({ app, page }) => {
   await app.nav.openBag(); await page.locator('#sheettabs [data-tab="sets"]').click();
   await page.locator('#setlist .setrow[data-id="lk"] .pen').click();
   const sel = page.locator('#setlist .seted .selook select');
