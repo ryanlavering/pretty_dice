@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-21T16:42:00Z'
+updated_date: '2026-11-22T19:04:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -90,3 +90,9 @@ For a convex uniform polyhedron S (stable faces) + U (unstable vertices) - H (sa
 
 ## Owner decision 2026-11-22 (open-decisions review)
 Add approximate bodies to the gomboc artifact for testing (owner wants to play with close approximations); then pick the most promising research lane. Owner wants a TRUE gomboc too. Round 9 sent to the gomboc lane: approximate bodies (ratios ~1.12-1.3 with CoM shift up to ~4%, rigor banner, always-lands-on-stable fraction), then one research lane (face-flow basin maps recommended first).
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Round 9 (v42-gomboc ce8e9a7, page v5): five APPROXIMATE bodies on the page (ratio 1.12/1.14/1.16/1.20/1.25, CoM shift 2.8/2.8/4.0/7.4/8.9% of radius, 30/30 rolls on one stable point each, narrow window: 1.5x shift splits rolls). Research: face-flow basin maps; persistence of the second minimum is a smooth V-shaped objective, zero at the found shift. Next: optimise persistence on the ring family and as low-poly cost; monostable-start low-poly search not begun. Details docs/design/gomboc-spike.md sections 29-31.
+<!-- SECTION:NOTES:END -->
