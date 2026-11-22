@@ -349,3 +349,91 @@ Search (`tipping-search.mjs N seconds seed`: simulated annealing on N points, on
 | elongated | 30 | 294,783 | 2 | 5 | 5 | 22 | 33 | 13 | 66 |
 
 Negative result: every run reached two stable faces (a bistable polyhedron) and none reached one, for N from 14 to 60 in these budgets; S+U-H = 2 held everywhere. The acceptance rate was 96 to 98 percent (the cost is flat at 2 sinks), so the annealing was close to a random walk once S = 2 was reached. Assessment: the tipping fitness is cheap and exact for sinks (about 10 to 60 thousand evaluations per second at N = 14 to 60) and a valid first filter, but with one-vertex Gaussian moves on a compact cloud it cannot reach monostability: the known monostable polyhedra (Conway-Guy 19 faces, Bezdek, Reshetov 14 faces; see Low-poly log) are extreme, needle-like shapes. A promising next step would be a structured parametrisation (spiral or tapered family with a few parameters), a cost that rewards the lowest-sink basin size (fraction of faces draining to it) rather than the count alone, and basin-hopping with large moves. The heuristic only finds one-sink candidates; a mono-monostatic answer also needs U = 1 (and H = 0), which `poly-equilibria.mjs` checks, and the best found candidates have U = 4 to 7. For scale: the certified mono-monostatic polytope of arXiv:2609.07827 has F = 56,946 (C = 341,664) and is vastly beyond this search; for prize purposes none of the candidates above counts (S = 2).
+
+---
+
+# Round 6 (spiral/tapered features, structured families, the CoM-distance measure D)
+
+First pass; no long optimisers. Plot of the extracted features: `docs/design/img/gomboc-10190-features.png` (derived plot, not the mesh).
+
+## 21. Features of the thing:10190 mesh (`mesh-features.mjs`)
+
+Axis y (the mesh is mirror symmetric in x and z); mesh rescaled to mean radius 1, CoM at the origin.
+
+* Which end is the bottom: the support function (CoM height h(u) = max over vertices of v.u) has its minimum 0.8295 at +y (the broad dome end) and its maximum 1.0853 at -y (the narrow tip). Physically the stable resting end is the dome, the unstable one the tip, as assumed in round 5.
+* Cross sections (24 height bins, semi-axes along x and z): the sections are ellipses with x semi-axis a and z semi-axis b; a/b is about 0.80 over the whole middle third (0.77 to 0.80 for y from -0.41 to 0.39, a up to 0.857, b up to 1.069 at the waist), falling to 0.22 at the tip end and 0.49 at the dome end. The principal axes stay exactly on x and z at every height: twist psi(h) = 0 (no spiral at all). Area peaks at 3.1 near y = 0.15 (waist at y of about -0.01 to 0.15).
+* Bottom patch (59 vertices within 28 deg of +y): CoM height 0.829, radius of curvature Rx = 0.821 in the x direction (about equal to h: marginal) and essentially infinite in z (the fit gives a huge negative value, i.e. flat or slightly saddle-like). That is the owner's "cylinder-like bottom": a patch curved about one axis only, with the curved direction at the limit of stability (R/h = 0.99, so in the mesh the x-rocking is marginal, not clearly stable); this is a rough fit on a noisy mesh.
+* Side lines: the ray-cast radius r(alpha, phi) (alpha = colatitude from +y, phi = azimuth about the axis) has two ridges of high r (about 1.08) at phi = 90 and 270 deg (the x = 0 meridian plane, the z sides) running from alpha about 110 deg all the way to the tip (alpha = 180 deg); near alpha = 70 to 80 deg they fork into four ridges at phi = 40, 140, 220, 320 deg (r about 1.06), and there are two shallow valleys at phi = 0 and 180 deg (x sides, r about 0.84 to 0.88) between alpha 60 and 130 deg. In the heat map (figure) this looks like two "trees" (a stem to the tip, a fork near the waist): these are the two side lines curving down to meet the tip end. Note the tip end (unstable, highest r) is where they meet, not the stable end.
+* Minimal conceptual curve set read off the mesh: (1) axis profile (the mean section radius sqrt(ab) versus height, convex, monotone toward each end); (2) aspect profile a/b(h) (about 0.8 in the middle, to 0.2 to 0.5 at the ends); (3) twist profile psi(h): zero in this mesh but nonzero in every verified Gomboc family (Sloan's phase P(t) is exactly this spiral; Varkonyi-Domokos' separatrix is a non-planar tennis-ball curve), so this is what the mesh lacks; (4) the two ridge curves phi = +-90 deg (alpha from 110 to 180 deg) plus their fork; (5) the stable-end patch curvature radii (about h in one direction, large in the other). Items (1), (2), (3) are the ring-family parameters of section 23; (4), (5) are consequences to be checked, not extra parameters. Derivation in one line: a convex body is monostatic only if the potential h(u) has a single basin; a D2-symmetric body (two mirror planes, twist 0) has its stable and unstable points forced onto the axis, and symmetric side minima appear as soon as the waist is oval (here the four side minima at r about 1.05 found in round 5); breaking the symmetry through a twist moves the competing minima onto each other so that pairs annihilate, which is what the Sloan phase does.
+
+## 22. The measure D (`cm-tolerance.mjs`)
+
+Definition as requested: M = set of points P such that the body with its CoM at P has exactly one stable and one unstable equilibrium (no saddles); D = min |P - CoM_uniform| over P in M, in units of the mean radius. Equilibria with CoM at P are the critical points of h(u) - P.u; they are counted by the winding index of the tangential gradient (x(u) - P) on triangle perimeters of an icosphere (support points x(u) computed once and cached, so scanning P is cheap: 0.6 s for a 54-point scan of Sloan at level 3, about 15 to 20 s for a 1,100-point scan at level 4 with 5 samples per edge; level 3 is not fine enough for the pronounced body and gave +9/-7 at the CoM where level 4 gives +2/-0). Polyhedra use `poly-equilibria.mjs {com: P}`. Search: grid of step 0.5 percent of the radius inside a ball of 3 percent (finer for small M). The sign convention: M is shown as extents of the grid points in M, percent of the mean radius.
+
+Tolerance regions (M) of the exact bodies, ball radius 3 percent, step 0.5 percent unless noted:
+
+| body | grid points in M | extent of M in x, y, z (percent of radius) | D |
+|---|---|---|---|
+| Sloan beta 0.03 | 111 | x -3 to +0.5, y -0.5 to +0.5, z -3 to +3 (cut by the ball) | 0 |
+| pronounced (round 2), step 0.2 in a 1.2 percent ball | 57 | x -0.8 to 0, y -0.4 to 0.4, z -0.4 to +1.0 | 0 |
+
+So the CoM tolerance is large and strongly anisotropic for Sloan (3 percent and more along -x and z, only 0.5 percent toward the unstable side +x) and small, 0.4 to 1 percent, for the pronounced body: the pronounced body is 3 to 10 times more fragile, consistent with the nudge experiments of section 15 (Sloan safe to 0.5 percent toward the stable point, pronounced to 0.2).
+
+Continuity of D along continuous parameter paths (does D give leverage?). Sloan beta (the winding counts at the CoM are the discrete counts +a/-b):
+
+| beta | at the CoM (plus/minus) | D | grid points in M |
+|---|---|---|---|
+| 0.03 | +2/-0 | 0 | 111 |
+| 0.04 | +3/-1 | 0.50 percent | 178 |
+| 0.05 | +17/-15 | 0.71 | 125 |
+| 0.06 | +17/-15 | 1.0 | 103 |
+| 0.08 | +11/-11 | 1.5 | 102 |
+
+D grows smoothly and monotonically with beta (0, 0.5, 0.71, 1.0, 1.5 percent) while the discrete counts at the CoM jump erratically (up to 17 extra pairs). Caveat: for beta >= 0.05 the Sloan surface is not convex and the support function describes its convex hull, so D there refers to the hull, not the body.
+
+Pronounced body with all harmonic coefficients scaled by s (path from the exact body): s = 1.0 D = 0; 1.1 D = 0.71 percent; 1.2 D = 0.5; 1.35 D = 0.5; 1.5 D = 1.4 percent; M has only 3 to 7 grid points: D is near the grid resolution (0.5 percent) and not monotone there; a finer grid is needed.
+
+Generalised Sloan family of section 23 (oval term b0 and axial elongation e added to Sloan beta 0.03; at 0.5 percent step):
+
+| added term | CoM counts | D | grid points in M |
+|---|---|---|---|
+| none (family reproduces Sloan, projected to degree 12) | +2/-0 | 0 | 112 |
+| b0 = 0.01 | +3/-1 | 0.71 percent | 70 |
+| b0 = 0.02 | +5/-3 | 1.58 | 20 |
+| b0 = 0.04 | +5/-3 | M empty within 3 percent (best badness 4) | 0 |
+| b0 = 0.08 | +7/-5 | M empty (best badness 6) | 0 |
+| e = 0.02 | +3/-1 | 0.50 | 35 |
+| e = 0.05 | +3/-1 | 2.5 | 10 |
+| e = 0.1 | +3/-1 | M empty (best badness 1) | 0 |
+
+D increases smoothly with the added amplitude (about 0.7 to 0.8 percent of radius per 1 percent of the r^4 oval amplitude), M shrinks and disappears; the discrete counts alone cannot show that b0 = 0.04 and 0.08 are "further" from monostatic than b0 = 0.02 (all three look like +5/-3 or +7/-5), but D does: it is a usable continuous objective as long as M is non-empty, and its surrogate (minimum badness over the ball: |plus-2| + minus, or for polyhedra (S-1)+(U-1)+H) takes over when M is empty (b0 = 0.04: 4; 0.08: 6; e = 0.1: 1).
+
+Polyhedra: the best round-5 simulated-annealing candidates (S = 2, U = 5 to 7) have M empty within 3 percent and best badness equal to their badness at the centroid (10, 12, 10): a CoM move of up to 3 percent never helps them. Uniform-density polyhedra are far from the nudge-fixable regime.
+
+Assessment: D has real leverage on smooth families (continuous, monotone near the exact bodies, tolerance regions of different sizes for different bodies, a usable surrogate when M is empty). On discrete polyhedra the badness over a CoM ball is flat (a 3 percent CoM move changes nothing), so it gives no gradient there. Noise: the 0.5 percent grid and level-4 sampling limit resolution; M is sometimes only a few points.
+
+## 23. Structured families
+
+B1 smooth (`ring-family.mjs`): r^4 = 1 + A(t) cos(theta - P(t)) + B(t) cos(2 theta - Q(t)) + e (3 t^2 - 1), t = cos(phi), A = sqrt(1-t^2)(a0 + a1 t + a2 t^2 + a3 t^3), P = p1 t + p3 t^3, B = (1-t^2)(b0 + b1 t^2), Q = q0 + q2 t^2; 16 parameters (the sqrt and (1-t^2) factors keep it smooth at the poles); projected onto spherical harmonics up to degree 12 with degree 1 removed, which puts the CoM exactly at the origin and makes it loadable by all verifiers. Check: a0 = 0.12, p1 = 3 pi/2, p3 = -pi/2 reproduces Sloan beta = 0.03 (winding +2/-0, D = 0, 112 grid points in M). Evaluated paths above; convexity of the b0 = 0.04 body (K min 0.24) and of e = 0.05 (K min 0.05) holds, yet D shows they are no longer Gomboc-like even with the best CoM within 3 percent. No optimisation of the 16 parameters was run (time budget).
+
+B2 low-poly twisted tapered stack (`stack-search.mjs`): K rings of n-gons (ellipses sampled at n points) with log radius, log aspect, twist and height per ring (4K parameters), convex hull of K*n points, uniform density; cost = minimum badness over the centroid and six 1 percent CoM offsets (polyhedral D surrogate); simulated annealing, 70 s per configuration. Best candidates (every run listed; all are bistable, none reached S = 1):
+
+| rings x n | points | S / U / H | F | E | V | C = F+E+V-2 | cost |
+|---|---|---|---|---|---|---|---|
+| 3 rings x 5-gon | 15 | 2 / 2 / 2 | 20 | 32 | 14 | 64 | 4.002 |
+| 4 rings x 4-gon | 16 | 2 / 2 / 2 | 22 | 34 | 14 | 68 | 4.002 |
+| 4 rings x 5-gon | 20 | 2 / 2 / 2 | 26 | 41 | 17 | 82 | 4.002 |
+| 5 rings x 4-gon | 20 | 2 / 2 / 2 | 30 | 46 | 18 | 92 | 4.002 |
+| 5 rings x 5-gon | 25 | 2 / 2 / 2 | 20 | 32 | 14 | 64 | 4.002 |
+| 5 rings x 6-gon | 30 | 2 / 2 / 2 | 38 | 60 | 24 | 120 | 4.002 |
+| 6 rings x 5-gon | 30 | 2 / 2 / 2 | 24 | 38 | 16 | 76 | 4.002 |
+| 6 rings x 6-gon | 36 | 2 / 2 / 2 | 58 | 90 | 34 | 180 | 4.002 |
+
+Result: all eight configurations converge to the same combinatorial type S = 2, U = 2, H = 2 (a bistable "barrel" with two unstable vertices), at F as small as 20 for 15 to 25 input points; S+U-H = 2 everywhere. Compared with the round-5 random searches (S = 2, U = 4 to 7, H = 4 to 7) the structured family is clearly closer to the target (U and H down to 2) but a 1 percent CoM move does not remove the second stable face or the second unstable vertex. (A first attempt without parameter bounds converged to degenerate flat hulls with S+U-H not equal to 2; the candidates were rejected by the Euler and Poincare-Hopf check; those rows are not listed.)
+
+## 24. Recommendation
+
+1. D (with its empty-M surrogate) is worth using on smooth families: start from Sloan and the pronounced body, add the oval and axial terms and an explicit twist (P(t) with more terms), and optimise D, accepting only winding (2,0) at D = 0, then convexity. First target: a smooth body with r_max/r_min about 1.15 and D = 0 inside the ring family, then fit its ridges. Use finer ball grids (0.1 percent) near D = 0.
+2. Twist is the missing ingredient in the 10190 mesh (psi = 0, D2 symmetry): put the optimisation effort into P(t) and Q(t) first.
+3. For low-poly: the twisted-stack family gets to (2,2,2); the next step is a cost that rewards the basin of the lowest stable face (fraction of faces draining to it) plus D-like CoM slack on non-uniform density (Conway-Guy style), because uniform-density polyhedra do not respond to CoM nudges.
+4. Do not add any of these shapes to the page yet: none passes the rigorous (2,0) check beyond the existing Sloan and pronounced bodies.

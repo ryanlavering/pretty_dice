@@ -1,0 +1,15 @@
+// B2: "twisted tapered stack" low-poly family. K rings of n-gons (ellipses sampled at n points), each ring with radius, aspect, twist angle and height; the body is the convex hull of
+// all K*n points (uniform density). Parameters per ring: log-radius, log-aspect, twist, height (4) -> 4K. Simulated annealing on the parameters.
+//   node stack-search.mjs K n [seconds] [seed]     -> one JSON line with the best candidate; OUT=file.json writes the vertex list
+// cost = min over a 7-point cross of CoM positions (volume centroid and +-1% of the mean radius along each axis) of badness = (S-1)+(U-1)+H, i.e. the leverage a small CoM move would give
+// (the owner's measure D, polyhedral version); lower is better; 0 = mono-monostatic for some CoM in the cross.
+import fs from 'fs'; import {polyEquilibria} from './poly-equilibria.mjs'; import {tippingGraph} from './tipping-graph.mjs';
+const K=+process.argv[2], n=+process.argv[3], secs=+(process.argv[4]||60), seed0=+(process.argv[5]||1);
+let s=seed0>>>0; const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; const gauss=()=>Math.sqrt(-2*Math.log(rnd()+1e-12))*Math.cos(2*Math.PI*rnd());
+const build=p=>{ const V=[]; for(let k=0;k<K;k++){ const [lr,la,tw,z]=p.slice(4*k,4*k+4); const a=Math.exp(lr+la), b=Math.exp(lr-la); for(let j=0;j<n;j++){ const ph=2*Math.PI*j/n+tw; V.push([a*Math.cos(ph),b*Math.sin(ph),z]); } } return V; };
+const evalP=p=>{ try{ const V=build(p); const r0=polyEquilibria(V); if(r0.poincareHopf!==2||!r0.eulerOK||r0.S<1||r0.U<1||r0.F<5) return {cost:1e6}; const mr=V.reduce((q,v)=>q+Math.hypot(v[0]-r0.com[0],v[1]-r0.com[1],v[2]-r0.com[2]),0)/V.length; let best=Math.abs(r0.S-1)+Math.abs(r0.U-1)+r0.H, bP=[0,0,0];
+    for(const d of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){ const c=[r0.com[0]+0.01*mr*d[0],r0.com[1]+0.01*mr*d[1],r0.com[2]+0.01*mr*d[2]]; const r=polyEquilibria(V,{com:c}); const b=Math.abs(r.S-1)+Math.abs(r.U-1)+r.H; if(r.poincareHopf===2&&b<best){ best=b; bP=d.map(x=>x*1); } }
+    return {cost:best+0.001*r0.S,r0,V,bP}; }catch(e){ return {cost:1e6}; } };
+let p=[]; for(let k=0;k<K;k++) p.push(0.3*gauss(),0.3*gauss(),6.28*rnd(),-1+2*k/(K-1)+0.2*gauss()); let cur=evalP(p), best={cost:cur.cost,p:p.slice(),ev:cur}; const t0=Date.now(); let it=0;
+while(Date.now()-t0<secs*1000){ it++; const frac=(Date.now()-t0)/(secs*1000), T=1.5*(1-frac)+0.05; const q=p.slice(); const i=Math.floor(rnd()*4*K); const sc=[0.25,0.25,1.2,0.3][i%4]*(1-0.8*frac); q[i]+=gauss()*sc; { const lo=[-1.2,-0.9,-1e9,-3][i%4], hi=[1.2,0.9,1e9,3][i%4]; q[i]=Math.min(hi,Math.max(lo,q[i])); } const ev=evalP(q); if(ev.cost<=cur.cost||rnd()<Math.exp((cur.cost-ev.cost)/T)){ p=q; cur=ev; if(ev.cost<best.cost) best={cost:ev.cost,p:q.slice(),ev}; } }
+const r=best.ev.r0; console.log(JSON.stringify({K,n,points:K*n,seconds:secs,steps:it,cost:+best.cost.toFixed(3),S:r.S,U:r.U,H:r.H,F:r.F,E:r.E,V:r.V,C:r.F+r.E+r.V-2,PH:r.poincareHopf,params:best.p.map(x=>+x.toFixed(3))})); if(process.env.OUT) fs.writeFileSync(process.env.OUT,JSON.stringify(best.ev.V));
