@@ -4,7 +4,7 @@ title: 'View from above: default light causes glare that hides the die faces'
 status: In Progress
 assignee: []
 created_date: '2026-11-18T07:44:00Z'
-updated_date: '2026-11-22T07:00:00Z'
+updated_date: '2026-11-22T07:55:00Z'
 labels:
   - v4.2
 dependencies: []
@@ -24,4 +24,6 @@ Owner (thread 2ac3daf9, 2026-11-18): 'in view from above, the default light posi
 Settings agent look 2026-11-18: no code change. Single DirectionalLight (3,6,4)x1.6 plus RoomEnvironment env reflections of overhead panels into the overhead camera; fix = while topBlend>0 move/dim the key and fade envMapIntensity, needs visual iteration per substrate. Stays v4.1.
 
 Owner review 2026-11-21: does not like the washed-out look of the matte rework (9874851); the problem is the lighting angle combined with the camera, not the dice presentation. New approach: an exploration artifact with a sticky Default/Top view toggle and adjustable light positions, to find a good top-view lighting; then either use those lights all the time or fly the lights between roll-view and top positions on toggle/hold. OK to slip to 4.3 if not settled soon (then revert the matte rework commits bb146a6 and 9874851 for 4.2 so the release ships the old look).
+
+Lighting lab (2026-11-21): artifact https://claude.ai/artifact/2Vsxbh3Fvcz9XFMBufBiYs, branch v42-lighttune (a155c80, 6605c6b; build with build-static.py --artifact --lights; NOT on v4.2). Lane finding: the 4.2 matte rework (topGlareOn: zero specular/clearcoat/sheen, roughness up, key down) is the washed-out part. First-pass best look: matte OFF + key (-3,3.5,5) intensity 1.7 white, fill directional (4,5,-2) 0.35, env intensity 0.6 rotated y=2.4 rad, ambient 0, exposure 1.5 (the lab button 'Load suggested top lights'); tested on one copper d20 only. Env rotation is not tweened (swaps at blend 0.5). Waiting for the owner to tune and Copy settings.
 <!-- SECTION:NOTES:END -->
