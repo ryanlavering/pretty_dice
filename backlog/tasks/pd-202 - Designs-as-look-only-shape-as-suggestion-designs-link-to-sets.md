@@ -3,10 +3,10 @@ id: PD-202
 title: >-
   Designs are looks: picks never change the dice; 'Suggested: dN' chip; sets can
   name a design
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-21T00:26:00Z'
-updated_date: '2026-11-21T18:13:00Z'
+updated_date: '2026-11-22T04:25:00Z'
 labels:
   - v4.2
 dependencies: []

@@ -1,10 +1,10 @@
 ---
 id: PD-190
 title: Game look as a dotted draft design in the Bag (editable, Save as design + set)
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-20T17:58:00Z'
-updated_date: '2026-11-21T18:13:00Z'
+updated_date: '2026-11-22T04:25:00Z'
 labels:
   - v4.2
 dependencies: []
