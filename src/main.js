@@ -1742,6 +1742,16 @@ function updateFx(dt){
     fx.dim=fx.fumble.length>fx.crit.length?e:0;                                                                                          // the room only dims when 1s outnumber 20s
     key.intensity=BASE_KEY*(1-.7*fx.dim); renderer.toneMappingExposure=BASE_EXPOSURE*(1-.3*fx.dim); }
 }
+/* PD-149: top-down glare. Seen from straight above, the key light and the room's overhead panels mirror in the die faces and wash the numbers out. While topBlend>0 the key light dims and swings lower, and the dice's environment reflection and specular ease off. It is applied around the draw call only and undone straight after, so the perspective view (topBlend=0), the fx light effects and every stored value are untouched. */
+const TOPGLARE={key:.7, lower:.45, env:.3, envMetal:.4, spec:.55, coat:.5};   // fractions removed at topBlend=1 (lower = how far the key light's height drops; metals live on the room reflection, so it goes further for them)
+const topGlareLook=k=>({key:1-TOPGLARE.key*k, y:1-TOPGLARE.lower*k, env:m=>1-(TOPGLARE.env+TOPGLARE.envMetal*m)*k, spec:1-TOPGLARE.spec*k, coat:1-TOPGLARE.coat*k});
+function topGlareOn(k){
+  if(!(k>.001)) return null;
+  const f=topGlareLook(k), i0=key.intensity, y0=key.position.y, ms=dice.map(d=>d.mat).filter(Boolean), s0=ms.map(m=>[m.envMapIntensity,m.specularIntensity,m.clearcoat]);
+  key.intensity=i0*f.key; key.position.y=y0*f.y;
+  ms.forEach(m=>{ m.envMapIntensity*=f.env(m.metalness||0); m.specularIntensity*=f.spec; m.clearcoat*=f.coat; });
+  return ()=>{ key.intensity=i0; key.position.y=y0; ms.forEach((m,i)=>{ [m.envMapIntensity,m.specularIntensity,m.clearcoat]=s0[i]; }); };
+}
 const clock=new THREE.Clock();
 const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)
   const dt=dtOver??Math.min(clock.getDelta(),.05);
@@ -1777,7 +1787,9 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     { const drop=ROLL_DROP*camBlend*(1-topBlend); if(drop>.0005){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion); camera.lookAt(tgt.clone().addScaledVector(up,drop*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*rr)); } } }   /* PD-142.38.61: aim the camera a little above the mat centre so the dice sit lower in the frame (resting dice ~40% up from the bottom instead of ~55%); the Design showcase and the top-down check are untouched */
   tickStoryFly(dt);
   table.visible=camBlend>.01; table.material.opacity=camBlend;
+  const un=topGlareOn(topBlend);     // PD-149: top-down check only (topBlend>0): calmer light for this one draw, put back right after
   if(!(LITE&&dtOver===undefined&&window.__ready)) renderer.render(scene,camera);   // ?lite: only renderOnce (and the boot frames) draw
+  if(un) un();
 };
 
 /* ---------- thumbnail lab (dev tool, PD-131) ----------
@@ -2389,7 +2401,7 @@ function renderTurn(S,st,over){
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(roomNow()==='design') goPlay(); paneAuto=true; renderGame(); });   // the Games tab belongs to the Play room
 { const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
-  corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+  corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},TOPGLARE,topGlareLook,get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
