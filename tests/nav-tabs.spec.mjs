@@ -40,7 +40,10 @@ test.describe('dock preset chips (owner 2026-11-14)', () => {
     await chip.click(); await expect(p.locator('#rollbox')).toHaveValue('1d20');   // PD-142.38.11: a tap replaces, a double-click adds
     await p.waitForTimeout(500); await chip.dblclick();
     await expect(p.locator('#rollbox')).toHaveValue(/2d20/);
-    expect(await app.run(pd => ({ throwing: document.body.classList.contains('throwing'), r: document.getElementById('result').textContent }))).toEqual({ throwing: false, r: tot0 });
+    // PD-215: the chips lay the formula's dice on the mat like a set pick: two d20 down, the old total gone, nothing thrown or logged
+    await app.run(pd => { pd.step(30); pd.renderOnce(); });
+    const after = await app.run(pd => ({ n: pd.dice.length, throwing: document.body.classList.contains('throwing'), r: document.getElementById('result').textContent, on: document.getElementById('result').classList.contains('on') }));
+    expect(after.n).toBe(2); expect(after.throwing).toBe(false); expect(after.r, 'the old total is replaced by the Ready prompt').toBe('Ready: tap Roll or flick the dice'); expect(tot0).not.toBe('');
     await expect(p.locator('#qbar .dchip[data-adv="h"]')).toHaveCount(1);
   });
   test('the Table tab keeps its own chips', async ({ shared: app }) => {
