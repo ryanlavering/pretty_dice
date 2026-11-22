@@ -8,6 +8,7 @@ User-facing changes. Versions are git tags.
 - **Roll notation: per-die reroll (`d20r1`, `4d6r<=2`).** `r1`, `r<N`, `r<=N`, `r>N` and `r>=N` roll a die again once when it matches, before keep/drop; the log shows `1→14`, and the final die decides Natural 20 / Natural 1. Works in groups (`4x d20r1+2`).
 - **Sets can carry a look.** In the set editor, a **Look** row (with two or more designs in the bag) names a design: picking the set brings that look, and **Keep my look** (the default) turns it off. The set list and the quick-roll chip show the linked design.
 - **Yacht: Use d6 pips.** Yacht shows your design with d6 pips as a draft for this game (save it as a design or discard it). A setup checkbox, **Use d6 pips**, turns it on or off; Ten Thousand, Pig and Liar's Dice offer it too, off by default. Pick another design mid-game and it keeps the pips; End game gives you your design back.
+- Quick roll box remembers formulas (Up/Down, long-press on phones) and calls up sets by name.
 
 ### Changed
 - **Designs are looks.** Picking a design (or a set) no longer changes your dice; it only restyles them. A design remembers the dice it was saved with and offers them as a **Suggested** chip (for example `Suggested: d20` or `Suggested: 3d6+2`) in the Design room; tap it to use them. This replaces the 3.0 behaviour where every design kept its own shape and numbers.

@@ -17,6 +17,7 @@ import { SB, audioInit as audioInitM, audioStatus, hardnessFor, makeLimiter, mak
 import { FACE_SIDES, dealError, dealTerms, faceName, fmtFaces, parseFaceBlock } from './faces.js';
 import { GLYPH_BY_ID, PACK_LIST, adLibFor, dealGlyphs, fingerprint, hintFor, poolFor, sentenceFor, setStorySecret } from './story.js';
 import { createStoryTray } from './storyui.js';
+import { createRollHistory } from './rollhist.js';
 import { STORY_MAX, STORY_MIN, STORY_SIDES, draftError, draftFormula, draftOf, draftTerm, gameReady, isStorySet, newDraft, previewOf, summaryOf } from './storysets.js';
 let audioInit=audioInitM;   // reassigned by the lag monitor hook below (the sound module's own copy is wrapped through wrapAudioInit)
 
@@ -1029,8 +1030,28 @@ let qbarSig='';
 const DOCK_TIP='Type dice, e.g. 4d6kh3+2, then Enter or Roll. Empty = the dice on the mat';
 function dockRoll(launch=false,vel=null){ const inp=$('rollbox'), v=inp&&!game?inp.value.trim():''; if(!v){   /* PD-205: in the Story Dice lobby an empty box rolls the story dice in place on the Games tab: the look is released only by leaving Games or choosing another game (PD-191) */
     startRoll(launch||(game?rolling:placed),false,vel); return; }
+  const named=!game&&bag&&setNamed(v);   // PD-198: a typed set name calls the set up (a set wins a tie with a valid formula); a set pick releases the lobby hold like the chips do, then throws the set's dice
+  if(named){ inp.value=''; inp.classList.remove('bad'); inp.title=DOCK_TIP; rollHist.stop(); const r=setOps.open(named.id,{roll:true}); if(r!==false){ dockFail(inp,null); rollHist.push(named.name); syncDock(); } return; }
   if(!game&&lobbyHold()&&!parseNotation(v,true).error){ lobbyOff(); setPane('table'); }   // PD-192 B: a quick roll with a game selected but not started releases the game look and rolls the player's own dice on the Table; the selection stays, and the Games tab previews it again when reopened (PD-191)
-  const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err) syncDock(); }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
+  const err=tableRoll(v,launch,vel); dockFail(inp,err); if(!err){ rollHist.push(v); syncDock(); } }   // the text stays in the box after a roll, so a mistyped formula can be edited (PD-142.14.1.6.2)
+/* PD-198: quick roll history. Up/Down in the box step through earlier formulas and set names (a draft is restored past the newest); a long press on a phone lists them. Stored in its own key, never in the bag. */
+const rollHist=createRollHistory({ storage:(()=>{ try{ return localStorage; }catch{ return null; } })() });
+const setNamed=v=>{ const t=v.trim().toLowerCase(); if(!t) return null; return bag.sets.find(s=>s.name===v.trim())||bag.sets.find(s=>s.name.trim().toLowerCase()===t)||null; };
+let histSetting=false;
+function histFill(inp,text){ histSetting=true; try{ inp.value=text; inp.dispatchEvent(new Event('input',{bubbles:true})); } finally{ histSetting=false; } try{ inp.setSelectionRange(text.length,text.length); }catch{} }
+document.addEventListener('input',e=>{ if(e.target&&e.target.id==='rollbox'&&!histSetting) rollHist.stop(); },true);
+function histKey(inp,e){ if(e.key!=='ArrowUp'&&e.key!=='ArrowDown') return; if(e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||e.isComposing) return;
+  const r=e.key==='ArrowUp'?rollHist.older(inp.value):rollHist.newer(); if(r===null) return; e.preventDefault(); histFill(inp,r); }
+function histList(inp){ closeHistList(); const items=rollHist.entries(); if(!items.length) return; const box=el('div'); box.id='rollhist'; box.setAttribute('role','listbox'); box.setAttribute('aria-label','Recent formulas');
+  for(const t of items){ const b=el('button','',t); b.type='button'; b.setAttribute('role','option'); b.onclick=()=>{ closeHistList(); rollHist.stop(); histFill(inp,t); dockFail(inp,null); }; box.append(b); }
+  const st=$('stage'), q=$('qbar'); (st||document.body).append(box); box.style.bottom=Math.max(8,(st?st.clientHeight:innerHeight)-q.offsetTop+6)+'px';
+  setTimeout(()=>{ const off=e=>{ if(box.contains(e.target)) return; closeHistList(); }; document.addEventListener('pointerdown',off,true); box._off=off; },0); }
+function closeHistList(){ const b=$('rollhist'); if(!b) return; if(b._off) document.removeEventListener('pointerdown',b._off,true); b.remove(); }
+function histPress(inp){ let t=0, x=0, y=0, fired=false;
+  inp.addEventListener('pointerdown',e=>{ if(e.pointerType!=='touch') return; clearTimeout(t); fired=false; x=e.clientX; y=e.clientY; t=setTimeout(()=>{ t=0; if(!rollHist.entries().length) return; fired=true; inp.blur(); histList(inp); },500); });
+  inp.addEventListener('pointermove',e=>{ if(t&&Math.hypot(e.clientX-x,e.clientY-y)>10){ clearTimeout(t); t=0; } });
+  for(const n of ['pointerup','pointercancel']) inp.addEventListener(n,()=>{ clearTimeout(t); t=0; });
+  inp.addEventListener('contextmenu',e=>{ if(fired||t){ e.preventDefault(); } }); }
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
@@ -1080,7 +1101,7 @@ function renderStoryDock(S,st,over,go,btn,hint,qb){   // PD-176
   hint.textContent=(gameMsg?'Last story '+gameMsg+' · ':'')+(st.botTurn?(st.phase==='roll'?'The bot is rolling':'The bot is arranging the dice'):st.phase==='roll'?'Roll the dice':'Put the dice in story order'); }
 function renderQBar(){ const bar=$('qbar'), chips=$('dicechips'); if(!bag||!bar) return; const sig=bag.sets.map(s=>s.id+'|'+s.name).join('\n'); if(sig===qbarSig&&bar.firstChild){ bar.hidden=false; syncDock(); return; } qbarSig=sig;
   const old=$('rollbox'), inp=el('input'); inp.id='rollbox'; inp.type='text'; inp.spellcheck=false; inp.value=old?old.value:''; inp.setAttribute('aria-label','Roll a formula'); inp.enterKeyHint='done'; inp.setAttribute('autocapitalize','off'); inp.setAttribute('autocomplete','off'); inp.title=DOCK_TIP;
-  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter') dockRoll(); }; inp.oninput=()=>dockFail(inp,null);
+  inp.onkeydown=e=>{ e.stopPropagation(); if(e.key==='Enter'){ closeHistList(); dockRoll(); } else if(e.key==='Escape'&&$('rollhist')) closeHistList(); else histKey(inp,e); }; histPress(inp); inp.oninput=()=>dockFail(inp,null);
   inp.onfocus=()=>{ inp.select(); setTimeout(()=>inp.select(),0); inp.dataset.fresh='1'; }; inp.onmouseup=e=>{ if(inp.dataset.fresh){ e.preventDefault(); delete inp.dataset.fresh; } }; inp.onblur=()=>{ delete inp.dataset.fresh; };   // focus selects all, so typing overwrites; the next click places the cursor
   const go=el('button','','Roll'); go.id='rollbtn'; go.type='button'; go.title='Roll the dice (R)'; let goTouch=false; go.onpointerdown=e=>{ goTouch=e.pointerType==='touch'; }; go.onmousedown=e=>e.preventDefault(); go.onclick=()=>{ dockRoll(); if(goTouch){ goTouch=false; inp.blur(); } };   // touch: Roll also closes the keyboard (PD-142.14.1.6.3); with a mouse it keeps the box focused   // pressing Roll must not blur the box: it would shrink and the button would slide out from under the finger
   const dh=el('span','dhint'); dh.id='dockhint'; const da=el('span','dact'); da.id='dockact'; bar.replaceChildren(inp,dh,da,go); bar.hidden=false;
