@@ -130,3 +130,51 @@ test.describe('phone', () => {
     await page.mouse.click(200, 300); await expect(page.locator('#rollhist')).toHaveCount(0);
   });
 });
+
+test('a visible history button: hidden until there is history, opens the list, arrows + Enter pick (no roll), Escape and outside click close', async ({ app, page }) => {
+  await open(app);
+  const btn = page.locator('#rollbox ~ .rbhist');
+  await expect(btn).toHaveAttribute('aria-label', 'Formula history'); await expect(btn).toHaveAttribute('title', 'History (Up/Down)');
+  await expect(btn, 'nothing to list: the control stays out of the way').toBeHidden();
+  await roll(page, '2d6'); await roll(page, '3d8'); await roll(page, '1d20');
+  await expect(btn).toBeVisible();
+  const box = page.locator('#rollbox'), bb = await box.boundingBox(), hb = await btn.boundingBox();
+  expect(hb.x).toBeGreaterThan(bb.x + bb.width / 2); expect(hb.x + hb.width).toBeLessThanOrEqual(bb.x + bb.width + 1);
+  const dice = await app.run(pd => pd.dice.length);
+  await btn.click();
+  const list = page.locator('#rollhist'); await expect(list.locator('button')).toHaveText(['1d20', '3d8', '2d6']);
+  await expect(list.locator('button').first()).toBeFocused();
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
+  await expect(list).toHaveCount(0); await expect(box).toHaveValue('2d6'); await expect(box).toBeFocused();
+  expect(await app.run(pd => pd.dice.length), 'picking does not roll').toBe(dice);
+  await btn.click(); await expect(list).toBeVisible(); await page.keyboard.press('Escape'); await expect(list).toHaveCount(0); await expect(box).toBeFocused();
+  await btn.click(); await expect(list).toBeVisible(); await btn.click(); await expect(list, 'the button toggles').toHaveCount(0);
+  await btn.click(); await page.mouse.click(600, 100); await expect(list).toHaveCount(0);
+});
+
+test.describe('phone touch', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  // real touch events through the browser (CDP), not synthetic pointer events
+  const sessions = new WeakMap();
+  const touch = async (page, type, x, y) => { let s = sessions.get(page); if (!s) { s = await page.context().newCDPSession(page); sessions.set(page, s); } await s.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] }); };
+  const center = async page => { const b = await page.locator('#rollbox').boundingBox(); return [b.x + b.width / 3, b.y + b.height / 2]; };
+  test('a real 500 ms hold opens the list when the box is not focused; a short tap focuses and does not', async ({ app, page }) => {
+    await open(app); await roll(page, '2d6'); await roll(page, '3d8'); await page.locator('#rollbox').blur();
+    const [x, y] = await center(page);
+    await touch(page, 'touchStart', x, y); await page.waitForTimeout(150); await touch(page, 'touchEnd', x, y); await page.waitForTimeout(600);
+    await expect(page.locator('#rollhist'), 'a short tap opens nothing').toHaveCount(0); await expect(page.locator('#rollbox')).toBeFocused();
+    await page.locator('#rollbox').blur();
+    await touch(page, 'touchStart', x, y); await page.waitForTimeout(700);
+    await expect(page.locator('#rollhist')).toBeVisible();
+    await touch(page, 'touchEnd', x, y);
+    await expect(page.locator('#rollhist button')).toHaveText(['3d8', '2d6']);
+    await page.locator('#rollhist button', { hasText: '2d6' }).tap(); await expect(page.locator('#rollbox')).toHaveValue('2d6');
+  });
+  test('a drag does not open the list; the touch button also opens it', async ({ app, page }) => {
+    await open(app); await roll(page, '2d6'); await page.locator('#rollbox').blur();
+    const [x, y] = await center(page);
+    await touch(page, 'touchStart', x, y); await touch(page, 'touchMove', x + 30, y); await page.waitForTimeout(700); await touch(page, 'touchEnd', x + 30, y);
+    await expect(page.locator('#rollhist')).toHaveCount(0);
+    await page.locator('#rollbox ~ .rbhist').tap(); await expect(page.locator('#rollhist')).toBeVisible();
+  });
+});
