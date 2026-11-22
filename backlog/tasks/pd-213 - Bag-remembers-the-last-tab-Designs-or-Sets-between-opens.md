@@ -1,9 +1,10 @@
 ---
 id: PD-213
 title: Bag remembers the last tab (Designs or Sets) between opens
-status: To Do
+status: Needs Review
 assignee: []
 created_date: '2026-11-22T06:02:00Z'
+updated_date: '2026-11-22T09:08:00Z'
 labels:
   - v4.2
   - polish
