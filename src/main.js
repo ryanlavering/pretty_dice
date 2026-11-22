@@ -968,8 +968,9 @@ function renderSheet(){ for(const b of document.querySelectorAll('#sheettabs but
       const dots=el('button','dots','⋯'); dots.type='button'; dots.setAttribute('aria-label','Menu for '+x.name); dots.onclick=e=>{ e.stopPropagation(); openMenu(dots,cardItems(x.id)); };
       const nm=nameEl(x); nm.className='nm'; t.append(th,nm,dots); t.onclick=()=>{ if(dragMoved){ dragMoved=false; return; } closeSheet(); activate(x.id); }; if(!x.draft) wireDrag(t,x.id); return t; }),
     (()=>{ const t=el('div','tile plus'); t.append(el('div','th','+'),el('div','nm','Add')); t.onclick=()=>openMenu(t,addItems()); return t; })()); }
-let sheetTab='designs';
-for(const b of document.querySelectorAll('#sheettabs button')) b.onclick=()=>{ sheetTab=b.dataset.tab; closeMenu(); renderSheet(); };
+const SHEETTAB_KEY='prettydice.sheettab';   // PD-213: the Bag reopens on the tab last used (per device; not part of the bag file)
+let sheetTab='designs'; try{ if(localStorage.getItem(SHEETTAB_KEY)==='sets') sheetTab='sets'; }catch{}
+for(const b of document.querySelectorAll('#sheettabs button')) b.onclick=()=>{ sheetTab=b.dataset.tab; try{ localStorage.setItem(SHEETTAB_KEY,sheetTab); }catch{} closeMenu(); renderSheet(); };
 /* ---------- bag sets (PD-102.4): named rolls owned by the bag; the roll log (PD-68) ---------- */
 const setNotation=st=>fmtNotation(st.terms,st.mod||0,st.group);
 const newSetName=()=>{ const used=new Set(bag.sets.map(x=>x.name)); let n=bag.sets.length+1; while(used.has(`Set ${n}`)) n++; return `Set ${n}`; };
@@ -1252,7 +1253,7 @@ function wireDrag(t,id){ let timer=null,sx=0,sy=0,on=false;   // document-level 
 $('tiles').addEventListener('touchmove',e=>{ if($('tiles').querySelector('.tile.drag')) e.preventDefault(); },{passive:false});
 function openSheet(){ closeMenu(); renderSheet(); $('bagsheet').hidden=false; scheduleThumb(); }   // PD-142.38.43: the Bag view is one overlay in both rooms and at every size
 function closeSheet(){ closeMenu(); $('bagsheet').hidden=true; }
-$('sheetclose').onclick=closeSheet; $('bagbtn').onclick=()=>{ sheetTab='designs'; openSheet(); };
+$('sheetclose').onclick=closeSheet; $('bagbtn').onclick=()=>{ openSheet(); };
 addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('bagsheet').hidden){ if(!$('cardmenu').hidden) closeMenu(); else closeSheet(); } });
 $('bsave').onclick=()=>bagOps.save(); $('bcopy').onclick=()=>bagOps.saveCopy(); $('brevert').onclick=()=>bagOps.revert();
 let uiRaf=0; function scheduleBagUI(){ if(!bag||uiRaf) return; uiRaf=setTimeout(()=>{ uiRaf=0; renderBag(); },30); scheduleThumb(); }   // a timer, not rAF: rAF stops in a background tab
@@ -1975,7 +1976,7 @@ function setPane(name){ const room=roomNow();
   PT.querySelectorAll('button[data-pane]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.pane===name))); paneKey=room+':'+name; if(!paneRaf) paneRaf=requestAnimationFrame(()=>{ paneRaf=0; if(paneKey!==paneSeen){ paneSeen=paneKey; $('gamestab').closest('aside').scrollTop=0; } }); }   /* PD-142.38.55: syncMode re-applies the pane on every shape tap and mode sync (and a Play rebuild passes through the Design room for a moment), so only a room or tab that has really changed by the next frame goes back to the top */
 function applyRoomPane(){ try{ setPane('settings'); }catch{} }
 function resetUiState(){ rollSetId=null; if(!game&&lobbyHold()){ bag.hold=null; if(bag.active.draft==='game') bag.active.draft=false; storyDeal=null; }   /* a Story preview or the set whose dice were on the mat must not outlive a test: its stale look snapshot got restored, or its roll was logged under that set, in the next test */
-  roomTab.design='look'; roomTab.play='table'; editSet=null; sheetTab='designs'; applyRoomPane(); }   /* test hook (shared.reset), no use in the app: the remembered tab per room back to Look / Table, and no half-open Bag set editor */
+  roomTab.design='look'; roomTab.play='table'; editSet=null; sheetTab='designs'; try{ localStorage.removeItem(SHEETTAB_KEY); }catch{} applyRoomPane(); }   /* test hook (shared.reset), no use in the app: the remembered tab per room back to Look / Table, and no half-open Bag set editor */
 PT.querySelectorAll('button[data-pane]').forEach(b=>b.onclick=()=>{ const n=b.dataset.pane;
   if(n==='games'&&!game){ document.dispatchEvent(new CustomEvent('pd-open-games')); return; } setPane(n); syncGameLook(); });   // PD-191: opening Games always redraws it (the story dice come back with the setup); any other tab releases them   // slice 6: the Games tab replaces the round Games button
 $('settingspane').parentNode.append($('logpanel')); document.body.append($('bagsheet'));   // the roll log lives in the panel; the Bag view is an overlay on the page (it also works in Full view)

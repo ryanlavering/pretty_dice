@@ -20,7 +20,7 @@ On a phone the shelf sits at the bottom of the table, with **+ Add** at its end.
 
 ![The bag sheet showing the Designs tab](img/08-bag-designs.png)
 
-Press the round **Bag** button at the bottom left of the table (in either room, on a phone or a desktop). It opens the Bag view, a sheet with two tabs, **Designs** and **Sets**; **Close** or Esc returns to the table. **Designs** lists every design as a card; the **⋯** menu on a card has the per-design actions. This is the one place to save the bag, load a bag or copy the bag as JSON (three icons at the top).
+Press the round **Bag** button at the bottom left of the table (in either room, on a phone or a desktop). It opens the Bag view, a sheet with two tabs, **Designs** and **Sets**; **Close** or Esc returns to the table. The Bag reopens on the tab you used last. **Designs** lists every design as a card; the **⋯** menu on a card has the per-design actions. This is the one place to save the bag, load a bag or copy the bag as JSON (three icons at the top).
 
 Changes to a design are held until you save them. The bag shows when the current design is modified and offers **Save**, **Save as copy** and **Revert**.
 
