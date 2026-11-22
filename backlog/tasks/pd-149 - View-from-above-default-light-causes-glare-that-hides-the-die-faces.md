@@ -1,10 +1,10 @@
 ---
 id: PD-149
 title: 'View from above: default light causes glare that hides the die faces'
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-18T07:44:00Z'
-updated_date: '2026-11-22T04:25:00Z'
+updated_date: '2026-11-22T05:39:00Z'
 labels:
   - v4.2
 dependencies: []
