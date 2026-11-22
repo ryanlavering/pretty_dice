@@ -1,0 +1,27 @@
+// Face-flow basin map by discrete steepest descent on the CoM-height landscape h(u) sampled on an icosphere (robust on flat valleys, unlike pointwise gradient flow).
+//   node basin-map.mjs shape.json nudge.json "0,50,100,150" out_prefix [--level 5]      (lambda in percent of the found shift P*; writes out_prefix.svg and .json)
+// Every vertex follows its lowest neighbour down to a discrete minimum; discrete minima with persistence below THR (default 3e-3; sublevel-set union-find, see persistence.mjs) are valley artefacts and are merged into the basin they join. Reported: basin fractions of the real minima, their h and directions, and the lowest saddle height
+// between the two largest basins along the basin boundary (barrier = lowest max-h over boundary edges). Paths of 60 sample directions are drawn.
+import fs from 'fs'; import vm from 'vm'; import {icosphere} from './verify.mjs'; import {persistence} from './persistence.mjs';
+const G=vm.runInNewContext(fs.readFileSync(new URL('./core.js',import.meta.url),'utf8')+';Gomboc');
+const a=process.argv.slice(2); const lam=a[2].split(',').map(Number), prefix=a[3], LVL=+(a.includes('--level')?a[a.indexOf('--level')+1]:5);
+const sj=JSON.parse(fs.readFileSync(a[0],'utf8')); const S=new G.Shape({c:sj.c,Lmax:sj.Lmax}); const P=a[1]==='none'?[0,0,0]:JSON.parse(fs.readFileSync(a[1],'utf8')).bestShift; const ico=icosphere(LVL); const n=ico.V.length;
+const nb=Array.from({length:n},()=>new Set()); for(const [x,y,z] of ico.T){ nb[x].add(y).add(z); nb[y].add(x).add(z); nb[z].add(x).add(y); } const nbr=nb.map(s=>[...s]);
+const r={h:0,x:[0,0,0],n:[0,0,0]}; const ang=(u,v)=>Math.acos(Math.max(-1,Math.min(1,u[0]*v[0]+u[1]*v[1]+u[2]*v[2])));
+const sph=u=>[Math.atan2(u[1],u[0]),Math.acos(Math.max(-1,Math.min(1,u[2])))]; const pal=['#1f77b4','#ff7f0e','#2ca02c','#d62728']; const out={shape:a[0],level:LVL,runs:[]};
+const W=330,H=190,cols=Math.min(2,lam.length),rows=Math.ceil(lam.length/cols); let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${cols*(W+10)+10}" height="${rows*(H+36)+10}" font-family="sans-serif" font-size="11"><rect width="100%" height="100%" fill="#fff"/>`;
+lam.forEach((l,k)=>{ S.setNudge(P.map(x=>x*l/100)); const h=new Float64Array(n); for(let i=0;i<n;i++){ S.support(ico.V[i],null,r); h[i]=r.h; }
+  const down=new Int32Array(n); for(let i=0;i<n;i++){ let b=i; for(const j of nbr[i]) if(h[j]<h[b]) b=j; down[i]=b; } const dest=new Int32Array(n); for(let i=0;i<n;i++){ let c=i,g=0; while(down[c]!==c&&g++<5000) c=down[c]; dest[i]=c; }
+  const cnt=new Map(); for(let i=0;i<n;i++) cnt.set(dest[i],(cnt.get(dest[i])||0)+1); const edgesAll=[]; { const sn=new Set(); for(const [x,y,z] of ico.T) for(const [p,q] of [[x,y],[y,z],[z,x]]){ const k=p<q?p*n+q:q*n+p; if(!sn.has(k)){ sn.add(k); edgesAll.push([p,q,0]); } } } const prs=persistence(n,h,edgesAll); const THR=+(process.env.THR||3e-3); const into=new Map(); for(const p of prs.pairs) into.set(p.node,{into:p.into,pers:p.pers}); const rootOf=m=>{ let c=m,g=0; while(into.has(c)&&into.get(c).pers<THR&&g++<10000) c=into.get(c).into; return c; };
+  const real=[...new Set([...cnt.keys()].map(rootOf))].sort((p,q)=>h[p]-h[q]);
+  const label=new Int32Array(n); for(let i=0;i<n;i++){ label[i]=real.indexOf(rootOf(dest[i])); }
+  const fr=real.map((m,ri)=>{ let c=0; for(let i=0;i<n;i++) if(label[i]===ri) c++; return c/n; });
+  // barrier between basin 0 and the others: lowest over boundary edges of max(h_i,h_j)
+  let barrier=null; if(real.length>1){ barrier=1e9; for(let i=0;i<n;i++) for(const j of nbr[i]) if(label[i]!==label[j]) barrier=Math.min(barrier,Math.max(h[i],h[j])); }
+  const rec={lambdaPercentOfShift:l,minima:real.map((m,ri)=>({u:ico.V[m].map(x=>+x.toFixed(4)),h:+h[m].toFixed(5),fraction:+fr[ri].toFixed(4)})),barrierHeight:barrier,hmax:Math.max(...h)}; out.runs.push(rec);
+  console.error(`lambda ${l}%: ${real.length} real minima: ${rec.minima.map(m=>`h ${m.h} (${(100*m.fraction).toFixed(1)}%)`).join(', ')}${barrier?`; lowest barrier ${barrier.toFixed(5)}`:''}`);
+  const ox=10+(k%cols)*(W+10), oy=10+Math.floor(k/cols)*(H+36), X=t=>ox+(t+Math.PI)/(2*Math.PI)*W, Y=p=>oy+20+p/Math.PI*H; svg+=`<text x="${ox}" y="${oy+13}">CoM shift ${l}% of P*: basins ${fr.map(f=>(100*f).toFixed(0)+'%').join(' / ')}${barrier?`, barrier h=${barrier.toFixed(4)}`:''}</text>`;
+  for(let i=0;i<n;i++){ const [t,p]=sph(ico.V[i]); svg+=`<circle cx="${X(t).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="1.5" fill="${pal[label[i]%4]}" fill-opacity="0.55"/>`; }
+  for(let s0=0;s0<n;s0+=Math.floor(n/60)){ let c=s0,pts=[],prev=null,g=0; const fl=()=>{ if(pts.length>1) svg+=`<polyline fill="none" stroke="#222" stroke-opacity="0.35" stroke-width="0.7" points="${pts.join(' ')}"/>`; pts=[]; }; while(g++<400){ const [t,p]=sph(ico.V[c]); if(prev!==null&&Math.abs(t-prev)>Math.PI) fl(); pts.push(X(t).toFixed(1)+','+Y(p).toFixed(1)); prev=t; if(down[c]===c) break; c=down[c]; } fl(); }
+  real.forEach((m,ri)=>{ const [t,p]=sph(ico.V[m]); svg+=`<circle cx="${X(t).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="5" fill="none" stroke="#000" stroke-width="2"/><text x="${X(t)+6}" y="${Y(p)-4}">S${ri+1}</text>`; }); let im=0; for(let i=0;i<n;i++) if(h[i]>h[im]) im=i; { const [t,p]=sph(ico.V[im]); svg+=`<path d="M${X(t)-5},${Y(p)-5}l10,10m0,-10l-10,10" stroke="#000" stroke-width="2"/>`; } });
+svg+='</svg>'; fs.writeFileSync(prefix+'.svg',svg); fs.writeFileSync(prefix+'.json',JSON.stringify(out)); console.error('wrote',prefix+'.svg');

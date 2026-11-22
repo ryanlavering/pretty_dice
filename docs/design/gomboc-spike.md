@@ -490,3 +490,46 @@ What constrains it: (1) the equilibrium count, not convexity (convex margins up 
 ## 28. Recommendation
 
 The exact-body route in this family saturates at about 1.11. To get 1.15 or more with one stable point the next experiments are: (a) extend the family beyond the single-spiral form (the 1.298 bistable body shows what can be reached; look at which feature creates the second basin and add a counter-term); (b) minimise D directly at fine resolution (L5) for bodies with ratio 1.15 to 1.3 and accept a small non-uniform-density correction of about 3 percent of the radius if that is acceptable for a game piece (the page's approximate mode with the rigor label already supports a CoM nudge up to 0.5 percent; a 3 percent mode would need a distinct, clearly labelled body); (c) keep the rigorous label for anything D > 0.
+
+---
+
+# Round 9 (approximate bodies on the page; basin maps and persistence)
+
+## 29. Approximate bodies on the page (`tools/gomboc-spike.html`)
+
+Five new selectable shapes, all kept next to Sloan and the pronounced body: "Approximate body 1.12 / 1.14 / 1.16 / 1.20 / 1.25" (nominal r_max/r_min). They are the convex ring-family bodies of round 7 (continuation targets 1.12, 1.14, 1.16 from the 1.109 body, then 1.20 and 1.25 continued from 1.16; data in `tools/gomboc-spike-verify/runs/r9/` and `bodies.json`). As uniform solids they are bistable (winding +3/-1 at the CoM, two stable points whose basins each cover about half of the sphere). Selecting one switches to Approximate mode and applies the CoM shift found by `find-nudge.mjs` (smallest shift vector P* in the set M, grid 0.5 percent refined to 0.25 to 0.5 percent); the slider goes up to 10 percent of the radius, the default per body is the found shift, applied along the body's own direction P*/|P*| (not "toward the stable point": a shift straight toward the first stable point barely changes the basins, see section 30).
+
+Behavioural validation (`roll-harness.mjs`: the page physics, 30 random rolls per setting, random orientation and flick, resistance 2.0, step 1/180, then 30 s more; end directions clustered at 6 degrees):
+
+| body | found shift (percent of radius) | default | rolls ending at the one stable point | mean settle (sim s) | rolls ending elsewhere | at 1.25 to 1.5 times the shift |
+|---|---|---|---|---|---|---|
+| 1.12 | 2.83 | 2.83 | 30 of 30 | 18.7 | 0 | x1.5 (4.25): 63 / 37 percent on two points |
+| 1.14 | 2.84 | 2.84 | 30 of 30 | 19.7 | 0 | x1.5 (4.26): 80 / 20 |
+| 1.16 | 3.95 | 3.95 | 30 of 30 | 18.0 | 0 | x1.5 (5.93): 57 / 43 |
+| 1.20 | 7.35 | 7.35 | 30 of 30 | 17.7 | 0 | x1.25 (9.19): 97 / 3 |
+| 1.25 | 8.89 | 8.89 | 30 of 30 | 16.9 | 0 | x1.25 (11.1): 100 |
+
+Page check under the CSP (`ready: true`, no errors): 4 page-driver rolls per body end 0 to 0.7 degrees from the marked stable point in 16.1 to 20.5 s; Skip to rest ends with `result: 1`; Info/Controls toggles unchanged. The rigor banner for these bodies reads "APPROXIMATE - bistable as a uniform solid; made monostable by a X percent CoM shift (smallest shift found: X percent; r_max/r_min ...). Not a true homogeneous Gomboc." plus the verified fraction; in Exact mode it states "EXACT surface, but BISTABLE as a uniform solid ... does NOT always roll to the same point"; below 95 percent of the default shift it warns that a second stable point may be reached. Over-shooting is as bad as under-shooting (columns on the right): the working window around P* is narrow, a few tenths of a percent for the first three bodies. Shifts of 7 to 9 percent of the radius (1.20, 1.25) are large: physically a very heavily weighted body (non-uniform density), clearly labelled. Screenshots: `s9_b112.png` ... `s9_b125.png` (headless software GL, scratch folder); the bodies look like smooth eggs with a flatter shoulder (colour by radius shows the range); no distinct ridges.
+
+## 30. Lane chosen: face-flow basin maps with persistence (first pass)
+
+Why: (1) the basin maps show directly where the second basin lives in the 1.12+ bodies; (2) they exposed that pointwise gradient flow and plain discrete descent are noise-limited on these extremely flat landscapes (13 to 23 spurious "minima" at icosphere L5, even for the exact pronounced body), which led to (3) persistence of the minima (sublevel-set union-find) as a resolution-robust measure, which is the useful new tool of this round. The level-set / Reeb-graph lane is the same machinery; the monostable-start low-poly search was not started.
+
+Tools: `basin-map.mjs` (discrete steepest descent on an L5 icosphere, artefact minima merged by persistence below 3e-3, paths drawn), `persistence.mjs` (smooth bodies on the sphere, and polyhedra on the face graph with the balanced-on-edge height as the pass height, no barrier where a face tips over the edge), `flow-basins.mjs` (pointwise flow with line search; stalls on the plateaus, kept for reference), `find-nudge.mjs`, `find-max.mjs`, `roll-harness.mjs`, `make-bodies.mjs`.
+
+Results (plots `docs/design/img/gomboc-r9-basins-1.14.png`, `gomboc-r9-basins-1.16.png`, `gomboc-r9-persistence-vs-shift.png`):
+
+* The 1.14 body at uniform density: two basins of 50.3 and 49.7 percent of the sphere, minima at CoM height h = 0.9291 and 0.9370, lowest barrier between them h = 0.9670, one maximum; the separatrix is a closed curve passing through the unstable point. With the shift P* the second basin disappears (basins 100 percent, single minimum h = 0.9199); at half the shift the basins are 51 / 49 percent (barrier 0.9591). Similar for 1.12 (48 / 52 percent at zero, single basin at P*) and 1.16 (47 / 53 percent).
+* Persistence of the second minimum (the barrier minus its height) falls almost linearly with the shift and bottoms out at the shift P* found by the winding search, then rises again when over-shooting (a different second basin forms): 1.12: 0.0316, 0.0125, 0.0025, 0.0004 at 0, 50, 80, 100 percent of P*, then 0.0032 at 150 percent; 1.14: 0.0301, 0.0096, 0.0011, 0.0004, 0.0029 at 150; 1.16: 0.0418, 0.0093, 0.0019, 0.0004, 0.0044 at 150. Artefact minima sit at 2e-4 to 5e-4 (1e-3 for the very flat exact pronounced body), so a threshold near 3e-3 separates real basins. For the Sloan body persistence gives one minimum (artefacts 5e-4). The convex 1.298 body has second-minimum persistence 0.14 (consistent with M empty within 9 percent).
+* This is exactly the smooth, V-shaped, resolution-robust objective that the winding counts and D lacked (section 22 and 27): p2(P) is continuous in the CoM position P and in the shape, its zero set is M, and the slope toward the minimum is non-zero (about 0.03 per 100 percent of P* here), so a gradient-free or gradient optimiser can minimise p2 over (shape, P) together.
+* Polyhedra: on the face graph the same measure gives, for the S = 2 twisted stacks of round 6, second-face persistence 0.74 (3 rings x 5-gon), 1.00 (5 x 5), 0.71 (6 x 5) and 0.94 for the best round-5 random candidate (heights in units where the radius is about 1): far larger than the smooth bistable bodies (0.03 to 0.04), i.e. these polyhedra are nowhere near monostable in this sense, and the persistence makes the distance quantitative. A regular tetrahedron gives four equal faces (persistence 0.42).
+
+## 31. Next steps (recommendation)
+
+1. Optimise the ring family (and the stack family for polyhedra) on p2 directly: minimise p2 + penalties at P = centroid (non-uniform density zero), starting from the bistable ratio 1.12 to 1.3 bodies; the persistence is smooth so CMA-ES should now find true monostable bodies at larger ratios if they exist in the family (the round-7 saturation at 1.105 was measured with a noisy discrete count).
+2. For low-poly: use p2 (face-graph persistence of the second stable face) as the cost in the stack and annealing searches instead of the sink count; it is continuous in vertex positions between combinatorial changes.
+3. Page: the approximate bodies are playable now; tuning the window around P* (a few tenths of a percent) is the only fragile aspect; a future version could show the second basin on the body (colour by basin) to make the bistability visible.
+
+## Low-poly search log additions (round 9)
+
+Second-face persistence (face-graph, section 30): twisted stack 3 x 5-gon (F 20, E 32, V 14, C 64, S = 2): 0.74; 5 x 5-gon (F 20, E 32, V 14, C 64): 1.00; 6 x 5-gon (F 24, E 38, V 16, C 76): 0.71; round-5 random best (N = 14, F 18, E 27, V 11, C 54): 0.94. All S = 2: negative results for S = 1; persistence is the new distance-to-monostable measure for the search (smaller is better; 0 would mean one stable face).

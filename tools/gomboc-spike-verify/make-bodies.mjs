@@ -1,0 +1,12 @@
+// Assemble the approximate-body table for the page from the search outputs.   node make-bodies.mjs workdir out.json
+// For each body: chooses the default shift factor (the smallest of the tested lambdas whose dominant rest cluster holds >= 95% of the rolls; else the best one), the stable direction
+// (mean of the dominant rest cluster), the unstable direction (ascent maximum at that shift), and the verification numbers.
+import fs from 'fs'; import {execFileSync} from 'child_process';
+const W=process.argv[2]; const spec=[['chA_1.12','chA_1.12','1.12'],['chA_1.14','chA_1.14','1.14'],['chA_1.16','chA_1.16','1.16'],['chC_1.20','chC_1.20_shape','1.20'],['chC_1.25','chC_1.25_shape','1.25']];
+const out=[]; for(const [id,shapeName,tag] of spec){ const sj=JSON.parse(fs.readFileSync(`${W}/${shapeName}.json`,'utf8')); const nd=JSON.parse(fs.readFileSync(`${W}/nudge_${id}.json`,'utf8')); const rolls=[]; for(const l of ['1.0','1.25','1.5']){ const f=`${W}/roll_${id}_${l}.json`; if(fs.existsSync(f)) rolls.push({l:+l,...JSON.parse(fs.readFileSync(f,'utf8'))}); }
+  if(!rolls.length) continue; let pick=rolls.find(r=>r.clusters[0].share>=0.95)||rolls.reduce((b,r)=>r.clusters[0].share>b.clusters[0].share?r:b,rolls[0]); const shiftVec=nd.bestShift; const lenPct=100*Math.hypot(...shiftVec); /* in body-radius units (mean radius ~1.01), the units the page slider uses */ const dir=shiftVec.map(x=>x/Math.hypot(...shiftVec));
+  const mx=JSON.parse(execFileSync('node',['find-max.mjs',`${W}/${shapeName}.json`,`${W}/nudge_${id}.json`,String(pick.l)],{cwd:new URL('.',import.meta.url).pathname}).toString())[0];
+  const mean=a=>a.reduce((x,y)=>x+y,0)/a.length; const ratio=(()=>{ let mn=1e9,mxr=0; return 0; })();
+  out.push({id:'b'+tag.replace('.',''),label:`Approximate body ${tag} (needs ${(lenPct).toFixed(1)}% CoM shift)`,tag,c:sj.c.map(v=>+v.toPrecision(7)),Lmax:sj.Lmax,dir:dir.map(x=>+x.toFixed(5)),minPct:+lenPct.toFixed(2),shiftPct:+(lenPct*pick.l).toFixed(2),factor:pick.l,
+    stable:pick.clusters[0].dir,unstable:mx.u,verified:{n:pick.n,share:pick.clusters[0].share,t:pick.meanTimeToRest,otherClusters:pick.clusters.slice(1).map(c=>({share:c.share,dir:c.dir})),allRuns:rolls.map(r=>({lambda:r.l,share:r.clusters[0].share,t:r.meanTimeToRest,n:r.n}))},ratio:+tag}); }
+fs.writeFileSync(process.argv[3],JSON.stringify(out)); console.log(out.map(b=>`${b.id}: shift ${b.shiftPct}% (min ${b.minPct}%, factor ${b.factor}), share ${b.verified.share}, t ${b.verified.t}`).join('\n'));

@@ -1,0 +1,7 @@
+// Unstable point (maximum of CoM height) of a shape with the CoM shifted by lambda*P*: steepest ascent from icosphere L2 starts.   node find-max.mjs shape.json nudge.json lambda
+import fs from 'fs'; import vm from 'vm'; import {icosphere} from './verify.mjs';
+const G=vm.runInNewContext(fs.readFileSync(new URL('./core.js',import.meta.url),'utf8')+';Gomboc');
+const sj=JSON.parse(fs.readFileSync(process.argv[2],'utf8')); const S=new G.Shape({c:sj.c,Lmax:sj.Lmax}); const P=JSON.parse(fs.readFileSync(process.argv[3],'utf8')).bestShift; S.setNudge(P.map(x=>x*(+process.argv[4])));
+const r={h:0,x:[0,0,0],n:[0,0,0]}; const norm=v=>{ const l=Math.hypot(...v); return v.map(x=>x/l); }; const hg=u=>{ S.support(u,null,r); const d=r.x[0]*u[0]+r.x[1]*u[1]+r.x[2]*u[2]; return {h:r.h,g:[r.x[0]-d*u[0],r.x[1]-d*u[1],r.x[2]-d*u[2]]}; };
+const ends=[]; for(const u0 of icosphere(2).V){ let u=u0, st=hg(u), eta=0.4; for(let it=0;it<1500;it++){ if(Math.hypot(...st.g)<1e-9) break; let ok=false; for(let k=0;k<10;k++){ const v=norm([u[0]+eta*st.g[0],u[1]+eta*st.g[1],u[2]+eta*st.g[2]]); const s2=hg(v); if(s2.h>=st.h){ u=v; st=s2; eta=Math.min(eta*1.5,50); ok=true; break; } eta*=0.5; } if(!ok) break; } ends.push({u,h:st.h}); }
+const cl=[]; for(const e of ends){ const f=cl.find(c=>Math.acos(Math.min(1,c.u[0]*e.u[0]+c.u[1]*e.u[1]+c.u[2]*e.u[2]))<0.1); if(f) f.n++; else cl.push({u:e.u,h:e.h,n:1}); } cl.sort((a,b)=>b.h-a.h); console.log(JSON.stringify(cl.map(c=>({u:c.u.map(x=>+x.toFixed(5)),h:+c.h.toFixed(5),n:c.n}))));
