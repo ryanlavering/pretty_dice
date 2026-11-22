@@ -74,7 +74,7 @@
      18,
      494,
      354,
-     714
+     757
     ]
    },
    "actions": {
@@ -150,7 +150,7 @@
      18,
      494,
      354,
-     714
+     757
     ]
    },
    "shapehead": {
@@ -519,7 +519,7 @@
      18,
      706,
      354,
-     161
+     203
     ]
    },
    "gravityreset": {
@@ -594,6 +594,19 @@
     ],
     "value": "0.2"
    },
+   "manualreroll": {
+    "tag": "input",
+    "cls": "",
+    "shown": true,
+    "box": [
+     22,
+     878,
+     13,
+     13
+    ],
+    "value": "on",
+    "checked": false
+   },
    "shakerow": {
     "tag": "div",
     "cls": "chk",
@@ -610,7 +623,7 @@
     "shown": true,
     "box": [
      18,
-     867,
+     909,
      354,
      342
     ]
@@ -621,7 +634,7 @@
     "shown": true,
     "box": [
      22,
-     913,
+     956,
      13,
      13
     ],
@@ -634,7 +647,7 @@
     "shown": true,
     "box": [
      199,
-     937,
+     980,
      171,
      16
     ],
@@ -646,7 +659,7 @@
     "shown": true,
     "box": [
      199,
-     963,
+     1006,
      171,
      16
     ],
@@ -658,7 +671,7 @@
     "shown": true,
     "box": [
      18,
-     987,
+     1030,
      98,
      36
     ],
@@ -670,7 +683,7 @@
     "shown": true,
     "box": [
      124,
-     1005,
+     1047,
      0,
      0
     ]
@@ -681,7 +694,7 @@
     "shown": true,
     "box": [
      148,
-     1058,
+     1100,
      136,
      33
     ],
@@ -693,7 +706,7 @@
     "shown": true,
     "box": [
      292,
-     1057,
+     1099,
      80,
      36
     ],
@@ -705,7 +718,7 @@
     "shown": true,
     "box": [
      18,
-     1098,
+     1141,
      354,
      33
     ]
@@ -716,7 +729,7 @@
     "shown": true,
     "box": [
      135,
-     1107,
+     1149,
      107,
      16
     ],
@@ -728,7 +741,7 @@
     "shown": true,
     "box": [
      251,
-     1098,
+     1141,
      121,
      33
     ],
@@ -740,7 +753,7 @@
     "shown": true,
     "box": [
      192,
-     1137,
+     1180,
      180,
      33
     ],
@@ -752,7 +765,7 @@
     "shown": true,
     "box": [
      199,
-     1178,
+     1221,
      171,
      16
     ],
@@ -764,7 +777,7 @@
     "shown": true,
     "box": [
      18,
-     1202,
+     1245,
      0,
      0
     ]
@@ -2116,6 +2129,11 @@
     "shown": false
    },
    "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "manualreroll": {
     "tag": "input",
     "cls": "",
     "shown": false
@@ -3579,6 +3597,11 @@
     "cls": "",
     "shown": false
    },
+   "manualreroll": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
    "shakerow": {
     "tag": "div",
     "cls": "chk",
@@ -4832,6 +4855,11 @@
     "shown": false
    },
    "fricmat": {
+    "tag": "input",
+    "cls": "",
+    "shown": false
+   },
+   "manualreroll": {
     "tag": "input",
     "cls": "",
     "shown": false
