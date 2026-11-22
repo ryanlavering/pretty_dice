@@ -1325,15 +1325,13 @@ const NF_ALL=[
   {id:'PD-166', rev:1, room:'play', anchor:'#gamestab', text:'Story Dice sets: see, edit and save the Story Dice sets you can make. Check: Games > Story Dice sets... > New Story set: pick glyph packs, 3-9 dice, d6/d8/d12/d20, a seed (Reroll seed), shuffled or in pack order, same or different dice; the preview and the set text update live. Save puts it in the bag (Bag > Sets), Use in game loads it into the Story Dice setup, Roll it rolls it on the table.', card:'PD-166'}
 ];
 // PD-164: release tour. build-static.py --artifact --release-tour (the release build: no review flag) injects window.__PD_RELEASE_TOUR='4.1'; the same dot/box/Prev/Next machinery then walks NF_RELEASE instead of NF_ALL, remembered per version under its own key. Never active in a review build or the plain app. pane = Play tab to open first.
-const NF_RELEASE=[
-  {id:'T1', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Story Dice game: roll picture dice, arrange them on the rings, and read the story they tell. Then rate it.'},
-  {id:'T2', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Picture dice in normal rolls: type something like 5d12{noto#1} to roll dice with emoji or hieroglyph faces.'},
-  {id:'T3', rev:1, room:'play', pane:'table', anchor:'#gravity', text:'Gravity slider (Roll feel): make the table heavier or floatier. Reset brings back the default feel.'},
-  {id:'T4', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Yacht scoring that no longer misfires: on touch, tap to preview a box and long-press to score it.'},
-  {id:'T5', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Whoopsie! Undo (Yacht): scored the wrong box? You get 3 seconds to take it back.'},
-  {id:'T6', rev:1, room:'play', anchor:'#bagbtn', text:'Change a die\'s design during a game (the Bag): swap designs mid-game. Only the look changes, and your dice and holds stay put.'},
-].map(f=>({...f, card:"What's new in 4.1"}));
 const NF_TOUR=window.__PD_REVIEW?null:(window.__PD_RELEASE_TOUR||null);
+const NF_RELEASE=[
+  {id:'T1', rev:1, room:'play', anchor:'#bagbtn', text:'Designs are looks, and sets carry a design. Picking a design never changes your dice. A design\'s saved dice show as a Suggested chip you can tap, and a set can name a design with Use design for this set.'},
+  {id:'T2', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Every game shows its dice on the mat in the lobby. The game\'s look is an editable draft in the Bag: Save it as a design or Discard it. Yacht can use d6 pips.'},
+  {id:'T3', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Rerolls like d20r1: matching dice get a ring, then are thrown again (an optional manual Re-roll chip is in Table settings). The formula box remembers formulas: arrow button, Up and Down, or long press on a phone. The mat follows the formula when you tap a chip or leave the box.'},
+  {id:'T4', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Dice settle without twitching, and a cocked die topples flat.'},
+].map(f=>({...f, card:"What's new in "+NF_TOUR}));
 const NEW_FEATURES=NF_TOUR?NF_RELEASE:NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
 
 const NF_ON=!!(window.__PD_REVIEW||NF_TOUR||new URLSearchParams(location.search).get('new')==='1'), NFKEY=NF_TOUR?'prettydice.tour.'+NF_TOUR:'prettydice.seen';

@@ -12,8 +12,9 @@ b64 = lambda data, mime: f"data:{mime};base64," + base64.b64encode(data).decode(
 js = lambda p: b64(p.read_bytes(), 'text/javascript')
 
 ARTIFACT = '--artifact' in sys.argv
-RELEASE_TOUR = '--release-tour' in sys.argv   # PD-164: with --artifact: the release build (no review flag, no retired list) plus the 'What's new in 4.1' tour
-TOUR_VERSION = '4.1'
+RELEASE_TOUR = '--release-tour' in sys.argv   # PD-164: with --artifact: the release build (no review flag, no retired list) plus the 'What's new in 4.2' tour
+TOUR_VERSION = '4.2'
+if '--tour-version' in sys.argv: TOUR_VERSION = sys.argv[sys.argv.index('--tour-version') + 1]   # override, e.g. --tour-version 4.1 (the NF_RELEASE entries in src/main.js are for the current version only)
 def retired_cards(tasks=None):   # PD-163: card ids whose board card is Review Complete or Done; the 'New' callouts for them are dropped from the artifact.
     # The page cannot read live comment state, so retirement happens at each republish. Fails soft (empty list) when the board is missing.
     import pathlib
