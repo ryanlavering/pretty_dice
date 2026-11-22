@@ -12,6 +12,7 @@ User-facing changes. Versions are git tags.
 - Quick roll box remembers formulas (Up/Down, a small arrow inside the box, long-press on phones) and calls up sets by name.
 
 ### Changed
+- **The mat follows the quick roll formula.** Tapping a dock chip (d20, Adv, ...) now lays those dice on the mat at once, and a typed formula puts its dice down when you leave the box (not when you press Roll, which rolls them). A formula that does not parse leaves the mat as it was.
 - **Designs are looks.** Picking a design (or a set) no longer changes your dice; it only restyles them. A design remembers the dice it was saved with and offers them as a **Suggested** chip (for example `Suggested: d20` or `Suggested: 3d6+2`) in the Design room; tap it to use them. This replaces the 3.0 behaviour where every design kept its own shape and numbers.
 - **Every game shows its dice in the lobby.** Opening a game's setup puts its dice on the table, and Roll in the lobby rolls them in place. Leaving Games or choosing another game gives you your own dice back. Picking a design or set in the Story Dice lobby no longer loses your dice.
 - **The game look is a real draft.** The game look is a dashed draft in the Bag that you can pick, edit, rename and discard. **Save as design** makes a design with that look plus a set with the game's dice that names it, and never overwrites a design. A reload mid-game brings it back on Resume.

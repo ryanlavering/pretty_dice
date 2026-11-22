@@ -54,7 +54,7 @@ test('a die chip loads the box and does not throw; Adv replaces the box with d20
   await app.page.locator('#rollbox').fill('1d20+1d6+2');
   await chip('[data-adv="h"]'); expect((await st(app)).box, 'PD-142.38.46: a tap on Adv replaces the box with d20adv').toBe('2d20kh1');
   await chip('[data-adv="l"]'); expect((await st(app)).box).toBe('2d20kl1');
-  expect(await st(app), 'loading never throws or changes the dice on the mat').toMatchObject({ n: before.n, dice: before.dice, settled: true });
+  expect(await st(app), 'PD-215: a chip lays its dice on the mat (no throw, no roll)').toMatchObject({ n: '2d20kl1', dice: 2, box: '2d20kl1' });
   await app.page.locator('#rollbox').press('Enter');
   expect(await st(app)).toMatchObject({ n: '2d20kl1', dice: 2, settled: false, box: '2d20kl1', ph: '2d20kl1' });   // the text stays in the box after a roll (PD-142.14.1.6.2)
   await settle(app);
