@@ -1611,7 +1611,7 @@ const RESTORE_T=.75;
 function startRestore(ids){ restoring={t:0,ids,from:{}}; for(const i of ids){ const b=bodies[i]; restoring.from[i]={p:new THREE.Vector3(b.position.x,b.position.y,b.position.z),q:new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w)};
     b.type=CANNON.Body.KINEMATIC; b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.wakeUp(); } }
 function tickRestore(dt){ if(!restoring) return; restoring.t+=dt; const u=Math.min(1,restoring.t/RESTORE_T), e=u*u*(3-2*u), tmp=new THREE.Quaternion();
-  for(const i of restoring.ids){ const f=restoring.from[i], b=bodies[i], rec=heldPose[i], lift=1.4*Math.sin(Math.PI*u)*(dice[i].r||1);
+  for(const i of restoring.ids){ const f=restoring.from[i], b=bodies[i], rec=rrKeep[i]||heldPose[i], lift=1.4*Math.sin(Math.PI*u)*(dice[i].r||1);
     tmp.copy(f.q).slerp(rec.q,e); b.position.set(f.p.x,f.p.y+(rec.y-f.p.y)*e+lift,f.p.z); b.quaternion.set(tmp.x,tmp.y,tmp.z,tmp.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }
   if(u>=1){ for(const i of restoring.ids){ const b=bodies[i]; b.type=CANNON.Body.DYNAMIC; b.mass=1; b.updateMassProperties(); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.slowT=0; b.wakeUp(); } restoring=null; } }
 /* PD-155: self-check backup. recFaces is the face of record per die from the last settle; faceCheck compares it with the face the orientation shows now and re-reads on disagreement */
@@ -1623,22 +1623,24 @@ function faceCheck(why){ if(!rolling||!world||!settled||!recFaces||restoring||pl
   bad.forEach(i=>faceWarn(i,recFaces[i],now[i].label,why)); recFaces=now.map(p=>p.label); finishRoll(); return true; }
 function reconcileParts(parts,why){ const now=readResult(); now.forEach((p,i)=>{ if(parts[i]&&p.label!==parts[i].label){ faceWarn(i,parts[i].label,p.label,why); parts[i]=p; } }); return parts; }
 /* PD-212 physics reroll (the r modifier): after the dice settle, those whose FINAL face matches the condition get a green ring for RR_HOLD s and are then re-thrown alone, like leaning dice. Once per die: rrOrig holds the first value of a die already re-thrown (it is final even if it matches again). rrPend: the dice waiting (auto: for the ring time; manual: for the chip). */
-const RR_HOLD=.5; let rrPend=null, rrOrig=new Map(), rrRings=[], rrAccept=false, rrQuiet=false;
+const RR_HOLD=.5; let rrPend=null, rrOrig=new Map(), rrKeep={}, rrRings=[], rrAccept=false, rrQuiet=false;
 const rrInfo=(vals,ids)=>({vals,orig:ids.map(i=>rrOrig.get(i))});   // the values as read now (re-thrown dice show the new face) and the first values, for the 1\u219214 text
 function dropRrRings(){ for(const m of rrRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } rrRings=[]; }
-function clearReroll(){ rrPend=null; rrOrig=new Map(); dropRrRings(); }
+function clearReroll(){ rrPend=null; rrOrig=new Map(); rrKeep={}; dropRrRings(); }
 function holdForReroll(idx,vals){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!!state.manualReroll};
   for(const i of idx){ const r=(dice[i].r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.reroll,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); m.renderOrder=10;
     m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); rrRings.push(m); }
   const R=$('result'); R.textContent=''; R.classList.remove('on','crit','fumble'); if(rrPend.manual) document.body.classList.remove('throwing'); updateLeanUI(); if(rrPend.manual) R.classList.add('on'); }   // the result is held until the reroll has settled (like a lean chip, but the total is not shown yet)
 function pulseReroll(dt){ const o=.8+.2*Math.sin(performance.now()/1000*4.5); for(const m of rrRings) m.material.opacity=o; if(rrPend&&!rrPend.manual){ rrPend.t+=dt; if(rrPend.t>=RR_HOLD) fireReroll(); } }
 function fireReroll(){ if(!rrPend||!rolling||!world||!settled) return; const {idx,vals}=rrPend; rrPend=null; dropRrRings(); for(const i of idx) rrOrig.set(i,vals.get(i));
+  rrKeep={}; bodies.forEach((b,i)=>{ if(idx.includes(i)) return; const q=new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w); rrKeep[i]={q,y:b.position.y,label:faceLabel(i,q)}; }); restoreTries=0;   /* PD-212: every die not thrown is held in place: if the thrown dice bump it, it is put back on its face (the hold routine) and it never rings or rerolls */
+
   const R=$('result'); R.querySelectorAll('.relean').forEach(e=>e.remove()); clearFx(); R.classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; document.body.classList.add('throwing'); dropIn(idx); }
 
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
   const parts=readResult();
-  { const bad=restoreTries<3?[...held].filter(i=>bodies[i]&&heldPose[i]&&(parts[i].label!==heldPose[i].label||isLean(i))):[];
+  { const bad=restoreTries<3?[...new Set([...held,...Object.keys(rrKeep).map(Number)])].filter(i=>bodies[i]&&(rrKeep[i]||heldPose[i])&&(parts[i].label!==(rrKeep[i]||heldPose[i]).label||isLean(i))):[];   // PD-212: the dice a reroll does not throw are treated like held dice that got bumped
     if(bad.length){ restoreTries++; startRestore(bad); return; } }
   leanDice=bodies.map((b,i)=>isLean(i));   // propped on another die, or cocked: flagged, never re-thrown automatically
   const alone=leanDice.map((l,i)=>l&&!held.has(i)&&!bodies.some((o,j)=>j!==i&&bodies[i].position.distanceTo(o.position)<(dice[i].r+dice[j].r)));   // leaning yet no other die within reach: it is not propped on anything
@@ -1650,7 +1652,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
   droppedDice=new Set();
   if(!game&&!rrAccept&&state.shape==='custom'&&!leanDice.some(Boolean)){ const P0=parseNotation(state.notation), pend=[], vals=new Map();   // PD-212: dice whose final face matches r get the ring, then a real re-throw (once per die)
-    if(!P0.error&&P0.terms.some(t=>t.reroll)) dice.forEach((d,i)=>{ const t=P0.terms[d.term]; if(!t||!t.reroll||d.part||rrOrig.has(i)) return; const v=fmt(d,parts[i]); if(rerollHit(t.reroll,v)){ pend.push(i); vals.set(i,v); } });
+    if(!P0.error&&P0.terms.some(t=>t.reroll)) dice.forEach((d,i)=>{ const t=P0.terms[d.term]; if(!t||!t.reroll||d.part||rrOrig.size) return; const v=fmt(d,parts[i]); if(rerollHit(t.reroll,v)){ pend.push(i); vals.set(i,v); } });
     if(pend.length){ holdForReroll(pend,vals); return; } }
   if(rrPend){ dropRrRings(); rrPend=null; }
   let main, sub='', subItems=null, subMod='', storyText='', glyphLog=false;
@@ -1747,7 +1749,7 @@ function refreshLeans(){                        // a die that settles after the 
 function pulseLeans(t){ const o=.8+.2*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
 function rerollLeans(){                       // the leaning dice vanish from the mat and drop in again from above; the others stay where they are
   if(!rolling||!world||!settled||!leanDice.some(Boolean)) return;
-  const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; dropIn(idx);
+  const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; for(const i of idx) delete rrKeep[i]; dropIn(idx);
 }
 function dropIn(idx){
   const dropH=3.5+5*state.rollZoom, R=()=>rng()-.5;

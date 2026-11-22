@@ -116,3 +116,33 @@ test('manual rerolls: ring and chip wait, the chip throws; a new roll keeps the 
     const had = pd.rrPending, n0 = pd.bag.log.length; pd.startRoll(false, false); const e = pd.bag.log.length > n0 ? pd.bag.log.at(-1) : null; return { had, n0, n1: pd.bag.log.length, detail: e && e.detail, pendNow: pd.rrPending }; });
   expect(k.had).not.toBeNull(); expect(k.n1).toBe(k.n0 + 1); expect(k.detail).not.toContain('→'); expect(k.pendNow).toBeNull();
 });
+
+// PD-212: dice that are not re-thrown are treated like held dice: a bump puts them back, they never ring or reroll
+test('reroll bump: a non-rerolled die turned by a bump goes back to its face, no extra ring or reroll', async ({ shared: app }) => {
+  await app.reset(21);
+  const r = await app.run(pd => {
+    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    const first = pd.faces.slice(), pend = pd.rrPending, keep = first.map((_, i) => i).filter(i => !pend.includes(i)); pd.rerollNow();
+    const hit = keep.slice(0, 2).map(j => { const b = pd.bodies[j], q = new b.quaternion.constructor(); q.setFromAxisAngle({ x: 1, y: 0, z: 0 }, Math.PI / 2); q.mult(b.quaternion, q); b.quaternion.copy(q); b.wakeUp(); return j; });   // a "bump": two kept dice turned onto other faces
+    pd.settleRoll(); const e = pd.bag.log.at(-1);
+    return { first, pend, keep, hit, final: pd.faces.slice(), orig: pd.rrOrig.map(x => x[0]), detail: e.detail, rings: pd.rrRingCount, pending: pd.rrPending, tries: pd.restoreTries }; });
+  expect(r.tries, 'the bump was undone by the restore routine').toBeGreaterThan(0);
+  expect(r.hit.length).toBeGreaterThan(0);
+  for (const j of r.keep) expect(r.final[j], 'die ' + j).toBe(r.first[j]);
+  expect(r.orig.sort()).toEqual(r.pend.slice().sort()); expect(r.rings).toBe(0); expect(r.pending).toBeNull();
+  expect(r.detail.split('→').length - 1).toBe(r.pend.length);
+});
+
+test('reroll: over 20 seeds the dice that were not re-thrown keep their values; only ringed dice change, once', async ({ shared: app }) => {
+  let rerolled = 0;
+  for (let seed = 100; seed < 120; seed++) {
+    await app.reset(seed);
+    const r = await app.run(pd => { pd.state.notation = '4d6r<=2'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+      const first = pd.faces.slice(), pend = pd.rrPending || []; pd.settleRoll(); const e = pd.bag.log.at(-1);
+      return { first, pend, final: pd.faces.slice(), orig: pd.rrOrig.map(x => x[0]), detail: e.detail, pending: pd.rrPending }; });
+    r.first.forEach((v, i) => { if (!r.pend.includes(i)) expect(r.final[i], `seed ${seed} die ${i}`).toBe(v); });
+    expect(r.orig.sort()).toEqual(r.pend.slice().sort()); expect(r.pending).toBeNull();
+    expect(r.detail.split('→').length - 1).toBe(r.pend.length); rerolled += r.pend.length;
+  }
+  expect(rerolled).toBeGreaterThan(0);
+});
