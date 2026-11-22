@@ -1841,7 +1841,7 @@ if(PDL){
 #pdl h4{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9aa4bd}#pdl .r{display:flex;align-items:center;gap:6px;margin:3px 0}#pdl .r label{width:52px;color:#b8c0d4;flex:none}
 #pdl input[type=range]{flex:1;min-width:0;height:28px}#pdl input[type=number]{width:62px;background:#1b1f2a;color:#fff;border:1px solid #3a4152;border-radius:5px;padding:3px;font-size:12px}#pdl input[type=color]{width:34px;height:26px;padding:0;border:0;background:none}
 #pdl button,#pdl select{background:#2a3144;color:#fff;border:1px solid #46506a;border-radius:6px;padding:6px 9px;font:inherit;min-height:34px;cursor:pointer}#pdl button.on{background:#3b5fc0;border-color:#6d8be0}#pdl .row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center}#pdl .row label{display:flex;gap:4px;align-items:center}
-#pdl.shut .bd{display:none}#pdl.shut{bottom:auto!important}@media (min-width:761px){#pdl{left:8px;top:8px;bottom:8px;right:auto;max-height:none;width:296px}}`;
+#pdl.shut .bd{display:none}#pdl.shut{bottom:auto!important}@media (min-width:761px){#pdl{left:8px;top:140px;bottom:8px;right:auto;max-height:none;width:296px}}`;
   document.head.append(st);
   const P=PDL, root=document.createElement('div'); root.id='pdl'; root.setAttribute('role','region'); root.setAttribute('aria-label','Lighting lab'); document.body.append(root);
   const hd=document.createElement('button'); hd.type='button'; hd.className='hd'; hd.id='pdlhead'; hd.setAttribute('aria-expanded','true'); hd.textContent='Lighting lab (click to fold)'; hd.style.cssText='background:none;border:0;text-align:left;width:100%';
