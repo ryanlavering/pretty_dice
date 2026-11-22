@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-22T22:35:00Z'
+updated_date: '2026-11-22T23:13:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -99,4 +99,6 @@ Round 9 (v42-gomboc ce8e9a7, page v5): five APPROXIMATE bodies on the page (rati
 Round 11 plan (owner 2026-11-22, after round 10): hull the verified smooth body at increasing resolution (1k, 2k, 5k+ faces), run the exact face/edge/vertex equilibrium check (rational/interval arithmetic, exact CoM, tipping graph, Poincare-Hopf S+U-H=2 consistency), report the smallest face count that passes (proof of a close polyhedral cousin; feeds PD-208 low-poly). Also record check time per resolution and fit how it grows with face count.
 
 Round 11 extension (owner): if a passing resolution is found and the check is fast, run a reduction round: merge adjacent faces / decimate (coplanar merge, edge collapse, vertex removal keeping convexity), re-verify after each step, and report the smallest valid face count reached. Records the reduction path and check time. Feeds PD-208.
+
+Round 10 (v42-gomboc bc29eba, page v6): persistence-cost CMA-ES on the ring family gives exact homogeneous bodies, NUMERICALLY verified (winding +2/-0 at icosphere L5/L6, convex, CoM tolerance region nonempty) at ratio 1.12/1.15/1.16/1.17/1.18 (was 1.105). Page has Exact 1.16 (largest tolerance) and Exact 1.18 (most pronounced); rolls at zero shift 20-30/30 on the one stable point. Nothing above 1.18 passed (seed lottery; L4 persistence overfits). Not interval-certified. Low-poly: persistence cost gives p2~0.09 (was 0.71-1.0) but S=5-8 stable faces, monostable not reached; next cost = stable-face count S. Next: round 11 polyhedral proof with timing + reduction (see plan), more family parameters past 1.18, interval certification.
 <!-- SECTION:NOTES:END -->
