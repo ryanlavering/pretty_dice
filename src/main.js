@@ -736,7 +736,7 @@ const bagOps={
     const go=game&&game.id==='story'?game.state.options:null, gs=h.game==='story'?(go?{count:go.dice,sides:go.sides,packs:go.packs,seed:go.seed,dice:'different',order:'shuffled'}:h.story):null, dd=(info&&info.dice)||{count:5,sides:6};
     const term=gs?draftTerm({...gs,design:e.id}):{count:dd.count,sides:dd.sides};
     setOps.create({name:`${info?info.name:h.game} dice`,terms:[term],mod:0,design:e.id});
-    h.draftOff=true;
+    if(d.kind!=='tweak') h.draftOff=true;   // PD-188: a saved tweak look (B+pips is now a design with pips) still follows later picks; only Discard turns it off for the round
     if(wasLive){ h.draft=null; bag.active.draft=false; bag.active.design=e.id; $('dname').value=e.name; save(); }   // the live look already is the new design
     else { await activate(e.id,{skipSync:true}); h.draft=null; save(); } },   // activate keeps the room and a running game's dice where they lie
   async discardGame(){ const h=bag.hold; if(!h||!h.draft) return; const wasLive=bag.active.draft==='game'; h.draftOff=true; if(wasLive){ if(h.prev&&bag.draft) await activate('draft'); else await activate(bag.active.design); } h.draft=null; save(); },   // Discard = use my design (for the rest of this round)

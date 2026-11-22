@@ -124,3 +124,53 @@ test('GSAVE look + resume keeps the toggle across a reload (on and off)', async 
   await endIt(app);
   expect(await st(app)).toMatchObject({ draft: false, hold: null, d6: 'numbers' });
 });
+
+// owner review: "create a few draft designs and Keep them. Selecting one of those designs can lose the pips"
+const keepRandom = async (app, seed, d6) => app.run(async (pd, a) => { pd.randomize(); pd.state.d6Style = a.d6; pd.applyLook(); await pd.bagOps.keep('random'); return pd.bag.active.design; }, { d6 });
+const keepBlank = async app => { await app.nav.openBag(); await app.run(() => document.querySelector('#tiles .plus, #shelf .plus, #shelf .card.plus')?.click()); await app.page.locator('#cardmenu button', { hasText: 'Blank draft' }).click(); await app.page.waitForTimeout(300);
+  await app.run(async pd => { await pd.bagOps.keep('random'); }); await app.page.waitForTimeout(300); return app.run(pd => pd.bag.active.design); };
+const expectPips = async (app, id, why) => {
+  const s = await st(app);
+  expect(s.d6, why).toBe('pips');
+  expect(s, why).toMatchObject({ draft: 'game', design: id, hold: { kind: 'tweak', base: id } });
+};
+for (const where of ['lobby', 'mid-game']) for (const game of ['yahtzee', 'farkle', 'pig']) {
+  test(`pips survive picking kept draft designs (${game}, ${where})`, async ({ shared: app }) => {
+    await app.reset(300, { plain: true }); await clearPrefs(app); await baseNumbers(app);
+    await app.run((pd, g) => { pd.gprefs.opts[g + '.look'] = true; }, game);
+    await toLobby(app, game);
+    if (where === 'mid-game') { await app.nav.roll(); await app.run((pd, g) => pd.startGame(g, ['P1'], {}, []), game); await app.page.waitForTimeout(300); }
+    expect(await st(app)).toMatchObject({ draft: 'game', hold: { kind: 'tweak' }, d6: 'pips' });
+    const ids = [];
+    for (const d6 of ['numbers', 'pips', 'blank', 'numbers']) {
+      ids.push(d6 === 'blank' ? await keepBlank(app) : await keepRandom(app, 0, d6));   // a random draft (live over the game look), kept: the kept design is now the pick
+      if (where === 'lobby') await settle(app);
+    }
+    for (const id of [...ids, ...ids.slice().reverse()]) {
+      await useBagActivate(app, id);
+      const s = await st(app); expect(s.d6, `d6 after picking ${id}`).toBe('pips');
+      if (await app.run((pd, i) => pd.bag.designs.find(d => d.id === i).design.numbers.d6_style, id) === 'pips') expect(s.hold.kind, 'base already pips: no draft').toBeNull();
+      else await expectPips(app, id, `pick ${id}`);
+    }
+  });
+}
+
+test('pips survive: a random draft live over the pips draft, then a design pick', async ({ shared: app }) => {
+  await app.reset(301, { plain: true }); await clearPrefs(app); const base = await baseNumbers(app); const b = await addDesign(app, 'Pickme', 'swirl', 'numbers');
+  await toLobby(app, 'yahtzee');
+  await app.run(pd => { pd.randomize(); }); await settle(app);
+  expect(await st(app)).toMatchObject({ draft: true });
+  await useBagActivate(app, b); await expectPips(app, b, 'pick over a live random draft');
+  await app.run(pd => { pd.randomize(); }); await settle(app);
+  await useBagActivate(app, base); await expectPips(app, base, 'pick base over a live random draft');
+});
+
+test('pips survive: Save as design on the pips draft, then picks follow again', async ({ shared: app }) => {
+  await app.reset(302, { plain: true }); await clearPrefs(app); const base = await baseNumbers(app); const b = await addDesign(app, 'Pickme2', 'swirl', 'numbers');
+  await toLobby(app, 'yahtzee');
+  await app.run(async pd => { await pd.bagOps.keepGame(); }); await settle(app);
+  const saved = await app.run(pd => pd.bag.active.design);
+  await useBagActivate(app, b); await expectPips(app, b, 'pick after Save as design');
+  await useBagActivate(app, base); await expectPips(app, base, 'pick base after Save as design');
+  expect(saved).not.toBe(base);
+});
