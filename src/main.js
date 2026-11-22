@@ -63,7 +63,7 @@ const GRAV_LO=1/64, GRAV_HI=2;   // today's feel (.0436x, about 1/23) lies below
 /* PD-169 rework, measured: a die dropped 10 u in the live sim takes 0.7666 s at -34 u/s2 vs sqrt(2h/g)=0.7670 s (world.step(1/60,dt,4): no time scale, no speed multiplier; damping .04/s is negligible), so the 0.0436x factor is exact: at true 1x a 20 mm d20 falls 16 u (0.2 m) in 0.2 s and today's table is about 4.8x slower than real life in time (1/23 the gravity). A throw is scaled by throwK() so it covers the same path at any gravity. */
 const gravFromPos=p=>GRAV_LO*Math.pow(GRAV_HI/GRAV_LO,Math.max(0,Math.min(1,p))), gravToPos=x=>Math.log(Math.max(GRAV_LO,Math.min(GRAV_HI,x))/GRAV_LO)/Math.log(GRAV_HI/GRAV_LO);
 const DEFAULTS={gravity:GRAV_DEF, shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, manualReroll:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS); bindState(state);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1';
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -547,7 +547,7 @@ function syncUI(){
   shapeSelSync();
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
-  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
+  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; $('manualreroll').checked=!!state.manualReroll; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=k==='numSize'?numToPos(state[k]):state[k];
   syncGravityUI();
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
@@ -601,6 +601,7 @@ async function setShake(on){
   shakeOn=on; state.shake=on; $('shake').checked=on; save(); }
 if('DeviceMotionEvent' in window&&matchMedia('(pointer:coarse)').matches){ $('shakerow').hidden=false; $('shake').onchange=e=>setShake(e.target.checked); if(state.shake&&typeof DeviceMotionEvent.requestPermission!=='function') setShake(true); else state.shake=false; }
 $('rumble').onchange=e=>{ state.rumble=e.target.checked; save(); };
+$('manualreroll').onchange=e=>{ state.manualReroll=e.target.checked; save(); };
 $('soundtest').onclick=()=>{ playBlip(); $('soundstat').textContent='…'; setTimeout(()=>{ $('soundstat').textContent=audioStatus(); },400); };   // plays a blip and shows what the browser says about audio
 $('spinbtn').onclick=()=>{ if(state.spin>0){ spinLast=state.spin; state.spin=0; } else state.spin=spinLast||.3; save(); syncUI(); };   // pause remembers the speed it will resume at
 $('snd').onclick=()=>{ state.sound=!state.sound; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(true); };
@@ -1472,7 +1473,7 @@ function setGravity(x,persist=true){ x=+x; if(!isFinite(x)) return; state.gravit
 function syncGravityUI(){ const x=state.gravity, el=$('gravity'); if(!el) return; if(document.activeElement!==el) el.value=gravToPos(x); $('gravityv').textContent=(x<.1?x.toFixed(3):x.toFixed(2))+'x realistic'+(Math.abs(x-GRAV_DEF)<1e-9?' (default)':''); }
 function applyContacts(){ if(!ccDD) return; ccDD.friction=state.fricDice; ccDM.friction=state.fricMat; ccDD.restitution=ccDM.restitution=state.bounce; }
 // One table for every ring drawn on the mat: each meaning gets its own colour (never reuse one; hold = gold, cocked/invalid = red-magenta). Settings and games reuse it.
-const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
+const RING_COLORS={hold:0xf2c14e, cocked:0xff2d6f, cup:0x6ec6ff, reroll:0x4be08a}; document.documentElement.style.setProperty('--hold-col','#'+RING_COLORS.hold.toString(16).padStart(6,'0'));   // cup: a die that is under the cup (Liar's Dice): never gold (held) or red-magenta (cocked); the panel dots use the same blue
 let storyDeal=null, holdRolling=false;   // holdRolling: whether the mat was rolling when the lobby took it (put back on release); the lobby itself is bag.hold   // Story dice: {fp, glyphs:[[glyph per face] per die]} for the running game; specsFor/buildDice paint these on the faces
 let game=null, gameAwaiting=false, gameMsg='', gendAsk=false;   // the running game (see the games section near the end)
 let held=new Set(), holdRings=[], heldPose={}, restoring=null, restoreTries=0;   // heldPose[i]: the face of record (label, orientation, rest height) a bumped held die is put back to       // PD-142.1: dice the player has locked; a roll throws only the others
@@ -1523,8 +1524,9 @@ for(const ev of ['pointerup','pointercancel']) cv.addEventListener(ev,dieLPclear
 cv.addEventListener('contextmenu',e=>{ if(!rolling) return; const hi=pickDie(e.clientX,e.clientY); if(hi>=0) dieMenu(hi); });
 function startRoll(launch=false,place=false,vel=null){        // launch: re-roll from the dice's current spots (shake / flick) instead of dropping them from above
   if(!dice.length) return; if(game&&!place&&!gameBeforeRoll()) return; if(state.sound) audioInit();
+  if(rrPend&&rrPend.manual&&settled&&rolling){ rrAccept=true; rrQuiet=true; try{ finishRoll(); }finally{ rrAccept=false; rrQuiet=false; } }   /* PD-212: a new roll while a manual reroll is waiting: the first values stand and are logged (quietly), the reroll is dropped */
   const prev=launch&&rolling&&bodies.length===dice.length?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null;
-  gameCallout=null; placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; rerollMemo=new Map(); $('result').classList.remove('on'); designRoom=false; syncMode(); syncDock();
+  gameCallout=null; placed=false; rollKey=state.shape+'|'+state.notation; clearFx(); clearLeans(); const wasRolling=rolling; rolling=true; settled=false; document.body.classList.add('throwing'); rollT=0; restT=0; retries=0; freeTries=0; clearReroll(); $('result').classList.remove('on'); designRoom=false; syncMode(); syncDock();
   const poses=dice.map(d=>{const p=new THREE.Vector3(),q=new THREE.Quaternion(); d.mesh.getWorldPosition(p); d.mesh.getWorldQuaternion(q); return {p,q};});
   rig.position.set(0,0,0); rig.quaternion.identity();
   const dieR=d=>d.r||(d.r=Math.max(...d.verts.map(v=>Math.hypot(v.x,v.y,v.z)))), foot=dice.reduce((a,d)=>a+(2*dieR(d))**2,0);
@@ -1620,8 +1622,19 @@ function faceCheck(why){ if(!rolling||!world||!settled||!recFaces||restoring||pl
   if(!bad.length) return false;
   bad.forEach(i=>faceWarn(i,recFaces[i],now[i].label,why)); recFaces=now.map(p=>p.label); finishRoll(); return true; }
 function reconcileParts(parts,why){ const now=readResult(); now.forEach((p,i)=>{ if(parts[i]&&p.label!==parts[i].label){ faceWarn(i,parts[i].label,p.label,why); parts[i]=p; } }); return parts; }
-let rerollMemo=new Map(), rerollFinal=new Map();   // PD-142.42.1: the new value of a re-evaluated die, kept so finishRoll running twice (face check) shows the same one; rerollFinal: die index -> final value (decides NATURAL 1 / 20)
-function physReroll(vals,t,key,idx){ return applyReroll(vals,t,(j,v)=>{ const k=key+'|'+j, m=rerollMemo.get(k); if(m&&m.orig===v) return m.val; const val=1+Math.floor(rng()*t.sides); rerollMemo.set(k,{orig:v,val}); return val; }); }
+/* PD-212 physics reroll (the r modifier): after the dice settle, those whose FINAL face matches the condition get a green ring for RR_HOLD s and are then re-thrown alone, like leaning dice. Once per die: rrOrig holds the first value of a die already re-thrown (it is final even if it matches again). rrPend: the dice waiting (auto: for the ring time; manual: for the chip). */
+const RR_HOLD=.5; let rrPend=null, rrOrig=new Map(), rrRings=[], rrAccept=false, rrQuiet=false;
+const rrInfo=(vals,ids)=>({vals,orig:ids.map(i=>rrOrig.get(i))});   // the values as read now (re-thrown dice show the new face) and the first values, for the 1\u219214 text
+function dropRrRings(){ for(const m of rrRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } rrRings=[]; }
+function clearReroll(){ rrPend=null; rrOrig=new Map(); dropRrRings(); }
+function holdForReroll(idx,vals){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!!state.manualReroll};
+  for(const i of idx){ const r=(dice[i].r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.reroll,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); m.renderOrder=10;
+    m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); rrRings.push(m); }
+  const R=$('result'); R.textContent=''; R.classList.remove('on','crit','fumble'); if(rrPend.manual) document.body.classList.remove('throwing'); updateLeanUI(); if(rrPend.manual) R.classList.add('on'); }   // the result is held until the reroll has settled (like a lean chip, but the total is not shown yet)
+function pulseReroll(dt){ const o=.8+.2*Math.sin(performance.now()/1000*4.5); for(const m of rrRings) m.material.opacity=o; if(rrPend&&!rrPend.manual){ rrPend.t+=dt; if(rrPend.t>=RR_HOLD) fireReroll(); } }
+function fireReroll(){ if(!rrPend||!rolling||!world||!settled) return; const {idx,vals}=rrPend; rrPend=null; dropRrRings(); for(const i of idx) rrOrig.set(i,vals.get(i));
+  const R=$('result'); R.querySelectorAll('.relean').forEach(e=>e.remove()); clearFx(); R.classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; document.body.classList.add('throwing'); dropIn(idx); }
+
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
   const parts=readResult();
@@ -1635,20 +1648,24 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
     if(ax.lengthSq()>1e-8){ ax.normalize().multiplyScalar(2.5+ang*5); b.angularVelocity.set(ax.x,ax.y,ax.z); } else b.angularVelocity.set((rng()-.5)*3,0,(rng()-.5)*3); }); leanDice=[]; return; }   // let gravity finish the job (a die that fell asleep balanced on an edge)
   settled=true; showLeans(); recFaces=parts.map(p=>p.label);
   const fmt=(d,p)=> d.name==='d10'&&p.label===0 ? 10 : d.name==='d%' ? String(p.label).padStart(2,'0') : p.label;
-  droppedDice=new Set(); rerollFinal=new Map();
+  droppedDice=new Set();
+  if(!game&&!rrAccept&&state.shape==='custom'&&!leanDice.some(Boolean)){ const P0=parseNotation(state.notation), pend=[], vals=new Map();   // PD-212: dice whose final face matches r get the ring, then a real re-throw (once per die)
+    if(!P0.error&&P0.terms.some(t=>t.reroll)) dice.forEach((d,i)=>{ const t=P0.terms[d.term]; if(!t||!t.reroll||d.part||rrOrig.has(i)) return; const v=fmt(d,parts[i]); if(rerollHit(t.reroll,v)){ pend.push(i); vals.set(i,v); } });
+    if(pend.length){ holdForReroll(pend,vals); return; } }
+  if(rrPend){ dropRrRings(); rrPend=null; }
   let main, sub='', subItems=null, subMod='', storyText='', glyphLog=false;
   if(state.shape==='custom'){
     const P=parseNotation(state.notation), G=P.group||1;
     if(G>1){ const per=Array.from({length:G},()=>P.terms.map(()=>[])), perI=Array.from({length:G},()=>P.terms.map(()=>[]));
       dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; per[d.copy][d.term].push(t===0?100:t); perI[d.copy][d.term].push(i); } else if(d.part!=='ones'){ per[d.copy][d.term].push(fmt(d,parts[i])); perI[d.copy][d.term].push(i); } });
-      const rr=per.map((v,c)=>v.map((vals,ti)=>{ const r=physReroll(vals,P.terms[ti],c+'|'+ti); r.orig.forEach((o,j)=>{ if(o!==undefined) rerollFinal.set(perI[c][ti][j],r.vals[j]); }); return r; }));
+      const rr=per.map((v,c)=>v.map((vals,ti)=>rrInfo(vals,perI[c][ti])));
       per.forEach((v,c)=>v.forEach((vals,ti)=>{ const k=keepSum(rr[c][ti].vals,P.terms[ti].keep).kept; perI[c][ti].forEach((di,j)=>{ if(!k.has(j)) droppedDice.add(di); }); }));
       const ls=per.map((v,c)=>groupLine(P.terms,P.mod,rr[c].map(r=>r.vals),c+1,rr[c].map(r=>r.orig))); main=ls.map(l=>l.total).join(' · '); subItems=ls.map(l=>l.item); sub=subItems.map(i=>i.text).join('  ·  '); }
     else {
     const groups=P.terms.map(()=>[]);
     const gI=P.terms.map(()=>[]), gN=P.terms.map(()=>[]);
     dice.forEach((d,i)=>{ if(d.part==='tens'){ const t=parts[i].label+parts[i+1].label; groups[d.term].push(t===0?100:t); gI[d.term].push(i); gN[d.term].push(null); } else if(d.part!=='ones'){ groups[d.term].push(fmt(d,parts[i])); gI[d.term].push(i); gN[d.term].push(d.glyphs?faceName(d.glyphs[parts[i].label-1]):null); } });
-    const rr=groups.map((g,i)=>{ const r=physReroll(g,P.terms[i],'0|'+i); r.orig.forEach((o,j)=>{ if(o!==undefined) rerollFinal.set(gI[i][j],r.vals[j]); }); return r; }), origs=rr.map(r=>r.orig);
+    const rr=groups.map((g,i)=>rrInfo(g,gI[i])), origs=rr.map(r=>r.orig);
     groups.forEach((g,i)=>{ groups[i]=rr[i].vals; });
     const ks=groups.map((g,i)=>keepSum(g,P.terms[i].keep)), sums=ks.map(k=>k.sum), total=sums.reduce((a,b)=>a+b,0)+P.mod;
     ks.forEach((k,ti)=>gI[ti].forEach((di,j)=>{ if(!k.kept.has(j)) droppedDice.add(di); }));   // dice dropped by keep/drop/adv/dis: they do not count, so no nat 20 / nat 1 effect for them
@@ -1669,7 +1686,7 @@ function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   document.body.classList.remove('throwing'); updateLeanUI(); syncHoldRings(); if(storyText){ const d4=document.createElement('div'); d4.className='brk look'; d4.textContent=storyText; R.append(d4); }
   { const look=logRoll(main,sub,subItems,subMod,storyText,glyphLog); if(look){ const d3=document.createElement('div'); d3.className='brk look'; d3.textContent='→ '+look; R.append(d3); } } if(game) gameOnSettled(parts);
   showDropped();
-  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:rerollFinal.has(i)?{...p,label:rerollFinal.get(i)}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
+  R.classList.add('on'); console.log('ROLL_RESULT',main,sub); if(!rrQuiet) triggerFx(parts.map((p,i)=>leanDice[i]||droppedDice.has(i)?{...p,label:null}:p));   // no nat 20 / nat 1 fanfare for a die that is still leaning: its face is not final
 }
 $('back').onclick=()=>goDesign();
 /* PD-142.38 slice 4: two rooms. Design | Play is a pure switch, it never throws. designRoom is the room the owner chose; it matters in a game, where the dice stay on the mat while the Design room shows the look (a running game survives the visit, and Play carries a dot) */
@@ -1717,7 +1734,9 @@ function showDropped(){ undimDropped();
     d.mesh.userData.dropped=i; dropMarks.push({mesh:d.mesh,orig}); }); }
 function dropRings(){ undimDropped(); for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
 function clearLeans(){ dropRings(); leanDice=[]; }
-function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!nl||!settled) return;
+function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!settled) return;
+  if(rrPend&&rrPend.manual){ const rb=document.createElement('button'); rb.className='relean rrchip'; rb.textContent='\u21BB Re-roll '+rrPend.idx.length+(rrPend.idx.length>1?' dice':' die'); rb.title='The r rule: '+rrPend.idx.length+(rrPend.idx.length>1?' dice match':' die matches')+'. Tap to re-throw '+(rrPend.idx.length>1?'them':'it')+'; starting a new roll keeps the first values'; rb.onclick=fireReroll; R.append(rb); }
+  if(!nl) return;
   const bt=document.createElement('button'); bt.className='relean'; bt.textContent='\u26A0 Fix '+nl+' leaning '+(nl>1?'dice':'die'); bt.title=nl+(nl>1?' dice are':' die is')+' leaning: tap to re-roll '+(nl>1?'them':'it'); bt.onclick=rerollLeans; R.append(bt); }   /* PD-142.40: one chip, not a warning plus a button */
 function refreshLeans(){                        // a die that settles after the rings went up loses its ring; the note and button go when the last lean clears
   let changed=false; for(const m of leanRings.slice()){ const i=m.userData.i;
@@ -1803,6 +1822,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   if(rolling&&world){
     tuneSolver(); world.step(1/60,dt,4); rollT+=dt; tickRestore(dt);
     if(!settled) assistSettle(dt); else if(leanRings.length){ pulseLeans(performance.now()/1000); refreshLeans(); }
+    if(settled&&rrPend) pulseReroll(dt);
     if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
     if(!settled && rollT>.6 && restCheck(dt)) finishRoll();
@@ -2108,6 +2128,7 @@ let lastPeek={who:-1,at:0};
 function logPeek(who,name){ const now=Date.now(); if(lastPeek.who===who&&now-lastPeek.at<4000){ lastPeek.at=now; return; } lastPeek={who,at:now}; addLog({note:name+' peeked at their cup',total:'',notation:"Liar's Dice"}); }   // trust-based peeking, audited: one line per hold, the name only, never the dice (PD-142.14.3.1.15)
 function peekDice(vals){ cupPeek.textContent=''; for(const v of vals) cupPeek.append(gel('span',{className:'bigdie',textContent:String(v)})); cupPeek.hidden=false; }
 addEventListener('pointerup',()=>{ cupPeek.hidden=true; }); addEventListener('pointercancel',()=>{ cupPeek.hidden=true; }); addEventListener('blur',()=>{ cupPeek.hidden=true; });
+document.documentElement.style.setProperty('--reroll-col','#'+RING_COLORS.reroll.toString(16).padStart(6,'0'));   /* PD-212: the r (reroll) ring and chip: green, never gold (held), red-magenta (leaning) or blue (cup) */
 document.documentElement.style.setProperty('--cup','#'+RING_COLORS.cup.toString(16).padStart(6,'0'));
 const DIEFACE=['⚀','⚁','⚂','⚃','⚄','⚅'];
 function renderLiars(S,st,over){
@@ -2441,16 +2462,17 @@ document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
   corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},TOPGLARE,topGlareLook,get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,applyReroll,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
-  get dice(){return dice;}, get leans(){return [...leanDice];}, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
+  get dice(){return dice;}, get leans(){return [...leanDice];}, get rrPending(){return rrPend?[...rrPend.idx]:null;}, get rrManual(){return !!(rrPend&&rrPend.manual);}, get rrRingCount(){return rrRings.length;}, get rrOrig(){return [...rrOrig];}, rerollNow:()=>fireReroll(), settleRoll(maxSteps=1500){ simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); } }, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(dt=0){ camBlend=rolling?1:0; loop(0,dt); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
-  simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
+  simRoll({maxSteps=1500,rerolls=0}={}){ startRoll(); simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); }   /* PD-212: an automatic reroll is part of the roll: the ring time is skipped, the re-throw settles before simRoll returns; a manual one waits for rerollNow() */
+    const firstLeans=leanDice.filter(Boolean).length; let rr=0;   // the whole roll in fixed 1/60 s steps, synchronously
     for(;rr<rerolls&&leanDice.some(Boolean);rr++){ rerollLeans(); simSteps(maxSteps); }
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
-    return {settled,simT:rollT,firstLeans,rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
+    return {settled,simT:rollT,firstLeans,pendingReroll:rrPend?[...rrPend.idx]:[],rerolls:rr,leans:leanDice.filter(Boolean).length,freeTries,rollHalf:{...rollHalf},tableY:TABLE_Y,result:$('result').textContent,main:$('result').firstChild?.textContent??'',
       dice:settled?readResult().map((p,i)=>({name:dice[i].name,label:p.label,flat:p.flat,pos:bodies[i].position.toArray()})):[]}; },
   reseed(n){ rng=mulberry32(n); },                                                    // restart the app RNG without a reload (shared-page tests)
   memory(){ return {...renderer.info.memory, programs:(renderer.info.programs||[]).length, calls:renderer.info.render.calls, triangles:renderer.info.render.triangles}; }, buildDice, makeAtlas, get sfx(){ return sfx; }, audioInit, SB, playImpactNow, makeLimiter, hardnessFor, MAT_HARD, ringFor, RING, GLASS_FM, makeSpatial, rollTick, setSoundBackend, get soundBackend(){ return sfx.bk; }};

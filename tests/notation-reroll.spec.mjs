@@ -77,3 +77,42 @@ test('physical group roll: 2x 2d20r<=19kh1 shows the original per die and keeps 
   lines.forEach((l, i) => { const m = l.match(/^#\d: (.+) \+ 1 = (\d+)$/); expect(m, l).toBeTruthy(); const vs = m[1].split('+').map(x => ({ d: x.startsWith('('), v: +x.replace(/[()]/g, '').split('→').at(-1) }));
     expect(vs.filter(x => x.d).length).toBe(1); expect(+m[2]).toBe(vs.find(x => !x.d).v + 1); expect(totals[i]).toBe(+m[2]); });
 });
+
+// PD-212: the reroll is a real re-throw of just the matching dice (ring first), not a re-evaluation
+test('physics reroll: matching dice get the ring, then only they are re-thrown once; reproducible with a seed', async ({ shared: app }) => {
+  const once = async seed => { await app.reset(seed); return app.run(pd => {
+    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false);
+    pd.step(1500); const first = pd.faces.slice(), pend = pd.rrPending, rings = pd.rrRingCount, hidden = !document.querySelector('#result').classList.contains('on');
+    const posBefore = pd.bodies.map(b => b.position.toArray());
+    pd.settleRoll(); const e = pd.bag.log.at(-1); return { first, pend, rings, hidden, orig: pd.rrOrig, final: pd.faces.slice(), detail: e && e.detail, total: e && +e.total, rerolls: pd.rrOrig.length }; }); };
+  let seen = 0;
+  for (const seed of [11, 12, 13, 14, 15]) {
+    const a = await once(seed), b = await once(seed);
+    expect(b.detail).toBe(a.detail); expect(b.final).toEqual(a.final);
+    expect(a.pend === null ? [] : a.pend).toEqual(a.first.map((v, i) => v <= 3 ? i : -1).filter(i => i >= 0));
+    if (!a.pend) { expect(a.detail).not.toContain('→'); continue; }
+    seen++; expect(a.rings).toBe(a.pend.length); expect(a.hidden).toBe(true);
+    for (const [i, o] of a.orig) { expect(o).toBe(a.first[i]); expect(o).toBeLessThanOrEqual(3); }
+    expect(a.rerolls).toBeGreaterThanOrEqual(a.pend.length);   // only matching dice are thrown; a die the thrown ones knock onto a matching face rings and is thrown once too
+    const m = a.detail.match(/^6d6r<=3: (.+) = (\d+)$/); expect(m, a.detail).toBeTruthy();
+    expect(m[1].split('+').filter(x => x.includes('→')).length).toBe(a.pend.length); expect(a.total).toBe(+m[2]);
+    expect(m[1].split('+').map(x => +x.split('→').at(-1))).toEqual(a.final);   // a rerolled die is final even if it matches again
+  }
+  expect(seen).toBeGreaterThan(0);
+});
+
+test('manual rerolls: ring and chip wait, the chip throws; a new roll keeps the first values', async ({ shared: app }) => {
+  await app.reset(21);
+  const r = await app.run(pd => {
+    pd.state.manualReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); const n0 = pd.bag.log.length; pd.startRoll(false, false); pd.step(1500);
+    const out = { pend: pd.rrPending, manual: pd.rrManual, rings: pd.rrRingCount, chip: document.querySelector('#result .rrchip')?.textContent, logged: pd.bag.log.length - n0, first: pd.faces.slice() };
+    pd.rerollNow(); out.afterThrow = { settled: pd.settled, pend: pd.rrPending, chip: !!document.querySelector('#result .rrchip') };
+    pd.settleRoll(); out.final = pd.faces.slice(); out.detail = pd.bag.log.at(-1)?.detail; out.logged2 = pd.bag.log.length - n0;
+    return out; });
+  expect(r.pend, 'seed 21 should have a match').not.toBeNull(); expect(r.manual).toBe(true); expect(r.rings).toBe(r.pend.length); expect(r.chip).toMatch(/Re-roll \d+ di/); expect(r.logged).toBe(0);
+  expect(r.afterThrow.settled).toBe(false); expect(r.afterThrow.chip).toBe(false); expect(r.detail).toContain('→'); expect(r.logged2).toBe(1);
+  // a new roll while the reroll is pending: the first values stand and are logged without any →
+  const k = await app.run(pd => { pd.reseed(21); pd.state.manualReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    const had = pd.rrPending, n0 = pd.bag.log.length; pd.startRoll(false, false); const e = pd.bag.log.length > n0 ? pd.bag.log.at(-1) : null; return { had, n0, n1: pd.bag.log.length, detail: e && e.detail, pendNow: pd.rrPending }; });
+  expect(k.had).not.toBeNull(); expect(k.n1).toBe(k.n0 + 1); expect(k.detail).not.toContain('→'); expect(k.pendNow).toBeNull();
+});
