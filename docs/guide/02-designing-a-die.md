@@ -1,6 +1,6 @@
 # Designing a die
 
-Everything here is in the **Look** tab of the side panel in the Design room. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look. The controls below the shape are sorted into three sections: **Base** (the die body: substrate, colours, stone, epoxy, face panel and patina), **Numbers** (the face decoration: numeral paint, font, size, relief style, then filigree) and **Showcase** (spin speed, then Save & export).
+Everything here is in the **Look** tab of the side panel in the Design room. Changes show immediately and can be undone with Ctrl+Z. Each design in the bag remembers its own look, and the dice it was saved with: they show as a **Suggested** chip next to Shape, and switching designs never changes your dice. The controls below the shape are sorted into three sections: **Base** (the die body: substrate, colours, stone, epoxy, face panel and patina), **Numbers** (the face decoration: numeral paint, font, size, relief style, then filigree) and **Showcase** (spin speed, then Save & export).
 
 ## Shape
 

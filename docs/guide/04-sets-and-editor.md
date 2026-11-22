@@ -12,7 +12,7 @@ Choose **Custom** under Shape. The **Custom set** section has:
 - **Shape buttons** (Design Look tab and Play Table tab work the same way, and never roll): a tap picks one die of that shape and collapses Custom set; a double-click or long press adds one die to the formula and opens Custom set so the whole formula shows.
 - **Adv** and **Dis** buttons: a click replaces the formula with advantage (`d20adv`, 2d20 keep the highest) or disadvantage (`d20dis`); a double-click or long press adds it to the formula instead.
 - **+ and −** for each die type, and a **Modifier**.
-- **Dice use**, when your bag has several designs: which design the + button adds.
+- **Dice use**, when your bag has several designs: which design the + button adds to the formula. (This is about the dice in the set. For the look the set brings when you pick it, see **Look** under [Sets and designs](#sets-and-designs).)
 
 ### What the notation accepts
 
@@ -57,6 +57,12 @@ Not understood yet: rerolls (`4d6r1`), exploding dice (`d20!`), and the words "a
 ## Save it as a set
 
 Type a name in the **Set name** box (under the Modifier row; empty, it shows the name a blank box would get) and press **Save as set** or Enter. This is a different box from the design **Name** in Save & export: that one names a design file. The **Sets** tab of the Bag view has two more ways, and both open the set editor on a **draft**: **Save the current dice as a set** pre-fills the draft with the dice on the table, and **New set** starts from an empty draft where you pick the dice yourself. A draft is not in the bag yet. Name it, set the dice, modifier and any result table, then press **Save** (or **Save this set**); the app confirms with "Saved <name> to the bag". Saving a draft with no dice says "Add at least one die first". Press ✕ (or Discard) to throw the draft away; if you changed it, you are asked to confirm. Saved sets live in the Bag view's **Sets** tab and also appear as chips in the dock at the table. Open the Bag view (the round Bag button) and its **Sets** tab, and use ⚡ to roll one, ✎ to edit it or ⋯ for Edit, Make a copy, Open, Move up/down and Delete. In the Play room, the Table tab lists saved sets too: tap one to load it, then press **Roll**. See [The bag and shelf](03-bag-and-shelf.md).
+
+## Sets and designs
+
+A design is a **look**: the colours, material, numbers and so on. A set is **dice**: which shapes, how many, plus a modifier. The two are kept apart, so **picking a design never changes your dice**; it only restyles them. A design does remember the dice it was saved with and offers them as a **Suggested** chip (for example `Suggested: d20` or `Suggested: 3d6+2`) next to the Shape heading in the Design room's Look tab. Tap it to use those dice; ignore it and your dice stay as they are. The chip is not shown when the dice already match, or while a game's dice are on the table.
+
+A set can also carry a look. Open a set (✎ in the Bag's **Sets** tab) and, when the bag has two or more designs, a **Look** row under the name lists **Keep my look** and your designs. **Keep my look** is the default and means the set leaves the look alone. Choose a design and picking the set (from the Bag, the Table tab or a quick-roll chip) restyles your dice with that design;. Dice in the set that name their own design with `@name` keep that design. The set list shows the linked design's small picture before the set's name. You can restyle afterwards by picking another design; rolling again with the formula box does not re-apply the set's look. Deleting a design removes the link from any set that used it. Story Dice sets do not have a Look row, because their `@design` already does that.
 
 ## Give a set a result table
 

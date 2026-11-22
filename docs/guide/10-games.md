@@ -6,7 +6,7 @@ Pretty Dice can run a game for you with your own dice: it keeps score, suggests 
 
 ![The Games panel with Yacht set up](img/18-games-setup.png)
 
-Switch to the Play room and open the **Games** tab. Choose a **Game** (the game puts its own dice on the table, for example two d6 for Craps, and your dice come back when it ends), the number of **Players**, and press **Start game** (it stays in view at the bottom of the panel, so you never have to scroll for it). Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
+Switch to the Play room and open the **Games** tab. Choose a **Game** (the game puts its own dice on the table, for example five d6 for Yacht, as soon as you pick it, and your dice come back when you leave the Games tab; see [Look and your designs](#look-and-your-designs)), the number of **Players**, and press **Start game** (it stays in view at the bottom of the panel, so you never have to scroll for it). Each player can be named, and a **Bot** box next to a name makes that seat play itself. **Use d6 pips** (on for Yacht, off for the other d6 games) shows your design with plain pips on the d6s. **Suggest scores** (on by default) shows hints; turn it off for a plain scorecard.
 
 | Game | Setup options |
 |---|---|
@@ -75,18 +75,24 @@ The dice stay movable while you arrange, and even after the rings are full, unti
 
 ### Look and your designs
 
-Story Dice uses a temporary **game look**: plain white dice with the pictures on them, so the glyphs read clearly. It never overwrites your designs. While the game look is on screen:
+Every game shows its own dice on the table the moment you pick it in the **Games** tab, before you press Start: five d6 for Yacht, one for Pig, five picture dice for Story Dice. **Roll** in that lobby rolls those dice in place, so you can try them, and you stay on the Games tab. Your own dice and design are untouched underneath.
 
-- The Bag shows your own design's picture, plus a dashed **Story Dice look (draft)** tile for the temporary one (the name is cut short in the tile).
+The lobby dice use a temporary **game look**, a draft for this game: for Story Dice a plain white look so the pictures read clearly; for the d6 games your own design with d6 pips (see **Use d6 pips** below). It never overwrites your designs. The Bag shows your own design plus a dashed draft tile (Yacht: "<design> pips"; Story: "Story Dice look") and the Bag header reads "draft for this game".
 
-![The Bag during a Story Dice game: your own design and the dashed Story Dice look (draft) tile](img/36-story-bag.png)
+![The Bag during a Story Dice game: your own design and the dashed Story Dice look tile, with Save as design and Discard in the header](img/36-story-bag.png)
 
-- Your design, any unsaved edits, your sets and Undo are untouched.
-- If you deliberately pick a design from the Bag, or press Randomize, mid-game, that choice is kept as your look afterwards. (Only the look changes; a running game keeps its dice.)
+The game look is a real draft you can work with:
 
-The game look stays on the table for as long as you are on the **Games** tab: after a game ends, or with a paused game and **Resume** after a reload. It is released, and your own dice and design come back exactly, when you pick another game or leave the Games tab (Table, Log, Design, or hide the panel). A game that is running keeps its dice wherever you go.
+- **Edit it** like any design in the Design room. It never shows as Modified, because it is already a draft.
+- **Save as design** (in the Bag header, or the tile's ⋯ menu) makes a new design with that look **and** a set with the game's dice that names it. It never overwrites one of your designs.
+- **Rename…** (tile menu) names the draft before you save it.
+- **Discard** (tile menu: "Discard (use my design)") drops the draft and shows your own design again.
+- Your design, unsaved edits, sets and Undo are untouched while the draft is on screen.
+- If you deliberately pick a design from the Bag, or press Randomize, mid-game, only the look changes (a running game keeps its dice), and that pick is kept as your look afterwards. In Yacht the pips follow the design you pick.
 
-Roll in the Story Dice lobby (selected but not started, or after a game) rolls the story dice in place: you stay on the Games tab and the dice keep their look. Leaving Games or choosing another game switches back to your own dice, and opening Games previews Story Dice again. A formula you type in the dock (say `2d6`) rolls on your own dice instead.
+**How long it lasts.** The game look stays for as long as you are on the **Games** tab: in the lobby, during the game, after it ends, and after a reload with a paused game and **Resume**. It is released, and your own dice and design come back exactly, when you pick another game or leave the Games tab (Table, Log, Design, or hide the panel). A game that is running keeps its dice wherever you go. Picking a set or typing a formula in the dock while a game is only in the lobby gives you your own dice back first. Roll with an empty box in the Story Dice lobby rolls the story dice; a typed formula (say `2d6`) rolls your own dice instead.
+
+**Use d6 pips.** Yacht, Ten Thousand, Pig and Liar's Dice have a **Use d6 pips** checkbox in their setup. It is **on for Yacht** and **off for the others**, and each game remembers your choice. Turning it on makes the draft "your design with d6 pips"; turning it off drops the draft and shows your design as it is. (If your design already has pips there is nothing to change, so no draft appears.)
 
 On a phone see [Phone versus desktop](08-phone-vs-desktop.md).
 

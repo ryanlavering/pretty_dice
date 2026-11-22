@@ -1,6 +1,6 @@
 # The bag and shelf
 
-Your **bag** holds all your designs. The **shelf** along the bottom of the table (in the Design room) shows them as small pictures; tap one to switch to it. The panel header says which one you are on ("Design 1, 1 of 1 in My bag").
+Your **bag** holds all your designs. The **shelf** along the bottom of the table (in the Design room) shows them as small pictures; tap one to switch to it. Switching only changes the look; your dice stay as they are (see [Sets and designs](04-sets-and-editor.md#sets-and-designs)). The panel header says which one you are on ("Design 1, 1 of 1 in My bag").
 
 ## Adding a design
 

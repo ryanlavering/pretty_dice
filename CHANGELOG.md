@@ -4,13 +4,21 @@ User-facing changes. Versions are git tags.
 
 ## 4.2 (unreleased)
 
+### Added
+- **Sets can carry a look.** In the set editor, a **Look** row (with two or more designs in the bag) names a design: picking the set brings that look, and **Keep my look** (the default) turns it off. The set list and the quick-roll chip show the linked design.
+- **Yacht: Use d6 pips.** Yacht shows your design with d6 pips as a draft for this game (save it as a design or discard it). A setup checkbox, **Use d6 pips**, turns it on or off; Ten Thousand, Pig and Liar's Dice offer it too, off by default. Pick another design mid-game and it keeps the pips; End game gives you your design back.
+
 ### Changed
-- **Designs are looks.** Picking a design no longer changes your dice; a Suggested chip offers the design's dice.
-- **Sets can carry a look.** A set can name a design: picking the set brings that look; Keep my look turns it off.
-- **Dice settle without wiggling at the default gravity too.** A die rocking on an edge now topples to flat instead of rocking or freezing leaning.
-- **Every game shows its own dice in the lobby and rolls them in place.** Fixes: picking a design or set in the Story lobby no longer loses your dice, and a reload mid-Yacht keeps your dice.
-- **The game look is a real draft.** In the Bag, the Story Dice look is a dashed draft you can pick, edit, rename and discard. **Save as design** makes a design with that look and a set with the game's dice that names it. It never overwrites a design. A reload mid-game brings it back on Resume.
-- **Yacht: Use d6 pips.** Yacht shows your design with d6 pips (a draft for this game: save it as a design or discard it). A setup checkbox, `Use d6 pips`, turns it on or off, and every other d6 game offers it too, off by default. Pick another design mid-game and it keeps the pips; End game gives you your design back.
+- **Designs are looks.** Picking a design (or a set) no longer changes your dice; it only restyles them. A design remembers the dice it was saved with and offers them as a **Suggested** chip (for example `Suggested: d20` or `Suggested: 3d6+2`) in the Design room; tap it to use them. This replaces the 3.0 behaviour where every design kept its own shape and numbers.
+- **Every game shows its dice in the lobby.** Opening a game's setup puts its dice on the table, and Roll in the lobby rolls them in place. Leaving Games or choosing another game gives you your own dice back. Picking a design or set in the Story Dice lobby no longer loses your dice.
+- **The game look is a real draft.** The game look is a dashed draft in the Bag that you can pick, edit, rename and discard. **Save as design** makes a design with that look plus a set with the game's dice that names it, and never overwrites a design. A reload mid-game brings it back on Resume.
+- **Dice sleep sooner and cocked dice topple at default gravity and above.** A die rocking on an edge now falls flat instead of rocking or freezing leaning, and flat dice stop moving about 0.1 s after they are all slow.
+
+### Fixed
+- Picking a design in the Story Dice lobby, or pressing Randomize there, no longer leaves the story dice as your own dice.
+- Picking a set while a game's dice are shown in the lobby no longer brings back stale dice when you leave.
+- A reload in the middle of a Yacht game now gives you your own dice back when the game ends.
+- Reloading while a game look or an unsaved random draft is on screen brings the draft back as the draft, not as a loose edit of your design.
 
 ## 4.1 (2026-11-21)
 
