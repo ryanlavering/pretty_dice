@@ -1449,8 +1449,8 @@ addEventListener('resize',()=>{ resize(); }); addEventListener('orientationchang
 
 /* ---------- physics roll (cannon-es) ---------- */
 const ROLL_DROP=.105;   // PD-142.38.61/.65: fraction of the view height the roll view's dice are moved down (.15 put them a little too far down; .65 backed it off by 30%)
-let topHold=false, topBlend=0;     // hold the total (or the t key) in the roll view: the camera swings straight overhead to check the dice, and returns on release
-function holdTop(on){ topHold=!!on&&rolling; $('result').classList.toggle('peek',topHold); document.body.classList.toggle('peek',topHold); }
+let topHold=false, topBlend=0, topLatch=false;     // hold the total (or the t key) in the roll view: the camera swings straight overhead to check the dice, and returns on release
+function holdTop(on){ topHold=!!on&&rolling; $('result').classList.toggle('peek',topHold||topLatch); document.body.classList.toggle('peek',topHold||topLatch); }
 let placed=false, placing=false;   // placed: the dice are set out on the mat at rest, no roll yet (the next roll throws them from where they lie)
 let world=null, bodies=[], rolling=false, rollT=0, restT=0, settled=false, retries=0, freeTries=0, camBlend=0;
 const ROLL_DIR={y:.788,z:.615}, ROLL_AZ=-Math.PI/2;   // roll view: camera 90° to the left, higher up (the tray is wide along z, which is screen-horizontal from there)
@@ -1811,6 +1811,78 @@ function topGlareOn(k){
   ms.forEach(m=>{ m.envMapIntensity*=f.env(m.metalness||0); m.specularIntensity*=f.spec; m.clearcoat*=f.coat; m.roughness=Math.min(1,m.roughness+f.rough(m.metalness||0)); m.sheen*=f.sheen; });
   return ()=>{ key.intensity=i0; key.position.y=y0; ms.forEach((m,i)=>{ [m.envMapIntensity,m.specularIntensity,m.clearcoat,m.roughness,m.sheen]=s0[i]; }); };
 }
+/* PD-149 lighting lab (debug build only: scripts/build-static.py --lights sets window.__PD_LIGHTS; absent from every other build). A panel to latch the top view and move every light live, per view,
+   and to preview applying the result as A) the top-view lights always or B) lights that fly between the roll-view and top-view sets with the camera (topBlend). The real lights are only changed around the draw call and put back. */
+const PDL=window.__PD_LIGHTS?(()=>{
+  const v3=(x,y,z)=>[x,y,z], mk=()=>({key:{p:v3(3,6,4),i:1.6,c:'#ffffff'}, fill:{p:v3(-4,3,-2),i:0,c:'#ffffff'}, rim:{p:v3(0,2,-5),i:0,c:'#ffffff'}, amb:{i:0,c:'#ffffff'}, hemi:{i:0,c:'#ffffff',g:'#444444'}, env:{i:1,rx:0,ry:0,rz:0}, exp:BASE_EXPOSURE});
+  const P={on:true, mode:'fly', matte:true, edit:'roll', sets:{roll:mk(),top:mk()}, mk, envTex:{roll:null,top:null}, env0:scene.environment, fill:null, rim:null, amb:null, hemi:null};
+  const dl=()=>{ const l=new THREE.DirectionalLight(0xffffff,0); scene.add(l); return l; };
+  P.fill=dl(); P.rim=dl(); P.amb=new THREE.AmbientLight(0xffffff,0); scene.add(P.amb); P.hemi=new THREE.HemisphereLight(0xffffff,0x444444,0); scene.add(P.hemi);
+  P.env=v=>{ const e=P.sets[v].env; if(!e.rx&&!e.ry&&!e.rz){ P.envTex[v]=null; return; } if(P.envTex[v]) P.envTex[v].dispose(); P.envTex[v]=picEnv(e.rx,e.ry,e.rz); };
+  return P; })():null;
+const pdlMix=(a,b,k)=>{ const L=(x,y)=>x+(y-x)*k, col=(x,y)=>{ const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)), A=p(x), B=p(y); return '#'+A.map((n,i)=>Math.round(L(n,B[i])).toString(16).padStart(2,'0')).join(''); };
+  const dir=(x,y)=>({p:x.p.map((n,i)=>L(n,y.p[i])), i:L(x.i,y.i), c:col(x.c,y.c)});
+  return {key:dir(a.key,b.key), fill:dir(a.fill,b.fill), rim:dir(a.rim,b.rim), amb:{i:L(a.amb.i,b.amb.i),c:col(a.amb.c,b.amb.c)}, hemi:{i:L(a.hemi.i,b.hemi.i),c:col(a.hemi.c,b.hemi.c),g:col(a.hemi.g,b.hemi.g)}, env:{i:L(a.env.i,b.env.i)}, exp:L(a.exp,b.exp)}; };
+function pdlOn(k){     // returns an undo, or null when the lab is off
+  if(!PDL||!PDL.on) return null;
+  const w=PDL.mode==='always'?1:k, e=pdlMix(PDL.sets.roll,PDL.sets.top,w), k0=PDL.mode==='always'||w>.5?'top':'roll';
+  const sv={ki:key.intensity, kp:key.position.clone(), kc:key.color.getHex(), ex:renderer.toneMappingExposure, env:scene.environment}, ms=dice.map(d=>d.mat).filter(Boolean).concat([table.material]), s0=ms.map(m=>m.envMapIntensity);
+  const apply=(l,s,f=1)=>{ l.position.set(...s.p); l.intensity=s.i*f; l.color.set(s.c); };
+  const f=key.intensity/BASE_KEY; key.position.set(...e.key.p); key.intensity=e.key.i*f; key.color.set(e.key.c);
+  apply(PDL.fill,e.fill); apply(PDL.rim,e.rim); PDL.amb.intensity=e.amb.i; PDL.amb.color.set(e.amb.c); PDL.hemi.intensity=e.hemi.i; PDL.hemi.color.set(e.hemi.c); PDL.hemi.groundColor.set(e.hemi.g);
+  renderer.toneMappingExposure=sv.ex*e.exp/BASE_EXPOSURE; ms.forEach(m=>{ m.envMapIntensity*=e.env.i; }); scene.environment=PDL.envTex[k0]||PDL.env0;
+  return ()=>{ key.intensity=sv.ki; key.position.copy(sv.kp); key.color.setHex(sv.kc); PDL.fill.intensity=PDL.rim.intensity=PDL.amb.intensity=PDL.hemi.intensity=0; renderer.toneMappingExposure=sv.ex; scene.environment=sv.env; ms.forEach((m,i)=>{ m.envMapIntensity=s0[i]; }); };
+}
+function pdlToggle(on){ topLatch=on==null?!topLatch:!!on; if(PDL) PDL.userEdit=false; $('result').classList.toggle('peek',topLatch||topHold); document.body.classList.toggle('peek',topLatch||topHold); if(topLatch&&!rolling&&!game) dockRoll(true); pdlSync&&pdlSync(); }
+let pdlSync=null;
+if(PDL){
+  const st=document.createElement('style'); st.textContent=`#pdl{position:fixed;z-index:60;right:8px;bottom:8px;width:min(340px,calc(100vw - 16px));max-height:44vh;display:flex;flex-direction:column;background:#0e1016;color:#e8ebf2;border:1px solid #3a4152;border-radius:10px;font:12px/1.35 Inter,system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+#pdl>summary,#pdl .hd{padding:8px 10px;font-weight:700;cursor:pointer;display:flex;gap:8px;align-items:center;min-height:36px}#pdl .bd{overflow:auto;padding:0 10px 10px;-webkit-overflow-scrolling:touch}
+#pdl h4{margin:10px 0 4px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#9aa4bd}#pdl .r{display:flex;align-items:center;gap:6px;margin:3px 0}#pdl .r label{width:52px;color:#b8c0d4;flex:none}
+#pdl input[type=range]{flex:1;min-width:0;height:28px}#pdl input[type=number]{width:62px;background:#1b1f2a;color:#fff;border:1px solid #3a4152;border-radius:5px;padding:3px;font-size:12px}#pdl input[type=color]{width:34px;height:26px;padding:0;border:0;background:none}
+#pdl button,#pdl select{background:#2a3144;color:#fff;border:1px solid #46506a;border-radius:6px;padding:6px 9px;font:inherit;min-height:34px;cursor:pointer}#pdl button.on{background:#3b5fc0;border-color:#6d8be0}#pdl .row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center}#pdl .row label{display:flex;gap:4px;align-items:center}
+#pdl.shut .bd{display:none}#pdl.shut{bottom:auto!important}@media (min-width:761px){#pdl{left:8px;top:8px;bottom:8px;right:auto;max-height:none;width:296px}}`;
+  document.head.append(st);
+  const P=PDL, root=document.createElement('div'); root.id='pdl'; root.setAttribute('role','region'); root.setAttribute('aria-label','Lighting lab'); document.body.append(root);
+  const hd=document.createElement('button'); hd.type='button'; hd.className='hd'; hd.id='pdlhead'; hd.setAttribute('aria-expanded','true'); hd.textContent='Lighting lab (click to fold)'; hd.style.cssText='background:none;border:0;text-align:left;width:100%';
+  const bd=document.createElement('div'); bd.className='bd'; root.append(hd,bd);
+  hd.onclick=()=>{ const s=root.classList.toggle('shut'); hd.setAttribute('aria-expanded',String(!s)); };
+  const el=(t,p={},...k)=>{ const e=document.createElement(t); Object.assign(e,p); e.append(...k); return e; };
+  const row=(...k)=>{ const r=el('div',{className:'row'},...k); bd.append(r); return r; };
+  const vbtn=el('button',{type:'button',id:'pdlview',onclick:()=>pdlToggle()}), mode=el('select',{id:'pdlmode',ariaLabel:'How the top-view result is applied',onchange:()=>{ P.mode=mode.value; P.on=mode.value!=='off'; }});
+  for(const [v,t] of [['fly','B: fly lights between sets (0.4 s)'],['always','A: top-view lights always'],['off','Off: the app\'s own lights']]) mode.append(el('option',{value:v,textContent:t}));
+  const matte=el('input',{type:'checkbox',id:'pdlmatte',checked:true,onchange:()=>{ P.matte=matte.checked; }});
+  row(vbtn,el('label',{},matte,'4.2 matte rework'));
+  bd.append(el('h4',{textContent:'Apply as'}),mode);
+  const ed=el('div',{className:'row'}); bd.append(el('h4',{textContent:'Editing the lights of'}),ed);
+  const eb={}; for(const v of ['roll','top']){ eb[v]=el('button',{type:'button',id:'pdledit-'+v,textContent:v==='roll'?'Default view':'Top view',onclick:()=>{ P.edit=v; P.userEdit=true; build(); }}); ed.append(eb[v]); }
+  const body=el('div'); bd.append(body);
+  const fields=[]; // [get, set] updated on rebuild
+  function slider(parent,label,get,set,min,max,step){ const r=el('div',{className:'r'}), n=el('input',{type:'number',step,ariaLabel:label}), s=el('input',{type:'range',min,max,step,ariaLabel:label+' slider'});
+    const put=v=>{ n.value=String(Math.round(v*1000)/1000); s.value=String(v); }; put(get());
+    s.oninput=()=>{ const v=+s.value; set(v); n.value=String(v); }; n.onchange=()=>{ const v=+n.value; if(Number.isFinite(v)){ set(v); s.value=String(v); } };
+    r.append(el('label',{textContent:label}),s,n); parent.append(r); }
+  const colour=(parent,get,set,label='colour')=>{ const r=el('div',{className:'r'}), c=el('input',{type:'color',value:get(),ariaLabel:label,oninput:()=>set(c.value)}); r.append(el('label',{textContent:label}),c); parent.append(r); };
+  function build(){ body.textContent=''; const S=P.sets[P.edit]; for(const v in eb) eb[v].className=v===P.edit?'on':'';
+    const dir=(name,o,max)=>{ body.append(el('h4',{textContent:name})); slider(body,'x',()=>o.p[0],v=>o.p[0]=v,-12,12,.1); slider(body,'y',()=>o.p[1],v=>o.p[1]=v,-12,12,.1); slider(body,'z',()=>o.p[2],v=>o.p[2]=v,-12,12,.1); slider(body,'intensity',()=>o.i,v=>o.i=v,0,max,.05); colour(body,()=>o.c,v=>o.c=v); };
+    dir('Key (directional, casts shadow)',S.key,4); dir('Fill (directional, lab only)',S.fill,4); dir('Rim (directional, lab only)',S.rim,4);
+    body.append(el('h4',{textContent:'Ambient (lab only)'})); slider(body,'intensity',()=>S.amb.i,v=>S.amb.i=v,0,3,.05); colour(body,()=>S.amb.c,v=>S.amb.c=v);
+    body.append(el('h4',{textContent:'Hemisphere (lab only)'})); slider(body,'intensity',()=>S.hemi.i,v=>S.hemi.i=v,0,3,.05); colour(body,()=>S.hemi.c,v=>S.hemi.c=v,'sky'); colour(body,()=>S.hemi.g,v=>S.hemi.g=v,'ground');
+    body.append(el('h4',{textContent:'Room environment (reflections and ambient)'})); slider(body,'intensity',()=>S.env.i,v=>S.env.i=v,0,3,.05);
+    let tm=0; const rot=(label,k)=>slider(body,label,()=>S.env[k],v=>{ S.env[k]=v; clearTimeout(tm); tm=setTimeout(()=>P.env(P.edit),120); },-3.1416,3.1416,.05); rot('turn y','ry'); rot('tilt x','rx'); rot('tilt z','rz');
+    body.append(el('h4',{textContent:'Exposure'})); slider(body,'exposure',()=>S.exp,v=>S.exp=v,.2,3,.05); }
+  const fmt=a=>'['+a.map(n=>Math.round(n*100)/100).join(', ')+']';
+  const dump=()=>{ const o={mode:P.mode,matte:P.matte}; for(const v of ['roll','top']){ const s=P.sets[v]; o[v]={key:{pos:s.key.p.map(n=>+n.toFixed(2)),intensity:+s.key.i.toFixed(2),color:s.key.c},fill:{pos:s.fill.p.map(n=>+n.toFixed(2)),intensity:+s.fill.i.toFixed(2),color:s.fill.c},rim:{pos:s.rim.p.map(n=>+n.toFixed(2)),intensity:+s.rim.i.toFixed(2),color:s.rim.c},ambient:{intensity:s.amb.i,color:s.amb.c},hemisphere:{intensity:s.hemi.i,sky:s.hemi.c,ground:s.hemi.g},env:{intensity:s.env.i,rotation:[s.env.rx,s.env.ry,s.env.rz]},exposure:s.exp}; } return o; };
+  const js=()=>{ const o=dump(), L=[`// Pretty Dice lighting lab, mode: ${o.mode}, 4.2 matte rework: ${o.matte}`]; for(const v of ['roll','top']){ const s=o[v]; L.push(`const LIGHTS_${v.toUpperCase()}={ key:{pos:${fmt(s.key.pos)},intensity:${s.key.intensity},color:'${s.key.color}'}, fill:{pos:${fmt(s.fill.pos)},intensity:${s.fill.intensity},color:'${s.fill.color}'}, rim:{pos:${fmt(s.rim.pos)},intensity:${s.rim.intensity},color:'${s.rim.color}'}, ambient:{intensity:${s.ambient.intensity},color:'${s.ambient.color}'}, hemisphere:{intensity:${s.hemisphere.intensity},sky:'${s.hemisphere.sky}',ground:'${s.hemisphere.ground}'}, env:{intensity:${s.env.intensity},rotation:${fmt(s.env.rotation)}}, exposure:${s.exposure} };`); } return L.join('\n')+'\n/* JSON:\n'+JSON.stringify(o)+'\n*/'; };
+  const out=el('textarea',{id:'pdlout',readOnly:true,rows:4,hidden:true,ariaLabel:'Copied settings'}); out.style.cssText='width:100%;background:#1b1f2a;color:#cfe;border:1px solid #3a4152;font:11px monospace';
+  const cp=el('button',{type:'button',id:'pdlcopy',textContent:'Copy settings',onclick:async()=>{ const t=js(); out.value=t; out.hidden=false; try{ await navigator.clipboard.writeText(t); cp.textContent='Copied'; }catch{ out.select(); cp.textContent='Select + copy below'; } setTimeout(()=>cp.textContent='Copy settings',1800); }});
+  const rs=el('button',{type:'button',id:'pdlreset',textContent:'Reset to defaults',onclick:()=>{ P.sets.roll=P.mk(); P.sets.top=P.mk(); P.mode='fly'; P.on=true; P.matte=true; mode.value='fly'; matte.checked=true; P.env('roll'); P.env('top'); build(); }});
+  const tp=el('button',{type:'button',id:'pdlpreset',textContent:'Load suggested top lights',onclick:()=>{ Object.assign(P.sets.top.key,{p:[-3,3.5,5],i:1.7,c:'#ffffff'}); Object.assign(P.sets.top.fill,{p:[4,5,-2],i:.35,c:'#ffffff'}); P.sets.top.env.i=.6; P.sets.top.env.rx=0; P.sets.top.env.ry=2.4; P.sets.top.env.rz=0; P.matte=false; matte.checked=false; P.env('top'); build(); }});
+  bd.append(el('h4',{textContent:'Settings'})); row(cp,rs,tp); bd.append(out);
+  pdlSync=()=>{ vbtn.textContent=topLatch?'View: TOP (tap for default)':'View: default (tap for top)'; vbtn.className=topLatch?'on':''; if(!P.userEdit){ P.edit=topLatch?'top':'roll'; build(); } };
+  addEventListener('keydown',e=>{ if((e.key==='v'||e.key==='V')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) pdlToggle(); });
+  P.root=root; P.dump=dump; P.js=js; P.build=build; build(); pdlSync();
+}
 const clock=new THREE.Clock();
 const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.renderOnce)
   const dt=dtOver??Math.min(clock.getDelta(),.05);
@@ -1832,7 +1904,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   }
   updateFx(dt); updateRolling(dt);
   camBlend+=((rolling?1:0)-camBlend)*(1-Math.exp(-dt*3));
-  topBlend+=((topHold&&rolling?1:0)-topBlend)*(dtOver!=null?1:1-Math.exp(-dt*9));
+  topBlend+=(((topHold||topLatch)&&rolling?1:0)-topBlend)*(dtOver!=null?1:1-Math.exp(-dt*9));
   { const tgt=new THREE.Vector3(0,-camBlend,0), L=THREE.MathUtils.lerp, tan=Math.tan(THREE.MathUtils.degToRad(16));
     const rd=Math.max(9.76,(rollHalf.z+.5)/(tan*camera.aspect),(rollHalf.x*ROLL_DIR.y+1)/tan)*state.rollZoom;   // default roll distance keeps the whole tray in view for this stage shape; zoom is the user's multiplier on top
     const showZ=Math.max(baseZ,needHalfW/(tan*camera.aspect))*state.zoom;
@@ -1847,9 +1919,9 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
     { const drop=ROLL_DROP*camBlend*(1-topBlend); if(drop>.0005){ const up=new THREE.Vector3(0,1,0).applyQuaternion(camera.quaternion); camera.lookAt(tgt.clone().addScaledVector(up,drop*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*rr)); } } }   /* PD-142.38.61: aim the camera a little above the mat centre so the dice sit lower in the frame (resting dice ~40% up from the bottom instead of ~55%); the Design showcase and the top-down check are untouched */
   tickStoryFly(dt);
   table.visible=camBlend>.01; table.material.opacity=camBlend;
-  const un=topGlareOn(topBlend);     // PD-149: top-down check only (topBlend>0): calmer light for this one draw, put back right after
+  const unL=pdlOn(topBlend), un=(PDL&&!PDL.matte)?null:topGlareOn(topBlend);     // PD-149: top-down check only (topBlend>0): calmer light for this one draw, put back right after
   if(!(LITE&&dtOver===undefined&&window.__ready)) renderer.render(scene,camera);   // ?lite: only renderOnce (and the boot frames) draw
-  if(un) un();
+  if(un) un(); if(unL) unL();
 };
 
 /* ---------- thumbnail lab (dev tool, PD-131) ----------
@@ -2462,7 +2534,7 @@ function renderTurn(S,st,over){
 document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(roomNow()==='design') goPlay(); paneAuto=true; renderGame(); });   // the Games tab belongs to the Play room
 { const want=new URLSearchParams(location.search).get('game')||window.__PD_AUTOGAME; if(want&&keptGames().some(g=>g.id===want)){ gprefs.gameId=want; document.dispatchEvent(new CustomEvent('pd-open-games')); } }   // ?game=story opens the Games setup on that game (the shared artifact sets __PD_AUTOGAME)
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
-  corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},TOPGLARE,topGlareLook,get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
+  corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},TOPGLARE,topGlareLook,PDL,pdlToggle,get topLatch(){return topLatch;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,applyReroll,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, get rrPending(){return rrPend?[...rrPend.idx]:null;}, get rrManual(){return !!(rrPend&&rrPend.manual);}, get rrRingCount(){return rrRings.length;}, get rrOrig(){return [...rrOrig];}, rerollNow:()=>fireReroll(), settleRoll(maxSteps=1500){ simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); } }, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
