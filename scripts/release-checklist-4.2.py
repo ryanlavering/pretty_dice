@@ -38,7 +38,7 @@ GATES = [
   ('PD-142.42.2/.3/.42 (longhand, chained rolls) moved to 4.3', True, 'owner decision 2026-11-22'),
   ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT H @0cc5ecf (final head: tour + PD-149 revert): 706 pass x2. Earlier: G @8046702 704 x2 (nav-tabs stale assertion fixed f937dc2), E @7c9f12f 679/679 x2, F @23c6e7d 693/693 x2. Real bugs found on the way: active.draft restore (77cdd4e), pips lost after Save as design (f59ef56)'),
   ('Golden set stable (only owner-approved re-records)', True, 'approvals: PD-201 four files, S3 label, S5 pips row'),
-  ('Review build of the tested head for owner review (Dev artifact)', True, 'v26 at 0cc5ecf (PD-149 removed, tour added): https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
+  ('Review build of the tested head for owner review (Dev artifact)', True, 'v27 at 5ece718 (adds tingles for the cards under review; PD-149 removed, tour added): https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
   ('4.2 release tour entries (owner-picked four highlights) built and tested', True, '0fc0b37; release-tour spec 8, TOUR_VERSION 4.2'),
   ('Release candidate artifact (review flag stripped, with the 4.2 tour)', False, 'build after the re-reviews'),
   ('Artifact CSP spec and single-file build boot clean', True, 'csptest ready:true at 7c9f12f; recheck at each publish'),
