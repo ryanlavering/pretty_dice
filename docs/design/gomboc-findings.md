@@ -214,6 +214,10 @@ Owner notes on the research, with the integrator's answers (preliminary, unverif
 * Flow-map findings: polyhedron gradients are bounded by r_max and vanish linearly at peaks; near a stable face they do not vanish (h has a kink there). Basins for polyhedra come from the tipping graph because mesh descent stalls in the kinks; the tipping chain is 32 tips long for the 92-face body against 7 for the weighted 36-face body. The smooth 1.18 body has one minimum and one maximum, with gradient 0.006 near the peak.
 * Lane hint for optimisation: on the homogeneous bodies the stable face is a sliver triangle whose neighbours sit within 0.7 to 2 percent of its height; push or cut those neighbours' vertices first.
 
+### Farm and page (433e8ec, b39e1ce; log section 78)
+* Overnight farm: 29 numerically verified smooth bodies, ratios 1.10 to 1.18, all within 0.3 to 1.3 percent of each other, i.e. one family, not many. Rigor: numerically verified (winding, convexity, CoM region M), not exact.
+* Page: six bodies selectable (018, 017, 019, 011, 007 and 028 at 1.18), 10 of 10 page rolls each rest on the stable point in about 20 s. Body 012 passed the farm checks but never comes to rest (catalogue 0 of 20), so the farm acceptance needs a rest criterion; 028 replaced it. Published as version 11.
+
 ### Round 18 (planned)
 * Candidates, in order: the owner's valley-filling idea (add a vertex above the saddle between two peaks, sweep the raise from 0 to 120 percent of the barrier, exact re-check; round 17 only swept tiny offsets); merge/collapse cancellation as a persistence-guided beam search on the 92- and 90-face homogeneous bodies (the one exact cancellation found, U 11 → 10); Reshetov-seeded cancellation with exact centroid; the reviewer's checker v2 and the controls (visual lane running); the tilt and shift-floor diagnostics. In parallel the overnight batch is hunting many numerically verified smooth Gömböcs (`v42-gomboc-farm`).
 
