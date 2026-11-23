@@ -39,7 +39,7 @@ export function exactCheck(PI,T,tm={}){ const t0=performance.now(); const lap=(k
     if(sa>0&&sb>0){ H++; saddles.push([a,b]); } else if(sa>=0&&sb>=0&&(sa===0||sb===0)) degH++; }
   const nbrs=Array.from({length:V},()=>[]); for(const kk of dir.keys()){ const a=Math.floor(kk/V), b=kk%V; nbrs[a].push(b); }
   let U=0,degU=0; const peaks=[]; for(let v=0;v<V;v++){ const vp=sub(PI[v].map(x=>x*D),Cn); let allNeg=true, anyZero=false; for(const w of nbrs[v]){ const s=dot(sub(PI[w],PI[v]),vp); if(s>0n){allNeg=false;break;} if(s===0n) anyZero=true; } if(allNeg){ if(anyZero) degU++; else { U++; peaks.push(v); } } }
-  out.S=stable.length; out.U=U; out.H=H; out.degenerate={edge:degH,vertex:degU,face:out.degenerateStable||0}; out.poincareHopf=out.S+U-H; out.stableFaces=stable; out.peaks=peaks; out.saddles=saddles;
+  out.tipEdgeList=[]; for(let i=0;i<F;i++) for(const [a,b,j] of viol[i]) out.tipEdgeList.push([i,j]); out.S=stable.length; out.U=U; out.H=H; out.degenerate={edge:degH,vertex:degU,face:out.degenerateStable||0}; out.poincareHopf=out.S+U-H; out.stableFaces=stable; out.peaks=peaks; out.saddles=saddles;
   tm.classify=(performance.now()-tA)/1000;
   // --- tipping graph: every violating edge leads to a strictly lower face (exact comparison of squared heights)
   tA=performance.now(); const hcmp=(i,j)=>{ // sign of h_i^2 - h_j^2, h_i = -HS[i]/(|n_i| D) ; h_i^2 = HS_i^2/(|n_i|^2 D^2)
