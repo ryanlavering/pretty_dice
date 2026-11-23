@@ -1,0 +1,11 @@
+// node farm/collect.mjs  -> catalogue summary: count, ratio histogram, best ratio, yield per ratio (from rejects.jsonl), nearest-neighbour distances
+import fs from 'fs'; import {FARM,readJSON,signature,sigDist} from './lib.mjs';
+const cat=readJSON(FARM+'/catalogue.json',{bodies:[]}).bodies; const rej=fs.existsSync(FARM+'/rejects.jsonl')?fs.readFileSync(FARM+'/rejects.jsonl','utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l)):[];
+const bin=r=>(Math.round(r*100)/100).toFixed(2); const H={}, R={}; const row=k=>H[k]||(H[k]={tried:0,ok:0,fail:{}});
+for(const b of cat){ row(bin(b.targetRatio)).ok++; row(bin(b.targetRatio)).tried++; }
+for(const r of rej){ const x=row(bin(r.target)); x.tried++; x.fail[r.failed]=(x.fail[r.failed]||0)+1; }
+console.log(`catalogue: ${cat.length} accepted bodies, ${rej.length} rejected runs (${cat.length+rej.length} finished iterations)`);
+if(cat.length) console.log('best ratio',Math.max(...cat.map(b=>b.ratio)).toFixed(4),' ratio range',Math.min(...cat.map(b=>b.ratio)).toFixed(4),'-',Math.max(...cat.map(b=>b.ratio)).toFixed(4));
+console.log('target  tried  accepted  yield   failures'); for(const k of Object.keys(H).sort()){ const x=H[k]; console.log(k.padEnd(7),String(x.tried).padStart(5),String(x.ok).padStart(8),(100*x.ok/Math.max(1,x.tried)).toFixed(0).padStart(6)+'%  ',JSON.stringify(x.fail)); }
+const kinds={}; for(const r of [...rej.map(r=>({k:r.kind,ok:0})),...cat.map(b=>({k:b.kind,ok:1}))]){ kinds[r.k]=kinds[r.k]||[0,0]; kinds[r.k][0]++; kinds[r.k][1]+=r.ok; } console.log('by kind (tried, accepted):',JSON.stringify(kinds));
+if(cat.length){ const S=cat.map(b=>signature(b.params)); console.log('\nid    ratio   Kmin   pers      |M|  roll top-share  nearest-dist(vs)'); cat.forEach((b,i)=>{ let nn=Infinity,nid=null; S.forEach((s,j)=>{ if(j!==i){ const d=sigDist(S[i],s); if(d<nn){ nn=d; nid=cat[j].id; } } }); console.log(b.id,b.ratio.toFixed(4),String(b.Kmin).padEnd(6),String((b.persistenceL6||0).toExponential(1)).padEnd(8),String(b.Msize).padStart(4),'  ',b.roll&&b.roll.topClusterShare!==undefined?(b.roll.topClusterShare+' ('+b.roll.maxClusterAngleDeg+'deg max)').padEnd(16):'-'.padEnd(16),nn===Infinity?'-':(100*nn).toFixed(2)+'% ('+nid+'), cat-ref '+(100*(b.nearestDist||0)).toFixed(2)+'% '+(b.nearestId||'')); }); }
