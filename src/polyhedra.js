@@ -1,6 +1,7 @@
 // Polyhedra: vertex sets, convex hull with merged coplanar faces, the SHAPES table and opposite-face label assignment (4.1 factoring step S2).
 import * as THREE from 'three';
 import { PHI, V, range, signs } from './util.js';
+import { GOMBOC172_APEX, GOMBOC172_STABLE, GOMBOC172_TRIS, GOMBOC172_VERTS } from './gomboc172.js';
 
 /* ---------- polyhedra: vertex sets -> hull -> merged coplanar faces ---------- */
 export const trapezohedron = n => {           // d10 (n=5), d14 (n=7)
@@ -25,6 +26,21 @@ export const SHAPES = {
   custom:{label:'Custom', set:true},
   rd12:{label:'rhombic d12', verts:()=>{const o=signs(1,1,1); for(const s of [2,-2]) o.push(V(s,0,0),V(0,s,0),V(0,0,s)); return o;}, labels:range(1,12)},
 };
+
+/* EXPERIMENTAL d1 (v42-gomboc-die): the 172-triangle homogeneous S=1, U=5 gomboc. Review/dev builds only (the artifact build sets __PD_REVIEW) or ?shape=gomboc172 / ?gomboc; absent from default builds.
+   One result: 1 when it rests on S (its apex, the "1" decal, is then on top), 0 on any other face. Vertices are centred on the volume centroid, so the body origin is the true centre of mass. */
+export const GOMBOC_STABLE=V(...GOMBOC172_STABLE), GOMBOC_APEX=GOMBOC172_APEX;   // outward normal of S (object space); apex point
+if(typeof window!=='undefined'&&(window.__PD_REVIEW||/[?&](gomboc|shape=gomboc172)(&|$)/.test(location.search))){
+  let labs=null;
+  SHAPES.gomboc172={label:'Gomboc 172 (experimental d1)', verts:()=>GOMBOC172_VERTS.map(p=>V(...p)), tris:GOMBOC172_TRIS, decal:true,
+    get labels(){ if(!labs){ const fs=trisToFaces(GOMBOC172_VERTS.map(p=>V(...p)),GOMBOC172_TRIS); let b=0; fs.forEach((f,i)=>{ if(f.n.dot(GOMBOC_STABLE)>fs[b].n.dot(GOMBOC_STABLE)) b=i; }); labs=fs.map((f,i)=>i===b?1:0); } return labs; }};
+}
+
+export function trisToFaces(verts,tris){   // faces from given outward triangles as they are (no merging of near-coplanar neighbours): {n,d,idx,pts} like hull()
+  return tris.map(([a,b,c])=>{ let n=new THREE.Vector3().subVectors(verts[b],verts[a]).cross(new THREE.Vector3().subVectors(verts[c],verts[a])).normalize(), d=n.dot(verts[a]);
+    if(d<0){ n.negate(); d=-d; [b,c]=[c,b]; }   // origin (the centre of mass) is inside: the plane distance is positive for an outward normal
+    const idx=[a,b,c]; return {n,d,idx,pts:idx.map(m=>verts[m].clone())}; });
+}
 
 export function hull(verts){
   const eps=1e-4, n=verts.length, out=[], seen=new Set();
