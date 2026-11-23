@@ -57,3 +57,27 @@ test('Next switches from the Design room to the Play room when the anchor is the
   await expect(page.locator('body.design')).toHaveCount(0);
   await expect(page.locator('.nfbox')).toBeVisible();
 });
+// v42-tingles: the 4.2 entries each get a visible, uncovered dot on their anchor (room/pane) at desktop and phone size, and the box stays on screen.
+const NEW42 = ['PD-202', 'PD-214', 'PD-213', 'PD-188', 'PD-198', 'PD-142.42.1', 'PD-212', 'PD-215'];
+test('the 4.2 entries exist with matching card ids', async ({ app, page }) => {
+  await app.open({ query: 'new=1' });
+  const es = await page.evaluate(ids => ids.map(i => window.__nfEntries.find(f => f.id === i)), NEW42);
+  for (const f of es) { expect(f, 'entry').toBeTruthy(); expect(f.card).toBe(f.id); expect(f.rev).toBe(1); expect(f.room).toBe('play'); expect(f.text).toContain('Check:'); }
+});
+for (const [w, h] of [[1280, 800], [390, 740]]) test(`each 4.2 entry shows a dot on its anchor and the box stays on screen (${w}x${h})`, async ({ app, page }) => {
+  test.setTimeout(120_000);
+  await app.open({ query: 'new=1' }); await page.setViewportSize({ width: w, height: h });
+  await app.nav.toPlay();
+  for (const id of NEW42) {
+    const pane = await page.evaluate(i => window.__nfEntries.find(f => f.id === i).pane, id);
+    if (pane) { await page.locator(`#paneltabs [data-pane=${pane}]`).click({ timeout: 3000 }).catch(() => {}); }
+    await page.waitForTimeout(150);
+    const ok = await page.evaluate(i => { window.__nf.render(); const d = document.querySelector(`.nfdot[data-feature="${i}"]`); if (!d || d.hidden) return 'hidden';
+      const b = d.getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return top === d ? 'ok' : 'covered'; }, id);
+    expect(ok, id).toBe('ok');
+    await page.locator(`.nfdot[data-feature="${id}"]`).click();
+    const b = await page.locator('.nfbox').boundingBox();
+    expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x + b.width).toBeLessThanOrEqual(w); expect(b.y).toBeGreaterThanOrEqual(0); expect(b.y + b.height).toBeLessThanOrEqual(h);
+    await page.keyboard.press('Escape');
+  }
+});
