@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T07:01:00Z'
+updated_date: '2026-11-23T08:03:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -123,4 +123,6 @@ Round 14 (v42-gomboc c111b21, page v8): face cuts/sinks negative; joint weighted
 Round 15 research (v42-gomboc 2527c2a): gate passed (Opus formulas match exact checker on 6 bodies). S=U=1 NOT reached: fixed-normal offset LP plateaus (10-11 peaks at the 92-face normals, any aspect bound); normals must move. Best exact stays homogeneous S=1 U=7 90f. Controls inconclusive (no coordinates / format). Angle budget table: aspect 1.5 ~218 faces, 2 ~74, 3 ~30 (necessary for S=1). Round 16 plan: normals as variables (LP inner solver), weighted S=U=1 first.
 
 Round 15 page physics (v42-gomboc 909a5dc, page v9): unilateral contact (lift-off, no-slip impact, step refinement) for faceted bodies only; 92-face S=1 30/30 rest on stable face, weighted 60f 3.4% 30/30, 194f S=2 16/16 on two faces; smooth bodies unchanged. Weighted 24f stays off (no rest in 300 s). Round 16 started: movable normals, LP inner solver, weighted S=U=1 first.
+
+Round 16 (v42-gomboc 5481b12, page v10): EXACT-certified WEIGHTED S=U=1 (H=0) polyhedra at 24/32/36/40/52/60 faces via SLP over normals+heights; shift 31-54% of mean radius (not buildable with steel insert: steel ball max ~14-17%, tungsten 25%). Homogeneous S=U=1 NOT reached (shift floor ~31%). Page: m1_60 weighted S=U=1 body (60 faces, 48% shift). 24/36-face bodies not on page (no rest in 300 s). New exact plane checker r16-exact.mjs.
 <!-- SECTION:NOTES:END -->
