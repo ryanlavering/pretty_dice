@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T02:26:00Z'
+updated_date: '2026-11-23T04:17:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -107,4 +107,6 @@ Round 11 (v42-gomboc 34e1e4b): NEGATIVE. Exact BigInt checker (exact centroid, c
 Round 12 addition (owner): merge sufficiently similar faces in the flat regions of the smooth-body hulls into single faces (tolerance sweep on angle/height; report S vs tolerance and face count, exact convexity re-check).
 
 Round 12 (v42-gomboc c726d28): no S=1 polyhedron. Direct search (vertex/half-space moves, anneal + tipping-guided greedy, 72 runs, float cost) gets S=2 easily at 24-356 faces (exactly certified: 24 faces S2 U4 H4; 194 faces S2), but S=1 never; best S=2 at 40/100/200/400/1000 faces. Merging faces of an S=2 body raises S. Face-merge on 1.16/1.18 hulls (owner idea): S falls roughly in proportion to faces (2k->642 faces S227; 6k->286 faces S78; single-link percolation at tol 0.005-0.01, S~25 at ~400 faces), not toward 1. CMA-ES and the round-10 low-poly seed not run. Recommendation: S=1 needs a structural idea (only known construction is the ~57k-face tangent cover); next seed a merged S~25 body at 400 faces and optimise at 2k-10k faces with an incremental hull. Page unchanged.
+
+Owner 2026-11-22: show low-poly S=2 (and any S=1) polyhedra on the Gomboc page as selectable shapes (interesting in their own right, with rigor banner), and make colour-by-distance-from-CoM the default colouring. Sent to the round 13 lane.
 <!-- SECTION:NOTES:END -->
