@@ -1002,3 +1002,52 @@ Six of the 29 numerically verified farm bodies (`runs/farm/catalogue.json`) are 
 Page-physics rolls (headless chromium, `r15p-roll.mjs`, 10 rolls per body at default physics, rest within 0.3 deg of the stable point; settle time 16 to 29 s): 018, 017, 019, 011, 007 and 028 all 10 of 10 end at the stable point, angle spread at most 0.29 deg (028: 0.05 deg), mean settle 19.7 to 21.0 s (028: 23.2 s).
 
 Body 012 (ratio 1.18, M 17), originally chosen for the 1.18 slot, is NOT added: its catalogue roll record is `rested 0 of 20` (single cluster, no rest within the roll horizon) and its first page-physics roll did not come to rest in over 8 minutes of wall time. The farm's acceptance test does not exclude this case (the winding, convexity and M checks pass); a rest criterion on the recorded rolls should be added to `verify-body.mjs`. 028 (M 15, nearest 013 at 0.41 percent) took its place.
+
+## 79. Round 18 (lane v42-gomboc, research): valley filling, merge beam search, Reshetov seed (`tools/gomboc-spike-verify/r18-lib.mjs`, `r18-fill.mjs`, `r18-beam.mjs`, `r18-collapse-census.mjs`, `r18_mesh_slp.py`, `r18_resh_verts.py`, data `runs/r18/`)
+
+Rigor: every state quoted below was evaluated by the exact path (`r14-lib.mjs` evalPI: hull of 2^-40 integer points, BigInt convexity certificate, exact rational volume centroid, exact S, U, H, Poincare-Hopf S+U-H = 2 checked). The float parts (pair geometry, steepest-ascent pairing, mesh SLP) only choose candidates. Bodies are triangulated hulls (so "90 faces" = 90 triangles on 47 vertices; the generic triangulation is what the exact checker classifies).
+
+### 79.1 Valley filling (task 1) — NEGATIVE, exact
+Pairs: one per saddle edge, elder rule (steepest ascent from both endpoints, lower peak is cancelled), barrier = r(lower peak) - h(saddle foot), 6 pairs on the 90-face S=1 U=7 body (barriers 1.4 to 11.3 percent of the mean radius, `runs/r14/umin_V52s1_a.json`) and 10 pairs on the 92-face S=1 U=11 body (0.2 to 14.9 percent, `runs/r14/homog_S1_92.json`). For each pair 9 filling modes at 25 raises from 0 to 1.2 x barrier: `foot` (new vertex above the foot point), `ends` (both saddle-edge endpoints pushed out radially), `footends`, `cap3` (3 vertices along the saddle edge), `footPk` (foot plus a half-raised vertex toward the lower peak), `ramp1/2/3` (2 to 4 new vertices on the chord from the foot to the lower peak, radius ramping linearly from the raised foot to 0.98 of the peak radius), `chain` (the ascent chain vertices lifted). 1350 + 2250 = 3600 candidates, all valid exact hulls.
+
+| mode (90f / 92f) | S=1 candidates | lowest U with S=1 (base 7 / 11) | U below base | lower peak gone with S=1 |
+|---|---|---|---|---|
+| foot | 94 / 226 | 8 / 12 | 0 / 0 | 0 / 0 |
+| ends | 0 / 95 | none / 11 | 0 / 0 | 0 / 95 (U unchanged: the peak just moves) |
+| footends | 0 / 94 | none / 11 | 0 / 0 | 0 / 94 |
+| cap3 | 73 / 223 | 7 / 11 | 0 / 0 | 1 / 7 |
+| footPk | 94 / 226 | 8 / 12 | 0 / 0 | 0 / 0 |
+| ramp1, ramp2, ramp3 | 86 to 87 / 222 to 223 | 7 / 11 | 0 / 0 | 0 / 0 |
+| chain | 127 / 240 | 7 / 11 | 0 / 0 | 0 / 0 |
+
+Result: 0 of 3600 single fills reduce U with S = 1. Mechanism (exact reasoning plus the traces in `fill_u90.json`, `fill_h92.json`): a new vertex above the foot of the saddle edge is itself a peak (both edges to the old endpoints descend from it, (a - v).(v - c) = -delta (h + delta) < 0), so it replaces the saddle by a new peak/saddle pair (U +1) unless it is adjacent to a higher vertex; the ramps give it that neighbour but the raise displaces the centroid (shift grows linearly with the raise, 0.03 percent of rbar per 5 percent of barrier at the 11 percent barrier) and extra stable faces appear from raises of 10 to 15 percent of the barrier on (S 3 to 21 at 1.2 x barrier for the 11 percent barrier pair). Raising the endpoints removes the lower peak in 95 of 240 cases at 92 faces but U is unchanged (the displaced peak moves to a neighbour). The post-fill SLP re-solve was NOT run: no fill gave a state with lower U that needed margin repair. Weighted bodies (rounds 16/17) have U = 1 and H = 0, so they have no pair to fill (not applicable).
+
+### 79.2 Merge-cancellation beam search (task 2) — U lowered, no S=U=1
+`r18-beam.mjs`: beam width 8 (12 for one continuation), moves = every vertex removal, every (peak, neighbour) edge move with s in {0.1, 0.25, 0.5, 0.75, 1}, and fills (modes ends, footends, cap3, ramp2, chain at 0.3, 0.6, 0.9, 1.1 x barrier); every accepted state is an exact certified hull with S=1; states ranked by (U, H, smallest barrier / rbar of any pair), ties kept (plateau moves allowed), duplicate states dropped. About 4000 candidates per state, 10 ms each.
+
+| start | moves | best exact (S, U, H) | faces | aspect | centroid motion |
+|---|---|---|---|---|---|
+| 92-face (1, 11, 10) | 1 (peak v22 halfway to w44, round 17 move) | (1, 10, 9) | 92 | 2.021 | |
+| | 3 | (1, 9, 8) | 98 | 2.002 | |
+| | 7 | (1, 8, 7) | 114 | 1.997 | |
+| | 17 | (1, 7, 6) | 132 | 1.995 | |
+| | 29 | (1, 6, 5) | 148 | | |
+| | 40 | (1, 5, 4) | 172 (88 vertices) | 1.994 | 0.47 percent of rbar |
+| | 100 (continuation, width 8) | still (1, 5, 4) | 160 to 172 | | plateau for 60 further moves |
+| 90-face (1, 7, 6) | 3 | (1, 6, 5) | 96 | | |
+| | 15 | (1, 5, 4) | 124 (64 vertices) | 1.997 | 0.11 percent of rbar |
+| | 55 (continuation, width 12) | still (1, 5, 4) | 124 to 146 | | plateau for 40 further moves |
+
+Bodies: `runs/r18/best_h92_U5.json` (172 triangles) and `runs/r18/best_u90_U5.json` (124 triangles), re-verified from file: convexity certificate true, S = 1, U = 5, H = 4, Poincare-Hopf 2, no degenerate edge, vertex or face. Both are homogeneous (exact centroid) with aspect 1.99 to 2.00 (the bound was not imposed on the beam; the states stay near 2 because they descend from bodies at the bound). No stable face other than the one: S = 1 throughout. Move mixture along the best paths: edge moves of 0.1 to 0.25 of an edge (peak nudges, which the round 17 single-move test saw but could not chain because each was individually neutral) and cap3/ramp2/chain fills of 0.3 to 1.1 barrier; a single move class never works alone, the fills pay off only after a nudge has changed the neighbour structure. Progress is monotone in depth (U drops by one every 4 to 12 moves) until the plateau at U = 5, 90 and 92 faces both. Mechanism guess (not shown): after 5 peaks the remaining ones are the "ends" of the aspect-2 shell and cannot be absorbed without moving the centroid onto another face.
+
+### 79.3 Reshetov 14-plane seed (task 3) — NEGATIVE
+The 14 dyadic planes (V = 24, E = 36) were intersected in float, rescaled to mean radius 1.5 and rounded to 2^-40; the plain 24-point hull is not strictly convex (quads, `convexCert` false), so each vertex got a radial jitter of 1e-6 (the exact class is unchanged up to 1e-4 jitter, 1e-3 gives S = 2 to 3): `runs/r18/resh14_tri.json`, 44 triangles, exact (S, U, H) = (1, 2, 1), peaks at vertices 5 and 11, saddle edge (3, 12), aspect 39.8, barrier = 1.89 mean radii (the saddle foot is 0.11 rbar from the centroid, the peaks are the canoe tips). (a) valley fill of the saddle edge, 9 modes x 49 raises up to 1.2 barrier: S = 1 for 0 of 441 candidates (S 2 to 11 at once; the raise of even 2.5 percent of the barrier = 0.05 rbar already moves the centroid onto a second stable face): (b) 50 s-values each of edge moves of the two peaks onto each neighbour, 50 radial pull-backs of each peak, 24 single-vertex removals (exact census, `census_resh.json`): histogram of exact (S, U, H): (6,2,6) 741, (5,2,5) 34, (3,2,3) 29, (4,2,4) 26, (7,2,7) 19, (2,2,2) 17, (1,2,1) 4 (mv11>13 and >21 at s = 0.02, rm9, rm18: the seed itself), U never below 2 for any state; (c) mesh SLP (`r18_mesh_slp.py`, vertex positions of the 24 vertices, linearised climbing sign of the target peak, stable set, tipping, other peaks, convexity held, minimise the L1 step, trust region 0.02 to 0.6 of the mean radius, 12 to 25 iterations): the single violated row is the target peak's climbing cosine (-0.93 to be raised to +1e-4); it stays at slack 0.93 at every trust radius, steps are rejected by the S = 1 test. Face insertion is covered by (a) and by the beam (`beam_resh.log`: depth 2 then no S=1 successor). Lowest reached: (1, 2, 1), the seed. No homogeneous S=U=1 from Reshetov. The tip persistence is too large (a canoe tip is a genuine local maximum of the support function, not a shallow bump): a cancellation here must lower an end by 1.9 mean radii.
+
+### 79.4 Not done
+Task 4 (shift floor versus face count from sphere seeds, tilt map) was not started: the budget went to the beam. Post-fill SLP repair was not run since nothing needed repair. Beam widths above 12 and objective variants (e.g. persistence-sum instead of smallest barrier) were not tried; the plateau at U = 5 is for this move set and tie-break only.
+
+### 79.5 Round 18 conclusions
+* Exact: homogeneous S = 1 bodies with U = 5, H = 4 (124 and 172 triangles); previous best 7 (90 faces at the aspect bound) and 11 (92 faces). U falls steadily with the beam and then plateaus at 5.
+* Exact negative: 3600 single valley fills (9 modes, raises to 1.2 of the barrier) never lower U at S = 1 on either body; the Reshetov seed stays at U = 2.
+* No homogeneous S = U = 1 body found.
+* Next: wider/longer beams with a persistence-sum score, vertex-insertion moves that are not tied to a pair, a pair-wise SLP at the plateau (U = 5) with the centroid equality, and the shift-floor / tilt-map tasks.

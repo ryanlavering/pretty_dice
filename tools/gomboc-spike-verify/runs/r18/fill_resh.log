@@ -1,0 +1,10 @@
+base { S: 1, U: 2, H: 1, F: 44, V: 24 } aspect 39.757
+0 [3,12] barrier% 189.47 foot first null best [ '0.30', 2, 3, 3, 36 ]
+0 [3,12] barrier% 189.47 ends first null best [ '0.27', 2, 2, 2, 38 ]
+0 [3,12] barrier% 189.47 footends first null best [ '0.25', 2, 3, 3, 40 ]
+0 [3,12] barrier% 189.47 cap3 first null best [ '0.22', 2, 3, 3, 40 ]
+0 [3,12] barrier% 189.47 footPk first null best [ '0.30', 2, 3, 3, 36 ]
+0 [3,12] barrier% 189.47 ramp1 first null best [ '0.30', 2, 3, 3, 36 ]
+0 [3,12] barrier% 189.47 ramp2 first null best [ '0.30', 2, 3, 3, 36 ]
+0 [3,12] barrier% 189.47 ramp3 first null best [ '0.30', 2, 3, 3, 36 ]
+0 [3,12] barrier% 189.47 chain first null best [ '0.60', 3, 2, 3, 38 ]

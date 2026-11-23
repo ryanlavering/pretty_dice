@@ -1,0 +1,4 @@
+depth 1 cands 119 valid 119 S=1 new 2 beam U 2,2 best { S: 1, U: 2, H: 1, F: 42, V: 23 } asp 39.775 rm9
+depth 2 cands 236 valid 236 S=1 new 2 beam U 2,2 best { S: 1, U: 2, H: 1, F: 40, V: 22 } asp 39.767 rm17
+no successors
+BEST { S: 1, U: 2, H: 1, F: 44, V: 24 } path start
