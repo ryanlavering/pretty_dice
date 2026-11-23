@@ -1,0 +1,13 @@
+depth 1 valid S=1,U<= 14 75 best {"S":1,"U":5,"H":4,"F":122,"V":63} asp 2.00 2s
+depth 2 valid S=1,U<= 14 351 best {"S":1,"U":5,"H":4,"F":120,"V":62} asp 2.00 12s
+depth 3 valid S=1,U<= 14 335 best {"S":1,"U":5,"H":4,"F":118,"V":61} asp 2.00 21s
+depth 4 valid S=1,U<= 14 274 best {"S":1,"U":5,"H":4,"F":116,"V":60} asp 2.00 31s
+depth 5 valid S=1,U<= 14 254 best {"S":1,"U":5,"H":4,"F":114,"V":59} asp 2.00 39s
+depth 6 valid S=1,U<= 14 233 best {"S":1,"U":5,"H":4,"F":112,"V":58} asp 2.00 48s
+depth 7 valid S=1,U<= 14 215 best {"S":1,"U":5,"H":4,"F":110,"V":57} asp 2.00 56s
+depth 8 valid S=1,U<= 14 191 best {"S":1,"U":5,"H":4,"F":108,"V":56} asp 2.00 64s
+depth 9 valid S=1,U<= 14 151 best {"S":1,"U":6,"H":5,"F":106,"V":55} asp 2.00 72s
+depth 10 valid S=1,U<= 14 95 best {"S":1,"U":6,"H":5,"F":104,"V":54} asp 2.00 79s
+depth 11 valid S=1,U<= 14 12 best {"S":1,"U":6,"H":5,"F":102,"V":53} asp 2.00 86s
+no successors
+FRONT [[102,6,2],[108,5,2]]

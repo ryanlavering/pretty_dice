@@ -1,0 +1,16 @@
+700 tRest null dist(deg) 0.46 face 0 swings 450 minFz 8.16e+1 110525ms
+701 tRest null dist(deg) 1.21 face 0 swings 451 minFz 1.43e+2 108078ms
+702 tRest null dist(deg) 0.51 face 0 swings 468 minFz 2.13e+2 106258ms
+703 tRest null dist(deg) 0.46 face 0 swings 384 minFz 2.65e+2 105873ms
+704 tRest null dist(deg) 0.54 face 0 swings 432 minFz 1.38e+2 110700ms
+705 tRest null dist(deg) 0.46 face 0 swings 343 minFz 5.29e+1 110462ms
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Target page, context or browser has been closed
+    at /home/ryan/code/pretty_dice-v4.2-gomboc/tools/gomboc-spike-verify/r15p-roll.mjs:11:81 {
+  log: []
+}
+
+Node.js v22.23.4

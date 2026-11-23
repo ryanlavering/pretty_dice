@@ -1051,3 +1051,35 @@ Task 4 (shift floor versus face count from sphere seeds, tilt map) was not start
 * Exact negative: 3600 single valley fills (9 modes, raises to 1.2 of the barrier) never lower U at S = 1 on either body; the Reshetov seed stays at U = 2.
 * No homogeneous S = U = 1 body found.
 * Next: wider/longer beams with a persistence-sum score, vertex-insertion moves that are not tied to a pair, a pair-wise SLP at the plateau (U = 5) with the centroid equality, and the shift-floor / tilt-map tasks.
+
+## 80. Round 19 (lane v42-gomboc): page bodies, rollability, low-poly small-U search (`r19-page-add.mjs`, `r19-decim.mjs`, `r19-csptest.mjs`, `runs/r18/roll_*.txt`, `runs/r18/decim_*`)
+
+### 80.1 Page bodies and page-driver rolls (headless chromium, CSP route, `fastRoll`, default physics, seeds 700 to 719)
+Rest criterion = the page's own (`tRest` set); "on stable" = rest within 0.06 rad of the exact stable face.
+
+| body | S, U, faces | homog. | rigor | rolls | rest on stable | settle (s) | on page |
+|---|---|---|---|---|---|---|---|
+| h92b (`best_h92_U5.json`) | 1, 5, 172 | yes | exact | 20 | 20 of 20 (0.66 to 0.71 deg) | 9.7 to 21.4, median 12.7 | ADDED |
+| h92 (existing) | 1, 11, 92 | yes | exact | 20 | 20 of 20 (1.1 to 1.2 deg) | 7.2 to 18.5, median 11.7 | already there; label now shows the rate |
+| u90 (`umin_V52s1_a`) | 1, 7, 90 | yes | exact | 6 (stopped, 110 s each) | 0 of 6: no rest within the horizon (450 swings), ends within 0.5 to 1.2 deg of the stable face, still rattling | none | NOT added |
+| u90b (`best_u90_U5`) | 1, 5, 124 | yes | exact | 3 (stopped) | 0 of 3: no rest (1500 swings); one 12 deg off | none | NOT added |
+| resh14 (`resh14_tri`, 14 planes, 44 triangles after a 1e-6 jitter) | 1, 2, 44 | yes | exact | 2 (stopped) | 0 of 2: no rest (1800 swings), one ended 136 deg from the stable face, one 6.9 deg | none | NOT added |
+
+The small-aspect-2 90 and 124-face bodies and the aspect-40 canoe do not come to rest in the page physics (the lift-off and no-slip impact model keeps rattling near flat faces; this is a physics-model effect, not evidence about the true body, and I did not diagnose it further). Rules followed: a body that never rests is not on the page; csptest on the page with h92b and h92: ready true, errors []. Screenshot of h92b checked (renders, banner reads "EXACT, homogeneous unistable ... 5 unstable vertices").
+The node harness `r15p-node.mjs` no longer loads (page script line offsets changed after the farm bodies were added), so only page-driver rolls were run.
+
+### 80.2 Low-poly small-U search (exact states; S = 1 homogeneous throughout, U <= 14)
+Decimation beam (`r19-decim.mjs`: vertex removals and edge collapses, width 8, score = fewer triangles, then U, then aspect; every state an exact certified hull). Results (triangles, U, aspect about the centroid):
+| seed | smallest S=1 state reached | best U per size reached |
+|---|---|---|
+| Reshetov 44 tri (U 2, aspect 39.8) | 38 triangles, V 21, (1,2,1), aspect 39.8 | stuck after 3 removals (no S=1 successor) |
+| 90 tri (U 7) | none: no move keeps S=1 | 90 / U7 |
+| 92 tri (U 11) | none | 92 / U11 |
+| best_u90_U5 124 tri | 102 | 108 / U5, 102 / U6 (U7 beyond), stuck at 102 |
+| best_h92_U5 172 tri | 96 | 132 / U5, 112 / U6, 102 / U7, 100 / U8, 96 / U9, aspect 1.99 throughout |
+Pareto (triangles vs U) over all exact bodies: 38 / U2 (aspect 39.8, canoe, does not roll to rest on the page), 90 / U7 (aspect 2.0, does not rest on the page), 92 / U11 (rolls 20 of 20), 124 / U5 (aspect 2.0, no rest), 172 / U5 (20 of 20). Among bodies that rest on the page: 92 / U11 and 172 / U5 only. Decimation cannot go below about 90 triangles at aspect 2; below that only the high-aspect Reshetov canoe exists. The Conway-Guy / Bezdek-type seeds were not available as coordinates and a forward low-face search (14 to 40 planes with S=1, U<15, aspect <= 3) was NOT run: the SLP of rounds 16/17 would need a U-target objective instead of S=U=1 (not written in this round). So the 14 to 40 plane range is covered only by the Reshetov body itself.
+
+### 80.3 Conclusions
+* Page: one new body (172 triangles, S=1 U=5, exact, 20/20 rolls). Three candidate bodies (U=7 at 90, U=5 at 124, Reshetov U=2) do not rest in the page physics and stay off the page.
+* Rollability indicator: the 20-roll rate is in the page labels (h92, h92b) and in the table above.
+* Open: forward low-face search targeting S=1, U<15 with aspect <= 3; investigating why aspect-2 bodies of 90 to 124 triangles rattle (a rest-criterion or contact-model question).

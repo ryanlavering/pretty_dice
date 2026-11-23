@@ -1,0 +1,21 @@
+700 tRest 18.54 dist(deg) 1.10 face 0 swings 80 minFz 1.21e+2 6184ms
+701 tRest 11.61 dist(deg) 1.22 face 0 swings 52 minFz 2.16e+2 4365ms
+702 tRest 11.11 dist(deg) 1.22 face 0 swings 47 minFz 1.87e+2 4202ms
+703 tRest 10.01 dist(deg) 1.22 face 0 swings 45 minFz 1.79e+2 3959ms
+704 tRest 10.27 dist(deg) 1.22 face 0 swings 45 minFz 1.93e+2 4008ms
+705 tRest 9.01 dist(deg) 1.22 face 0 swings 40 minFz 2.94e+1 3424ms
+706 tRest 11.81 dist(deg) 1.22 face 0 swings 47 minFz 2.27e+2 4362ms
+707 tRest 13.44 dist(deg) 1.11 face 0 swings 58 minFz 6.02e+1 4690ms
+708 tRest 11.77 dist(deg) 1.10 face 0 swings 50 minFz 2.62e+2 4381ms
+709 tRest 12.14 dist(deg) 1.22 face 0 swings 50 minFz 2.87e+2 4537ms
+710 tRest 11.67 dist(deg) 1.11 face 0 swings 48 minFz 1.54e+2 4348ms
+711 tRest 12.47 dist(deg) 1.22 face 0 swings 51 minFz 1.88e+2 4523ms
+712 tRest 12.04 dist(deg) 1.10 face 0 swings 49 minFz 6.06e+1 4454ms
+713 tRest 7.24 dist(deg) 1.22 face 0 swings 32 minFz 1.81e+2 2881ms
+714 tRest 12.67 dist(deg) 1.22 face 0 swings 54 minFz 1.41e+2 4458ms
+715 tRest 9.54 dist(deg) 1.22 face 0 swings 43 minFz 1.76e+2 3730ms
+716 tRest 12.61 dist(deg) 1.22 face 0 swings 50 minFz 2.26e+2 4571ms
+717 tRest 14.77 dist(deg) 1.11 face 0 swings 58 minFz 1.78e+2 5117ms
+718 tRest 9.24 dist(deg) 1.11 face 0 swings 46 minFz 2.08e+2 3579ms
+719 tRest 10.74 dist(deg) 1.22 face 0 swings 47 minFz 2.23e+2 4037ms
+h92 rolls 20 rested-on-stable 20 no-rest/diverged 0 errors []
