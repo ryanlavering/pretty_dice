@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T06:43:00Z'
+updated_date: '2026-11-23T07:01:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -121,4 +121,6 @@ Round 13 (v42-gomboc 476f6b0, page be189ca, page v7): fast incremental optimiser
 Round 14 (v42-gomboc c111b21, page v8): face cuts/sinks negative; joint weighted-shift minimisation: exact weighted S=1 at 24f 12.7%, 40f 7.3%, 60f 3.45% (aspect<=2); HOMOGENEOUS S=1 polyhedron at 92 faces (U=11, exact; U cut to 7 at 90 faces with S=1 held). On page as 92-face S=1 shape; page rolling unreliable on faceted bodies (contact model has no lift-off). Next (round 15): S=U=1 via LP in face offsets from these bodies; page contact model fix.
 
 Round 15 research (v42-gomboc 2527c2a): gate passed (Opus formulas match exact checker on 6 bodies). S=U=1 NOT reached: fixed-normal offset LP plateaus (10-11 peaks at the 92-face normals, any aspect bound); normals must move. Best exact stays homogeneous S=1 U=7 90f. Controls inconclusive (no coordinates / format). Angle budget table: aspect 1.5 ~218 faces, 2 ~74, 3 ~30 (necessary for S=1). Round 16 plan: normals as variables (LP inner solver), weighted S=U=1 first.
+
+Round 15 page physics (v42-gomboc 909a5dc, page v9): unilateral contact (lift-off, no-slip impact, step refinement) for faceted bodies only; 92-face S=1 30/30 rest on stable face, weighted 60f 3.4% 30/30, 194f S=2 16/16 on two faces; smooth bodies unchanged. Weighted 24f stays off (no rest in 300 s). Round 16 started: movable normals, LP inner solver, weighted S=U=1 first.
 <!-- SECTION:NOTES:END -->
