@@ -120,4 +120,4 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 
 ## 9. How this document is kept up to date
 
-After each round the integrator verifies the lane's push (ancestry, CSP check on the page), then updates section 1 (where we are), section 3 (findings), section 5 (rigor ledger) and appends to section 8 (the round log), and commits it to `v4`. The lane keeps its own detailed log in `docs/design/gomboc-spike.md` on `v42-gomboc`.
+After each round the integrator verifies the lane's push (ancestry, CSP check on the page), then updates section 1 (where we are), section 3 (findings), section 5 (rigor ledger) and appends to section 8 (the round log), and commits it to `v4.2`. The lane keeps its own detailed log in `docs/design/gomboc-spike.md` on `v42-gomboc`.
