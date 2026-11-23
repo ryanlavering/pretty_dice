@@ -1,0 +1,8 @@
+start F 1536 V 770 S 2 cost 1.13 hmin 2.260
+t 10s it 2677922 (267792/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 20s it 5483243 (274162/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 30s it 8292988 (276433/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 40s it 11115955 (277899/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 50s it 13836109 (276722/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 60s it 16674885 (277914/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2
+t 70s it 19583470 (279763/s) acc 0.0% bad 99% S 2 cost 1.13 best S 2

@@ -1,0 +1,8 @@
+start F 3104 V 1554 S 2 cost 1.13 hmin 0.738
+t 10s it 2139771 (213977/s) acc 2.4% bad 98% S 2 cost 1.27 best S 2
+t 20s it 4381304 (219065/s) acc 2.4% bad 98% S 2 cost 1.12 best S 2
+t 30s it 6601190 (220039/s) acc 2.3% bad 98% S 2 cost 1.12 best S 2
+t 40s it 8838173 (220954/s) acc 2.3% bad 98% S 2 cost 1.30 best S 2
+t 50s it 10980874 (219617/s) acc 2.3% bad 98% S 2 cost 1.08 best S 2
+t 60s it 13234056 (220567/s) acc 2.3% bad 98% S 2 cost 1.23 best S 2
+t 70s it 15561512 (222307/s) acc 2.3% bad 98% S 2 cost 1.13 best S 2

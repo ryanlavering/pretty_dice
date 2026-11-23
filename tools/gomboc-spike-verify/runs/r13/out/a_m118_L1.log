@@ -1,0 +1,8 @@
+start F 6960 V 3482 S 23 cost 26.65 hmin 0.753
+t 10s it 2272716 (227272/s) acc 0.0% bad 100% S 23 cost 26.67 best S 23
+t 20s it 4614558 (230728/s) acc 0.0% bad 100% S 23 cost 26.67 best S 23
+t 30s it 6838393 (227946/s) acc 0.0% bad 100% S 23 cost 26.67 best S 23
+t 40s it 9085813 (227145/s) acc 0.0% bad 100% S 23 cost 26.65 best S 23
+t 50s it 11242212 (224844/s) acc 0.0% bad 100% S 23 cost 26.67 best S 23
+t 60s it 13513125 (225218/s) acc 0.0% bad 100% S 23 cost 26.65 best S 23
+t 70s it 15865002 (226642/s) acc 0.0% bad 100% S 23 cost 26.65 best S 23

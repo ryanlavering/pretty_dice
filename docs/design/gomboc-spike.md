@@ -710,3 +710,56 @@ Best float S per start size (any param, seed, ASP 3 or 6; all with exact-confirm
 * Moves that help: letting vertices leave the hull (the face count drops to 20 to 30, S to 2); twisted/elongated starts (S = 2 at 11 stable faces start); temperature. Moves that do not: greedy tipping-graph moves, relaxing the aspect limit, merging faces of an already S = 2 body.
 * Recommendation: (1) the 57k-face tangent-cover construction is probably the only route known to work; a search at 40 to 1000 faces should not expect S = 1 without a structural idea. (2) If continuing: optimise the support-function-style cost directly (smooth, no hull rebuild) at 2k to 10k faces from a seed that is already monostable (merge result with S about 25 at 400 faces is a candidate seed), then apply tipping-graph moves to the 25 remaining stable faces; the exact check at that size is 30 to 150 ms. (3) Gradient information is the missing ingredient: the cost is piecewise constant, so use margins (already in the cost) with many more evals (needs an incremental hull; hull.mjs is the bottleneck at >=400 faces). (4) Do not spend more on S = 2 or hull-only approaches.
 * Page: unchanged (no S = 1 body). Not done: reduction, roll harness (nothing to roll), CMA-ES, `r10` seed in the sweep, finer percolation window.
+
+# Round 13 (incremental S optimiser, weighted-CoM S=1, page)
+
+Result in one line: **no homogeneous S=1 polyhedron found** (best exact-certified S=2, now also at 2996 faces); a **weighted (non-homogeneous) S=1 polyhedron is exactly certified** for both certified S=2 bodies (24 and 194 faces) but needs a CoM shift of 57 to 73 percent of the radius, so it is not a slightly weighted die; and the fast optimiser has a tolerance bug found late (section 51), so its float S values at 1.4k to 3k faces are not certified.
+
+## 47. Incremental optimiser (`r13-inc.mjs`, `r13-seed.mjs`, `r13-exact.mjs`; logs and seeds in `runs/r13/`)
+
+* Representation: fixed-topology triangle mesh, one vertex moved per step; accept only if every edge of the incident triangles stays locally convex and r_max <= 3 h_min. Incremental: per-triangle unit normal, offset, volume; running volume and moment give the CoM; each face caches its foot margin m_f (signed in-plane distance of the CoM foot to the nearest edge line) with the cumulative CoM path length L_f at computation; the foot moves by at most |dC| so the stable/unstable sign of face f is certain while |m_f| > L - L_f. Only incident and stale faces are recomputed; the rest is a linear scan over the faces (about 5 ns each), which also gives S, the lowest stable face and h_min. Verified against a from-scratch recomputation after every accepted move (debug mode, 0 mismatches after fixing a save/restore bug).
+* Speed (one core, float): 6.5 microseconds per move at 1,420 faces (153k moves/s, acceptance 20 percent), 10 to 13 microseconds at 2,996 faces (75k to 99k moves/s), 3.5 us when almost every move is rejected. Round 12 was about 10 ms per evaluation at 1000 faces (hull rebuild), so the speed-up is about 1000x and far below the 1 ms target. 10k faces was not timed (the scan is linear, expected about 30 us).
+* Cost: sum over stable faces other than the lowest stable one of (1 + 0.5 min(m/mref,1)) (mref half an average edge) plus 0.02 times a hinge on unstable faces whose margin is within half an edge of 0 (pressure from near-stable faces). Annealing (T 0.5 to 0.02 or 0.15 to 0.01), 30 percent of the moves on vertices of a spurious stable face (the kill move), step 10^-3 to 10^-0.5 edge lengths.
+* Seeds: flat merged polytopes cannot be refined by subdivision (a flat polygon is rigid under strict convexity: raising one vertex makes the link edges reflex; subdivided seeds were 100 percent rejected). Used instead: Fibonacci samples of the p-norm-rounded merged polytope (p 40 to 100) or of the rounded S=2 bodies, hulled (`g:`, `gv:` kinds). Hulls of more than about 2.5k points of a very flat body break `hull.mjs` (face count blow-up); the sets used have 1500 points (2996 faces).
+
+## 48. Results (float cost; certified only where stated)
+
+| seed | faces | start S (float) | best float S after 300 to 420 s | exact (BigInt) |
+|---|---|---|---|---|
+| merged 1.16 (S 26 at 358 polygons), fan-triangulated, no refinement | 1,420 | 26 | 5 (40 s) | not certified (tolerance bug, section 51) |
+| rounded merged 1.16 (S 29) | 2,996 | 29 | 3 to 4 | exact S 9 to 18, NOT convex: invalid |
+| rounded merged 1.18 | 2,996 | 29 | 4 | exact S 8 to 12, NOT convex: invalid |
+| rounded round-12 S=2 body (194 faces) | 2,996 | 2 (exact 3) | **2** | exact S 2, U 15, H 15, convexity certificate true, global test 0 violations (`runs/r13/exact_c_gs194_N1500_S2.json`) |
+| rounded round-12 S=2 body (24 faces) | 2,986 | 2 | 2 (acceptance 0: seed too rigid) | not convex |
+
+* S=2 to S=1 test (task 2c): from the rounded 194-face S=2 body at 3k faces, 25M moves of fine-scale annealing leave S=2 (cost 1.10 to 1.25, the second stable face keeps height within 0.5 percent of the lowest: 0.7274 vs 0.7314). The second stable face is a **robust, not marginal**, feature at this resolution: no sequence of small vertex moves removes it without creating another.
+* The merged S about 25 seeds fall to float S 3 to 5 at 1.4k to 3k faces, but those meshes were accepted with a float convexity tolerance of +1e-11 and are not valid (section 51), so no certified result below S=2 exists.
+* Not done: margin-cost ablation against the integer-S cost (part A of the owner request: the margin term is in the cost, but no controlled comparison, CoM laxity reporting or oblique-face seeding was run), 5k and 10k faces, CMA-ES, tipping-edge-drop kill move beyond the vertex-of-bad-face proposal.
+
+## 49. Weighted-CoM S=1 (`r13-prism.mjs`, `runs/r13/prism_*.json`)
+
+Face i is stable for CoM c iff the foot of c on plane i lies inside polygon i (prism). Random search of c inside the body (200k samples) for exactly one prism, then local descent of |c| keeping the other margins below -0.2 percent of the radius, then EXACT confirmation (BigInt: c as a dyadic rational with denominator 2^30, per-face foot-in-triangle sign tests on integers, c strictly inside every face plane, convexity certificate and global test of the polyhedron, 0 degenerate edges):
+
+| body | faces | homogeneous S | CoM shift (percent of mean vertex radius) | exact S at the shifted CoM | margin of the wanted face | most positive other margin |
+|---|---|---|---|---|---|---|
+| round-12 S=2, 24 faces | 24 | 2 | 73.4 | 1 | 0.239 (abs) | -0.0126 |
+| round-12 S=2, 194 faces | 194 | 2 | 57.2 | 1 | 0.109 | -0.0025 |
+
+So the two bodies ARE exactly provable single-stable-face bodies for a shifted centre of mass (a weighted die), but the shift is huge (the descent is a crude random local search, not an optimiser; it was not applied to the 3k-face meshes, where the prism test costs O(faces) per sample). Smallest face count with a valid weighted S=1 found: 24 (but the 24-face one could not be shown on the page, section 50). Direction of the 194-face shift (unit): (0.127, -0.764, -0.632).
+
+## 50. Page (`tools/gomboc-spike.html`, commit be189ca)
+
+* Default colouring is now the distance from the centre of mass (toggle "colour by distance from CoM", on by default), measured from the shifted CoM in approximate mode (recomputed on every nudge); stable/unstable markers are kept in this colouring. Info text updated.
+* New selectable shapes (data generated by `r13-page-poly.mjs` from the exact records): "Polyhedron S=2, 194 faces (exact)" with a banner (194 faces / 99 vertices, S 2, U 11, H 11, exactly certified, NOT mono-monostatic, two red dots) and "Weighted polyhedron S=1, 194 faces (CoM shifted 57%)" with the banner "exactly verified as a weighted (non-homogeneous) body, CoM shifted 57.2% of radius, NOT a homogeneous gomboc". Physics: the polyhedron is rolled as a p-norm rounded body (p 40, radial function from the plane gauge, support Newton started from the extreme vertex); inertia is that of the uniform body (not re-referenced for the shift); float, not certified. Rolls via the page driver (fastRoll, 4 rolls each): the S=2 body ended on both stable faces (faces 2, 1, 1, 2 of the two marked), the weighted body ended on its single marked face in 4 of 4 rolls (rest within 0.3 degrees), no page errors; one UI roll each worked. csptest: ready true, errors [].
+* The 24-face bodies (homogeneous and weighted) are NOT on the page: the rolling model diverges for the 5:1 elongated body at every p (6 to 40) and time step (1/180 to 1/1000) tried; with the vertex-start Newton the support function is right, the failure is in the rolling dynamics. Screenshots (1000x660): scratchpad `gom/r13-default.png`, `r13-p194.png` (and `r13-p24.png`, the broken one).
+
+## 51. Tolerance bug (fix applied, rerun incomplete)
+
+`r13-inc.mjs` accepted edges with convexity residual up to +1e-11 (float); exact quantised checks (2^-40 grid, exact flips) find 24 to 66 reflex edges in those meshes and S differs (9 to 18 exact vs 3 to 4 float). The fix (strict margin, CONVTOL -1e-10, env CONVTOL) is in the tool, but the seeds made from near-flat rounded merged polytopes are themselves exactly non-convex after quantisation (hull.mjs float output on near-coplanar points), so the strict rerun on them was not completed. Only the rounded S=2 194-face seed passes the exact checker. Treat every float S below 9 at 1.4k to 3k faces in section 48 as unvalidated.
+
+## 52. Conclusions and recommendation
+
+* No S=1 homogeneous polyhedron; smallest certified S=2 stays 24 faces and also exists at 2,996 faces (so S=2 persists at fine scale: robust).
+* Fast moves exist (6 to 13 us), so searches with 10^7 to 10^8 moves per run are cheap; what is missing is a valid exact-convex seeding (use exact flips or a hull with exact predicates for the seeds, then the strict tolerance) and the cost ablation (margin vs integer S).
+* The weighted route is the first rigorous single-stable-face polyhedra in this study, but with D 57 to 73 percent; minimise D by searching c jointly with the vertices (cost = shift subject to exactly one prism). The prism arrangement is cheap for 24 to 200 faces.
+* Tangent-cover polyhedron: still the only known homogeneous route; reproducing it exactly as a verified baseline is worth doing before more search, since the exact checker here handles 57k faces in under a second (about 15 us per face) and the global test is O(VF) but feasible.

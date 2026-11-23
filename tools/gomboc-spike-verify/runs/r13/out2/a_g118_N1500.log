@@ -1,0 +1,48 @@
+start F 2996 V 1500 S 22 cost 25.07 hmin 0.735
+  new best S 21 cost 23.671 it 154 t 0.0
+  new best S 20 cost 22.667 it 315 t 0.0
+  new best S 19 cost 21.598 it 344 t 0.0
+  new best S 18 cost 20.444 it 1913 t 0.1
+  new best S 17 cost 19.466 it 1986 t 0.1
+  new best S 16 cost 18.529 it 2878 t 0.1
+  new best S 15 cost 17.571 it 3177 t 0.1
+  new best S 14 cost 16.573 it 3183 t 0.8
+  new best S 13 cost 15.550 it 3283 t 0.8
+  new best S 12 cost 14.025 it 4030 t 0.8
+  new best S 11 cost 12.991 it 12504 t 1.0
+  new best S 10 cost 12.060 it 14485 t 1.0
+  new best S 9 cost 10.629 it 17890 t 1.0
+  new best S 8 cost 10.005 it 40644 t 1.4
+  new best S 7 cost 8.992 it 42184 t 1.4
+  new best S 6 cost 7.558 it 67409 t 1.8
+  new best S 5 cost 6.854 it 202252 t 3.7
+t 10s it 609538 (60954/s) acc 28.2% bad 71% S 5 cost 6.85 best S 5
+t 20s it 1299542 (64977/s) acc 27.6% bad 72% S 5 cost 6.11 best S 5
+t 30s it 2003851 (66795/s) acc 27.5% bad 72% S 5 cost 6.43 best S 5
+  new best S 4 cost 5.556 it 2544720 t 37.6
+t 40s it 2712214 (67805/s) acc 27.6% bad 72% S 4 cost 5.20 best S 4
+t 50s it 3428006 (68560/s) acc 27.5% bad 72% S 4 cost 5.30 best S 4
+t 60s it 4184334 (69739/s) acc 27.4% bad 72% S 4 cost 5.31 best S 4
+t 70s it 4915452 (70221/s) acc 27.3% bad 72% S 4 cost 5.22 best S 4
+t 80s it 5670379 (70880/s) acc 27.2% bad 72% S 4 cost 5.15 best S 4
+t 90s it 6438724 (71541/s) acc 27.1% bad 72% S 4 cost 5.09 best S 4
+t 100s it 7193502 (71935/s) acc 27.0% bad 72% S 4 cost 5.00 best S 4
+t 110s it 7944186 (72220/s) acc 27.0% bad 72% S 4 cost 5.04 best S 4
+t 120s it 8695561 (72463/s) acc 27.0% bad 72% S 4 cost 4.79 best S 4
+t 130s it 9450296 (72694/s) acc 26.9% bad 72% S 4 cost 4.73 best S 4
+t 140s it 10213854 (72956/s) acc 26.9% bad 72% S 4 cost 4.83 best S 4
+t 150s it 10958503 (73056/s) acc 26.8% bad 72% S 4 cost 4.37 best S 4
+t 160s it 11727646 (73298/s) acc 26.8% bad 72% S 4 cost 4.69 best S 4
+t 170s it 12482819 (73428/s) acc 26.7% bad 72% S 4 cost 4.55 best S 4
+t 180s it 13235219 (73529/s) acc 26.7% bad 72% S 4 cost 4.40 best S 4
+t 190s it 14004034 (73705/s) acc 26.6% bad 72% S 4 cost 4.85 best S 4
+t 200s it 14771491 (73857/s) acc 26.6% bad 72% S 4 cost 4.32 best S 4
+t 210s it 15519513 (73902/s) acc 26.5% bad 73% S 4 cost 4.20 best S 4
+t 220s it 16258024 (73900/s) acc 26.5% bad 73% S 4 cost 4.35 best S 4
+t 230s it 16995469 (73893/s) acc 26.4% bad 73% S 4 cost 4.30 best S 4
+t 240s it 17757518 (73989/s) acc 26.4% bad 73% S 4 cost 4.20 best S 4
+t 250s it 18495166 (73980/s) acc 26.3% bad 73% S 4 cost 4.13 best S 4
+t 260s it 19246416 (74024/s) acc 26.3% bad 73% S 4 cost 4.14 best S 4
+t 270s it 20023995 (74163/s) acc 26.2% bad 73% S 4 cost 4.07 best S 4
+t 280s it 20750062 (74107/s) acc 26.1% bad 73% S 4 cost 3.99 best S 4
+t 290s it 21492405 (74111/s) acc 26.0% bad 73% S 4 cost 3.95 best S 4

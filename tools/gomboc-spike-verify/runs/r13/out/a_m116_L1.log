@@ -1,0 +1,8 @@
+start F 5680 V 2842 S 26 cost 29.83 hmin 0.786
+t 10s it 2306199 (230620/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 20s it 4772939 (238647/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 30s it 7238107 (241270/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 40s it 9738163 (243454/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 50s it 12137769 (242755/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 60s it 14669385 (244490/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
+t 70s it 17305023 (247215/s) acc 0.0% bad 100% S 26 cost 29.83 best S 26
