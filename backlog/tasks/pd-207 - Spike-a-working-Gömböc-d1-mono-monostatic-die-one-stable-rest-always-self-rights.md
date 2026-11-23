@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-22T23:13:00Z'
+updated_date: '2026-11-23T01:22:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -101,4 +101,6 @@ Round 11 plan (owner 2026-11-22, after round 10): hull the verified smooth body 
 Round 11 extension (owner): if a passing resolution is found and the check is fast, run a reduction round: merge adjacent faces / decimate (coplanar merge, edge collapse, vertex removal keeping convexity), re-verify after each step, and report the smallest valid face count reached. Records the reduction path and check time. Feeds PD-208.
 
 Round 10 (v42-gomboc bc29eba, page v6): persistence-cost CMA-ES on the ring family gives exact homogeneous bodies, NUMERICALLY verified (winding +2/-0 at icosphere L5/L6, convex, CoM tolerance region nonempty) at ratio 1.12/1.15/1.16/1.17/1.18 (was 1.105). Page has Exact 1.16 (largest tolerance) and Exact 1.18 (most pronounced); rolls at zero shift 20-30/30 on the one stable point. Nothing above 1.18 passed (seed lottery; L4 persistence overfits). Not interval-certified. Low-poly: persistence cost gives p2~0.09 (was 0.71-1.0) but S=5-8 stable faces, monostable not reached; next cost = stable-face count S. Next: round 11 polyhedral proof with timing + reduction (see plan), more family parameters past 1.18, interval certification.
+
+Round 11 (v42-gomboc 34e1e4b): NEGATIVE. Exact BigInt checker (exact centroid, convexity certificate, S/U/H, tipping graph, Poincare-Hopf) built; hulls of the verified 1.16/1.18 bodies never reach S=1 from 36 to 1.3M faces (S plateaus 1e3-4e3; flat support-function rings, spurious stable faces ~ pi R^2/(4 lambda^2), independent of face size). Reduction not run (no valid start). Timing: exact check linear in faces (slope 0.98, 15 us/face; 0.016 s at 1k, 19.8 s at 1.3M). Next: direct polyhedron search at 100-1000 faces with exact S as cost (check 2-20 ms), start from round-9 low-poly bodies (S 5-8), target strongly curved support function; certify any S=1 hit and put on page.
 <!-- SECTION:NOTES:END -->
