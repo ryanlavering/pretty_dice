@@ -66,6 +66,25 @@ def games_bundle():   # the engine as plain inline JS: `const GAMES = (() => { .
 SRC_RULES = """src/ module rules (docs/design/v41-factoring-plan.md): export only const/function/class declarations (no let/var: a live
 binding would not survive bundling), no default export or export *, no top-level await, no import cycles; external imports
 only as lines the main module already has (they are dropped and the closure sees main's binding)."""
+def multi_declarator_exports(src):   # PD-222: the bundler below only sees the first name of `export const a=1, b=2;`: report the line of any such statement
+    bad = []
+    for m in re.finditer(r"^export (?:const|let|var) ", src, re.M):
+        i, depth, q, n = m.end(), 0, None, len(src)
+        while i < n:
+            c = src[i]
+            if q:
+                if c == '\\': i += 1
+                elif c == q: q = None
+            elif c in '\'"`': q = c
+            elif c == '/' and src[i:i+2] == '//':
+                i = src.find('\n', i); i = n if i < 0 else i
+                continue
+            elif c in '([{': depth += 1
+            elif c in ')]}': depth -= 1
+            elif c == ';' and depth == 0: break
+            elif c == ',' and depth == 0 and re.match(r"\s*[A-Za-z_$][\w$]*\s*=(?![=>])", src[i+1:i+80]): bad.append(src.count('\n', 0, m.start()) + 1); break
+            i += 1
+    return bad
 def src_bundle(main):   # inline the ./src/*.js modules the main module imports, in native evaluation order (depth-first), as closures
     imp_main = re.compile(r"^import \{([^}]*)\} from '\./src/([\w-]+)\.js';[ \t]*\n", re.M)
     if not imp_main.search(main): return main
@@ -81,6 +100,7 @@ def src_bundle(main):   # inline the ./src/*.js modules the main module imports,
         state[name] = 'visiting'
         src = (root / 'src' / f'{name}.js').read_text()
         assert '</script' not in src and '<!--' not in src, f'src/{name}.js cannot be inlined in a script tag'
+        assert not multi_declarator_exports(src), f'src/{name}.js line {multi_declarator_exports(src)}: `export const a=..., b=...` exports only its first name in the bundle; use one declarator per export\n{SRC_RULES}'
         assert not re.search(r"^export (default|\*|let|var|\{)", src, re.M), f'src/{name}.js: unsupported export form\n{SRC_RULES}'
         assert not re.search(r"^await |^const \w+\s*=\s*await ", src, re.M), f'src/{name}.js: top-level await\n{SRC_RULES}'
         for m in imp_rel.finditer(src): visit(m.group(2), path + [name])

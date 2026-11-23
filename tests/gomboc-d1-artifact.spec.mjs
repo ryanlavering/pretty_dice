@@ -25,8 +25,13 @@ plain('the gomboc d1 builds in the bundled artifact build (picker, roll)', async
   await page.waitForFunction(() => window.__ready === true && window.__pd, null, { timeout: 90_000 });
   await page.evaluate(() => document.querySelector('button[data-id=gomboc172]').click());   // the review build lists it in the shape picker
   await page.waitForTimeout(500);
-  const r = await page.evaluate(() => { const pd = window.__pd; pd.reseed(101); const x = pd.simRoll({ maxSteps: 4000 }); return { shape: pd.state.shape, dice: pd.dice.length, settled: x.settled, label: x.dice[0].label }; });
+  const r = await page.evaluate(() => { const pd = window.__pd; pd.reseed(101); let x = pd.simRoll({ maxSteps: 4000 }); for (let g = 0; pd.rrStall && g < 8; g++) { pd.rerollNow(); pd.step(4000); x = { settled: pd.settled, dice: pd.faces.map(l => ({ label: l })) }; } return { shape: pd.state.shape, dice: pd.dice.length, settled: x.settled, label: x.dice[0].label }; });
   expect(r).toEqual({ shape: 'gomboc172', dice: 1, settled: true, label: 1 });
+  // d1mono formula + the embedded candidate set in the bundle (src/monobody.js, src/lowpoly-set.js)
+  const m = await page.evaluate(() => { const pd = window.__pd, p = pd.parseNotation('2d6+d1mono{lp#4!ordered}+d1mono', true); if (p.error) return { error: p.error };
+    pd.state.shape = 'custom'; pd.state.notation = '2d6+d1mono{lp#4!ordered}+d1mono'; pd.buildDice(); return { names: pd.dice.map(d => d.name), farm: pd.dice.map(d => d.farmId), faces: pd.dice.map(d => d.faces.length) }; });
+  expect(m).toEqual({ names: ['d6', 'd6', 'd1mono', 'd1mono'], farm: [null, null, '005', null], faces: m.faces });
+  expect(m.faces.slice(2)).toEqual([62, 172]);
   expect(errors).toEqual([]);
 });
 

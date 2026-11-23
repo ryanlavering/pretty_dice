@@ -16,7 +16,8 @@ try {
   const rows = await page.evaluate(async ([N, rule, s0]) => {
     const pd = window.__pd; pd.gombocRule = !!rule; const out = [];
     for (let k = 0; k < N; k++) {
-      pd.reseed(s0 + k); const t0 = performance.now(), st0 = pd.gombocStalls, r = pd.simRoll({ maxSteps: 4000 }); const b = pd.bodies[0], d = pd.dice[0];
+      pd.reseed(s0 + k); const t0 = performance.now(), st0 = pd.gombocStalls; let r = pd.simRoll({ maxSteps: 4000 }); for (let g = 0; pd.rrStall && g < 8; g++) { pd.rerollNow(); pd.step(4000); r = { ...r, settled: pd.settled, simT: pd.rollT, dice: pd.faces.map(l => ({ label: l })), pendingReroll: pd.rrPending || [], freeTries: pd.freeTries }; }   // a stall waits for an explicit re-roll
+      const b = pd.bodies[0], d = pd.dice[0];
       const q = b.quaternion, n = d.faces[d.sIdx].n.clone().applyQuaternion(new pd.camera.quaternion.constructor(q.x, q.y, q.z, q.w));
       out.push({ seed: s0 + k, label: r.dice[0] && r.dice[0].label, settled: r.settled, simT: +r.simT.toFixed(2), firstLeans: r.firstLeans, leans: r.leans, freeTries: r.freeTries, angS: +(Math.acos(Math.max(-1, Math.min(1, -n.y))) * 180 / Math.PI).toFixed(2), speed: +b.velocity.length().toFixed(3), spin: +b.angularVelocity.length().toFixed(3), y: +b.position.y.toFixed(3), sleep: b.sleepState, stalls: pd.gombocStalls - st0, pending: r.pendingReroll.length, ms: Math.round(performance.now() - t0) });
     }

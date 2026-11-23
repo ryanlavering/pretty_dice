@@ -8,6 +8,7 @@ import * as GAMES from 'pd-games';   // pure rules engine (docs/design/games-eng
 import { PHI, mulberry32, pick, range } from './util.js';
 import { GOMBOC_APEX, SHAPES, assignLabels, hull, trisToFaces } from './polyhedra.js';
 import { makeApexDecal } from './gomboc172.js';
+import { fmtMono, monoBody, monoFarmId, monoPicks, parseMonoBlock } from './monobody.js';
 import { FONTS, makeAtlas } from './atlas.js';
 import { buildGeometry } from './geometry.js';
 import { U, makeMaterial, makeUniforms } from './material.js';
@@ -116,19 +117,21 @@ function parseNotation(str,strict=false){
     let m, reroll=null;
     { const hi=t.search(/[{@]/), head=hi<0?t:t.slice(0,hi), tail=hi<0?'':t.slice(hi), rm=head.match(/r(<=|>=|<|>)?(\d*)(?!\d)/);   /* PD-142.42.1: r1 r<N r<=N r>N r>=N, once per die, before keep/drop; may sit before or after kh/kl/adv */
       if(rm&&/^\d*d(\d+|%)/.test(head)){ if(rm[2]==='') return {error:'r needs a number, e.g. d20r1 or 4d6r<=2'}; reroll={op:rm[1]||'=',v:+rm[2]}; t=head.replace(rm[0],'')+tail; } }
-    if((m=t.match(/^(\d*)d(\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:\{([^{}]*)\})?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const sides=m[2]==='%'?100:+m[2]; let design=null, keep=null;
+    if((m=t.match(/^(\d*)d(1mono|\d+|%)(?:(kh|kl|dh|dl)(\d*)|(adv|dis))?(?:\{([^{}]*)\})?(?:@([a-z0-9_]+))?$/))){ let count=m[1]===''?1:+m[1]; const isMono=m[2]==='1mono', sides=m[2]==='%'?100:isMono?1:+m[2]; let design=null, keep=null, mono=null;
+      if(isMono){ if(!SHAPES.gomboc172) return {error:'d1mono is experimental (review builds only)'}; if(m[3]||m[5]||reroll) return {error:"d1mono doesn't take keep, drop, adv/dis or reroll"};   /* experimental d1 (v42-gomboc-die): d1mono, d1mono{lp#4}, d1mono{lp#4!ordered}; plain d1 stays free for the Mobius d1 */
+        if(m[6]!==undefined){ const mb=parseMonoBlock(m[6]); if(mb.error) return mb; mono=mb.mono; } else mono={set:null,index:null,ordered:false}; }
       if(m[5]){ if(count>1||sides!==20) return {error:`"${m[5]}" goes on a single d20, e.g. d20${m[5]}`}; count=2; keep={mode:m[5]==='adv'?'h':'l',n:1}; }   /* PD-142.2: d20adv = 2d20kh1, d20dis = 2d20kl1 */
       else if(m[3]){ const q=m[4]===''?1:+m[4], dropping=m[3][0]==='d', n=dropping?count-q:q;
         if(q<1||n<1||n>count) return {error:dropping?`Can't drop ${q} of ${count} dice`:`Can't keep ${q} of ${count} dice`};
         keep=n===count?null:{mode:(m[3][1]==='h')===!dropping?'h':'l',n}; }   // kh3 keeps the highest 3; dl1 drops the lowest 1 = keeps the highest count-1
       if(m[7]){ const e=designByRef(m[7]); if(e) design=e.id; else if(strict&&bag) return {error:`No design "@${m[7]}" in the bag`}; }
       let faces=null;   /* PD-167: a face block {pack#n!flags} puts glyphs from a pack on the faces (docs/design/custom-set-grammar.md) */
-      if(m[6]!==undefined){ if(sides===100) return {error:"Custom faces don't work on d% (two dice); use d10"}; if(!FACE_SIDES.includes(sides)) return {error:`Custom faces are not supported on d${sides} yet (use d6, d8, d12 or d20)`};
+      if(m[6]!==undefined&&!isMono){ if(sides===100) return {error:"Custom faces don't work on d% (two dice); use d10"}; if(!FACE_SIDES.includes(sides)) return {error:`Custom faces are not supported on d${sides} yet (use d6, d8, d12 or d20)`};
         const fb=parseFaceBlock(m[6]); if(fb.error) return fb; faces=fb.faces; }
-      if(!(sides in SIDES)&&sides!==100) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
+      if(!(sides in SIDES)&&sides!==100&&!isMono) return {error:`d${m[2]} not supported (use d4 d6 d8 d10 d%/d100 d12 d14 d16 d20)`};
       if(reroll){ if(sides===100) return {error:"Reroll (r) doesn't work on d% (two dice); use d10"}; if(faces) return {error:"Reroll (r) doesn't work with custom faces"};
         const hit=range(1,sides).filter(v=>rerollHit(reroll,v)).length, txt=rerollTxt({reroll}); if(hit===sides) return {error:`${txt} would reroll every face of a d${sides}`}; if(!hit) return {error:`${txt} never matches a face of a d${sides}`}; }
-      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(design?{design}:{}),...(reroll?{reroll}:{}),...(keep?{keep}:{}),...(faces?{faces}:{})}); }
+      if(count<1) return {error:'Dice count must be at least 1'}; n+=count*(sides===100?2:1); terms.push({count,sides,...(mono?{mono}:{}),...(design?{design}:{}),...(reroll?{reroll}:{}),...(keep?{keep}:{}),...(faces?{faces}:{})}); }
     else if(/^-?\d+$/.test(t)) mod+=+t;
     else return {error:`Can't read "${t}"`};
   }
@@ -145,11 +148,12 @@ function applyReroll(vals,t,draw){ const orig=[]; if(!t.reroll) return {vals,ori
 const dieTxt=(v,o)=>o!==undefined?`${o}→${v}`:v;
 /* the values of one term in a simulated roll (quick roll / group): rerolls come from the same stream, after the first throw of the term */
 function drawTerm(t,rnd){ const raw=[]; for(let i=0;i<t.count;i++) raw.push(1+Math.floor(rnd()*t.sides)); return applyReroll(raw,t,()=>1+Math.floor(rnd()*t.sides)); }
-const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}d${t.sides===100?'%':t.sides}${rerollTxt(t)}${keepTxt(t)}${t.faces?fmtFaces(t.faces):''}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
+const dTxt=t=>t.mono?'d1mono'+fmtMono(t.mono):'d'+(t.sides===100?'%':t.sides);
+const fmtNotation=(terms,mod,group)=>(group>1?group+'x ':'')+terms.map(t=>`${t.count}${dTxt(t)}${rerollTxt(t)}${keepTxt(t)}${t.faces?fmtFaces(t.faces):''}${t.design?'@'+designRef(t.design):''}`).join('+')+(mod?(mod>0?'+':'')+mod:'');
 /* keep-highest / keep-lowest (PD-142.2): the dice that count and the ones set aside; ties keep the earlier die */
 function keepSum(vals,keep){ const idx=vals.map((_,i)=>i); if(keep&&keep.n<vals.length) idx.sort((a,b)=>keep.mode==='h'?vals[b]-vals[a]||a-b:vals[a]-vals[b]||a-b);
   const kept=new Set(keep&&keep.n<vals.length?idx.slice(0,keep.n):idx); return {sum:vals.reduce((a,v,i)=>a+(kept.has(i)?v:0),0),kept}; }
-const keepLine=(t,vals,ks,names,noSum,orig=[])=>`${t.count}d${t.sides===100?'%':t.sides}${rerollTxt(t)}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:dieTxt(v,orig[i]); return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1&&!noSum?' = '+ks.sum:''}`;   // noSum: glyph-only dice have no meaningful total. names: glyph names beside the values (PD-167)
+const keepLine=(t,vals,ks,names,noSum,orig=[])=>`${t.count}${t.mono?dTxt(t):'d'+(t.sides===100?'%':t.sides)}${t.mono&&t.mono.set?' [farm '+monoPicks(t.mono,t.count).map(i=>monoFarmId(t.mono.set,i)).join(',')+']':''}${rerollTxt(t)}${keepTxt(t)}: ${vals.map((v,i)=>{ const s=names&&names[i]?names[i]+'='+v:dieTxt(v,orig[i]); return ks.kept.has(i)?s:`(${s})`; }).join(names?' + ':'+')}${vals.length>1&&!noSum?' = '+ks.sum:''}`;   // noSum: glyph-only dice have no meaningful total. names: glyph names beside the values (PD-167)
 const isMulti=()=>state.shape==='set7'||state.shape==='custom';
 function gridLayout(n){ const cols=n===1?1:Math.ceil(Math.sqrt(n*1.5)), rows=Math.ceil(n/cols), sp=2.5;
   return {pos:i=>[(i%cols-(Math.min(cols,n)-1)/2)*sp, ((rows-1)/2-Math.floor(i/cols))*sp], halfW:((Math.min(cols,n)-1)*sp)/2+1.4, zoom:Math.max(5.4,1.45*((Math.min(cols,n)-1)*sp+2),2.6*((rows-1)*sp+2))}; }
@@ -158,13 +162,14 @@ function specsFor(shape){
     const p=parseNotation(state.notation), list=[];
     if(p.error) return specsFor('d20');
     const dealt=dealTerms(p.terms);   // PD-167: glyph faces from the set's face blocks (a group's copies share them)
-    for(let cp=0;cp<(p.group||1);cp++) p.terms.forEach((t,ti)=>{ for(let c=0;c<t.count;c++){
-      if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,copy:cp,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,copy:cp,part:'ones',design:t.design}); }
+    for(let cp=0;cp<(p.group||1);cp++) p.terms.forEach((t,ti)=>{ const mp=t.mono?monoPicks(t.mono,t.count):null; for(let c=0;c<t.count;c++){
+      if(t.mono){ let body=monoBody(t.mono.set,mp[c]); if(body.error){ toast('d1mono: '+body.error+' (using the built-in body)'); body=monoBody(null,0); } list.push({id:'gomboc172',labels:null,name:'d1mono',body,term:ti,copy:cp,design:t.design}); }
+      else if(t.sides===100){ list.push({id:'d10',labels:TENS,name:'d%',term:ti,copy:cp,part:'tens',design:t.design}, {id:'d10',labels:null,name:'d10',term:ti,copy:cp,part:'ones',design:t.design}); }
       else list.push({id:SIDES[t.sides],labels:null,name:SIDES[t.sides],term:ti,copy:cp,design:t.design,setGlyphs:dealt[ti]?dealt[ti][c]:null}); } });
     const L=gridLayout(list.length); customZoom=L.zoom; customHalfW=L.halfW;
-    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,glyphs:d.setGlyphs||(storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null)}));
+    return list.map((d,i)=>({verts:SHAPES[d.id].verts(),labels:d.labels||SHAPES[d.id].labels,x:L.pos(i)[0],y:L.pos(i)[1],name:d.name,term:d.term,copy:d.copy,part:d.part,design:d.design,...(d.body?{verts:d.body.verts(),labels:d.body.labels,tris:d.body.tris,apex:d.body.apex,bodyKey:d.body.key,farmId:d.body.farmId,decal:true}:{tris:SHAPES[d.id].tris,decal:!!SHAPES[d.id].decal}),glyphs:d.setGlyphs||(storyDeal&&storyDeal.glyphs[i]&&storyDeal.glyphs[i].length===SHAPES[d.id].labels.length?storyDeal.glyphs[i]:null)}));
   }
-  const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||id,decal:!!SHAPES[id].decal,tris:SHAPES[id].tris});
+  const mk=(id,x,y,labels,name)=>({verts:SHAPES[id].verts(),labels:labels||SHAPES[id].labels,x,y,name:name||(SHAPES[id].decal?'d1mono':id),decal:!!SHAPES[id].decal,tris:SHAPES[id].tris});
   if(shape==='set7') return SET7.map(([id,x,y])=>id==='dpct'?mk('d10',x,y,TENS,'d%'):mk(id,x,y));
   if(SHAPES[shape].pair) return [mk('d10',-1.2,0,TENS,'d%'), mk('d10',1.2,0,null,'d10')];
   return [mk(shape,0,0)];
@@ -290,7 +295,7 @@ function buildDiceInner(keepRoll){
   specs.forEach(s=>{
     const own=s.design?lookFor(s.design):null, L0=own||state, L=s.decal?{...L0,filigree:'none',panel:0,numSoft:0,radius:0}:L0;   // the look this die is made from (the experimental d1 has 172 small faces and no numerals: filigree, panels, soft numerals and rounded edges would cost tens of seconds of canvas work and mean nothing there)
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
-    const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree,s.glyphs?s.glyphs.map(g=>g.id).join(','):''].join('|');
+    const key=[s.name,s.bodyKey||'',s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree,s.glyphs?s.glyphs.map(g=>g.id).join(','):''].join('|');
     let part=nextParts.get(key)||partCache.get(key);
     if(!part){
       const faces=s.tris?trisToFaces(s.verts,s.tris):hull(s.verts), labs=s.tris?s.labels:assignLabels(faces,s.labels);
@@ -301,12 +306,12 @@ function buildDiceInner(keepRoll){
         opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
       } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips'&&!s.glyphs) opts={layout:'pips'};
       const atlas=makeAtlas(faces.length,s.glyphs?labs.map(l=>s.glyphs[l-1]):labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:s.decal?{...opts,blank:true}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
-      part={faces,labs,atlas,geo,decal:s.decal?makeApexDecal(faces,GOMBOC_APEX):null};
+      part={faces,labs,atlas,geo,decal:s.decal?makeApexDecal(faces,s.apex||GOMBOC_APEX):null};
     }
     nextParts.set(key,part);
     const {faces,labs,atlas,geo}=part, mat=makeMaterial(atlas,own?foreign.get(s.design).uni:U);
     const mesh=new THREE.Mesh(geo,mat); mesh.position.set(s.x,s.y||0,0); mesh.castShadow=true; rig.add(mesh); if(part.decal) mesh.add(new THREE.Mesh(part.decal.geo,part.decal.mat));
-    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,copy:s.copy,part:s.part,design:s.design,glyphs:s.glyphs||null,look:own,decal:!!s.decal,down:!!s.decal,sIdx:s.decal?labs.indexOf(1):-1,inradius:Math.min(...faces.map(f=>f.d))};
+    const entry={mesh,geo,mat,atlas,verts:s.verts,faces,labs,x:s.x,y:s.y||0,name:s.name,term:s.term,copy:s.copy,part:s.part,design:s.design,glyphs:s.glyphs||null,look:own,decal:!!s.decal,farmId:s.farmId||null,down:!!s.decal,sIdx:s.decal?labs.indexOf(1):-1,inradius:Math.min(...faces.map(f=>f.d))};
     if(L.substrate==='epoxy'){ const inc=makeInclusion(L); if(inc){ mesh.add(inc); entry.inc=inc; } }
     dice.push(entry);
   });
@@ -448,7 +453,7 @@ function dieChip(j,shape='d20',label,flat=false,pic=false){
 /* the stand-in for a design picture: same size and framing as the real 144 px render (die about 74% of the width, centred a little high, on the stage backdrop) */
 const chipThumb=(j,label='20')=>dieChip(j,'d20',label,false,true);
 /* a die chip element for N-sided dice in a design (null = the live one) */
-function chipEl(sides,j,{flat=false,label}={}){ const c=document.createElement('span'); c.className='chip'+(flat?' flat':''); c.style.backgroundImage=dieChip(j,typeof sides==='string'?sides:shapeOfSides(sides),flat?null:(label!==undefined?label:(sides===100?'%':String(sides))),flat); return c; }
+function chipEl(sides,j,{flat=false,label}={}){ const c=document.createElement('span'); c.className='chip'+(flat?' flat':''); c.style.backgroundImage=dieChip(j,typeof sides==='string'?sides:shapeOfSides(sides),flat?null:(label!==undefined?label:(sides===100?'%':sides===1?'1m':String(sides))),flat); return c; }
 const liveChipJ=()=>({colors:state.colors,substrate:state.substrate});
 /* ---------- UI ---------- */
 const DBL_MS=250;   // PD-142.38.40: a single tap waits this long for a second click before it acts, so a double-click never flashes the single-die state
@@ -462,13 +467,13 @@ function tapOrAdd(b,{single,add,canAdd=()=>true,snap=null,restore=null,slow=true
   for(const ev of ['pointerup','pointercancel','pointerleave']) b.addEventListener(ev,()=>clearTimeout(lp));
   b.addEventListener('contextmenu',e=>{ if(canAdd()) e.preventDefault(); }); return ()=>{ clearTimeout(t); t=0; }; }   // returns a cancel for a pending single
 for(const [id,s] of Object.entries(SHAPES)){ const b=document.createElement('button'); b.dataset.id=id; if(id==='rd12'||id==='set7'||id==='gomboc172') b.style.gridColumn='span 2'; if(DIE_CHIP[id]||id==='d100') b.append(chipEl(id,liveChipJ(),{flat:true})); b.append(s.label);
-  const sides=/^d\d+$/.test(id)?+id.slice(1):0;
+  const sides=/^d\d+$/.test(id)?+id.slice(1):id==='gomboc172'?1:0;   // sides 1 = d1mono (the experimental gomboc d1)
   /* PD-142.38.34/.40: the same semantics in Play and Design. Tap = ONE die of that shape, that shape selected, Custom collapsed (after a short wait for a double-click). Double-click / long press = ADD one die to the formula and select Custom with the full formula showing. Never rolls. */
   const add=()=>{ if(!sides) return;
     if(playRoom()){ dockLoad(sides,true); forceCustom=$('rollbox').value; shapeSelSync(); return; }
     checkpoint();
-    const base=state.shape==='custom'?state.notation:(/^d\d+$/.test(state.shape)?'1'+state.shape:state.notation), pp=parseNotation(base,true), terms=pp.error?[]:pp.terms.map(t=>({...t}));
-    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.reroll&&!t.design&&!t.faces); if(t) t.count++; else terms.push({count:1,sides});
+    const base=state.shape==='custom'?state.notation:(/^d\d+$/.test(state.shape)?'1'+state.shape:state.shape==='gomboc172'?'d1mono':state.notation), pp=parseNotation(base,true), terms=pp.error?[]:pp.terms.map(t=>({...t}));
+    const t=terms.find(t=>t.sides===sides&&!t.keep&&!t.reroll&&!t.design&&!t.faces&&!(t.mono&&(t.mono.set||t.mono.ordered))); if(t) t.count++; else terms.push(sides===1?{count:1,sides,mono:{set:null,index:null,ordered:false}}:{count:1,sides});
     state.notation=fmtNotation(terms,pp.error?0:pp.mod,pp.error?1:pp.group); state.shape='custom'; rebuildKeepMode(); };
   const single=()=>{ if(playRoom()){
       if(!sides){ state.shape=id; forceCustom=id==='custom'?$('rollbox').value:null; if(id!=='custom') $('rollbox').value=''; const was=rolling; holdRoom=was&&!designRoom; try{ buildDice(); } finally { holdRoom=false; } if(was) startRoll(false,true); syncUI(); formulaSync(); return; }   // rebuild and put the dice down unrolled: it never throws
@@ -1078,7 +1083,7 @@ function histPress(inp){ let t=0, x=0, y=0, fired=false;
 function dockFail(inp,err){ inp.classList.toggle('bad',!!err); inp.title=err||DOCK_TIP; const q=$('qerr'); if(!q) return; q.textContent=err||''; q.hidden=!err; if(err){ q.style.bottom=Math.max(8,$('stage').clientHeight-$('qbar').offsetTop+6)+'px'; clearTimeout(dockFail.t); dockFail.t=setTimeout(()=>{ q.hidden=true; },6000); } }
 function syncDock(){ const inp=$('rollbox'); if(!inp) return; const hb=$('qbar')&&$('qbar').querySelector('.rbhist'); if(hb) hb.hidden=!rollHist.entries().length; const st=rollSetId&&bag&&setOps.find(rollSetId); inp.placeholder=(state.shape==='custom'?state.notation:SHAPES[state.shape].label)+(st?' · '+st.name:''); }   // the placeholder says what is loaded
 const dockTerms=(inp,base)=>{ const v=inp.value.trim()||base||'', p=v?parseNotation(v,true):{terms:[],mod:0,group:1}; if(p.error){ inp.classList.add('bad'); inp.title=p.error; return null; } inp.classList.remove('bad'); inp.title=DOCK_TIP; return p; };
-function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value='1d'+n; formulaSync(); dockPlace(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.reroll&&!t.design&&!t.faces); if(t) t.count++; else p.terms.push({count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); dockPlace(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
+function dockLoad(n,add=false){ const inp=$('rollbox'); if(!inp) return; if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value=n===1?'d1mono':'1d'+n; formulaSync(); dockPlace(); return; } const p=dockTerms(inp); if(!p) return; const t=p.terms.find(t=>t.sides===n&&!t.keep&&!t.reroll&&!t.design&&!t.faces&&!(t.mono&&(t.mono.set||t.mono.ordered))); if(t) t.count++; else p.terms.push(n===1?{count:1,sides:n,mono:{set:null,index:null,ordered:false}}:{count:1,sides:n}); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); dockPlace(); }   // PD-142.38.11: a tap REPLACES the box with one die; a double-click or long press ADDS one to the formula; it never throws
 function dockAdv(mode,add=false){ const inp=$('rollbox'); if(!inp) return; const one={count:2,sides:20,keep:{mode,n:1}};   // PD-142.38.46: like the Custom set Adv/Dis chips: a tap REPLACES the box with d20adv / d20dis; double-click or long press ADDS that term to the formula (never modifies an existing die)
   if(!add){ inp.classList.remove('bad'); inp.title=DOCK_TIP; inp.value=fmtNotation([one],0,1); formulaSync(); dockPlace(); return; }
   const p=dockTerms(inp,state.shape==='custom'?state.notation:''); if(!p) return; p.terms.push(one); inp.value=fmtNotation(p.terms,p.mod,p.group); formulaSync(); dockPlace(); }
@@ -1492,9 +1497,16 @@ let calmNow=false; const COCK_FLAT=.985, COCK_LIFT=.1;
 /* EXPERIMENTAL d1 (v42-gomboc-die): the gomboc die is read like a d4 (the face DOWN: 1 when S is down, the apex "1" on top). Its rest rule is special-cased: it never sleeps or counts as still unless S's outward normal is within
    GOMBOC_REST_TOL_DEG of straight down; anywhere else, slow movement (a saddle or near-saddle stall) is not rest and the roll keeps simulating, up to GOMBOC_CAP_S, where the stock lean handling takes over. gombocRule=false (pd.gombocRule) restores the stock rule for A/B runs. */
 const GOMBOC_REST_TOL_DEG=3, GOMBOC_CAP_S=60; let gombocRule=true, gombocCapS=GOMBOC_CAP_S, gombocStalls=0;   // gombocCapS: test hook (pd.gombocCapS) so the stall ring can be provoked with a short cap
+const GOMBOC_TOUCH_REST_S=1;   // slow for this long against the mat edge or another die (not at S) = a lean, declared early. A clear-area stall at the cap gets the purple ring and waits for an explicit re-roll (chip or Roll), whatever the Manual rerolls setting
+/* what body i touches right now (the last world step's contacts): 'wall' (mat edge), 'die' (another die) or null (clear area; the floor does not count) */
+function gombocTouch(i){ const me=bodies[i]; if(!world||!me) return null; let hit=null;
+  for(const c of world.contacts){ const o=c.bi===me?c.bj:c.bj===me?c.bi:null; if(!o) continue; if(o.isWall) return 'wall'; if(o!==me&&o.mass>0&&bodies.includes(o)) hit='die'; }
+  return hit; }
+function gombocTouching(i){ const b=bodies[i], k=gombocTouch(i); if(k){ b.gSeen=world.time; b.gKind=k; } return b.gSeen!=null&&world.time-b.gSeen<.5?b.gKind:null; }   // contacts flicker from step to step: touched within the last 0.5 s counts
 const isDown=d=>d.faces.length===4||!!d.down, gomboc=i=>!!(dice[i]&&dice[i].decal), gombocCap=()=>gombocRule&&!placing&&dice.some(d=>d.decal)?gombocCapS:null;
 function gombocNear(i){ const d=dice[i], b=bodies[i], n=d.faces[d.sIdx].n.clone().applyQuaternion(new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w)); return -n.y>Math.cos(GOMBOC_REST_TOL_DEG*Math.PI/180); }
-function tuneSolver(){ if(!world) return; const hi=state.gravity>GRAV_DEF*1.001; calmNow=state.gravity>=GRAV_DEF*.999; if(calmNow) for(const b of bodies){ if(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()>=1){ calmNow=false; break; } } world.solver.iterations=(calmNow&&hi)?20:10;
+function tuneSolver(){ if(!world) return; for(const b of bodies) if(b.gPin){ b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.position.copy(b.gPin.p); b.quaternion.copy(b.gPin.q); }   // test hook (pd.gombocPin): a pinned die stays in the pose the test put it in
+   const hi=state.gravity>GRAV_DEF*1.001; calmNow=state.gravity>=GRAV_DEF*.999; if(calmNow) for(const b of bodies){ if(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()>=1){ calmNow=false; break; } } world.solver.iterations=(calmNow&&hi)?20:10;
   bodies.forEach((b,i)=>{ let t=sleepTimeFor();
     if(gombocRule&&!placing&&gomboc(i)){ const t2=gombocNear(i)?.1:1e9; if(b.sleepTimeLimit!==t2) b.sleepTimeLimit=t2; return; }   // experimental d1: sleeps only when S is down
     if(calmNow&&!placing&&dice[i]){ const ti=tiltInfo(i), cocked=ti.flat<COCK_FLAT||ti.lift>COCK_LIFT;
@@ -1575,8 +1587,8 @@ function startRoll(launch=false,place=false,vel=null){        // launch: re-roll
   world.defaultContactMaterial.friction=.2; world.defaultContactMaterial.restitution=state.bounce;
   diceMat=new CANNON.Material('dice'); matMat=new CANNON.Material('mat');                 // dice-on-dice and dice-on-mat (floor + walls) get separate friction
   world.addContactMaterial(ccDD=new CANNON.ContactMaterial(diceMat,diceMat)); world.addContactMaterial(ccDM=new CANNON.ContactMaterial(diceMat,matMat)); applyContacts();
-  const plane=(pos,eul)=>{const b=new CANNON.Body({mass:0,material:matMat,shape:new CANNON.Plane()}); b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};
-  plane([0,TABLE_Y,0],[-Math.PI/2,0,0]); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
+  const plane=(pos,eul,wall=true)=>{const b=new CANNON.Body({mass:0,material:matMat,shape:new CANNON.Plane()}); b.isWall=wall; b.position.set(...pos); b.quaternion.setFromEuler(...eul); world.addBody(b);};   // isWall: the mat edge (the d1mono rest rule tells it from the floor)
+  plane([0,TABLE_Y,0],[-Math.PI/2,0,0],false); plane([halfX,0,0],[0,-Math.PI/2,0]); plane([-halfX,0,0],[0,Math.PI/2,0]);
   plane([0,0,halfZ],[0,Math.PI,0]); plane([0,0,-halfZ],[0,0,0]);
   const hookHit=b=>b.addEventListener('collide',e=>{ const o=e.body; if(o.mass>0&&o.id<b.id) return; const c=e.contact; _ip.set(c.bi.position.x+c.ri.x,c.bi.position.y+c.ri.y,c.bi.position.z+c.ri.z); onImpact(Math.abs(c.getImpactVelocityAlongNormal()),o.mass>0?'dice':'table',_ip); });
   const starts=[], dropH=3.5+5*state.rollZoom;   // drop height above the table grows as the camera zooms out
@@ -1637,7 +1649,10 @@ function tiltInfo(i){                                   // how far die i is from
   return {flat:Math.abs(bv), n:best, four, lift:(b.position.y-TABLE_Y-h)/d.r};   // lift: how far the die's centre sits above where it would if lying on the mat (> ~.1 = propped on another die)
 }
 function assistSettle(dt){          // tracks how long each die has been nearly still (restCheck uses it). Dice are never nudged; leaning ones are flagged and re-rolled on request
-  bodies.forEach((b,i)=>{ let slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; if(slow&&gombocRule&&!placing&&gomboc(i)&&!gombocNear(i)) slow=false; b.slowT=slow?(b.slowT||0)+dt:0; });
+  bodies.forEach((b,i)=>{ if(b.gPin){ b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); }   // (a pinned die's step velocity is gravity alone: count it as still)
+    let slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2;
+    if(gombocRule&&!placing&&gomboc(i)&&!gombocNear(i)){ const tk=gombocTouching(i); b.gTouch=tk; if(slow&&tk){ b.gTouchT=(b.gTouchT||0)+dt; slow=b.gTouchT>=GOMBOC_TOUCH_REST_S; } else { b.gTouchT=0; slow=false; } }   // clear area: keep going (to the cap); against the edge or a die: slow for GOMBOC_TOUCH_REST_S counts as settled, short of S = a lean
+    b.slowT=slow?(b.slowT||0)+dt:0; });
 }
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
   return rollT>(gombocCap()||12) || bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);   // after 12 s stop waiting on a die that will not go still
@@ -1663,7 +1678,7 @@ const RR_HOLD=.5; let rrPend=null, rrOrig=new Map(), rrKeep={}, rrRings=[], rrAc
 const rrInfo=(vals,ids)=>({vals,orig:ids.map(i=>rrOrig.get(i))});   // the values as read now (re-thrown dice show the new face) and the first values, for the 1\u219214 text
 function dropRrRings(){ for(const m of rrRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } rrRings=[]; }
 function clearReroll(){ rrPend=null; rrOrig=new Map(); rrKeep={}; dropRrRings(); }
-function holdForReroll(idx,vals,stall=false){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!!state.manualReroll,stall};   // stall: the experimental d1 hit its time cap short of S (own ring colour and chip text, same reroll flow)
+function holdForReroll(idx,vals,stall=false){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!!state.manualReroll||stall,stall};   // stall: the experimental d1 hit its time cap short of S (own ring colour and chip text, same reroll flow)
   for(const i of idx){ const r=(dice[i].r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:stall?RING_COLORS.stall:RING_COLORS.reroll,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); m.renderOrder=10;
     m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); rrRings.push(m); }
   const R=$('result'); R.textContent=''; R.classList.remove('on','crit','fumble'); if(rrPend.manual) document.body.classList.remove('throwing'); updateLeanUI(); if(rrPend.manual) R.classList.add('on'); }   // the result is held until the reroll has settled (like a lean chip, but the total is not shown yet)
@@ -1675,7 +1690,7 @@ function fireReroll(){ if(!rrPend||!rolling||!world||!settled) return; const {id
 
 function finishRoll(){ restT=0; if(placing){ settled=true; return; }
   if(restoring) return;   // a held die is being put back: finishRoll runs again when it is down
-  if(gombocRule&&!rrAccept){ const st=bodies.map((b,i)=>gomboc(i)&&!held.has(i)&&!gombocNear(i)?i:-1).filter(i=>i>=0);   // experimental d1: the time cap with S not down: no face is read, the stalled die gets its own ring and a re-roll (manual or automatic as the setting says)
+  if(gombocRule&&!rrAccept){ const st=bodies.map((b,i)=>gomboc(i)&&!held.has(i)&&!gombocNear(i)&&!gombocTouching(i)?i:-1).filter(i=>i>=0);   // experimental d1: the time cap with S not down: no face is read, the stalled die gets its own ring and a re-roll (always an explicit re-roll: chip or Roll)
     if(st.length){ gombocStalls++; settled=true; recFaces=readResult().map(p=>p.label); holdForReroll(st,new Map(st.map(i=>[i,0])),true); return; } }
   const parts=readResult();
   { const bad=restoreTries<3?[...new Set([...held,...Object.keys(rrKeep).map(Number)])].filter(i=>bodies[i]&&(rrKeep[i]||heldPose[i])&&(parts[i].label!==(rrKeep[i]||heldPose[i]).label||isLean(i))):[];   // PD-212: the dice a reroll does not throw are treated like held dice that got bumped
@@ -1762,7 +1777,7 @@ const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,lead:0,hold:false};   // dim: nat 1 room dimming; lead: nat 20 light dip (+) / flash (-)
 let droppedDice=new Set(), leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
-function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
+function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45||(gombocRule&&!placing&&gomboc(i)&&!gombocNear(i)&&!!gombocTouching(i)); }   // + experimental d1 short of S against the edge or a die   // propped on another die, cocked, or stacked
 function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.cocked,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
   m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); leanRings.push(m); }); updateLeanUI(); }
@@ -2492,7 +2507,7 @@ window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return wor
   keepSum,applyReroll,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
   get dice(){return dice;}, get leans(){return [...leanDice];}, get rrPending(){return rrPend?[...rrPend.idx]:null;}, get rrManual(){return !!(rrPend&&rrPend.manual);}, get rrRingCount(){return rrRings.length;}, get rrOrig(){return [...rrOrig];}, rerollNow:()=>fireReroll(), settleRoll(maxSteps=1500){ simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); } }, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
-  get gombocRule(){return gombocRule;}, set gombocRule(v){ gombocRule=!!v; }, GOMBOC_REST_TOL_DEG, GOMBOC_CAP_S, get gombocCapS(){return gombocCapS;}, set gombocCapS(v){ gombocCapS=+v; }, get gombocStalls(){return gombocStalls;}, get rrStall(){return !!(rrPend&&rrPend.stall);}, get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
+  get gombocRule(){return gombocRule;}, set gombocRule(v){ gombocRule=!!v; }, GOMBOC_REST_TOL_DEG, GOMBOC_CAP_S, get gombocCapS(){return gombocCapS;}, set gombocCapS(v){ gombocCapS=+v; }, get gombocStalls(){return gombocStalls;}, get freeTries(){return freeTries;}, gombocPin(i,on=true){ const b=bodies[i]; b.gPin=on?{p:b.position.clone(),q:b.quaternion.clone()}:null; }, gombocTouch, gombocTouching, gombocNear, GOMBOC_TOUCH_REST_S, get rrStall(){return !!(rrPend&&rrPend.stall);}, get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },
   renderOnce(dt=0){ camBlend=rolling?1:0; loop(0,dt); },                                  // one frame with the camera fully in the current view and no time passing
   setView({az,el,zoom}={}){ if(az!=null) orbit.az=az; if(el!=null) orbit.el=el; if(zoom!=null) state[rolling?'rollZoom':'zoom']=zoom; },
