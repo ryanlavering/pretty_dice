@@ -1,6 +1,6 @@
 # Gömböc research: findings and methods (PD-207, PD-208)
 
-Maintained by the integrator after every round. Last updated: 2026-11-22, after round 15 (research lane); the page-physics lane is still running; round 16 is planned (see the end).
+Maintained by the integrator after every round. Last updated: 2026-11-22, after round 15 (research and page-physics lanes); round 16 is running (see the end).
 
 This summarises the research. The full per-round working log, with every table and number, is `docs/design/gomboc-spike.md` on branch `v42-gomboc` (sections 1 to 46). Code is in `tools/gomboc-spike-verify/` and the playable page is `tools/gomboc-spike.html` (published as the "Gomboc d1 spike" artifact). Cards: PD-207 (research and page), PD-208 (low-poly search), PD-209 (shape variants), PD-211 (Möbius strip d1, 4.3). None of this ships in 4.2.
 
@@ -135,6 +135,13 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 * Angle budget (log section 62, 14 bodies): predicted minimum faces about 218 at aspect 1.5, 74 at aspect 2 (the reviewer said about 65), 30 at aspect 3, with a hexagonal-packing constant of 14.5 (approximate). Consistent with the data: homogeneous S = 1 at 90 to 92 faces at aspect 2; aspect 1.5 homogeneous needs about 142 faces and still carries a 3 percent shift; weighted bodies (3 to 13 percent shift) go below the homogeneous prediction at 24 to 60 faces. It is a necessary condition for S = 1 and says nothing about U.
 * Lane recommendation (round 16): let the normals move (Gauss–Newton or an annealer on the normals with the LP as inner solver); triangulate degenerate vertices by largest minimal angle; add faces near stubborn peaks; try weighted S = U = 1 first (a pure LP once the normals move); controls are low priority until the checker accepts non-simplicial faces.
 
+### Round 15, page-physics lane (909a5dc, e99c70a)
+* Root cause of the diverging faceted rolls: the page integrator keeps the body on the floor at all times (bilateral contact). On a polyhedron the contact point jumps from edge to edge and the model asks for a negative contact force; smaller time steps do not fix it (minimum Fz still -1e5 at dt 1/720 and 1/1440). A second mechanism on the weighted 60-face body: the contact point jumped across a face in one step although Fz stayed positive.
+* Fix, faceted bodies only (flag `unil`, default on for polyhedra; smooth bodies take the unchanged path): if Fz < 0 at any RK stage the body leaves the floor (ballistic CoM, torque-free spin), landing found by bisection and a no-slip zero-restitution impulse applied; a step whose omega change exceeds 30 rad/s plus |omega| is halved up to 8 levels. Deterministic; friction cone and restitution not modelled (float physics, not certified).
+* Results (node runs of the page physics, seeds 200 to 229): 92-face S = 1 body 0 of 30 diverged and 30 of 30 rest on the stable face (settle 8.1 to 18.6 s, mean 11.8 s; before 4 of 5 diverged); weighted 60-face body (3.4 percent) 30 of 30 on the stable face (settle 7.3 to 38.5 s; before 3 of 3 diverged); 194-face S = 2 body 16 of 16 on its two stable faces (8:8). Page driver (headless chromium): 3 of 3 and 2 of 2. Smooth bodies (Sloan, exact 1.16) give identical end points, rest angles and settle times before and after.
+* The weighted 24-face body (12.7 percent) stays off the page: it no longer diverges but 27 of 27 rolls had not come to rest in 300 simulated seconds (it is kicked back into motion after reaching the stable face; rounded contact plus impacts seem to inject energy; not diagnosed).
+* Page now has the weighted 60-face S = 1 body; the polyhedron Info line shows S, U, H and the face count.
+
 ### Independent review (Opus, read-only, 2026-11-22)
 * Corrected framing: S = 1 homogeneous is classical; the open polyhedral target is S = U = 1. Our records and searches conflated the two. Reviewer re-verified round 14's 92-face homogeneous S = 1 polyhedron in independent rational arithmetic (V = 48, U = 11, H = 10, Poincaré–Hopf 2); the open step is to cut U from 11 to 1.
 * Checker: sign tests correct; gap = no vertex-link winding or connectivity check (a branched cover can pass the edge test); the global vertex-below-plane test closes it where run.
@@ -142,7 +149,8 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 * Weighted bodies: a CoM shift as a percentage of the radius is not a physical quantity; report the insert mass fraction for a stated density ratio. Since homogeneous S = 1 exists, the weighted target worth having is weighted S = U = 1. Our r⁴ radial family cannot produce sharp ridges, a likely reason none of the bodies shows the photo's ridges.
 * Ranked experiments: (1) h-space LP / Gauss–Newton from the 92-face S = 1 body to reduce U from 11 to 1, homogeneous; (2) positive controls (Reshetov's 14-face body and the 2609.07827 polytope through the exact checker) and an attempt to prune the 56,946-face record; (3) weighted S = U = 1 as a pure LP with the CoM free, 20 to 150 faces; (4) smooth bodies parametrised in support-function space with ridges; (5) certify or downgrade the smooth bodies (L7 winding, Krawczyk or interval proof for 1.16). Unverified by us: the reviewer's formulas were derived by hand and must be checked against the exact checker first; the 2609.07827 and 21-point-mass claims are from the review's memory.
 
-### Round 16 (planned, from the round 15 recommendation; goal S = U = 1)
+### Round 16 (running, started 2026-11-22; goal S = U = 1)
+* Plan: face normals become variables with the offset LP as the inner solver, weighted S = U = 1 first, homogeneous second; seeds are the round 14 bodies and Conway-style spiral seeds; exact certification of every claim; insert-mass fractions reported for the weighted bodies.
 * Owner direction (earlier): do not perturb the 194-face S = 2 body (two distinct stable faces); start a fresh low-poly search. The review revises the method: use the linear offset formulation with an exact checker, positive controls first, and target S = U = 1.
 
 
