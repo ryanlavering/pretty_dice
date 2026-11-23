@@ -1,0 +1,24 @@
+// Round 12 owner experiment: merge near-equal faces of a hull of a smooth body into one circumscribing plane, sweep tolerance, report S.
+//   node r12-merge.mjs shape.json N angDeg hTol [--exact out.json]
+import fs from 'fs'; import vm from 'vm'; import {fib,hull} from './hull.mjs'; import {evalHS} from './r12-eval.mjs'; import {quantize,buildHull,exactCheck,globalConvexCert,flipToConvex} from './poly-check.mjs';
+const G=vm.runInNewContext(fs.readFileSync(new URL('./core.js',import.meta.url),'utf8')+';Gomboc');
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+export function bodyPoints(shapeFile,N){ const sj=JSON.parse(fs.readFileSync(shapeFile,'utf8')); const S=new G.Shape({c:sj.c,Lmax:sj.Lmax}); return fib(N).map(u=>S.point(u[0],u[1],u[2],[0,0,0])); }
+export function mergeFaces(P,angDeg,hTol){ const tri=hull(P); const Fn=tri.length; // centroid
+  let V6=0,C=[0,0,0]; for(const t of tri){ const [A,B,Cc]=t.v.map(i=>P[i]); const v=dot(A,cr(B,Cc)); V6+=v; for(let k=0;k<3;k++) C[k]+=v*(A[k]+B[k]+Cc[k]); } const c=C.map(x=>x/(4*V6));
+  const hh=tri.map(t=>t.d-dot(t.n,c)); const par=tri.map((_,i)=>i); const find=x=>{ while(par[x]!==x){ par[x]=par[par[x]]; x=par[x]; } return x; };
+  const edge=new Map(); tri.forEach((t,i)=>{ for(let k=0;k<3;k++) edge.set(t.v[k]+'_'+t.v[(k+1)%3],i); }); const ca=Math.cos(angDeg*Math.PI/180);
+  if(process.env.LINK==='single'){ tri.forEach((t,i)=>{ for(let k=0;k<3;k++){ const j=edge.get(t.v[(k+1)%3]+'_'+t.v[k]); if(j===undefined) continue; if(dot(t.n,tri[j].n)>=ca && Math.abs(hh[i]-hh[j])<=hTol){ par[find(i)]=find(j); } } }); }
+  else { // seeded growth: lowest unassigned face seeds a cluster; BFS over adjacent faces whose normal is within angDeg of the SEED normal and height within hTol of the SEED height (bounds the cluster size, no chaining)
+    const nbr=tri.map(()=>[]); tri.forEach((t,i)=>{ for(let k=0;k<3;k++){ const j=edge.get(t.v[(k+1)%3]+'_'+t.v[k]); if(j!==undefined) nbr[i].push(j); } }); const done=new Array(tri.length).fill(false); const order=tri.map((_,i)=>i).sort((x,y)=>hh[x]-hh[y]);
+    for(const sd of order){ if(done[sd]) continue; done[sd]=true; const q=[sd]; while(q.length){ const x=q.pop(); for(const j of nbr[x]){ if(done[j]) continue; if(dot(tri[sd].n,tri[j].n)>=ca && Math.abs(hh[sd]-hh[j])<=hTol){ done[j]=true; par[j]=sd; q.push(j); } } } } }
+  const cl=new Map(); tri.forEach((t,i)=>{ const r=find(i); if(!cl.has(r)) cl.set(r,[]); cl.get(r).push(i); });
+  const N=[],D=[]; let merged=0; for(const ids of cl.values()){ if(ids.length===1){ N.push(tri[ids[0]].n); D.push(tri[ids[0]].d); continue; } merged++;
+    let s=[0,0,0]; const vs=new Set(); for(const i of ids){ const t=tri[i]; const [A,B,Cc]=t.v.map(q=>P[q]); const nn=cr(sub(B,A),sub(Cc,A)); for(let k=0;k<3;k++) s[k]+=nn[k]; t.v.forEach(q=>vs.add(q)); } const l=Math.hypot(...s); const n=s.map(x=>x/l); let d=-1e9; for(const q of vs) d=Math.max(d,dot(n,P[q])); N.push(n); D.push(d); }
+  // origin for the dual: centroid c (strictly inside)
+  let sd=12345; const rnd=()=>{ sd=(sd*1664525+1013904223)>>>0; return sd/4294967296; }; const D2=D.map((d,i)=>d-dot(N[i],c)+2e-7*(rnd()-0.5)); /* tiny random offsets make every vertex simple */ return {N,D:D2,c,clusters:cl.size,merged,Ftri:Fn}; }
+if(process.argv[1]&&process.argv[1].endsWith('r12-merge.mjs')){ const a=process.argv.slice(2); const P=bodyPoints(a[0],+a[1]); const m=mergeFaces(P,+a[2],+a[3]); const e=evalHS(m.N,m.D); const o={shape:a[0].split('/').pop(),N:+a[1],angDeg:+a[2],hTol:+a[3],trisBefore:m.Ftri,clusters:m.clusters,mergedClusters:m.merged,ok:e.ok,F:e.F,S_float:e.S};
+  if(a.includes('--exact')&&e.ok){ const id=new Map(), Vq=[], map=new Array(e.verts.length); e.verts.forEach((v,k)=>{ const w=v.map((x,q)=>x+m.c[q]); const key=w.map(x=>Math.round(x*1e11)).join(','); if(!id.has(key)){ id.set(key,Vq.length); Vq.push(w); } map[k]=id.get(key); });
+    const PI=quantize(Vq); let T=[]; for(const r of e.ring.values()){ const q=[]; for(const k of r){ const v=map[k]; if(!q.length||q[q.length-1]!==v) q.push(v); } while(q.length>1&&q[0]===q[q.length-1]) q.pop(); if(q.length<3) continue; for(let j=1;j+1<q.length;j++) if(q[0]!==q[j]&&q[j]!==q[j+1]&&q[0]!==q[j+1]) T.push([q[0],q[j],q[j+1]]); }
+    const fl=flipToConvex(PI,T); T=fl.T; const tm={}; const r=exactCheck(PI,T,tm); o.exact={vertices:PI.length,tris:T.length,flips:fl.flips,S:r.S,U:r.U,H:r.H,PH:r.poincareHopf,convexCert:r.convexCert,manifold:r.manifold,nonConvex:r.nonConvexEdges,flat:r.flatEdges,centroidOutside:r.centroidOutsidePlanes,degenerate:r.degenerate}; if(a.includes('--save')){ fs.writeFileSync(a[a.indexOf('--save')+1],JSON.stringify({vertices:PI.map(p=>p.map(x=>x.toString())),faces:T,scale:'2^40'})); } }
+  console.log(JSON.stringify(o)); }

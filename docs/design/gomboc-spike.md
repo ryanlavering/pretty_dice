@@ -651,3 +651,62 @@ Log-log slopes against faces: exact check total 0.98 (1k to 1.3M faces), i.e. li
 1. Stop hulling the smooth body. Design the polyhedron directly with the exact checker as the cost: S (exact) first, then persistence of the face graph, starting from the low-poly searches (round 9: S 5 to 8 at 44 to 70 faces) and using the tipping graph (sinks = stable faces) to pick which face to push, with the exact check (15 microseconds per face) inside the loop; at 100 to 1000 faces one exact check is 2 to 20 ms so a million evaluations are affordable.
 2. Target body: a smooth body whose support function has Hessian eigenvalues of order R (large lambda, strongly pronounced) rather than the nearly spherical 1.15 to 1.18 ratio bodies; the plateau estimate pi R^2/(4 lambda^2) per critical point is the quantity to make small. This is in tension with the monostable smooth bodies being near-spherical, and is probably why a homogeneous mono-monostatic polyhedron is open: the smooth examples are too flat for faceting.
 3. If a polyhedron with S = 1 is ever found, run the full-vertex global convexity test on it (`--global`) and add it to the page with the rigor banner "exact, uniform density, certified in rational arithmetic".
+
+# Round 12 (direct search for S = 1 polyhedra; owner experiment: merging near-equal faces)
+
+Result in one line: **no polyhedron with S = 1 was found** (no certified hit, so no reduction, roll-harness run or page change). Direct search reaches **S = 2 easily (about 22 to 24 faces, exact-certified)** and stalls there at every start size from 40 to 1000 faces; merging near-equal faces of the 1.16/1.18 hulls lowers S from hundreds to about 25 to 80 but not toward 1.
+
+## 43. Tools (`tools/gomboc-spike-verify/`, records in `runs/r12/`)
+
+* `r12-eval.mjs`: FLOAT evaluator of a polytope given as half-spaces (dual hull; vertices, polygon rings, volumetric centroid, per-face foot margin = signed in-plane distance of the CoM foot to the nearest edge line; stable iff margin > -1e-9, i.e. conservative). Agrees with the exact checker on every merged polyhedron tried (float S = exact S).
+* `r12-search.mjs`: direct search. Two parametrisations: `vert` (N points, polyhedron = hull, ~2N-4 triangles; points that fall inside simply disappear, so the face count falls during the run) and `hs` (planes = unit normal + offset from a fixed origin, polyhedron = intersection; redundant planes drop out). Two optimisers: `anneal` (geometric temperature 0.6 to 0.02; 30 percent of the moves are on vertices/planes of bad stable faces) and `greedy` (tipping-graph guided: 90 percent of the moves are on a stable face other than the lowest one, those with the smallest foot margin first; accept if not worse, no temperature). Cost (FLOAT) = sum over stable faces other than the lowest stable one of (1 + 0.5 min(m/0.05, 1)) + 2 max(0, r_max/h_min - ASP) + a penalty for F below 0.6 times the target. S = 1 would be cost 0. Seeds: `sph` (jittered Fibonacci sphere), `body` (Fibonacci hull of the verified 1.16 body), `twist` (elongated 1.5:1.0:0.8 ellipsoid with a z-twist of 1.6 rad per unit z), `r10` (round 10 low-poly bodies, coded but not run in the sweep). Speed: 15 to 20k evals/s at 40 faces, about 1k/s at 400, about 100/s at 1000 faces (Fibonacci start; the hull rebuild dominates).
+* `r12-certify.mjs`: exact BigInt check of the hull of the (2^-40 rounded) vertices after dropping interior points, plus the global vertex-below-plane test. `r12-merge.mjs`, `r12-merge-sweep.sh`: the merge experiment.
+* CMA-ES was not tried (3N dimensions with a discrete, piecewise-constant cost; annealing and the tipping-graph greedy were the two optimisers).
+
+## 44. Direct search: best S (60 runs, 150 s each, `search_b2.jsonl`; 12 screening runs of 60 s at 100 faces, `search_screen100.jsonl`)
+
+Best float S per start size (any param, seed, ASP 3 or 6; all with exact-confirmable polyhedra when S <= 3):
+
+| start faces (target) | best S | faces of the best | time per run | note |
+|---|---|---|---|---|
+| 40 | 2 | 20 to 24 | 150 s | all 12 runs S 2 (one S 3) |
+| 100 | 2 | 24 to 82 | 60 s | anneal S 2 or 3, twist seed best |
+| 200 | 2 | 23 to 74 | 150 s | |
+| 400 | 2 | 52 to 144 | 150 s | some runs stuck at S 3 to 9 |
+| 1000 | 2 | 194 to 356 | 150 s (only 15k evals) | sph/body seeds S 6 (too few evals) |
+
+* S = 2 is easy: reached within seconds, from every seed, both parametrisations; bodies have 4 to 13 unstable vertices and the same number of saddle edges (S + U - H = 2). The face count collapses to 20 to 30 under annealing because vertices are free to leave the hull: the search prefers coarse bistable bodies to fine ones. Where the start has hundreds of faces (400, 1000) the best S = 2 polyhedra keep 144 to 356 faces (twist seed), still S = 2.
+* Greedy (tipping-graph guided, no temperature) is much worse than annealing from near-sphere seeds (S 6 to 17 at 60 to 70 faces) and equal only from the twist seed (S 2). Guided moves alone get stuck; the temperature matters more than the guidance (the guided 30 percent share inside annealing was not ablated).
+* Relaxing the aspect limit from 3 to 6 gave no S = 1 (it lowered cost at equal S: more room, same count). The limit was binding at 3 (aspects 2.8 to 3.0); the S = 2 optimum sits at the allowed elongation, which suggests the search uses elongation to cheat the second stable face down but not away.
+* Exact confirmation (BigInt, `r12-certify.mjs`) of three S = 2 bodies: 24 triangular faces / 14 vertices, S 2, U 4, H 4, convexity certificate true, global test 0 violations (`runs/r12/exact_best_vert_anneal_sph_40_7_S2.json`); 24 faces S 2 U 7 H 7; 194 faces / 99 vertices S 2 U 11 H 11. These are certified bistable (not mono-) convex polyhedra of uniform density; pass1 is false only because S is 2.
+* Negative results: no run reached cost below 1 (one extra stable face). Fitness plateaus: the second stable face is not destroyed by vertex/plane moves without recreating another; this is consistent with the known literature (smallest known mono-monostatic homogeneous polytope has 56,946 faces) and with the round 11 flat-ring argument. The searched space at 40 to 1000 faces and 150 s per run is small compared to what a 57k-face construction needs; absence of S = 1 here is not evidence of nonexistence.
+* Merge applied to direct-search bodies (float, 194-face S = 2 body): merging lowers faces and RAISES S (144 faces S 3, 104 S 4, 72 S 5, 47 S 9).
+
+## 45. Owner experiment: merging near-equal faces (`r12-merge.mjs`, runs `merge_*.jsonl`, `single_merge_*.jsonl`)
+
+* Method (EXACT check afterwards): hull of N Fibonacci points of body 1.16 or 1.18 (rounded to the 2^-40 grid, as in round 11); faces clustered; each cluster replaced by ONE circumscribing plane (area-weighted mean normal, offset = max over the cluster's vertices, so the body only grows and stays convex); polytope = intersection of cluster planes and unmerged triangle planes (dual hull), 2e-7 random plane offsets so every vertex is simple; polygons fan-triangulated, vertices quantised, exact edge flips (`flipToConvex`) then the exact checker. Clustering rules: `seeded` (the lowest unassigned face seeds a cluster; BFS over adjacent faces within ANG degrees of the seed normal and HTOL of the seed height; default) and `single`-link (adjacent faces with normal angle < ANG and height difference < HTOL; chains).
+* Exact convexity certificate: held in 222 of 223 rows that produced an exact result (the one failure: centroid-strictly-inside test on a sliver, N 3000, 4300 faces; in addition 50 single-link rows are unbounded/chained and 1 seeded row crashed the checker, listed as `no exact`); PH = 2 in all certified rows. Merged polyhedra are convex by construction (intersection of half-spaces); what the certificate adds is exact S.
+* Seeded merging (face counts are polygons; S exact; heights in units of the body radius, the face height range is about 0.11 to 0.13):
+
+| body | start faces | tolerance (ANG deg / HTOL) | faces | S |
+|---|---|---|---|---|
+| 1.16 | 2k (N 1000) | none | 1996 | 507 |
+| 1.16 | 2k | 10 / 0.004 | 642 | 227 |
+| 1.16 | 2k | 25 / 0.008 | 338 | 98 |
+| 1.16 | 2k | 40 / 0.008 | 323 | 89 |
+| 1.16 | 6k (N 3000) | 25 / 0.008 | 332 | 103 |
+| 1.16 | 6k | 40 / 0.008 | 286 | 78 |
+| 1.18 | 6k | 40 / 0.008 | 312 | 80 |
+| 1.18 | 2k | 40 / 0.008 | 336 | 81 |
+
+ S falls roughly in proportion to the face count (about 0.25 to 0.3 stable faces per face at 300 faces), not toward 1. Small tolerances (3 degrees, 0.0005) change almost nothing (S 450 to 520).
+* Single-link merging (N 500 to 5000, ANG 2 to 30, HTOL 0.002 to 0.05): percolation. At HTOL 0.002 about 1800 faces and S ~270 (N 5000), at HTOL 0.005 and ANG >= 4 degrees a sharp drop to F 358 (1.16) / 438 (1.18) and S 26 / 23 (exact, PH 2, certificate true: `single_merge_1.16_5000.jsonl`), and at HTOL >= 0.01 everything chains into one cluster whose circumscribing plane makes the polytope unbounded (no result). The S 23 to 26 at 360 to 440 faces is the smallest S from merging, still far from 1; the window between 0.005 and 0.01 (where the percolation transition is) was not resolved finely, nor were intermediate N values.
+* Why S does not reach 1 (argued): a merged circumscribing plane lowers the number of faces on a flat ring but the plane stays tangent only at its highest point, so its foot lies inside the merged polygon exactly when the ring was flat at that spot; the supporting-plane heights of the merged faces form the same flat valley, the CoM moves little, and the remaining faces are again close to equal. Not proved.
+* Merging the direct-search bodies instead made S larger (section 44).
+
+## 46. Conclusions and recommendation
+
+* S = 1 not found; the smallest S found is 2 (exact-certified at 24 faces). Direct search floors at S = 2 for 40 to 1000 start faces; hull-and-merge of the verified smooth bodies floors at S about 25 (F ~400).
+* Moves that help: letting vertices leave the hull (the face count drops to 20 to 30, S to 2); twisted/elongated starts (S = 2 at 11 stable faces start); temperature. Moves that do not: greedy tipping-graph moves, relaxing the aspect limit, merging faces of an already S = 2 body.
+* Recommendation: (1) the 57k-face tangent-cover construction is probably the only route known to work; a search at 40 to 1000 faces should not expect S = 1 without a structural idea. (2) If continuing: optimise the support-function-style cost directly (smooth, no hull rebuild) at 2k to 10k faces from a seed that is already monostable (merge result with S about 25 at 400 faces is a candidate seed), then apply tipping-graph moves to the 25 remaining stable faces; the exact check at that size is 30 to 150 ms. (3) Gradient information is the missing ingredient: the cost is piecewise constant, so use margins (already in the cost) with many more evals (needs an incremental hull; hull.mjs is the bottleneck at >=400 faces). (4) Do not spend more on S = 2 or hull-only approaches.
+* Page: unchanged (no S = 1 body). Not done: reduction, roll harness (nothing to roll), CMA-ES, `r10` seed in the sweep, finer percolation window.
