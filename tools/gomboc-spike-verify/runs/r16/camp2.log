@@ -1,0 +1,42 @@
+w 16 0.6 3.0 stage1 2 4 0.622 stage2 None -1.000 F 28 20s
+w 16 0.7 3.0 stage1 1 3 0.916 stage2 None -1.000 F 28 56s
+w 16 0.6 3.0 stage1 1 3 0.927 stage2 None -1.000 F 28 57s
+w 16 0.6 3.0 stage1 1 3 0.785 stage2 None -1.000 F 28 57s
+w 18 0.6 3.0 stage1 1 1 0.608 stage2 None -1.000 F 32 1s
+w 18 0.6 3.0 stage1 2 3 0.619 stage2 None -1.000 F 32 2s
+w 18 0.7 3.0 stage1 1 1 0.680 stage2 None -1.000 F 32 1s
+w 18 0.7 3.0 stage1 1 2 0.811 stage2 None -1.000 F 32 14s
+w 16 0.7 3.0 stage1 1 3 0.939 stage2 None -1.000 F 28 57s
+w 20 0.6 3.0 stage1 1 2 0.631 stage2 None -1.000 F 36 3s
+w 18 0.6 3.0 stage1 2 3 0.577 stage2 None -1.000 F 32 27s
+w 20 0.6 3.0 stage1 1 1 0.572 stage2 None -1.000 F 36 1s
+w 20 0.6 3.0 stage1 1 2 0.621 stage2 None -1.000 F 36 5s
+w 20 0.7 3.0 stage1 1 1 0.603 stage2 None -1.000 F 36 4s
+w 20 0.7 3.0 stage1 1 2 0.682 stage2 None -1.000 F 36 6s
+w 20 0.7 3.0 stage1 1 2 0.733 stage2 None -1.000 F 36 5s
+w 18 0.7 3.0 stage1 1 3 0.866 stage2 None -1.000 F 32 24s
+w 24 0.6 3.0 stage1 1 3 0.711 stage2 None -1.000 F 44 7s
+w 24 0.6 3.0 stage1 1 2 0.633 stage2 None -1.000 F 44 6s
+w 16 0.7 3.0 stage1 1 2 0.898 stage2 None -1.000 F 28 57s
+w 24 0.7 3.0 stage1 1 2 0.657 stage2 None -1.000 F 44 2s
+w 24 0.6 3.0 stage1 1 2 0.734 stage2 None -1.000 F 44 32s
+w 24 0.7 3.0 stage1 1 2 0.807 stage2 None -1.000 F 44 90s
+w 28 0.6 3.0 stage1 1 2 0.610 stage2 None -1.000 F 52 3s
+w 28 0.7 3.0 stage1 1 2 0.656 stage2 None -1.000 F 52 1s
+w 24 0.7 3.0 stage1 1 2 0.834 stage2 None -1.000 F 44 90s
+w 28 0.7 3.0 stage1 1 1 0.582 stage2 None -1.000 F 52 3s
+FAIL seed 32 0.6 3.0
+w 32 0.6 3.0 stage1 1 1 0.587 stage2 None -1.000 F 60 2s
+w 28 0.7 3.0 stage1 1 2 0.745 stage2 None -1.000 F 52 6s
+FAIL seed 32 0.7 3.0
+w 32 0.6 3.0 stage1 1 1 0.587 stage2 None -1.000 F 60 2s
+w 28 0.6 3.0 stage1 1 2 0.699 stage2 None -1.000 F 52 90s
+w 40 0.6 3.0 stage1 1 2 0.629 stage2 None -1.000 F 76 6s
+w 28 0.6 3.0 stage1 1 2 0.657 stage2 None -1.000 F 52 90s
+w 40 0.6 3.0 stage1 1 2 0.577 stage2 None -1.000 F 76 9s
+w 40 0.6 3.0 stage1 1 2 0.577 stage2 None -1.000 F 76 8s
+FAIL seed 40 0.7 3.0
+FAIL seed 40 0.7 3.0
+w 32 0.7 3.0 stage1 1 2 0.814 stage2 None -1.000 F 60 90s
+w 32 0.7 3.0 stage1 1 2 0.814 stage2 None -1.000 F 60 90s
+w 40 0.7 3.0 stage1 1 2 0.743 stage2 None -1.000 F 76 90s

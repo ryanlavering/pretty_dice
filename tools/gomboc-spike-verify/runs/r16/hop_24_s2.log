@@ -1,0 +1,5 @@
+hop 29 new best 0.3376
+hop 32 new best 0.3195
+hop 38 new best 0.3146
+hop 44 new best 0.3139
+done runs/r16/hop_24_s2.json hops 95 acc 4 best 0.3139

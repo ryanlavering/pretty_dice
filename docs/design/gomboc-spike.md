@@ -863,3 +863,42 @@ Results (30 rolls each, seeds 200-229, node harness): 92-face S=1: 30 of 30 rest
 Weighted 24-face body (12.7 percent): NOT put back. With the fix it no longer diverges (omega stays below 45) but 27 of 27 rolls had not come to rest within 300 simulated seconds: after reaching the stable face the body is kicked back into motion (omega 9 to 30 at t = 25 to 35 s), i.e. the rounded contact plus impacts inject energy on this large-shift, low-face-count body (not diagnosed further). The 60-face body is on the page; the 24-face one stays off.
 
 Page: shapes unchanged plus "Weighted polyhedron S=1, 60 faces (CoM shifted 3.4%)" (same banner style as the 194-face weighted one); the polyhedron Info line now shows S, U, H, faces; the banner physics note mentions lift-off and impacts; the polyhedron banner now prints the vertex count (was printing the coordinate list). csptest ready true, errors []. Not modelled: friction cone (impacts are fully no-slip), restitution.
+
+## 65. Round 16 (lane v42-gomboc): normals as variables; weighted S=U=1 FOUND (exact) at 24 to 60 faces
+
+Method (float optimisation, exact confirmation). State = unit normals n_i and heights H_i = d_i - n_i.c (c at the origin; translation of d and c together is a gauge, so c is not a variable). P = {x: n_i.x <= H_i}; vertices = facets of the dual hull of n_i/H_i (simple polytope, degree-3 vertices, polygonal faces, so no sliver resolution of degenerate vertices). Conditions, all about c: face j stable iff n_k.(H_j n_j) < H_k for all k (sink = argmin H, every other face needs one violated k); vertex peak iff lam = M^-T v > 0 componentwise (v = M^-1 H_ijk), so every vertex except the farthest needs one lam_k < 0; Poincare-Hopf S+U-H=2 then forces H=0 when S=U=1, so saddle edges are not constrained separately. Optimiser (`r16_lib.py`, `r16_lib2.py`): sequential LP (scipy HiGHS), variables = tangent-plane rotations of every n_i and every H_i (3F), constraint Jacobian by finite differences, frozen assignments (climbing component and tipping neighbour chosen by best margin each iteration), L1 slack merit, trust region, re-hull and exact re-evaluation every step; constraints: type (local convexity margin), tipping margin 0.02, climbing margin 0.02 (normalised), aspect about the volume centroid g (rmax/hmin <= A, A = 2 and 3), c strictly inside. Second stage adds the objective |g - c|/rbar (weighted shift) with S=U=1 held. Face count is held fixed.
+Exact checker `r16-exact.mjs` (BigInt, planes rounded to 2^-40, normals NOT normalised): rational vertices by Cramer, strict convexity (every vertex strictly below every other plane, 0 violations, 0 flat), closure (every vertex has exactly 3 neighbours, every edge exactly 2 vertices, Euler), c strictly inside, then S (foot D_i N_i/|N_i|^2 strictly inside all planes), U (all 3 edges descend, rational test), H (saddles from the 2x2 Gram solve and interior foot), tipping graph (adjacent violated neighbour strictly lower, one sink). Rigor: EXACT. Results `runs/r16/certs.json`, bodies `runs/r16/*.json`.
+
+Failed starts (float, negative): from near-sphere random seeds (24, 40, 60 faces, with basin hopping, aspect bound 3 to 20) the SLP stalls at S 3 to 9, U 5 to 13 (merit local minima near a sphere); ellipsoid seeds (z stretched 1.6, c on the axis) stall at S 5 to 8, U 4 to 10. The 92-face fixed-normal plateau of round 15 is not the right start.
+
+Key seed (structural observation, exact reasoning plus float runs): a sphere-inscribed polyhedron with an ECCENTRIC centre of mass (c at 0.6 to 0.8 of the radius off-centre) is a good start: the distance from c is linear in v on the sphere, S falls to 1 at about 20 vertices for c about 0.65 R, but U stays 4 to 7 (edges are chords: a vertex peak means all edges start descending, not that neighbours are lower). The SLP removes the remaining peaks.
+
+Exact results (all `pass`: convexity certificate true, S=1, U=1, H=0, PH=2, tip graph one sink, no degenerate sign; aspect = rmax/hmin about the volume centroid g, so both the aspect <= 2 and the aspect <= 3 runs are satisfied: the bound was never active, the bodies are round, 1.2 to 1.7):
+
+| faces | vertices | shift |g-c|/mean radius | aspect about g | file |
+|---|---|---|---|---|
+| 24 | 44 | 31.1 % (basin hopping), 34.4 % | 1.68, 1.48 | hop_24_s1, cont_24_A3 |
+| 32 | 60 | 45.8 % | 1.35 | camp_s_N18_d0.6 |
+| 36 | 68 | 31.6 % (best), 31.9 % | 1.51 | cont2_36, cont_36_A3 |
+| 40 | 76 | 49.1 % (A=3), 54.1 % (A=2) | 1.41 | camp_w_N22_d0.8 |
+| 52 | 100 | 46.8 % | 1.29 | camp_s_N28_d0.7 |
+| 60 | 116 | 47.6 % | 1.22 | camp_s_N32_d0.6 |
+
+Float success rates of the feasibility stage (S=U=1 from the eccentric seed, 90 to 120 s each, jitter seeds): 24 faces 1 of 3, 32 faces 4 of 8, 36 faces 4 of 8 (excluding the ellipsoid starts), 40 faces 1 of 3, 52 faces 2 of 16, 60 faces 4 of 6, 44 and 76 faces 0 (U 2 floor in those seeds; seed dependent, not a proof). Iterations to S=U=1 are few (first hit within 5 iterations in the logged history, the merit then still tightens). The U count falls 20+ -> 2 or 3 within about 10 iterations and then either closes or stalls at U 2.
+Shift reduction (stage 2) is slow and stalls: 24 faces 0.353 -> 0.344 (500 s) -> 0.311 (basin hopping), 36 faces 0.404 -> 0.319 -> 0.316; no run goes below 0.31 (float local optimum of this SLP; not a proof of a floor). The aspect bound plays no role.
+
+## 66. Homogeneous variant and insert-mass view
+
+Homogeneous S=U=1 (centroid = c): NOT reached. The shift objective is the homogeneous condition (shift 0); the best exact bodies keep 31 percent shift at 24 and 36 faces and nothing was found below that (SLP plus basin hopping, 24 and 36 faces; larger face counts only reached 45 to 50 percent in the time given). Combined with round 14/15 (homogeneous S=1 needs about 90 faces at aspect 2 and keeps U >= 7) the homogeneous mono-monostatic polyhedron remains open here (float local optima only).
+
+Insert-mass view (float, `r16_insert.py`): a single ball insert of density ratio 6.5 (steel in PLA), centre on the ray g -> c as far out as the ball fits, volume fraction chosen to maximise the shift. For the exact bodies it reaches at most 14.6 percent (36 faces, 16 percent of the volume, 55 percent of the mass), 13.9 percent (24 faces), 15.4 percent (32), 17.3 percent (60) of the mean radius; the needed 31 to 48 percent is NOT reachable. Tungsten-like 19.3: 24.8 percent maximum (36 faces), still short. Density ratio 100 would reach 32 percent with a 1.2 percent volume insert, but the mass fraction needed is always at least 55 percent. So none of the S=U=1 bodies found is buildable as PLA plus a steel ball; a non-ball insert or a hollow body is not analysed here.
+
+## 67. Page and rolls (60-face body)
+
+Added shape "m1_60: Weighted mono-monostatic S=U=1, 60 faces (CoM shifted 48%)" (`r16_page.py`; banner reads EXACT, WEIGHTED mono-monostatic, S=1 U=1 H=0, NOT homogeneous, NOT buildable with steel; all earlier shapes unchanged; csptest ready true, errors []). Rolls: node harness `r15p-node.mjs` seeds 400 to 402 and 500 to 511: 15 of 15 rest on the one stable face (2.55 to 2.58 deg from the exact foot, rest 10 to 12 s); page driver (headless chromium, seeds 600 to 602): 3 of 3 rest on the stable face. The 24-face body (34 percent) did NOT come to rest in 300 s in 3 of 3 node rolls (about 150 lift-offs and impacts per roll, same energy-injection effect as the round 15 24-face weighted body) and the 36-face body (32 percent) stayed within 0.02 to 0.2 deg of the stable face but had not satisfied the rest criterion in 300 s (3 of 3): both are not on the page.
+
+## 68. Round 16 conclusions
+* EXACT: weighted S=U=1 (H=0) convex polyhedra with 24, 32, 36, 40, 52 and 60 faces, aspect about the centroid 1.2 to 1.7, CoM shift 31 to 54 percent of the mean radius. First S=U=1 body of the project.
+* Weighted shift is large and not reduced below 31 percent by this optimiser; steel inserts cannot supply it.
+* Homogeneous S=U=1: not reached.
+* Next: lower the shift (spiral / Conway-like seeds, different aspect, face insertion near stubborn peaks), non-ball insert analysis, and a rolling-model fix for large-shift small-face bodies.

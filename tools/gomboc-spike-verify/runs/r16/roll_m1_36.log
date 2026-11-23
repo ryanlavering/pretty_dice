@@ -1,0 +1,4 @@
+400 tRest null dist 0.22 face 0 minFz 1.5e+2 maxw 31 fly 1 imp 1 flyT 0.01 ref 17 
+401 tRest null dist 0.02 face 0 minFz 2.9e+2 maxw 29 fly 1 imp 1 flyT 0.01 ref 6 
+402 tRest null dist 0.05 face 0 minFz 2.9e+2 maxw 31 fly 0 imp 0 flyT 0.00 ref 6 
+m1_36 rolls 3 ok 0 bad 3
