@@ -4,6 +4,7 @@ title: 'Low-poly gomboc search (prize): equilibrium counter + candidate log'
 status: To Do
 assignee: []
 created_date: '2026-11-21T19:15:00Z'
+updated_date: '2026-11-23T05:30:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -23,3 +24,9 @@ Prize offered by Domokos and Várkonyi (Wikipedia; footnote: Rehmeyer, "Can't Kn
 - Certified mono-monostatic polytopes: Schettini Gherardini arXiv:2609.07827 (P56946: F 56,946, E 170,832, V 113,888, C 341,664; P272971: C 1,637,814). Data: github.com/Tancredi-Schettini-Gherardini/certified_gomboc (not downloaded). Paper footnote says its 56,946-face body guarantees "at least $2.93", which equals 10^6/C, not the $10,000/C quoted by Wikipedia: prize statement UNVERIFIED, original announcement still to find. Author also offers 3*log10(56946/#faces) cents per improved record.
 - Other bodies cited from that paper (not read): 21-face/21-vertex mono-monostatic 0-skeleton (point masses), 8-face/11-vertex minimal mono-unstable polyhedron, Reshetov 14-face monostable.
 - Ridged physical-gomboc shape NOT reproduced: Varkonyi-Domokos explicit body (gomboc.eu/docs/100.pdf, Eqs 1-6, c~0.275, d<5e-5) is a near-sphere; commercial specimen geometry unpublished (Couey 2604.17120). Best verified shape stays "More pronounced body" (r_max/r_min 1.10).
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Owner 2026-11-22 (round 15 plan): the 194-face S=2 body will not morph into a gomboc (two distinct stable faces; would need a macroscopic turtle-back ridge on one side and matching puffing opposite). Start a fresh low-poly search with the current heuristics: exact checker arbiter, incremental optimiser, foot-point margin cost, strict exact convexity, weighted-CoM shift as secondary objective; structured seeds (elongated, ridge + opposite bulge, twist), 30-300 faces, many seeds.
+<!-- SECTION:NOTES:END -->
