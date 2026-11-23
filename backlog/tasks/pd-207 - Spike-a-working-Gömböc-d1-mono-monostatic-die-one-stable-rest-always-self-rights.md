@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T01:27:00Z'
+updated_date: '2026-11-23T02:26:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -105,4 +105,6 @@ Round 10 (v42-gomboc bc29eba, page v6): persistence-cost CMA-ES on the ring fami
 Round 11 (v42-gomboc 34e1e4b): NEGATIVE. Exact BigInt checker (exact centroid, convexity certificate, S/U/H, tipping graph, Poincare-Hopf) built; hulls of the verified 1.16/1.18 bodies never reach S=1 from 36 to 1.3M faces (S plateaus 1e3-4e3; flat support-function rings, spurious stable faces ~ pi R^2/(4 lambda^2), independent of face size). Reduction not run (no valid start). Timing: exact check linear in faces (slope 0.98, 15 us/face; 0.016 s at 1k, 19.8 s at 1.3M). Next: direct polyhedron search at 100-1000 faces with exact S as cost (check 2-20 ms), start from round-9 low-poly bodies (S 5-8), target strongly curved support function; certify any S=1 hit and put on page.
 
 Round 12 addition (owner): merge sufficiently similar faces in the flat regions of the smooth-body hulls into single faces (tolerance sweep on angle/height; report S vs tolerance and face count, exact convexity re-check).
+
+Round 12 (v42-gomboc c726d28): no S=1 polyhedron. Direct search (vertex/half-space moves, anneal + tipping-guided greedy, 72 runs, float cost) gets S=2 easily at 24-356 faces (exactly certified: 24 faces S2 U4 H4; 194 faces S2), but S=1 never; best S=2 at 40/100/200/400/1000 faces. Merging faces of an S=2 body raises S. Face-merge on 1.16/1.18 hulls (owner idea): S falls roughly in proportion to faces (2k->642 faces S227; 6k->286 faces S78; single-link percolation at tol 0.005-0.01, S~25 at ~400 faces), not toward 1. CMA-ES and the round-10 low-poly seed not run. Recommendation: S=1 needs a structural idea (only known construction is the ~57k-face tangent cover); next seed a merged S~25 body at 400 faces and optimise at 2k-10k faces with an incremental hull. Page unchanged.
 <!-- SECTION:NOTES:END -->
