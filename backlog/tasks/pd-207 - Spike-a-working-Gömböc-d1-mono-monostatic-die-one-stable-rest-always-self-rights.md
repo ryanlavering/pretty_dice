@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T06:29:00Z'
+updated_date: '2026-11-23T06:43:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -119,4 +119,6 @@ Round 14 refinement (owner): a roof over a face equals sinking its shared vertic
 Round 13 (v42-gomboc 476f6b0, page be189ca, page v7): fast incremental optimiser (6.5-13 us/move at 1.4-3k faces) but float S<9 at 1.4-3k faces NOT validated (exact check finds reflex edges; tolerance bug). 194-face S=2 body: 25M fine moves leave S=2 (second face robust). Weighted-CoM S=1 exactly certified: 24 faces at 73.4% shift, 194 faces at 57.2% shift (not slightly weighted). Page: default colouring = distance from CoM; new shapes Polyhedron S=2 194 faces and Weighted S=1 194 faces. Not done: 5k/10k faces, margin-vs-S ablation, CMA-ES, 24-face on page (rolling diverges). Round 14: face-cut + shared-vertex sink experiment; also lane recs (min weighted shift jointly with vertices; exact-convex seeds; tangent-cover baseline).
 
 Round 14 (v42-gomboc c111b21, page v8): face cuts/sinks negative; joint weighted-shift minimisation: exact weighted S=1 at 24f 12.7%, 40f 7.3%, 60f 3.45% (aspect<=2); HOMOGENEOUS S=1 polyhedron at 92 faces (U=11, exact; U cut to 7 at 90 faces with S=1 held). On page as 92-face S=1 shape; page rolling unreliable on faceted bodies (contact model has no lift-off). Next (round 15): S=U=1 via LP in face offsets from these bodies; page contact model fix.
+
+Round 15 research (v42-gomboc 2527c2a): gate passed (Opus formulas match exact checker on 6 bodies). S=U=1 NOT reached: fixed-normal offset LP plateaus (10-11 peaks at the 92-face normals, any aspect bound); normals must move. Best exact stays homogeneous S=1 U=7 90f. Controls inconclusive (no coordinates / format). Angle budget table: aspect 1.5 ~218 faces, 2 ~74, 3 ~30 (necessary for S=1). Round 16 plan: normals as variables (LP inner solver), weighted S=U=1 first.
 <!-- SECTION:NOTES:END -->
