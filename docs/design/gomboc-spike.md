@@ -902,3 +902,73 @@ Added shape "m1_60: Weighted mono-monostatic S=U=1, 60 faces (CoM shifted 48%)" 
 * Weighted shift is large and not reduced below 31 percent by this optimiser; steel inserts cannot supply it.
 * Homogeneous S=U=1: not reached.
 * Next: lower the shift (spiral / Conway-like seeds, different aspect, face insertion near stubborn peaks), non-ball insert analysis, and a rolling-model fix for large-shift small-face bodies.
+
+## 69. Round 17 (lane v42-gomboc): homogeneous centroid equality in the SLP (`tools/gomboc-spike-verify/r17_lib.py`, `r17_homo.py`, `r17_fixed.py`, `r17_fromr14.py`)
+
+Method (float). Same state as round 16 (unit normals n_i, heights H_i, c = origin, simple polytope from the dual hull) plus the volumetric centroid g(n,H) of the fixed-topology polytope (fan triangulation of each face polygon, V g = sum of tetrahedra with apex c). Analytic structure: V = (1/3) sum A_i H_i, dV/dH_i = A_i. The Jacobian of g with respect to all (n tangent coordinates, H) is computed by COMPLEX-STEP differentiation (machine precision). Jacobian check (float): complex step against central finite differences (h = 1e-5): max abs difference 2.7e-10 (24 faces, g scale 0.22), 9.5e-9 (60 faces), 3.6e-9 (36 faces, eccentric seed); dV/dH_i against the summed face areas: 1.6e-15, 6.3e-15, 1.9e-15. So the 1e-6 requirement is met by 2 to 4 orders. Equality handling: the LP carries the three rows J_g dx = target - g0 (hard, so the LP is always feasible at dx=0 when on the manifold); every accepted step is followed by Newton min-norm projection onto g = target (dx = J^T (J J^T)^-1 r, at most 6 iterations), so the state sits on the centroid manifold to 1e-16 (reported residual |g - target|/rbar: 4e-16 on the 90-face fixed run, 1e-16 on the 60-face run; requirement 1e-12 met). target = s * rbar * u with s the shift fraction: s = 0 is the homogeneous problem (mode `fixed0`); mode `homotopy` starts at the seed's own shift (S=U=1 first) and lowers s by ds = 0.04 after every state with S=U=1 and merit 0, halving ds and restoring the last good state on a stall (40 iterations without merit decrease), optional face insertion (a cap face cutting the vertex with the worst climbing violation, depth 3 percent) when ds < 3e-4. Climbing/tipping margins 0.005 (was 0.02), aspect bound A = 3 about g (never active at S=U=1).
+
+Exact checker `r17-exact.mjs` (BigInt; extends `r16-exact.mjs`): with `homog` the planes (rounded to 2^-40) are re-gauged on the EXACT rational volume centroid g = G/W of the rounded polytope (rational vertices by Cramer, common denominator by prefix/suffix products, fan weights |det|, no gcd, W about 20,000 bits at 24 faces and 81,000 bits at 90 faces), D_i' = D_i W - N_i.G (coordinates y = W (x - g)), then all the round 16 exact checks (strict convexity, closure, Euler, S, U, H, tipping graph, one sink) run on (N, D'). Also returns margins as floats from the exact vertices (signs exact). Smoke tests (exact): 90-face homogeneous S=1 U=7 body from the Newton-equality run: convexCert true, S=1, U=7, H=6, PH 2 (exact centroid gauge; margins mStable 0.016, mTip 2.3e-4, mClimb 1.7e-4, mPeak -0.0053, convex gap 0.002 of the smallest height); the 24-face weighted body evaluated in the homogeneous gauge (wrong CoM on purpose) gives S=19 (so the gauge really changes the answer; weighted bodies are certified at their dyadic c, see below).
+
+## 70. Results (float unless labelled) and the face-count table
+
+Weighted shift minimisation by homotopy from the round 16 exact bodies (margins 0.005; each result exactly re-certified: convexCert true, S=1, U=1, H=0, PH 2, tipping one sink; `runs/r17/cert_*` not all stored, certs printed by `r17_cert.py w`):
+
+| faces | round 16 shift % | round 17 homotopy shift % (exact S=U=1 at dyadic c) | min margins (exact-derived) mTip / mClimb / convex gap |
+|---|---|---|---|
+| 24 | 31.1 | 30.97 (A=3) | 4.1e-3 / 6.7e-3 / 3.4e-3 |
+| 32 | 45.8 | 43.83 | 1.5e-3 / 1.3e-3 / 4.1e-3 |
+| 36 | 31.6 | 31.57 | 5.9e-3 / 4.2e-3 / 3.3e-3 |
+| 40 | 49.1 | 49.13 (no gain) | 8.2e-3 / 4.7e-3 / 5.3e-3 |
+| 52 | 46.8 | 46.81 (no gain) | 4.3e-3 / 2.8e-3 / 4.2e-3 |
+| 60 | 47.6 | 47.57 (no gain) | 4.5e-3 / 1.3e-3 / 4.2e-3 |
+
+The homotopy (shrinking s with S=U=1 re-solved by the SLP) moves the shift by at most 0.1 to 2 percentage points: the first step of 0.04 is always infeasible and halving stalls at the round 16 value. The shift floor is therefore a first-order obstruction of this SLP at these face counts (the LP with the hard centroid equality becomes infeasible, delta collapses to 1e-6), not a trust-region artefact. Face insertion (cap face on the worst climbing vertex, up to 30 per run, 24/36/40/60 faces, 600 s): NO gain (24: 30.97, 36: 31.57, 40: 49.1, 60: 47.57); the inserted state returns to S=U=1 immediately and the next shrink step is again infeasible (negative, float). No path to shift 0 was found at any face count; the best exactly certified smallest shift for S=U=1 is 30.97 percent (24 faces) and 31.57 percent (36 faces); the exact weighted bodies need a CoM shift of 31 percent or more.
+
+Direct Newton equality (mode fixed0, s = 0 from the start): sphere-like seed 60 faces (A=2, 200 s): the equality holds to 1e-16 but the SLP stalls at S=24, U=31 (17 s, 107 iterations; sphere seeds are local minima as in round 16). From the round 14 homogeneous 90-face S=1 U=7 body (jitter 0.002 on the normals so the dual hull is simple, 176 vertices): the seed at the jitter has S=3; the SLP returns to S=1, U=7, H=6 with centroid residual 4e-16 within 30 iterations (9 s) and then stalls (delta < 1e-6; aspect pinned at the bound 2.0000); the homotopy variant behaves the same (shift 0.02 percent, U 7). The lowest homogeneous U with S=1 stays 7 at 90 faces (exact S=1 U=7 H=6 verified in the exact centroid gauge above). The lowest-U trace under the S=1 constraint never went below 7.
+
+Not done in the budget (logged as not done, not negative): the full seed x face-count (60, 72, 90, 100, 120, 150) feasibility-rate table, Conway spiral seeds (generator `seed_spiral` is in `r17_lib.py` but was not run), the A=3 90-face run beyond 300 s, the aspect <= 1.5 variants, and the homogeneous variant at 100 to 150 faces. Float feasibility rates were therefore not measured; the only rates are the single runs listed.
+
+## 71. Owner note 1: edge-saddle vertex bias on the U=7 90-face body (`r17-saddle.mjs`, `runs/r17/saddle_umin90.json`) — EXACT classification of every candidate
+
+For each of the 6 saddle edges of the exact S=1 U=7 H=6 body, a vertex is inserted at the CoM foot point on the edge, pushed outward by eps x rbar (eps 0.0005 to 0.02) plus a spiral offset (radius 0 to 0.03 rbar, 8 azimuths), hull rebuilt, exact certificate and exact S, U, H recomputed (792 candidates, none invalid by the certificate). Outcomes (count; smallest perturbation magnitude in units of rbar): (dS, dU, dH) = (0, +1, +1) 508 (0.0005): the new vertex becomes a peak and creates a new saddle, the original saddle is relocated; (0, 0, 0) 249 (0.002): the saddle moves along the edge or to a neighbouring edge, no change in counts; (+2, +1, +3) 31 (0.02), (+3, +1, +4) 2, (+1, +1, +2) 2 (0.036): the new vertex makes extra faces stable. Zero candidates reduced U or H, and the greedy round (best candidate by S=1 first, then U, then H) returned the unchanged body. Report: a local vertex bump cannot cancel a saddle; it steers (relocates) the saddle and peak, never removes one (consistent with the Morse-theory argument: cancellation needs a peak and its saddle to merge, a vertex insertion only adds a critical pair or moves one). The saddle moves by 0.002 rbar in the cheapest case with U unchanged; moves of 0.0005 already create an extra peak-saddle pair.
+
+## 72. Owner note 2: cancellation pairs of the 90-face S=1 body (`r17_cancel.py`, `runs/r17/cancel_umin90.json`; float geometry on the exactly classified sets)
+
+Peaks 7 (vertex ids 4, 6, 10, 13, 21, 23, 26), saddle edges 6, aspect (rmax/hmin about g) 2.00, i.e. AT the aspect bound. Pairs by steepest ascent from each saddle endpoint (barrier = (r_peak - r_foot)/rbar; peakDescent = cosine of the shallowest descent at the peak; minTurn = smallest dihedral turn between adjacent faces along the chain):
+
+| saddle edge | peak | chain | barrier | peak descent | min dihedral turn (deg) | limiting factor |
+|---|---|---|---|---|---|---|
+| (10,21) | 10 | 1 | 0.014 | -0.151 | 9.9 | aspect (rmax at bound 2.00); barrier already tiny: direct merge of two peaks, convexity not binding |
+| (10,21) | 21 | 1 | 0.025 | -0.185 | 9.4 | same |
+| (6,25) | 6 | 1 | 0.038 | -0.279 | 9.7 | aspect |
+| (21,23) | 23 | 1 | 0.044 | -0.265 | 7.5 | aspect / tipping |
+| (6,26) | 6 | 1 | 0.061 | -0.279 | 9.7 | aspect |
+| (38,44) | 4 | 2 | 0.063 | -0.288 | 4.2 | aspect |
+| (21,23) | 21 | 1 | 0.064 | -0.185 | 9.4 | aspect |
+| (38,44) | 13 | 2 | 0.082 | -0.188 | 0.09 | convexity: a dihedral of 0.09 degrees (near-flat edge) |
+| (9,26) | 26 | 1 | 0.113 | -0.454 | 5.4 | tipping margin |
+| (6,26) | 26 | 1 | 0.139 | -0.454 | 5.4 | tipping margin |
+| (6,25) | 23 | 3 | 0.326 | -0.265 | 3.4 | chain length 3 (barrier large) |
+| (9,26) | 13 | 4 | 0.347 | -0.188 | 0.09 | convexity (flat edge on the chain) |
+
+Reading: five of the six saddles have a peak at barrier 1.4 to 6 percent of rbar (cheap to cancel in terms of geometry), but every peak at the extreme radius sits at aspect 2.00, so lowering a peak is cheap while the constraint that holds it up is the aspect bound plus the shared radial profile: the SLP at A = 3 (running, see section 73) is the test of whether aspect is the limiter. Float estimate, not a proof; the pairing (elder rule) was done by steepest ascent, not by a full persistence computation.
+
+## 73. Milestone bodies (owner note 3) and radial profile
+
+`runs/r17/index.json` lists every milestone and `runs/r17/milestone_*.json` holds vertices (float), face vertex cycles, normals, heights, c, centroid, S, U, shift percent, aspect and the profile (render lane input): w24, w32, w36, w40, w52, w60 (exact S=U=1 weighted), fx60 (S=24 U=31 intermediate), r14seed_u90_fx_a2 and r14seed_u90_hp_a2 (homogeneous S=1 U=7, 90 faces). Radial profile (about the volume centroid g, in units of the mean radius): 24 faces r 0.77 to 1.26, 32 faces 0.91 to 1.12, 36 faces 0.85 to 1.20, 52 faces 0.91 to 1.09, 60 faces 0.93 to 1.05; the 90-face S=1 U=7 body 0.71 to 1.29. The faces within 5 percent of the stable-face height (about c): exactly 1 for the 24, 32, 36, 40 and 52 face weighted bodies and 2 for the 60-face one, 6 for the 90-face body: the stable face is NOT part of a broad flat shell (unlike a tortoise); the weighted bodies are round (aspect 1.2 to 1.7 about g) with the centre of mass moved by 31 to 49 percent so that c sits close to the face opposite to the peak: the sphere-like eccentric construction of round 16, i.e. "Gömböc-like" only in the sense of one stable and one unstable point, by the structure of the seeds (design plus the S=U=1 conditions, not a flat shell). The tortoise-like flattened region appears only in the 90-face homogeneous bodies (aspect 2.0, r 0.71 to 1.29). Not measured: the angular distribution of the ridge faces.
+
+## 74. Round 17 conclusions (rigor labels: exact = BigInt certificates; float = optimiser runs)
+
+* Exact: weighted S=U=1 (H=0) bodies at 24 (30.97 percent), 32 (43.83), 36 (31.57), 40 (49.13), 52 (46.81), 60 (47.57 percent) faces; the smallest certified shift is 30.97 percent at 24 faces (round 16: 31.1). No homogeneous S=U=1 body; lowest homogeneous U with S=1 remains 7 at 90 faces (exact, verified in the exact centroid gauge).
+* Float: the hard centroid equality (complex-step Jacobian, Newton projection, residual 1e-16) works mechanically; neither the direct equality nor the shift homotopy (with or without face insertion) lowers the S=U=1 shift floor of about 31 percent, nor U below 7 at 90 faces.
+* Method comparison: Newton equality from the round 14 homogeneous body stays on the homogeneous manifold but stalls at U = 7 (first-order infeasible, aspect bound active at 2.0); homotopy from the weighted bodies stalls at the round 16 shift (0.1 to 2 points gain). Neither reached S=U=1 homogeneous.
+* Edge-balance vertex bias: cannot remove a saddle or a peak (0 of 792 exact candidates), only steer.
+* Open: Reshetov 14-face seed (planes not available), persistence-ordered SLP objective, spiral seeds, 100 to 150 face runs.
+
+## 75. Owner idea: merge/collapse moves (`r17-collapse.mjs`, `runs/r17/collapse_umin90.json`, `collapse_h92.json`) — EXACT (hull certificate, exact S,U,H at the exact centroid of each new body)
+
+Moves tried at each step: every single-vertex removal (hull of the rest) and every (peak v, neighbour w) edge move of v toward w by s in {0.1, 0.25, 0.5, 0.75, 1.0} (s = 1 collapses v onto w; saddle edges flagged), greedy on (S=1 first, then U, then H, then fewer faces), at most 25 moves; all candidates were valid convex hulls. Results: 90-face S=1 U=7 H=6 body: 312 candidates, 0 invalid; the best candidate keeps (1,7,6); the 16 candidates with dU = -1 all have dS = +7 (many new stable faces: removing volume moves the centroid), none keeps S=1; no improving move. 92-face S=1 U=11 H=10 body: move 1 = peak v22 moved halfway along its saddle edge toward w44 (s = 0.5) gives S=1, U=10, H=9, still 92 faces (EXACT); move 2: 418 candidates, no improving move. Table (U, S, H, faces): 92-face: (11,1,10,92) -> (10,1,9,92) -> stop; 90-face: (7,1,6,90) -> stop. So merging removes one peak-saddle pair once at 92 faces and none at 90 faces: U cannot be reduced by weld/collapse moves alone (the centroid shift from the moved volume revives other stable faces). Not run: beam search, collapse moves on the weighted bodies (shift reduction), persistence-ordered candidates.
+
+## 76. Reshetov 14-face seed (`r17_resh.py`, float)
+
+Seed (planes from the controls file, offsets recentred at the centroid): S=1, U=2, aspect about g 39.8 (a canoe; 14 faces). The exact centroid equality plus the S=U=1 merit: with aspect bound A = 6 the SLP leaves the basin (S=3, U=2 at residual 2e-14, aspect 5.5); with A = 60 (S=2, U=2, aspect 37 -> 34 after one cap-face insertion, 15 faces); the next insertion failed (redundant face). 2 rounds, 7 s each: no S=U=1, and the seed's S=1 is itself fragile (S=2 after the centroid projection to 1e-16). Negative (float, short runs; the 14-face body needs a persistence-guided move at the saddle edge (8,12), not this generic SLP). Not pursued further for budget.
