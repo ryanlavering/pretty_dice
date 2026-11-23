@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T08:03:00Z'
+updated_date: '2026-11-23T08:37:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -125,4 +125,6 @@ Round 15 research (v42-gomboc 2527c2a): gate passed (Opus formulas match exact c
 Round 15 page physics (v42-gomboc 909a5dc, page v9): unilateral contact (lift-off, no-slip impact, step refinement) for faceted bodies only; 92-face S=1 30/30 rest on stable face, weighted 60f 3.4% 30/30, 194f S=2 16/16 on two faces; smooth bodies unchanged. Weighted 24f stays off (no rest in 300 s). Round 16 started: movable normals, LP inner solver, weighted S=U=1 first.
 
 Round 16 (v42-gomboc 5481b12, page v10): EXACT-certified WEIGHTED S=U=1 (H=0) polyhedra at 24/32/36/40/52/60 faces via SLP over normals+heights; shift 31-54% of mean radius (not buildable with steel insert: steel ball max ~14-17%, tungsten 25%). Homogeneous S=U=1 NOT reached (shift floor ~31%). Page: m1_60 weighted S=U=1 body (60 faces, 48% shift). 24/36-face bodies not on page (no rest in 300 s). New exact plane checker r16-exact.mjs.
+
+Round 17 (v42-gomboc dc23a46): no homogeneous S=U=1. Weighted S=U=1 floor 30.97% shift at 24f. Homogeneous S=1 U=7 at 90f unchanged; first exact peak-saddle cancellation by merging on the 92f body (U 11->10). Saddle-foot vertex insertion steers but cannot remove U (792 candidates, 0 reduced). Reshetov seed negative so far. Aspect bound 2 is the main limiter.
 <!-- SECTION:NOTES:END -->
