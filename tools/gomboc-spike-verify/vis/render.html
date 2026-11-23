@@ -1,0 +1,70 @@
+<!doctype html><html><head><meta charset="utf-8"><title>gomboc body render</title>
+<script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js"}}</script>
+<style>html,body{margin:0;background:#10131a}</style></head><body>
+<script type="module">
+// Standalone offline renderer (vendor/ three.js 0.160). API: R.load(body,opts), R.contactSheet(), R.turntable(), R.view(name)
+// Colour scale = the spike page's "colour by distance from CoM": t=(r-rmin)/(rmax-rmin); rgb=[.15+.8t, .35+.4(1-|2t-1|), .95-.8t]. Stable face green, peaks red spheres, saddle edges yellow, CoM black, centroid white.
+import * as THREE from 'three';
+const W=420,H=420;
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}); renderer.setSize(W,H); renderer.setPixelRatio(1); document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.background=new THREE.Color(0x10131a);
+const cam=new THREE.PerspectiveCamera(32,1,0.05,100); scene.add(cam);
+scene.add(new THREE.HemisphereLight(0xffffff,0x445566,0.65)); const head=new THREE.DirectionalLight(0xffffff,0.85); head.position.set(0.3,0.5,1); cam.add(head); head.target.position.set(0,0,-1); cam.add(head.target);
+let group=null, B=null, S=null; // S: scene info
+const V3=a=>new THREE.Vector3(a[0],a[1],a[2]);
+function colorOf(t){ return [0.15+0.8*t,0.35+0.4*(1-Math.abs(2*t-1)),0.95-0.8*t]; }
+function cyl(a,b,r,color){ const d=b.clone().sub(a), L=d.length(); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,6),new THREE.MeshBasicMaterial({color})); m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize()); return m; }
+function ball(p,r,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,10),new THREE.MeshBasicMaterial({color})); m.position.copy(p); return m; }
+export function load(body,opts={}){
+  if(group) scene.remove(group); group=new THREE.Group(); B=body; const o={wire:true,table:true,...opts};
+  const P=body.verts.map(V3); const rr=P.map(p=>p.length()); const rmin=Math.min(...rr), rmax=Math.max(...rr); const sc=1/rmax; // body scaled to rmax=1
+  const col=r=>colorOf(rmax>rmin?(r-rmin)/(rmax-rmin):0.5);
+  const pos=[],clr=[];
+  const stableSet=new Set(body.kind==='poly'?body.stable:[]);
+  if(body.kind==='poly'){
+    body.faces.forEach((f,fi)=>{ for(let k=1;k<f.length-1;k++){ for(const idx of [f[0],f[k],f[k+1]]){ const p=P[idx]; pos.push(p.x*sc,p.y*sc,p.z*sc); const c=stableSet.has(fi)?[0.1,0.85,0.25]:col(rr[idx]); clr.push(...c); } } });
+  } else { body.faces.forEach(t=>{ for(const idx of t){ const p=P[idx]; pos.push(p.x*sc,p.y*sc,p.z*sc); clr.push(...col(rr[idx])); } }); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setAttribute('color',new THREE.Float32BufferAttribute(clr,3)); g.computeVertexNormals();
+  const mat=new THREE.MeshLambertMaterial({vertexColors:true,flatShading:body.kind==='poly',side:THREE.DoubleSide}); group.add(new THREE.Mesh(g,mat));
+  const Ps=P.map(p=>p.clone().multiplyScalar(sc));
+  const stableDirs=[], peakPts=[];
+  if(body.kind==='poly'){
+    if(o.wire){ const lp=[]; const seen=new Set(); body.faces.forEach(f=>{ for(let k=0;k<f.length;k++){ const a=f[k],b=f[(k+1)%f.length]; const key=Math.min(a,b)*100000+Math.max(a,b); if(seen.has(key)) continue; seen.add(key); lp.push(Ps[a].x,Ps[a].y,Ps[a].z,Ps[b].x,Ps[b].y,Ps[b].z); } }); const lg=new THREE.BufferGeometry(); lg.setAttribute('position',new THREE.Float32BufferAttribute(lp,3)); group.add(new THREE.LineSegments(lg,new THREE.LineBasicMaterial({color:0x111418,transparent:true,opacity:0.55}))); }
+    for(const [a,b] of body.saddles) group.add(cyl(Ps[a],Ps[b],0.012,0xffe030));
+    for(const v of body.peaks){ group.add(ball(Ps[v],0.032,0xff2020)); peakPts.push(Ps[v].clone()); }
+    for(const fi of body.stable){ const f=body.faces[fi]; const c=new THREE.Vector3(); f.forEach(i=>c.add(Ps[i])); c.divideScalar(f.length); // face normal direction = foot direction
+      const n=new THREE.Vector3().subVectors(Ps[f[1]],Ps[f[0]]).cross(new THREE.Vector3().subVectors(Ps[f[2]],Ps[f[0]])).normalize(); stableDirs.push(n); }
+  } else {
+    body.stable.forEach(s=>{ const p=V3(s.x).multiplyScalar(sc); group.add(ball(p,0.03,0x22dd44)); stableDirs.push(V3(s.u)); });
+    body.peaks.forEach(s=>{ const p=V3(s.x).multiplyScalar(sc); group.add(ball(p,0.03,0xff2020)); peakPts.push(p); });
+    (body.saddlePts||[]).forEach(s=>group.add(ball(V3(s.x).multiplyScalar(sc),0.022,0xffe030)));
+  }
+  group.add(ball(new THREE.Vector3(0,0,0),0.03,0x000000));
+  const cen=V3(body.centroid).multiplyScalar(sc); if(cen.length()>1e-6) group.add(ball(cen,0.026,0xffffff));
+  // rest frame: up w = -n_stable (lowest stable)
+  let nS=stableDirs.length?stableDirs[0].clone():new THREE.Vector3(0,0,-1); const hs=body.kind==='poly'?body.stable.map(fi=>Math.abs(planeD(body,fi))):body.stable.map(s=>s.h);
+  if(stableDirs.length>1){ let b=0; hs.forEach((h,i)=>{ if(h<hs[b]) b=i; }); nS=stableDirs[b].clone(); }
+  const w=nS.clone().multiplyScalar(-1).normalize(); let e1=new THREE.Vector3(1,0,0); if(Math.abs(w.x)>0.9) e1.set(0,1,0); e1.sub(w.clone().multiplyScalar(e1.dot(w))).normalize(); const e2=new THREE.Vector3().crossVectors(w,e1);
+  if(o.table){ const hd=(body.kind==='poly'?Math.abs(planeD(body,body.stable[0])):body.stable[0].h)*sc; const disc=new THREE.Mesh(new THREE.CircleGeometry(1.7,48),new THREE.MeshBasicMaterial({color:0x8899aa,transparent:true,opacity:0.22,side:THREE.DoubleSide})); disc.position.copy(w.clone().multiplyScalar(-hd)); disc.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),w); disc.userData.table=true; group.add(disc); }
+  // highest peak
+  let pk=null; if(peakPts.length){ pk=peakPts.reduce((a,b)=>b.length()>a.length()?b:a).clone(); }
+  S={w,e1,e2,pk,rmax,sc}; scene.add(group);
+}
+function planeD(body,fi){ const f=body.faces[fi]; const p=body.verts; const a=V3(p[f[0]]),b=V3(p[f[1]]),c=V3(p[f[2]]); const n=new THREE.Vector3().subVectors(b,a).cross(new THREE.Vector3().subVectors(c,a)).normalize(); return n.dot(a); }
+function setCam(d,up,dist=3.6){ d=d.clone().normalize(); cam.position.copy(d.multiplyScalar(dist)); cam.up.copy(up); cam.lookAt(0,0,0); cam.updateMatrixWorld(); }
+function sideDir(azDeg,elDeg){ const az=azDeg*Math.PI/180, el=elDeg*Math.PI/180; return S.e1.clone().multiplyScalar(Math.cos(az)*Math.cos(el)).add(S.e2.clone().multiplyScalar(Math.sin(az)*Math.cos(el))).add(S.w.clone().multiplyScalar(Math.sin(el))); }
+export function viewList(){ const v=[['top (from above, rest frame)',S.w,S.e1],['stable face down (from below)',S.w.clone().negate(),S.e1],
+  ['side az 0, el 20',sideDir(0,20),S.w],['side az 90, el 20',sideDir(90,20),S.w],['side az 180, el 20',sideDir(180,20),S.w],['side az 270, el 20',sideDir(270,20),S.w]];
+  if(S.pk){ const d=S.pk.clone().normalize(); const up=Math.abs(d.dot(S.w))>0.95?S.e1:S.w; v.push(['along CoM to peak (camera on peak side)',d,up]); v.push(['opposite side of the peak',d.clone().negate(),up]); }
+  else { v.push(['(no peak) side az 45, el 50',sideDir(45,50),S.w]); v.push(['(no peak) side az 225, el -10',sideDir(225,-10),S.w]); }
+  return v; }
+function snap(d,up,hideTable){ if(group) group.traverse(o=>{ if(o.userData.table) o.visible=!hideTable; }); setCam(d,up); renderer.render(scene,cam); return renderer.domElement; }
+export function contactSheet(){ const vs=viewList(); const cols=4, rows=2, cw=W, ch=H+22; const c=document.createElement('canvas'); c.width=cols*cw; c.height=rows*ch+46; const g=c.getContext('2d'); g.fillStyle='#10131a'; g.fillRect(0,0,c.width,c.height);
+  vs.forEach(([nm,d,up],i)=>{ const el=snap(d,up,nm.startsWith('top')||nm.startsWith('stable')); const x=(i%cols)*cw, y=46+Math.floor(i/cols)*ch; g.drawImage(el,x,y+22); g.fillStyle='#d8dde8'; g.font='15px sans-serif'; g.fillText(nm,x+8,y+16); });
+  g.fillStyle='#ffffff'; g.font='bold 18px sans-serif'; g.fillText(B.label,10,22); g.font='13px sans-serif'; g.fillStyle='#aab2c4'; const I=B.info; g.fillText(legend(I),10,40); return c.toDataURL('image/png'); }
+function legend(I){ return `S=${I.S} U=${I.U} H=${I.H}`+(I.F?` faces ${I.F}`:'')+(I.shift!==undefined?`  shift ${(100*I.shift).toFixed(1)}%`:'')+'   colour: blue near CoM, red far; green = stable; red ball = unstable vertex; yellow = saddle edge; black = CoM, white = centroid'; }
+export function turntable(n=12,el=20,fw=220){ const c=document.createElement('canvas'); c.width=n*fw; c.height=fw+34; const g=c.getContext('2d'); g.fillStyle='#10131a'; g.fillRect(0,0,c.width,c.height); g.fillStyle='#fff'; g.font='bold 15px sans-serif'; g.fillText(B.label+' : turntable about the rest-frame vertical (stable face down), elevation '+el+' deg, step '+(360/n)+' deg',8,18);
+  for(let i=0;i<n;i++){ const el2=snap(sideDir(i*360/n,el),S.w,false); g.drawImage(el2,i*fw,34,fw,fw); g.fillStyle='#aab2c4'; g.font='12px sans-serif'; g.fillText(Math.round(i*360/n)+'°',i*fw+6,48); } return c.toDataURL('image/png'); }
+export function single(az,el,hide){ const el2=snap(sideDir(az,el),S.w,!!hide); return el2.toDataURL('image/png'); }
+window.R={load,contactSheet,turntable,single,viewList:()=>viewList().map(v=>v[0])}; window.READY=true;
+</script></body></html>
