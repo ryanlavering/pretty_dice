@@ -225,6 +225,13 @@ Owner notes on the research, with the integrator's answers (preliminary, unverif
 * Not done: shift-floor versus face count and the tilt map.
 * Next: wider and longer beams with a persistence-sum score, non-pair vertex insertions, pairwise SLP with the centroid equality from the U = 5 bodies.
 
+### Round 19 (8886cda; log section 80): small U, low poly
+* Owner's refocus: S = 1 with U < 15 is enough for a die that practically always ends on its one stable face.
+* Page rolls (20 each, default physics): the 92-face S = 1, U = 11 body rests 20 of 20 (median 11.7 s); the new **172-face S = 1, U = 5 body rests 20 of 20** (median 12.7 s), added to the page (version 12, rate shown in the label). Not added: the 90-face U = 7 body (0 of 6 rest, rattles within 0.5 to 1.2 degrees of the stable face), the 124-face U = 5 body (0 of 3) and Reshetov's 14-plane body (0 of 2, one roll ended 136 degrees off); these runs were stopped early (100 to 125 s per roll), so they are not full 20-roll results. Cause not diagnosed; looks like a page rest effect for bodies at the aspect-2 limit or very high aspect.
+* Decimation beam (exact, S = 1, homogeneous): faces (triangles) against U: 92 / 11, 96 / 9, 100 / 8, 102 / 7, 112 / 6, 124 / 5, 132 / 5, 172 / 5; the 90- and 92-face bodies cannot be decimated (no move keeps S = 1); Reshetov decimates to 38 triangles at U = 2 but aspect 39.8 and the seed does not rest. Below about 90 triangles only the high-aspect canoe exists.
+* Not done: a forward low-face search (14 to 40 planes, U < 15 objective, aspect up to 3); Conway-Guy and Bezdek coordinates not available.
+* Best small-U die on the page: the 172-face U = 5 body.
+
 ## 9. How this document is kept up to date
 
 After each round the integrator verifies the lane's push (ancestry, CSP check on the page), then updates section 1 (where we are), section 3 (findings), section 5 (rigor ledger) and appends to section 8 (the round log), and commits it to `v4.2`. The lane keeps its own detailed log in `docs/design/gomboc-spike.md` on `v42-gomboc`.
