@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T04:44:00Z'
+updated_date: '2026-11-23T04:52:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -115,4 +115,6 @@ Owner insight 2026-11-22 (round 13 additions): face stable iff CoM foot point in
 Round 14 plan (owner): face-cut experiment on the 24-face S=2 body: enumerate cut planes near the second stable face's foot point, re-run the exact check for each; tests whether the second stable face is local or structural. Findings summary document (kept up to date by the integrator after each round): docs/design/gomboc-findings.md.
 
 Round 14 refinement (owner): a roof over a face equals sinking its shared vertices, so enumerate inward shared-vertex moves as well as cut planes; re-check each move exactly (other faces tilt and the centroid moves).
+
+Round 13 (v42-gomboc 476f6b0, page be189ca, page v7): fast incremental optimiser (6.5-13 us/move at 1.4-3k faces) but float S<9 at 1.4-3k faces NOT validated (exact check finds reflex edges; tolerance bug). 194-face S=2 body: 25M fine moves leave S=2 (second face robust). Weighted-CoM S=1 exactly certified: 24 faces at 73.4% shift, 194 faces at 57.2% shift (not slightly weighted). Page: default colouring = distance from CoM; new shapes Polyhedron S=2 194 faces and Weighted S=1 194 faces. Not done: 5k/10k faces, margin-vs-S ablation, CMA-ES, 24-face on page (rolling diverges). Round 14: face-cut + shared-vertex sink experiment; also lane recs (min weighted shift jointly with vertices; exact-convex seeds; tangent-cover baseline).
 <!-- SECTION:NOTES:END -->
