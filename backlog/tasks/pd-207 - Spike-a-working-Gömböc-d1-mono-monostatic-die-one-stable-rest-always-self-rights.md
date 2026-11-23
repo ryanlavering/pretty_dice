@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-11-21T16:12:00Z'
-updated_date: '2026-11-23T08:38:00Z'
+updated_date: '2026-11-23T16:41:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -129,4 +129,8 @@ Round 16 (v42-gomboc 5481b12, page v10): EXACT-certified WEIGHTED S=U=1 (H=0) po
 Round 17 (v42-gomboc dc23a46): no homogeneous S=U=1. Weighted S=U=1 floor 30.97% shift at 24f. Homogeneous S=1 U=7 at 90f unchanged; first exact peak-saddle cancellation by merging on the 92f body (U 11->10). Saddle-foot vertex insertion steers but cannot remove U (792 candidates, 0 reduced). Reshetov seed negative so far. Aspect bound 2 is the main limiter.
 
 Owner idea (round 18, ridge filling): add vertices above/under the saddle between two peaks so the valley fills; when the saddle height reaches the lower peak's height the pair cancels (the two peaks merge). Different from collapse/merge. Round 17's saddle-foot bias only swept offsets up to ~0.002 of the radius (barriers are 1.4-6%), so test the full sweep 0..120% of the barrier on the 90/92-face homogeneous bodies with exact re-check (centroid shift, new stable faces).
+
+Round 18 (5af2ff6): valley filling negative (0/3600 exact); persistence beam search gets homogeneous S=1 bodies down to U=5 (from 11 and 7), exact; Reshetov seed negative. Farm: 29 smooth bodies, 6 on page v11. Next: wider beams, non-pair insertions, pairwise SLP. Owner paused work after round 18.
+
+Round 19 (8886cda): focus S=1, U<15. 172-face U=5 body rests 20/20, on page v12; 92f U=11 20/20. 90f U=7, 124f U=5, Reshetov 14 do not rest (short runs). Decimation Pareto in findings. Paused by owner.
 <!-- SECTION:NOTES:END -->
