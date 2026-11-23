@@ -4,7 +4,7 @@ title: 'Low-poly gomboc search (prize): equilibrium counter + candidate log'
 status: To Do
 assignee: []
 created_date: '2026-11-21T19:15:00Z'
-updated_date: '2026-11-23T05:30:00Z'
+updated_date: '2026-11-23T05:42:00Z'
 labels:
   - v4.3
 dependencies: []
@@ -29,4 +29,6 @@ Prize offered by Domokos and Várkonyi (Wikipedia; footnote: Rehmeyer, "Can't Kn
 
 <!-- SECTION:NOTES:BEGIN -->
 Owner 2026-11-22 (round 15 plan): the 194-face S=2 body will not morph into a gomboc (two distinct stable faces; would need a macroscopic turtle-back ridge on one side and matching puffing opposite). Start a fresh low-poly search with the current heuristics: exact checker arbiter, incremental optimiser, foot-point margin cost, strict exact convexity, weighted-CoM shift as secondary objective; structured seeds (elongated, ridge + opposite bulge, twist), 30-300 faces, many seeds.
+
+Opus review 2026-11-22: homogeneous S=1 polyhedra are classical (Reshetov 14 faces); the open target is S=U=1 (record 56,946 faces). Round 14 has a homogeneous 92-face S=1 (U=11), re-verified independently. Conditions are linear in face offsets at fixed normals and CoM -> LP/Gauss-Newton formulation. Ranked experiments in docs/design/gomboc-findings.md (v4.2).
 <!-- SECTION:NOTES:END -->
