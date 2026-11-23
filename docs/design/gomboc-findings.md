@@ -116,6 +116,7 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 
 ### Round 14 (planned)
 * Face-cut experiment on the 24-face S = 2 body (owner idea): enumerate cut planes near the second stable face's foot point and re-run the exact check for each, to see whether a single cut makes the body single-stable. A convex roof over the face usually keeps two stable faces; a shaving cut shrinks the face so its foot point leaves the polygon, but cutting also moves the centroid and the tip must flow into the wanted face. This tests whether the second stable face is local or structural.
+* Owner refinement: adding volume above a face's plane (a roof) is the same shape change as sinking the vertices it shares with its neighbours, so one move family covers both. The enumeration therefore includes inward moves of the shared vertices as well as cut planes. Sinking a vertex also tilts every other face that touches it, which shifts their foot points, and it moves the centroid, so each move is re-checked exactly.
 
 ## 9. How this document is kept up to date
 

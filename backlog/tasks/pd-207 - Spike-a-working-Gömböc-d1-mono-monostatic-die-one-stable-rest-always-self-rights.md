@@ -113,4 +113,6 @@ Owner 2026-11-22: show low-poly S=2 (and any S=1) polyhedra on the Gomboc page a
 Owner insight 2026-11-22 (round 13 additions): face stable iff CoM foot point inside the polygon, so each face has a stability prism in CoM space; mono-monostatic iff CoM lies in exactly one prism. (A) signed foot-point margin per face as a continuous cost (reward margin of the wanted face, penalise positive margins of spurious faces; margin = CoM laxity). (B) prism multiplicity map for the certified S=2 low-poly bodies: look for a nearby CoM covered exactly once, giving an exactly provable weighted (non-homogeneous) single-stable-face polyhedron for the game d1.
 
 Round 14 plan (owner): face-cut experiment on the 24-face S=2 body: enumerate cut planes near the second stable face's foot point, re-run the exact check for each; tests whether the second stable face is local or structural. Findings summary document (kept up to date by the integrator after each round): docs/design/gomboc-findings.md.
+
+Round 14 refinement (owner): a roof over a face equals sinking its shared vertices, so enumerate inward shared-vertex moves as well as cut planes; re-check each move exactly (other faces tilt and the centroid moves).
 <!-- SECTION:NOTES:END -->
