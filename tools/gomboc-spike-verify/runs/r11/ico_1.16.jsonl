@@ -1,0 +1,4 @@
+{"L":5,"flips":634,"V":10242,"F":20480,"S":1097,"U":907,"H":2002,"PH":2,"cert":true,"nonConvex":0,"flat":0,"tipBad":0,"sinks":1097,"timing":{"sample":0.04,"flip":0.094,"centroid":0.019,"cert":0.056,"classify":0.145,"tipping":0.043}}
+{"L":6,"flips":2600,"V":40962,"F":81920,"S":1715,"U":1407,"H":3120,"PH":2,"cert":true,"nonConvex":0,"flat":0,"tipBad":0,"sinks":1715,"timing":{"sample":0.13,"flip":0.332,"centroid":0.071,"cert":0.232,"classify":0.468,"tipping":0.141}}
+{"L":7,"flips":10444,"V":163842,"F":327680,"S":2210,"U":2080,"H":4288,"PH":2,"cert":true,"nonConvex":0,"flat":0,"tipBad":0,"sinks":2210,"timing":{"sample":0.538,"flip":1.757,"centroid":0.263,"cert":1.495,"classify":2.204,"tipping":0.588}}
+{"L":8,"flips":41879,"V":655362,"F":1310720,"S":1338,"U":2095,"H":3431,"PH":2,"cert":true,"nonConvex":0,"flat":0,"tipBad":0,"sinks":1338,"timing":{"sample":2.216,"flip":8.561,"centroid":0.931,"cert":7.221,"classify":8.846,"tipping":2.635}}

@@ -1,0 +1,11 @@
+{"N":50,"faces":50,"verticesOfPoly":96,"S":50,"timing":{"support":0.006,"hull":0.001,"classify":0}}
+{"N":200,"faces":200,"verticesOfPoly":396,"S":157,"timing":{"support":0.021,"hull":0.008,"classify":0}}
+{"N":1000,"faces":1000,"verticesOfPoly":1996,"S":434,"timing":{"support":0.105,"hull":0.051,"classify":0.002}}
+{"N":2000,"faces":2000,"verticesOfPoly":3996,"S":483,"timing":{"support":0.197,"hull":0.126,"classify":0.005}}
+{"N":5000,"faces":5000,"verticesOfPoly":9996,"S":710,"timing":{"support":0.488,"hull":0.856,"classify":0.006}}
+{"N":10000,"faces":10000,"verticesOfPoly":19996,"S":851,"timing":{"support":1.008,"hull":4.471,"classify":0.015}}
+stable faces 851 clusters 4
+size 425 centre -0.028,-0.758,0.652 angular radius deg 166.5 min h 0.94794
+size 412 centre 0.350,0.901,0.257 angular radius deg 159.1 min h 1.02536
+size 12 centre 0.521,0.349,-0.779 angular radius deg 21.7 min h 0.91673
+size 2 centre 0.140,0.802,-0.581 angular radius deg 2.8 min h 0.93699

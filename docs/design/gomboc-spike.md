@@ -586,3 +586,68 @@ Two new selectable shapes, "Exact body 1.16 (verified numerically)" and "Exact b
 2. To go beyond 1.18: add parameters to the family (higher harmonics in the ring angle, a second spiral), use persistence at L5 plus an L5 winding index in the cost for the last steps (about 10 times slower), and use more seeds (the seed lottery at the edge is large); expect diminishing returns: the tolerance region is already about 2 percent of the radius.
 3. Certify one body (interval arithmetic or exhaustive critical-point solve) if the "mathematically verified" label is wanted.
 4. Low-poly: switch the cost to the count first (S of the face graph, with persistence as the smooth tie-breaker), start from the monostable hull at N = 24 to 80, and allow vertex moves that keep the height range.
+
+## 37. Round 11: polyhedral cousin of the verified bodies (PD-207)
+
+Goal: convert the verified smooth bodies (1.16 and 1.18, round 10, exact surface, uniform density) to convex polyhedra, check every face, edge and vertex, then reduce the face count while staying valid. Result in one line: **no polyhedron with S = 1 was found at any resolution from 36 to 1.3 million faces, so there is no valid polyhedron to reduce; the reduction round was not run.** The checker, the timings and the reason (below) are the deliverable.
+
+## 38. Method and rigor labels (`poly-check.mjs`, `poly-run.mjs`, `ico-run.mjs`, `circ-run.mjs`; records in `tools/gomboc-spike-verify/runs/r11/`)
+
+* Polyhedron definition: vertices are surface points of the body (r^4 = 1 + degree 2..12 spherical-harmonic sum, zero CoM shift) rounded to a 2^-40 grid, so every vertex is an exact dyadic rational. The polyhedron IS the hull of those integer points (it differs from the smooth body by about 1e-12 plus the faceting).
+* Vertex sets: Fibonacci points with an incremental hull (`hull.mjs`, float), and icosphere points with the icosphere triangulation repaired by exact edge flips (`flipToConvex`) up to level 8 (655k vertices, 1.3M faces). Faces are the triangles (generic: no two adjacent triangles are coplanar; checked exactly, `flat` = 0).
+* EXACT (BigInt integer arithmetic, no tolerance anywhere): volumetric centroid as a rational (signed tetrahedra); closed manifold; Euler V-E+F = 2; positive volume; every edge strictly locally convex (exact orientation determinant); centroid strictly inside every face plane. Closed + connected + locally strictly convex + star-shaped about the centroid means the surface is the boundary of a strictly convex polyhedron (Hadamard). For the 1002-vertex Fibonacci hull the global test (every vertex below every face plane) was also run: float filter with an error bound, exact where ambiguous: 0 ambiguous, 0 violations. Not run globally for the larger ones (O(V F)); the local certificate above is already sufficient.
+* EXACT classification: stable face iff the foot of the perpendicular from the centroid lies in the triangle (sign of det[b-a, C-a, n] per edge, rational C); saddle edge iff the foot lies strictly inside the edge and C-to-foot lies strictly inside the edge's normal cone; unstable vertex iff all neighbours satisfy (w-v).(v-C) < 0; degenerate (zero) cases counted separately (all 0 in every run). Tipping graph: every violating edge of a non-stable face leads to a face with strictly smaller exact height (compared as squared rational heights), sinks are exactly the stable faces. Poincare-Hopf S + U - H = 2 held in every convex case.
+* FLOAT cross-check (`floatCheck`, doubles): stable-face count equal to the exact count in all 20 Fibonacci hull runs (both bodies).
+* NOT certified: that the polyhedron approximates the smooth body (it is a different body); anything about the smooth body beyond round 10 (numerical, winding index).
+
+## 39. Results: S never approaches 1
+
+Fibonacci hull (faces = 2N-4), exact check; S = stable faces, U = unstable vertices, H = saddle edges (S+U-H = 2 always):
+
+| faces | S (1.16) | S (1.18) | S per face (1.16) |
+|---|---|---|---|
+| 36 | 32 | 32 | 0.89 |
+| 96 | 86 | 84 | 0.90 |
+| 196 | 156 | 152 | 0.80 |
+| 396 | 212 | 202 | 0.54 |
+| 1000 | 357 | 325 | 0.36 |
+| 2000 | 502 | 465 | 0.25 |
+| 5000 | 611 | 578 | 0.12 |
+| 10000 | 896 | 834 | 0.09 |
+| 20000 | 911 | 848 | 0.05 |
+| 40000 | 1267 | 1214 | 0.03 |
+
+Icosphere + flips (exact certificate passes each time): 1.16: 20k faces S 1097, 82k 1715, 328k 2210, 1.31M **1338**; 1.18: 20k 1039, 82k 1723, 328k 2806, 1.31M 3826. So S grows, plateaus at roughly 1e3 to 4e3 and is not decreasing toward 1 (the 1.16 drop at L8 is one point, not a trend). No resolution tried has S = 1. Smallest S found: 32 at 36 faces (every face stable: coarse hulls of a near sphere), and the smallest S/F ratio is 0.1 percent at 1.3M faces. The "smallest valid face count" is therefore undefined here; the smallest face count before reduction that passes the convexity certificate is 36 but it is multi-stable.
+
+Circumscribed variant (faces tangent to the smooth body at Fibonacci normals, heights exactly h(u_i); float, `circ-run.mjs`): S = 50, 157, 434, 483, 710, 851 at 50 to 10000 faces (1.16): same behaviour, so the noise is not the vertex-sampling sag.
+
+Why (measured and argued, not proved): the stable faces of the 10000-face circumscribed 1.16 polyhedron form 4 clusters: two near-continuous bands of about 410 faces each with angular radius 160 degrees (face heights 0.948 to 1.025), a 12-face patch around the true minimum (h 0.917) and 2 stray faces. 1.18: two bands (408, 315 faces), a 38-face patch, a 6-face patch at h 0.905. So the smooth bodies have long flat rings of the support function where the foot offset |grad h| is smaller than the face size at every resolution tried. For a face of angular size s the foot lies in the face when |grad h| < about R s / 2 (R the radius of curvature, about 1), i.e. within a distance rho of about R s / (2 lambda) of a critical point of h, where lambda = R - h is the Hessian of h there (tiny for a near-spherical body). The number of such faces, pi rho^2 / s^2 = pi R^2/(4 lambda^2), does not depend on s: refining the mesh shrinks the zone and multiplies the faces in it by the same factor. Along a flat ring the same holds per unit length, hence the plateau. Conclusion: sampling a pronounced-but-near-spherical smooth body at any resolution gives S of order 1e3; the polyhedron has to be designed with large, pronounced faces (as in the low-poly searches, rounds 8 to 9: S 5 to 8 at 44 to 70 faces, 12 stable faces in the 1.2-rank bodies), not obtained by hulling the smooth body.
+
+## 40. Timing (wall seconds, one core, Node, this machine; stages exact unless noted)
+
+| faces | hull (Fibonacci, float incremental) | flip (icosphere) | centroid (exact) | convexity cert (exact) | classification (exact) | tipping graph (exact) | check total | float check (all, doubles) |
+|---|---|---|---|---|---|---|---|---|
+| 1,000 | 0.027 | | 0.001 | 0.004 | 0.010 | 0.001 | 0.016 | 0.001 |
+| 2,000 | 0.036 | | 0.002 | 0.006 | 0.019 | 0.003 | 0.030 | 0.003 |
+| 5,000 | 0.207 | | 0.004 | 0.016 | 0.047 | 0.010 | 0.077 | 0.008 |
+| 10,000 | 0.773 | | 0.010 | 0.030 | 0.085 | 0.019 | 0.144 | 0.019 |
+| 20,000 | 4.03 | | 0.020 | 0.068 | 0.151 | 0.039 | 0.278 | 0.034 |
+| 40,000 | 36.7 | | 0.044 | 0.146 | 0.267 | 0.074 | 0.531 | 0.034 |
+| 20,480 (ico) | | 0.094 | 0.019 | 0.056 | 0.145 | 0.043 | 0.263 | |
+| 81,920 (ico) | | 0.332 | 0.071 | 0.232 | 0.468 | 0.141 | 0.912 | |
+| 327,680 (ico) | | 1.76 | 0.263 | 1.50 | 2.20 | 0.588 | 4.55 | |
+| 1,310,720 (ico) | | 8.56 | 0.931 | 7.22 | 8.85 | 2.64 | 19.8 | |
+
+Log-log slopes against faces: exact check total 0.98 (1k to 1.3M faces), i.e. linear (about 15 microseconds per face with BigInt); incremental hull 1.97 (quadratic, the practical limit of `hull.mjs` at about 40k faces); flips 1.10. The check is cheap, so exhaustive verification is not the bottleneck at any size; hull building is, and the icosphere + flip route avoids it. Plot: `docs/design/img/gomboc-r11-timing.svg` (time panel and S panel).
+
+## 41. Reduction, roll harness, page (not done)
+
+* Reduction (task 3): not run, there is no valid (S = 1) starting polyhedron. The S versus face-count table above is the only "path" (S/F falls from 0.9 to 0.001 as faces grow, but S never reaches 1), and decimating a high-resolution hull cannot help: merging faces moves the polyhedron toward the coarse hulls, which have higher S/F.
+* Roll harness: not applicable (it rolls the smooth body); no data file of a valid polyhedron was saved (none exists).
+* Page: nothing added, the page is unchanged this round (a multi-stable polyhedron is not a useful shape).
+
+## 42. Next steps (recommendation)
+
+1. Stop hulling the smooth body. Design the polyhedron directly with the exact checker as the cost: S (exact) first, then persistence of the face graph, starting from the low-poly searches (round 9: S 5 to 8 at 44 to 70 faces) and using the tipping graph (sinks = stable faces) to pick which face to push, with the exact check (15 microseconds per face) inside the loop; at 100 to 1000 faces one exact check is 2 to 20 ms so a million evaluations are affordable.
+2. Target body: a smooth body whose support function has Hessian eigenvalues of order R (large lambda, strongly pronounced) rather than the nearly spherical 1.15 to 1.18 ratio bodies; the plateau estimate pi R^2/(4 lambda^2) per critical point is the quantity to make small. This is in tension with the monostable smooth bodies being near-spherical, and is probably why a homogeneous mono-monostatic polyhedron is open: the smooth examples are too flat for faceting.
+3. If a polyhedron with S = 1 is ever found, run the full-vertex global convexity test on it (`--global`) and add it to the page with the rigor banner "exact, uniform density, certified in rational arithmetic".
