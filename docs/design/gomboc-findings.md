@@ -1,6 +1,6 @@
 # Gömböc research: findings and methods (PD-207, PD-208)
 
-Maintained by the integrator after every round. Last updated: 2026-11-22, after round 15 (research and page-physics lanes); round 16 is running (see the end).
+Maintained by the integrator after every round. Last updated: 2026-11-23, after round 16; round 17 is planned (see the end).
 
 This summarises the research. The full per-round working log, with every table and number, is `docs/design/gomboc-spike.md` on branch `v42-gomboc` (sections 1 to 46). Code is in `tools/gomboc-spike-verify/` and the playable page is `tools/gomboc-spike.html` (published as the "Gomboc d1 spike" artifact). Cards: PD-207 (research and page), PD-208 (low-poly search), PD-209 (shape variants), PD-211 (Möbius strip d1, 4.3). None of this ships in 4.2.
 
@@ -10,6 +10,7 @@ This summarises the research. The full per-round working log, with every table a
 * **Approximate bodies for play.** Ratios 1.12 to 1.25 become single-stable if the centre of mass is shifted by about 3 to 9 percent of the radius. These are labelled approximate on the page. The working window around the right shift is only a few tenths of a percent wide.
 * **Polyhedra.** Correction from the independent review (see section 8): a homogeneous polyhedron with exactly one stable face (S = 1, "monostable") is classical (Conway and Guy 19 faces, Bezdek 18, Reshetov 14); the hard target is **S = U = 1** (one stable face and one unstable vertex, a polyhedral Gömböc), whose record is 56,946 faces (arXiv:2609.07827, as cited in our log). Our searches so far optimised S and did not control the number of unstable vertices U. Hulls of the smooth bodies fail at every size tried (36 to 1.3M faces). Direct search at 40 to 1000 faces reached S = 2 and stopped, but with near-sphere seeds and an aspect cap of 3 that was binding. Round 14 found a homogeneous, strictly convex 92-face polyhedron with S = 1 and U = 11 (exact; the reviewer re-verified it in independent rational arithmetic); with S = 1 held as a hard constraint, annealing then cut U from 11 to 7 (90 faces, exact). It is on the page as the 92-face S=1 shape.
 * **Weighted low-poly bodies (round 13).** Exactly certified single-stable-face polyhedra exist for a shifted CoM at 24 faces (shift 73 percent of the radius) and 194 faces (57 percent). These are not slightly weighted dice; they prove the prism method works, and shrinking the shift is the next target. The second stable face of the 194-face S = 2 body is robust, not marginal (25M fine-scale moves at 3k faces left S = 2).
+* **Weighted S = U = 1 polyhedra (round 16).** Exactly certified convex polyhedra with one stable face, one unstable vertex and no saddle edge exist at 24, 32, 36, 40, 52 and 60 faces, for a shifted CoM. The shift is 31 to 54 percent of the mean radius, which is not buildable with a steel insert (a steel ball reaches at most about 14 to 17 percent). It is a mathematical existence result at low face count, not a die. Homogeneous S = U = 1 is not reached.
 * **What is not done:** a true homogeneous Gömböc that looks like the Wikipedia photo (distinct ridges); a mathematically certified smooth body; any polyhedron with S = 1 from our own search.
 * **The d1 in the app** is the Möbius strip (PD-211, 4.3). The Gömböc is a research artifact only.
 
@@ -142,6 +143,26 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 * The weighted 24-face body (12.7 percent) stays off the page: it no longer diverges but 27 of 27 rolls had not come to rest in 300 simulated seconds (it is kicked back into motion after reaching the stable face; rounded contact plus impacts seem to inject energy; not diagnosed).
 * Page now has the weighted 60-face S = 1 body; the polyhedron Info line shows S, U, H and the face count.
 
+### Round 16 (5481b12; page v10)
+* Method change: state is unit normals n_i and heights H_i = d_i − n_i·c with c at the origin (the translation gauge removes c as a variable, so every condition is a function of (n, H)). The body is a simple polytope with polygonal faces from the dual hull of n_i/H_i, which avoids the sliver problem of round 15. A sequential LP (HiGHS) moves all normals and heights at once under: one tipping neighbour with margin for each non-sink face, one climbing lambda component below zero for each vertex except the farthest, a local convexity margin, aspect about the volume centroid, and c strictly inside. Poincaré–Hopf forces H = 0 once S = U = 1. Stage 2 adds a shift objective |g − c|/r̄ with S = U = 1 held, plus basin hopping. The seed that worked is a sphere-inscribed polyhedron with an eccentric c (0.6 to 0.8 R): S falls to 1 near 20 vertices but U stays at 4 to 7, and the SLP closes the rest. Near-sphere random seeds and ellipsoid seeds (z stretched 1.6) stall at S 3 to 9, U 4 to 13 (float, negative): the seed must already be structured.
+* New exact checker `r16-exact.mjs` (BigInt, exact): planes rounded to 2⁻⁴⁰ with non-unit normals, vertices rational by Cramer, strict convexity (every vertex strictly below every other plane), every vertex has three neighbours, Euler holds, c strictly inside; then S, U, saddles and the tipping graph (one sink). All certified bodies have 0 degenerate signs.
+* Best exactly certified weighted S = U = 1 bodies (H = 0; aspect is r_max/h_min about the centroid, so the aspect-2 and aspect-3 bounds hold and were never active):
+
+| faces | vertices | shift, percent of mean radius | aspect |
+|---|---|---|---|
+| 24 | 44 | 31.1 (34.4 before basin hopping) | 1.68 (1.48) |
+| 32 | 60 | 45.8 | 1.35 |
+| 36 | 68 | 31.6 | 1.51 |
+| 40 | 76 | 49.1 (54.1 with aspect 2) | 1.41 |
+| 52 | 100 | 46.8 | 1.29 |
+| 60 | 116 | 47.6 | 1.22 |
+
+* Float feasibility rates from the eccentric seed are seed-dependent (24 faces 1 of 3; 32 faces 4 of 8; 36 faces 4 of 8; 40 faces 1 of 3; 52 faces 2 of 16; 60 faces 4 of 6; the 44-face and 76-face seeds floored at U = 2). No 92-face or 120-face seed was run. Shift reduction stalls at about 31 percent (a float local optimum, not a proven floor).
+* Homogeneous variant (float, shift objective as the homogeneous condition): the floor stayed at about 31 percent at 24 and 36 faces and 45 to 50 percent at larger counts, nothing near 0; the analytic-Jacobian centroid equality was not run.
+* Insert-mass view (float, single ball, density ratio 6.5, centred on the g-to-c ray, volume chosen to maximise the shift): a steel ball reaches at most 13.9 to 17.3 percent of the mean radius (36 faces: 14.6 percent, at 16 percent of the volume and 55 percent of the mass); tungsten (ratio 19.3) at most 24.8 percent. The bodies need 31 to 48 percent, so none is buildable with a steel ball, and every body needs at least 55 percent of the total mass in the insert. Non-ball and hollow inserts were not analysed.
+* Page: added "m1_60" (60 faces, shift 48 percent) with a banner stating it is exact, weighted and not buildable with a steel insert; 15 of 15 node rolls and 3 of 3 page-driver rolls ended on the one stable face (about 2.55 degrees from the exact foot). The 24-face and 36-face bodies are not on the page: the 24-face body did not come to rest in 300 s in 3 of 3 rolls (about 150 lift-offs per roll, like the round 15 24-face weighted body), and the 36-face body sat within 0.02 to 0.2 degrees of the stable face but failed the rest criterion in 3 of 3 rolls.
+* Lane recommendations: treat the weighted mono-monostatic polyhedron as an existence result; to reduce the shift try Conway-spiral or elongated seeds that already satisfy S = 1, face insertion near stubborn peaks and basin hopping at 52 to 60 faces (only 24 and 36 faces got it); for homogeneous S = U = 1 add the centroid equality with the analytic Jacobian from the start and expect more than 100 faces; fix the page rolling model for large-shift small-face bodies if the 24- and 36-face bodies are to be shown.
+
 ### Independent review (Opus, read-only, 2026-11-22)
 * Corrected framing: S = 1 homogeneous is classical; the open polyhedral target is S = U = 1. Our records and searches conflated the two. Reviewer re-verified round 14's 92-face homogeneous S = 1 polyhedron in independent rational arithmetic (V = 48, U = 11, H = 10, Poincaré–Hopf 2); the open step is to cut U from 11 to 1.
 * Checker: sign tests correct; gap = no vertex-link winding or connectivity check (a branched cover can pass the edge test); the global vertex-below-plane test closes it where run.
@@ -149,8 +170,8 @@ Round numbers follow the lane's log. There is no round 8 section in the log (the
 * Weighted bodies: a CoM shift as a percentage of the radius is not a physical quantity; report the insert mass fraction for a stated density ratio. Since homogeneous S = 1 exists, the weighted target worth having is weighted S = U = 1. Our r⁴ radial family cannot produce sharp ridges, a likely reason none of the bodies shows the photo's ridges.
 * Ranked experiments: (1) h-space LP / Gauss–Newton from the 92-face S = 1 body to reduce U from 11 to 1, homogeneous; (2) positive controls (Reshetov's 14-face body and the 2609.07827 polytope through the exact checker) and an attempt to prune the 56,946-face record; (3) weighted S = U = 1 as a pure LP with the CoM free, 20 to 150 faces; (4) smooth bodies parametrised in support-function space with ridges; (5) certify or downgrade the smooth bodies (L7 winding, Krawczyk or interval proof for 1.16). Unverified by us: the reviewer's formulas were derived by hand and must be checked against the exact checker first; the 2609.07827 and 21-point-mass claims are from the review's memory.
 
-### Round 16 (running, started 2026-11-22; goal S = U = 1)
-* Plan: face normals become variables with the offset LP as the inner solver, weighted S = U = 1 first, homogeneous second; seeds are the round 14 bodies and Conway-style spiral seeds; exact certification of every claim; insert-mass fractions reported for the weighted bodies.
+### Round 17 (planned; owner to choose)
+* Candidates from the round 16 recommendations: homogeneous S = U = 1 with the centroid equality and its analytic Jacobian from the start at 90 to 150 faces; shrinking the weighted shift with structured seeds; the page's rolling model for large-shift small-face bodies; the open reviewer items (positive controls, support-function-space ridges, certifying the smooth bodies).
 * Owner direction (earlier): do not perturb the 194-face S = 2 body (two distinct stable faces); start a fresh low-poly search. The review revises the method: use the linear offset formulation with an exact checker, positive controls first, and target S = U = 1.
 
 
