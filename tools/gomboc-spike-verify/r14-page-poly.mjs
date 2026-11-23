@@ -1,0 +1,14 @@
+// Round 14 (adapted from r13-page-poly.mjs; weighted record = r14-shift.mjs output with com in 2^-40 units): emit the POLYS data block for tools/gomboc-spike.html from exact polyhedron records ({vertices:[BigInt strings, scale 2^40], faces}).
+//   node r13-page-poly.mjs ../gomboc-spike.html id:label:file [id:label:file ...]   (rewrites the /*POLYS-BEGIN*/ ... /*POLYS-END*/ block)
+import fs from 'fs'; import {exactCheck,globalConvexCert} from './poly-check.mjs'; import {exactAtC,margins} from './r14-lib.mjs';
+const [html,...specs]=process.argv.slice(2); const SC=2**40; const out=[];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]], sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+for(const sp of specs){ const [id,label,file,prismF]=sp.split('|'); const J=JSON.parse(fs.readFileSync(file,'utf8')); const PI=J.vertices.map(p=>p.map(BigInt)), T=J.faces; const r=exactCheck(PI,T); const g=globalConvexCert(PI,T);
+  const Pf=PI.map(p=>p.map(x=>Number(x)/SC)); const cc=r.centroid; const P=Pf.map(p=>sub(p,cc)); const rm=P.reduce((a,p)=>a+Math.hypot(...p),0)/P.length; const Q=P.map(p=>p.map(x=>x/rm));
+  const planes=T.map(([a,b,c])=>{ const n=cr(sub(Q[b],Q[a]),sub(Q[c],Q[a])); const l=Math.hypot(...n); const u=n.map(x=>x/l); return [...u.map(x=>+x.toFixed(9)),+dot(u,Q[a]).toFixed(9)]; });
+  let stable=r.stableFaces.map(i=>planes[i].slice(0,3)); const peak=r.peaks&&r.peaks.length?Q[r.peaks[0]].map(x=>x/Math.hypot(...Q[r.peaks[0]])):[1,0,0]; const unst=peak.map(x=>+x.toFixed(6));
+  let w=null; if(prismF){ const pr=JSON.parse(fs.readFileSync(prismF,'utf8')); const cI=pr.com.map(BigInt); const cf=cI.map(x=>Number(x)/SC); const xa=exactAtC(PI,T,cI); const mgn=margins(Pf,T,cf).map(m=>m.m/rm); const wi=xa.stable[0]; let oth=-9; mgn.forEach((m,i)=>{ if(i!==wi&&m>oth) oth=m; }); const sh=sub(cf,cc); w={com:sh.map(x=>+(x/rm).toFixed(9)),shiftPct:+(100*Math.hypot(...sh)/rm).toFixed(1),stableNormal:planes[wi].slice(0,3),exactS:xa.S,marginWanted:+mgn[wi].toFixed(4),marginOther:+oth.toFixed(4)}; }
+  console.error(id,'F',T.length,'V',PI.length,'S',r.S,'U',r.U,'H',r.H,'cert',r.convexCert,'global',JSON.stringify(g));
+  if(w) stable=[w.stableNormal];
+  out.push({id,label,weighted:w,faces:T.length,verts:PI.length,S:r.S,U:r.U,H:r.H,cert:!!r.convexCert,globalOK:g&&(g.violations===0),planes,verts:Q.map(q=>q.map(x=>+x.toFixed(6))),stable,unstable:unst}); }
+let s=fs.readFileSync(html,'utf8'); const a=s.indexOf('/*POLYS-BEGIN*/'), b=s.indexOf('/*POLYS-END*/'); if(a<0||b<0) throw new Error('markers'); s=s.slice(0,a)+'/*POLYS-BEGIN*/const POLYS='+JSON.stringify(out)+';'+s.slice(b); fs.writeFileSync(html,s); console.error('written',out.length);

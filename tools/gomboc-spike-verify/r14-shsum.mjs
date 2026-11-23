@@ -1,0 +1,2 @@
+import fs from 'fs'; const rows=[]; for(const f of fs.readdirSync('runs/r14').filter(f=>/^shift_.*\.log$/.test(f))){ let r; try{ r=JSON.parse(fs.readFileSync('runs/r14/'+f,'utf8')); }catch(e){ continue; } const c=r.cert; rows.push([f.replace('shift_','').replace('.log',''),r.secs,r.iters,c?c.F:'-',c?c.ok:'-',c&&c.ok?(100*c.shiftExactData).toFixed(2):'-',c&&c.aspect?c.aspect.toFixed(3):'-',c?c.homS:'-']); }
+rows.sort(); console.log('run secs iters F certS1 shift% aspect homS'); for(const r of rows) console.log(r.join('  '));
