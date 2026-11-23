@@ -8,7 +8,7 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 try {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', e => console.error('[pageerror]', e.message));
-  await page.goto(`${base}/index.html?libs=local&seed=1&shape=gomboc172&lite${q}`);
+  await page.goto(`${base}/index.html?libs=local&seed=1&shape=gomboc172${q.startsWith("!") ? q.slice(1) : "&lite" + q}`);
   await page.waitForFunction(() => window.__ready && window.__pd, null, { timeout: 90_000 });
   console.log(JSON.stringify(await page.evaluate(async src => { const pd = window.__pd; return await (0, eval)(`(async pd => (${src}))`)(pd); }, expr), null, 1));
 } finally { await browser.close(); server.kill(); }

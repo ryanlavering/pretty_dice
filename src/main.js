@@ -281,7 +281,7 @@ function buildDice(keepRoll){
   clearHolds(); dice.forEach(d=>d.mat.dispose()); dice=[]; foreign.clear(); const nextParts=new Map();   // number textures and geometry are shared by every die that looks the same (see partCache)
   const specs=specsFor(state.shape);
   specs.forEach(s=>{
-    const own=s.design?lookFor(s.design):null, L=own||state;   // the look this die is made from
+    const own=s.design?lookFor(s.design):null, L0=own||state, L=s.decal?{...L0,filigree:'none',panel:0,numSoft:0,radius:0}:L0;   // the look this die is made from (the experimental d1 has 172 small faces and no numerals: filigree, panels, soft numerals and rounded edges would cost tens of seconds of canvas work and mean nothing there)
     const R=Math.max(...s.verts.map(v=>v.length())); s.verts.forEach(v=>v.multiplyScalar(1/R));
     const key=[s.name,s.labels.join(','),L.font,L.numSoft,L.d4Style,L.d6Style,L.radius,L.numSize,L.numRot,L.panel,L.panelDepth,L.filigree,s.glyphs?s.glyphs.map(g=>g.id).join(','):''].join('|');
     let part=nextParts.get(key)||partCache.get(key);
@@ -293,8 +293,7 @@ function buildDice(keepRoll){
         const val=new Map(); faces.forEach((f,i)=>{ for(let v=0;v<s.verts.length;v++) if(!f.idx.includes(v)) val.set(v,labs[i]); });
         opts={layout:'tips',tips:faces.map(f=>f.idx.map(v=>val.get(v)))};
       } else if(faces.length===6&&s.labels.length===6&&L.d6Style==='pips'&&!s.glyphs) opts={layout:'pips'};
-      const atlas=makeAtlas(faces.length,s.glyphs?labs.map(l=>s.glyphs[l-1]):labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
-      if(s.decal){ for(const [c,f] of [[atlas.bump.image,'#fff'],[atlas.mask.image,'#000']]){ const g=c.getContext('2d'); g.fillStyle=f; g.fillRect(0,0,c.width,c.height); } }   // experimental d1: no numerals on the faces, the "1" is the apex decal
+      const atlas=makeAtlas(faces.length,s.glyphs?labs.map(l=>s.glyphs[l-1]):labs,L.font,L.numSoft,s.name==='d%',L.filigree!=='none'?{...opts,big:true,numSize:L.numSize}:s.decal?{...opts,blank:true}:opts), geo=buildGeometry(faces,atlas,L.radius,L.numSize,L.numRot,{panel:L.panel,panelDepth:L.panelDepth,filigree:L.filigree,soft:L.numSoft});
       part={faces,labs,atlas,geo,decal:s.decal?makeApexDecal(faces,GOMBOC_APEX):null};
     }
     nextParts.set(key,part);
@@ -1486,11 +1485,11 @@ let calmNow=false; const COCK_FLAT=.985, COCK_LIFT=.1;
 /* EXPERIMENTAL d1 (v42-gomboc-die): the gomboc die is read like a d4 (the face DOWN: 1 when S is down, the apex "1" on top). Its rest rule is special-cased: it never sleeps or counts as still unless S's outward normal is within
    GOMBOC_REST_TOL_DEG of straight down; anywhere else, slow movement (a saddle or near-saddle stall) is not rest and the roll keeps simulating, up to GOMBOC_CAP_S, where the stock lean handling takes over. gombocRule=false (pd.gombocRule) restores the stock rule for A/B runs. */
 const GOMBOC_REST_TOL_DEG=3, GOMBOC_CAP_S=60; let gombocRule=true, gombocCapS=GOMBOC_CAP_S, gombocStalls=0;   // gombocCapS: test hook (pd.gombocCapS) so the stall ring can be provoked with a short cap
-const isDown=d=>d.faces.length===4||!!d.down, gomboc=i=>!!(dice[i]&&dice[i].decal), gombocCap=()=>gombocRule&&dice.some(d=>d.decal)?gombocCapS:null;
+const isDown=d=>d.faces.length===4||!!d.down, gomboc=i=>!!(dice[i]&&dice[i].decal), gombocCap=()=>gombocRule&&!placing&&dice.some(d=>d.decal)?gombocCapS:null;
 function gombocNear(i){ const d=dice[i], b=bodies[i], n=d.faces[d.sIdx].n.clone().applyQuaternion(new THREE.Quaternion(b.quaternion.x,b.quaternion.y,b.quaternion.z,b.quaternion.w)); return -n.y>Math.cos(GOMBOC_REST_TOL_DEG*Math.PI/180); }
 function tuneSolver(){ if(!world) return; const hi=state.gravity>GRAV_DEF*1.001; calmNow=state.gravity>=GRAV_DEF*.999; if(calmNow) for(const b of bodies){ if(b.velocity.lengthSquared()+b.angularVelocity.lengthSquared()>=1){ calmNow=false; break; } } world.solver.iterations=(calmNow&&hi)?20:10;
   bodies.forEach((b,i)=>{ let t=sleepTimeFor();
-    if(gombocRule&&gomboc(i)){ const t2=gombocNear(i)?.1:1e9; if(b.sleepTimeLimit!==t2) b.sleepTimeLimit=t2; return; }   // experimental d1: sleeps only when S is down
+    if(gombocRule&&!placing&&gomboc(i)){ const t2=gombocNear(i)?.1:1e9; if(b.sleepTimeLimit!==t2) b.sleepTimeLimit=t2; return; }   // experimental d1: sleeps only when S is down
     if(calmNow&&!placing&&dice[i]){ const ti=tiltInfo(i), cocked=ti.flat<COCK_FLAT||ti.lift>COCK_LIFT;
       if(b.free&&b.early&&!cocked){ b.free=false; b.angularDamping=.5; b.linearDamping=.25; }   // the toppled die lies flat now: ordinary damping, it may sleep
       else if(cocked&&(!b.free||b.early)&&(b.early||0)<4&&!settled&&b.sleepState===1&&world.time-b.timeLastSleepy>.12&&!bodies.some((o,j)=>j!==i&&b.position.distanceTo(o.position)<2.2*(dice[i].r+dice[j].r))){   // cocked on an edge at rest and not propped on a die: tip it now the way gravity would (the finishRoll topple, early) instead of letting it rock until the 3.5 s damping or freezing it asleep
@@ -1631,7 +1630,7 @@ function tiltInfo(i){                                   // how far die i is from
   return {flat:Math.abs(bv), n:best, four, lift:(b.position.y-TABLE_Y-h)/d.r};   // lift: how far the die's centre sits above where it would if lying on the mat (> ~.1 = propped on another die)
 }
 function assistSettle(dt){          // tracks how long each die has been nearly still (restCheck uses it). Dice are never nudged; leaning ones are flagged and re-rolled on request
-  bodies.forEach((b,i)=>{ let slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; if(slow&&gombocRule&&gomboc(i)&&!gombocNear(i)) slow=false; b.slowT=slow?(b.slowT||0)+dt:0; });
+  bodies.forEach((b,i)=>{ let slow=b.velocity.lengthSquared()<.25&&b.angularVelocity.lengthSquared()<1.2; if(slow&&gombocRule&&!placing&&gomboc(i)&&!gombocNear(i)) slow=false; b.slowT=slow?(b.slowT||0)+dt:0; });
 }
 function restCheck(dt){   // every die individually still for a moment (one jittering die no longer resets the others)
   return rollT>(gombocCap()||12) || bodies.every(b=>(b.slowT||0)>.35&&b.position.y<TABLE_Y+2.4);   // after 12 s stop waiting on a die that will not go still

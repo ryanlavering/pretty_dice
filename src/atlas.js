@@ -11,7 +11,7 @@ export const LAYOUT_UNIT={tips:80, pips:140};                 // atlas px that c
 // opts.layout: 'tips' -> opts.tips[i] = the 3 corner numbers of triangular face i; 'pips' -> labels are 1..6 drawn as dots
 export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2: percentile (tens) die prints 00, 10 ... 90
   const cols=Math.ceil(Math.sqrt(N)), rows=Math.ceil(N/cols), F=FONTS[fontKey]||FONTS.cinzel;
-  let cell=opts.big?384:256;
+  let cell=opts.blank?16:opts.big?384:256;
   if(opts.big&&opts.numSize&&!opts.layout){      // PD-142.38.16: the filigree reaches the face corners (triangle circumradius = 2 x inradius); small print makes the face large in atlas px, so grow the cell until the corner fits
     const m=document.createElement('canvas').getContext('2d'), pxm=labels.some(l=>(pad2?String(l).padStart(2,'0'):String(l)).length>1)?112:136, wt=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
     m.font=`${wt} ${pxm}px ${F.css}`; m.textAlign='center';
@@ -39,6 +39,7 @@ export function makeAtlas(N, labels, fontKey, soft, pad2, opts={}){      // pad2
   }
   const mk=(bg)=>{const c=document.createElement('canvas'); c.width=cols*cell; c.height=rows*cell; const g=c.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,c.width,c.height); return [c,g];};
   const [bc,bg]=mk('#fff'), [mc,mg]=mk('#000'), info=[];
+  if(opts.blank){ const tex0=c=>{const t=new THREE.CanvasTexture(c); t.anisotropy=8; return t;}; return {bump:tex0(bc), mask:tex0(mc), cols, rows, cell, info:labels.map(()=>({halfDiag:1}))}; }   // experimental d1: nothing is printed on the faces (no numerals to draw or blur)
   const show=l=>pad2?String(l).padStart(2,'0'):String(l), px=labels.some(l=>show(l).length>1)?112:136, weight=fontKey==='inter'?800:fontKey==='cinzel'?700:600;
   labels.forEach((lab,i)=>{
     const cx=(i%cols+.5)*cell, cy=(Math.floor(i/cols)+.5)*cell;
