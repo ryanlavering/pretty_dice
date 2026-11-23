@@ -272,7 +272,14 @@ function lookFor(id){ if(!id||!bag||id===liveId()) return null; let f=foreign.ge
   const F=FONTS[look.font]; if(F&&F.load&&!document.fonts.check(F.load)&&!fontAsked.has(look.font)){ fontAsked.add(look.font); ensureFont(look.font).then(()=>{ fontAsked.delete(look.font); for(const [k,pt] of partCache) if(k.includes('|'+look.font+'|')){ pt.geo.dispose(); if(pt.decal){ pt.decal.geo.dispose(); pt.decal.mat.dispose(); pt.decal.tex.dispose(); } pt.atlas.bump.dispose(); pt.atlas.mask.dispose(); partCache.delete(k); } scheduleRebuild(); }); }   // numbers drawn in the fallback font are not reused
   return look; }
 let lastBuildMulti=false;
-function buildDice(keepRoll){
+let lastGoodShape='d20';
+function buildDice(keepRoll){   // the experimental gomboc d1 must never leave the app with no die: if its build throws, fall back to the last shape that built and say so
+  try{ buildDiceInner(keepRoll); if(!state.shape.startsWith('gomboc')) lastGoodShape=state.shape; }
+  catch(e){ if(!state.shape.startsWith('gomboc')) throw e;
+    console.warn('Gomboc d1 failed to build',e); state.shape=lastGoodShape; try{ buildDiceInner(false); }catch(e2){ state.shape='d20'; buildDiceInner(false); }
+    toast('Gomboc d1 failed to build: '+(e&&e.message||e)); try{ syncUI(); }catch{} }
+}
+function buildDiceInner(keepRoll){
   buildTok++;
   const keepQ=(!rolling&&isMulti()&&lastBuildMulti&&dice.length)?dice.map(d=>({name:d.name,design:d.design||null,q:d.mesh.quaternion.clone()})):null; const wasMulti=lastBuildMulti; lastBuildMulti=isMulti();   // PD-142.38.35/.38: a rebuild keeps the spin pose of a multi-die showcase; dice that persist (same type, in order) keep theirs, so Adv <-> Dis or a modifier change does not jump (a single die spins on the rig, which is never reset)
   if(keepRoll&&rolling&&rollKey!==state.shape+'|'+state.notation) keepRoll=false;   // the dice in the roll no longer match the design (shape/set changed)

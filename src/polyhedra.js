@@ -29,7 +29,8 @@ export const SHAPES = {
 
 /* EXPERIMENTAL d1 (v42-gomboc-die): the 172-triangle homogeneous S=1, U=5 gomboc. Review/dev builds only (the artifact build sets __PD_REVIEW) or ?shape=gomboc172 / ?gomboc; absent from default builds.
    One result: 1 when it rests on S (its apex, the "1" decal, is then on top), 0 on any other face. Vertices are centred on the volume centroid, so the body origin is the true centre of mass. */
-export const GOMBOC_STABLE=V(...GOMBOC172_STABLE), GOMBOC_APEX=GOMBOC172_APEX;   // outward normal of S (object space); apex point
+export const GOMBOC_STABLE=V(...GOMBOC172_STABLE);   // one declarator per export: build-static.py's bundler only sees the first name of `export const a=..., b=...`
+export const GOMBOC_APEX=GOMBOC172_APEX;   // outward normal of S (object space); apex point
 if(typeof window!=='undefined'&&(window.__PD_REVIEW||/[?&](gomboc|shape=gomboc172)(&|$)/.test(location.search))){
   let labs=null;
   SHAPES.gomboc172={label:'Gomboc 172 (experimental d1)', verts:()=>GOMBOC172_VERTS.map(p=>V(...p)), tris:GOMBOC172_TRIS, decal:true,
