@@ -17,7 +17,7 @@ test('normal build: no tour', async ({ app, page }) => {
 test('flag set: four tour entries in the approved order, dots shown', async ({ app, page }) => {
   await tour(page); await app.open();
   expect(await page.evaluate(() => window.__nf.on)).toBe(true);
-  expect(await unseen(page)).toEqual(['T1@1', 'T2@1', 'T3@1', 'T4@1']);
+  expect(await unseen(page)).toEqual(['T1@2', 'T2@1', 'T3@1', 'T4@1']);
   await app.nav.toPlay();
   await expect(dot(page, 'T1')).toBeVisible();
   await dot(page, 'T1').click();
