@@ -1,10 +1,10 @@
 ---
 id: PD-188
 title: 'Games: per-game dice look option via the draft design (Yacht: ''Use d6 pips'')'
-status: Needs Review
+status: Review Complete
 assignee: []
 created_date: '2026-11-20T07:51:00Z'
-updated_date: '2026-11-22T04:25:00Z'
+updated_date: '2026-11-24T23:39:00Z'
 labels:
   - v4.2
 dependencies: []
