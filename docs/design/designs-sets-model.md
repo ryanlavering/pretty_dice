@@ -1,5 +1,7 @@
 # 4.2: one model for designs, sets, game looks and lobby dice (PD-202, PD-190, PD-188, PD-206)
 
+> **Superseded in part (PD-214, 2026-11-24):** the set-level design (`set.design`, the "Use design for this set" / `Look` row, "Keep my look", row #11 and Q1) was removed on owner feedback. A set names designs only through `@design` on its dice; old saved set looks migrate into each die without its own `@design`. The editor gained **Apply to all** under **Dice use**.
+
 Date 2026-11-21. Read against `v4.2` at 1481b51. Design only: no app code or test changed.
 Builds on `game-draft-design-memo.md` (D1-D3 owner-approved) and keeps every 4.1 rule listed in the brief.
 Line refs are `src/main.js` unless stated. Storage keys: `prettydice.v1` (STORE, live state), `prettydice.bag.v1`

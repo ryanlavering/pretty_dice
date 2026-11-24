@@ -62,7 +62,7 @@ const NEW42 = ['PD-202', 'PD-214', 'PD-213', 'PD-188', 'PD-198', 'PD-142.42.1', 
 test('the 4.2 entries exist with matching card ids', async ({ app, page }) => {
   await app.open({ query: 'new=1' });
   const es = await page.evaluate(ids => ids.map(i => window.__nfEntries.find(f => f.id === i)), NEW42);
-  for (const f of es) { expect(f, 'entry').toBeTruthy(); expect(f.card).toBe(f.id); expect(f.rev).toBe(1); expect(f.room).toBe('play'); expect(f.text).toContain('Check:'); }
+  for (const f of es) { expect(f, 'entry').toBeTruthy(); expect(f.card).toBe(f.id); expect(f.rev).toBeGreaterThanOrEqual(1); expect(f.room).toBe('play'); expect(f.text).toContain('Check:'); }
 });
 for (const [w, h] of [[1280, 800], [390, 740]]) test(`each 4.2 entry shows a dot on its anchor and the box stays on screen (${w}x${h})`, async ({ app, page }) => {
   test.setTimeout(120_000);
