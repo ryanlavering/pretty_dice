@@ -3,10 +3,10 @@ id: PD-212
 title: >-
   Reroll (r) as a physics reroll: highlight ring 0.5 s, then re-throw like
   leaning dice; optional manual reroll chip
-status: In Progress
+status: Needs Review
 assignee: []
 created_date: '2026-11-22T05:53:00Z'
-updated_date: '2026-11-24T23:32:00Z'
+updated_date: '2026-11-24T23:52:00Z'
 labels:
   - v4.2
   - feature
