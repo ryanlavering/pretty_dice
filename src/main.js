@@ -63,7 +63,7 @@ const GRAV_LO=1/64, GRAV_HI=2;   // today's feel (.0436x, about 1/23) lies below
 /* PD-169 rework, measured: a die dropped 10 u in the live sim takes 0.7666 s at -34 u/s2 vs sqrt(2h/g)=0.7670 s (world.step(1/60,dt,4): no time scale, no speed multiplier; damping .04/s is negligible), so the 0.0436x factor is exact: at true 1x a 20 mm d20 falls 16 u (0.2 m) in 0.2 s and today's table is about 4.8x slower than real life in time (1/23 the gravity). A throw is scaled by throwK() so it covers the same path at any gravity. */
 const gravFromPos=p=>GRAV_LO*Math.pow(GRAV_HI/GRAV_LO,Math.max(0,Math.min(1,p))), gravToPos=x=>Math.log(Math.max(GRAV_LO,Math.min(GRAV_HI,x))/GRAV_LO)/Math.log(GRAV_HI/GRAV_LO);
 const DEFAULTS={gravity:GRAV_DEF, shape:'d20', substrate:'swirl', palettes:{}, paint:'#ffffff', paintMode:'auto', scale:1.6, radius:.04, font:'cinzel',
-  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, manualReroll:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
+  shake:false, numSize:.65, numRot:0, d4Style:'tips', d6Style:'numbers', panel:0, panelDepth:.5, numRaised:false, numPaint:true, patina:0, filigree:'none', filiFill:true, enamelSame:true, enamel:'#c9a24a', numDepth:2.2, numSoft:3, spin:.3, bounce:.4, fricDice:.15, fricMat:.2, zoom:1, rollZoom:1, glitter:.5, bubbles:.3, clarity:.6, randshape:false, sound:false, soundBk:'mix', soundMix:.9, soundMixMode:'layer', surfaceMat:'leather', ringLevel:.5, spatialWidth:.5, rumble:false, autoReroll:false, volume:.6, inclusion:'none', inclSize:.7, inclTurn:35, inclY:0, polish:.5, stone:'marble', stoneAccent:.5, notation:'2d6+d20+3', off:[11,23,37], seed:1, randsub:true, expsize:'2048'};
 const state=structuredClone(DEFAULTS); bindState(state);
 const STORE='prettydice.v1', BAG_STORE='prettydice.bag.v1';
 let bag=null;   // the dice bag (see docs/design/dice-bag-design.md); null until boot builds or restores it
@@ -547,7 +547,7 @@ function syncUI(){
   shapeSelSync();
   document.querySelectorAll('#subs button').forEach(b=>b.classList.toggle('on',b.dataset.id===state.substrate));
   ['c1','c2','c3'].forEach((id,i)=>{ $(id).value=state.colors[i]; $(id).disabled = SUBSTRATES[state.substrate].mode===0 && i>0; });
-  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; $('manualreroll').checked=!!state.manualReroll; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
+  $('paint').value=state.paint; $('paintmode').value=state.paintMode; $('randsub').checked=state.randsub; $('rumble').checked=state.rumble; $('autoreroll').checked=!!state.autoReroll; dset($('snd'),state.sound?ICON_SND_ON:ICON_SND_OFF,state.sound?'Sound on':'Sound off'); $('snd').classList.toggle('off',!state.sound); $('snd').setAttribute('aria-pressed',state.sound); dset($('spinbtn'),state.spin>0?ICON_PAUSE:ICON_PLAY,state.spin>0?'Pause spin':'Resume spin'); $('spinbtn').title=$('spinbtn').ariaLabel=state.spin>0?'Pause spinning':'Spin'; $('snd').title=state.sound?'Sound on (tap to mute)':'Sound off (tap to turn on)'; $('expsize').value=state.expsize;
   for(const [id,k] of SLIDERS) $(id).value=k==='numSize'?numToPos(state[k]):state[k];
   syncGravityUI();
   { const {c,mod}=counts(); STEP_TYPES.forEach(t=>document.querySelector(`#steppers [data-n="${t}"]`).textContent=c[t]); $('modv').textContent=mod; if(document.activeElement!==$('notation')) $('notation').value=curNotation(); if(parseNotation(state.notation).error===undefined) $('noterr').textContent=''; }
@@ -601,7 +601,7 @@ async function setShake(on){
   shakeOn=on; state.shake=on; $('shake').checked=on; save(); }
 if('DeviceMotionEvent' in window&&matchMedia('(pointer:coarse)').matches){ $('shakerow').hidden=false; $('shake').onchange=e=>setShake(e.target.checked); if(state.shake&&typeof DeviceMotionEvent.requestPermission!=='function') setShake(true); else state.shake=false; }
 $('rumble').onchange=e=>{ state.rumble=e.target.checked; save(); };
-$('manualreroll').onchange=e=>{ state.manualReroll=e.target.checked; save(); };
+$('autoreroll').onchange=e=>{ state.autoReroll=e.target.checked; leanT=0; save(); };
 $('soundtest').onclick=()=>{ playBlip(); $('soundstat').textContent='…'; setTimeout(()=>{ $('soundstat').textContent=audioStatus(); },400); };   // plays a blip and shows what the browser says about audio
 $('spinbtn').onclick=()=>{ if(state.spin>0){ spinLast=state.spin; state.spin=0; } else state.spin=spinLast||.3; save(); syncUI(); };   // pause remembers the speed it will resume at
 $('snd').onclick=()=>{ state.sound=!state.sound; audioInit(); setVolume(); save(); syncUI(); if(state.sound) playBlip(true); };
@@ -1328,7 +1328,7 @@ const NF_ALL=[
   {id:'PD-188', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Yacht can show your design with d6 pips as a draft for this game. A Use d6 pips checkbox in the game setup turns it on or off. Check: Games > Yacht: with Use d6 pips ticked the dice show pips; untick it and they show your design\'s own look.', card:'PD-188'},
   {id:'PD-198', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'The quick roll box remembers formulas you rolled. Check: roll 2d6+3 and 4d6dl, then press Up in the box (Down goes back), or tap the small arrow inside the box for the list; on a phone, press and hold the box to open the list.', card:'PD-198'},
   {id:'PD-142.42.1', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'New per-die reroll shorthand: r1, r<3, r<=2, r>4 or r>=5 after a die, such as d20r1. A matching die is rolled again once. Check: type 4d6r1 in the quick roll box and Roll: the log shows a rerolled die as 1\u2192(new value).', card:'PD-142.42.1'},
-  {id:'PD-212', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'A reroll is now a real throw: matching dice get a green ring for a moment, then are thrown again. In Table settings, Manual rerolls waits for you instead and shows a green Re-roll N dice chip. Check: Roll 4d6r<=3 and watch the green rings and the second throw; tick Manual rerolls, roll again and tap the Re-roll chip.', card:'PD-212'},
+  {id:'PD-212', rev:2, room:'play', pane:'table', anchor:'#rollbox', text:'A reroll is a real throw, and now it waits for you: matching dice keep a green ring and a green Re-roll N dice chip appears; tap it, or press R, to throw only those dice (leaning dice work the same way). In Table settings, Auto-reroll throws them by itself after a 1 s ring. Check: Roll 4d6r<=3, tap the Re-roll chip (the chip goes once they settle), then tick Auto-reroll and roll again.', card:'PD-212'},
   {id:'PD-215', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'The mat follows the quick roll formula. Tapping a chip such as d20 lays its dice on the mat without throwing; a typed formula puts its dice down when you click out of the box, but not when you press Roll. Check: tap the d20 chip (one d20 appears, no throw); type 3d6, click the mat: three d6 appear.', card:'PD-215'}
 ];
 // PD-164: release tour. build-static.py --artifact --release-tour (the release build: no review flag) injects window.__PD_RELEASE_TOUR='4.1'; the same dot/box/Prev/Next machinery then walks NF_RELEASE instead of NF_ALL, remembered per version under its own key. Never active in a review build or the plain app. pane = Play tab to open first.
@@ -1336,7 +1336,7 @@ const NF_TOUR=window.__PD_REVIEW?null:(window.__PD_RELEASE_TOUR||null);
 const NF_RELEASE=[
   {id:'T1', rev:2, room:'play', anchor:'#bagbtn', text:'Designs are looks, and dice name them in the formula (2d6@name). Picking a design never changes your dice. A design\'s saved dice show as a Suggested chip you can tap, and Apply to all in the set editor puts one design on every die of the formula.'},
   {id:'T2', rev:1, room:'play', pane:'games', anchor:'#gamestab', text:'Every game shows its dice on the mat in the lobby. The game\'s look is an editable draft in the Bag: Save it as a design or Discard it. Yacht can use d6 pips.'},
-  {id:'T3', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Rerolls like d20r1: matching dice get a ring, then are thrown again (an optional manual Re-roll chip is in Table settings). The formula box remembers formulas: arrow button, Up and Down, or long press on a phone. The mat follows the formula when you tap a chip or leave the box.'},
+  {id:'T3', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Rerolls like d20r1: matching dice get a ring and a Re-roll chip (tap it or press R to throw them again; Auto-reroll in Table settings does it after 1 s). The formula box remembers formulas: arrow button, Up and Down, or long press on a phone. The mat follows the formula when you tap a chip or leave the box.'},
   {id:'T4', rev:1, room:'play', pane:'table', anchor:'#rollbox', text:'Dice settle without twitching, and a cocked die topples flat.'},
 ].map(f=>({...f, card:"What's new in "+NF_TOUR}));
 const NEW_FEATURES=NF_TOUR?NF_RELEASE:NF_ALL.filter(f=>!(window.__PD_RETIRED||[]).includes(f.id));
@@ -1393,7 +1393,7 @@ addEventListener('keydown',e=>{
   const typing=e.target.tagName==='INPUT'&&e.target.type==='text';
   if((e.ctrlKey||e.metaKey)&&!typing&&(e.key==='z'||e.key==='Z'||e.key==='y')){ e.preventDefault(); (e.key==='y'||e.shiftKey)?redo():undo(); return; }
   if(e.target.tagName==='INPUT'&&e.target.type!=='checkbox') return;
-  if(e.code==='Space'){e.preventDefault(); if(!rolling&&(!game||designRoom)) randomize();} if(e.key==='r') dockRoll(true); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) toggleFull(); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
+  if(e.code==='Space'){e.preventDefault(); if(!rolling&&(!game||designRoom)) randomize();} if(e.key==='r') rKey(); if((e.key==='h'||e.key==='H')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) toggleFull(); if((e.key==='t'||e.key==='T')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey) holdTop(true); });
 addEventListener('keyup',e=>{ if(e.key==='t'||e.key==='T') holdTop(false); });
 addEventListener('blur',()=>holdTop(false));
 $('hint').textContent=['Design room: the Look settings, with Undo and Redo on top. Play room: Table, Games and Log tabs. The Design | Play switch changes room; nothing in Design throws dice.','drag = turn dice · right-drag or two fingers = orbit · scroll or pinch = zoom · double-click = reset view','Play: type a roll in the dock (2d6+3; 2d20kh keeps the highest, 4d6dl drops the lowest) or tap a preset chip, then Roll · tap a die to hold it · flick to throw again','space = randomize (Design) · ctrl+z / ctrl+y = undo / redo · r = roll (Play) · h = full view','hold the total, or hold t = top-down look at the dice (controls step aside)','drawer (the stacked-circles button) = sound, reset view, full view, hints, pause spin, reset to defaults'].join('\n');
@@ -1597,7 +1597,7 @@ var lastLay=null, pendingLay=null;
 function exitRoll(instant){
   if(game&&!instant) return;   // a game keeps the dice on the mat until it ends
   holdTop(false); clearHolds();
-  clearFx(); clearLeans();
+  clearFx(); clearLeans(); clearReroll();   // PD-212: leaving the mat (a rebuild, another room) also drops a waiting reroll: its ring, its pending set and its chip
   if(!rolling&&!instant) return;
   if(rolling&&bodies.length===dice.length&&settled) lastLay={key:rollKey,n:dice.length,poses:bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()}))};   // slice 4c: Play shows the dice as they last lay
   rolling=false; placed=false; world=null; bodies=[]; $('result').classList.remove('on'); if(!game&&!holdRoom) designRoom=true; syncMode();
@@ -1643,11 +1643,12 @@ function faceCheck(why){ if(!rolling||!world||!settled||!recFaces||restoring||pl
   bad.forEach(i=>faceWarn(i,recFaces[i],now[i].label,why)); recFaces=now.map(p=>p.label); finishRoll(); return true; }
 function reconcileParts(parts,why){ const now=readResult(); now.forEach((p,i)=>{ if(parts[i]&&p.label!==parts[i].label){ faceWarn(i,parts[i].label,p.label,why); parts[i]=p; } }); return parts; }
 /* PD-212 physics reroll (the r modifier): after the dice settle, those whose FINAL face matches the condition get a green ring for RR_HOLD s and are then re-thrown alone, like leaning dice. Once per die: rrOrig holds the first value of a die already re-thrown (it is final even if it matches again). rrPend: the dice waiting (auto: for the ring time; manual: for the chip). */
-const RR_HOLD=.5; let rrPend=null, rrOrig=new Map(), rrKeep={}, rrRings=[], rrAccept=false, rrQuiet=false;
+const RR_HOLD=1; let rrPend=null, rrOrig=new Map(), rrKeep={}, rrRings=[], rrAccept=false, rrQuiet=false;
 const rrInfo=(vals,ids)=>({vals,orig:ids.map(i=>rrOrig.get(i))});   // the values as read now (re-thrown dice show the new face) and the first values, for the 1\u219214 text
 function dropRrRings(){ for(const m of rrRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } rrRings=[]; }
-function clearReroll(){ rrPend=null; rrOrig=new Map(); rrKeep={}; dropRrRings(); }
-function holdForReroll(idx,vals){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!!state.manualReroll};
+function dropChips(){ const R=$('result'); if(R) R.querySelectorAll('.relean').forEach(e=>e.remove()); }   // the reroll / leaning chips never outlive the dice they belong to
+function clearReroll(){ rrPend=null; rrOrig=new Map(); rrKeep={}; dropRrRings(); dropChips(); }
+function holdForReroll(idx,vals){ const t=rrPend?rrPend.t:0; dropRrRings(); rrPend={idx,vals,t,manual:!state.autoReroll};
   for(const i of idx){ const r=(dice[i].r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.reroll,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})); m.renderOrder=10;
     m.rotation.x=-Math.PI/2; m.userData={i,y:TABLE_Y+.03}; m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); rig.add(m); rrRings.push(m); }
   const R=$('result'); R.textContent=''; R.classList.remove('on','crit','fumble'); if(rrPend.manual) document.body.classList.remove('throwing'); updateLeanUI(); if(rrPend.manual) R.classList.add('on'); }   // the result is held until the reroll has settled (like a lean chip, but the total is not shown yet)
@@ -1743,7 +1744,7 @@ function makeBurst(){ const geo=new THREE.BufferGeometry(); geo.setAttribute('po
 const critLight=new THREE.PointLight(0xffc24a,0,16,1.5); scene.add(critLight);
 const BASE_EXPOSURE=renderer.toneMappingExposure, BASE_KEY=key.intensity;
 const fx={t:0,crit:[],fumble:[],dim:0,lead:0,hold:false};   // dim: nat 1 room dimming; lead: nat 20 light dip (+) / flash (-)
-let droppedDice=new Set(), leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
+let leanT=0, droppedDice=new Set(), leanDice=[], leanRings=[], rollHalf={x:1.9,z:3};
 function isLean(i){ const t=tiltInfo(i), b=bodies[i]; return t.lift>.1||t.flat<.95||b.position.y>TABLE_Y+1.45; }   // propped on another die, cocked, or stacked
 function showLeans(){ dropRings(); dice.forEach((d,i)=>{ if(!leanDice[i]) return; const r=(d.r||1)*1.2, m=new THREE.Mesh(new THREE.RingGeometry(r*.84,r,64),new THREE.MeshBasicMaterial({color:RING_COLORS.cocked,transparent:true,opacity:.9,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));   // flat on the mat, under every die; wider than the die so it shows around it
   m.renderOrder=10;   // the mat is a transparent mesh too: without this, camera-dependent sorting drew the mat over the ring
@@ -1755,7 +1756,7 @@ function showDropped(){ undimDropped();
     d.mesh.traverse(o=>{ if(!o.material) return; orig.push([o,o.material,o.renderOrder]); o.renderOrder=5; const dim=x=>{ const c=x.clone(); c.transparent=true; c.opacity=Math.min(c.opacity==null?1:c.opacity,.4); return c; }; o.material=Array.isArray(o.material)?o.material.map(dim):dim(o.material); });
     d.mesh.userData.dropped=i; dropMarks.push({mesh:d.mesh,orig}); }); }
 function dropRings(){ undimDropped(); for(const m of leanRings){ m.parent&&m.parent.remove(m); m.geometry.dispose(); m.material.dispose(); } leanRings=[]; }
-function clearLeans(){ dropRings(); leanDice=[]; }
+function clearLeans(){ dropRings(); leanDice=[]; leanT=0; dropChips(); }
 function updateLeanUI(){ const R=$('result'); R.querySelectorAll('.lean,.relean').forEach(e=>e.remove()); const nl=leanDice.filter(Boolean).length; if(!settled) return;
   if(rrPend&&rrPend.manual){ const rb=document.createElement('button'); rb.className='relean rrchip'; rb.textContent='\u21BB Re-roll '+rrPend.idx.length+(rrPend.idx.length>1?' dice':' die'); rb.title='The r rule: '+rrPend.idx.length+(rrPend.idx.length>1?' dice match':' die matches')+'. Tap to re-throw '+(rrPend.idx.length>1?'them':'it')+'; starting a new roll keeps the first values'; rb.onclick=fireReroll; R.append(rb); }
   if(!nl) return;
@@ -1767,6 +1768,10 @@ function refreshLeans(){                        // a die that settles after the 
     else m.position.set(bodies[i].position.x,m.userData.y,bodies[i].position.z); }
   if(changed) finishRoll(); }   // a die that was balanced or propped has come to rest on a face: read the dice again, so the result (and any nat 20 / nat 1 effect) matches what is on the table
 function pulseLeans(t){ const o=.8+.2*Math.sin(t*4.5); for(const m of leanRings) m.material.opacity=o; }
+/* PD-212: with Auto-reroll on, leaning dice keep their ring for RR_HOLD s and are then re-thrown on their own (a game's human player too); a bot does not wait (gameOnSettled) */
+function autoLeans(dt){ if(!state.autoReroll||!leanDice.some(Boolean)){ leanT=0; return; } leanT+=dt; if(leanT>=RR_HOLD){ leanT=0; rerollLeans(); } }
+/* The r key: while a reroll chip (the r rule, or leaning dice) is waiting it re-throws just those dice, never a whole new roll; otherwise it rolls as before. Roll (button / Enter) is unchanged: the first values stand. */
+function rKey(){ if(settled&&rolling){ if(rrPend&&rrPend.manual){ fireReroll(); return; } if(leanDice.some(Boolean)){ rerollLeans(); return; } } dockRoll(true); }
 function rerollLeans(){                       // the leaning dice vanish from the mat and drop in again from above; the others stay where they are
   if(!rolling||!world||!settled||!leanDice.some(Boolean)) return;
   const idx=leanDice.map((l,i)=>l?i:-1).filter(i=>i>=0); clearFx(); clearLeans(); $('result').classList.remove('on'); settled=false; rollT=0; restT=0; freeTries=0; for(const i of idx) delete rrKeep[i]; dropIn(idx);
@@ -1833,7 +1838,7 @@ const loop=(t,dtOver)=>{          // dtOver: fixed step from the test API (__pd.
   }
   if(rolling&&world){
     tuneSolver(); world.step(1/60,dt,4); rollT+=dt; tickRestore(dt);
-    if(!settled) assistSettle(dt); else if(leanRings.length){ pulseLeans(performance.now()/1000); refreshLeans(); }
+    if(!settled) assistSettle(dt); else if(leanRings.length){ pulseLeans(performance.now()/1000); refreshLeans(); autoLeans(dt); }
     if(settled&&rrPend) pulseReroll(dt);
     if(rollT>3.5) bodies.forEach(b=>{ if(!b.free){b.angularDamping=.5; b.linearDamping=.25;} });
     dice.forEach((d,i)=>{d.mesh.position.copy(bodies[i].position); d.mesh.quaternion.copy(bodies[i].quaternion);});
@@ -2472,7 +2477,7 @@ document.addEventListener('pd-open-games',()=>{ if(game){ game.setup=true; } if(
 window.__pd={resetUiState, setGravity, gravityY, get worldGravityY(){ return world?world.gravity.y:null; }, gravFromPos, gravToPos, GRAV:{LO:GRAV_LO,HI:GRAV_HI,DEF:GRAV_DEF,REAL:GRAV_REAL,OLD:GRAV_OLD,U_PER_M:GRAV_U_PER_M},get faceFixes(){return faceFixes;}, faceCheck, nudgeDie(i){ const d=dice[i], b=bodies[i], cur=readResult()[i].label; const f=d.faces.find((f,k)=>d.labs[k]!==cur); const q=new THREE.Quaternion().setFromUnitVectors(f.n.clone().normalize(),new THREE.Vector3(0,d.faces.length===4?-1:1,0)); b.quaternion.set(q.x,q.y,q.z,q.w); b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); },   // test hook: turn a settled die onto another face
   corruptFace(i,v){ recFaces[i]=v; }, get recFaces(){return recFaces;},get gprefs(){return gprefs;},renderGame,ROLL_DROP,flickVel,flickLiftK,flickDepthFrac,flickLaunchVy,flickSpinScale,get rollHalf(){return rollHalf;},RING_COLORS,state,dockRoll,uScale:U.uScale,holdTop,get topBlend(){return topBlend;},get camera(){return camera;},key,BASE_KEY,SHAPES,SUBSTRATES,STONES,FONTS,views,orbit,canvas:cv,rig,fx,triggerFx,updateFx,rerollLeans,TABLE_Y,
   keepSum,applyReroll,fmtNotation,initOps,lookupTable,logText,designToJSON,loadDesign,parseBag,importBag,bagToJSON,bagFileJSON,bagOps,setOps,renderLog,botStep,botPump,gviewer,dieChip,renderDesignPicture,PIC_Q,picGear,picDie,bagActivate:activate,isModified,get bag(){return bag;},save,updateThumbs,get thumbs(){return thumbs;},get thumbBusy(){return thumbBusy;},get camBlend(){return camBlend;}, set camBlend(v){ camBlend=v; topBlend=0; table.visible=v>.01; table.material.opacity=v; },thumbKey,randomize,buildDice,applyLook,startRoll,exitRoll,undo,redo,snapshot,checkpoint,parseNotation,exportImage,setSubstrate,setStone,ensurePalette,setFull,setShake,
-  get dice(){return dice;}, get leans(){return [...leanDice];}, get rrPending(){return rrPend?[...rrPend.idx]:null;}, get rrManual(){return !!(rrPend&&rrPend.manual);}, get rrRingCount(){return rrRings.length;}, get rrOrig(){return [...rrOrig];}, rerollNow:()=>fireReroll(), settleRoll(maxSteps=1500){ simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); } }, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
+  get dice(){return dice;}, get leans(){return [...leanDice];}, get rrPending(){return rrPend?[...rrPend.idx]:null;}, get rrManual(){return !!(rrPend&&rrPend.manual);}, get rrRingCount(){return rrRings.length;}, get rrOrig(){return [...rrOrig];}, rerollNow:()=>fireReroll(), cockDie(i){ const b=bodies[i]; b.type=2; b.velocity.set(0,0,0); b.angularVelocity.set(0,0,0); b.position.y=TABLE_Y+3; leanDice=bodies.map((_,j)=>!!leanDice[j]||j===i); showLeans(); },   /* test hook: a die held in the air counts as leaning, so the lean chip and ring can be driven without waiting for a lucky roll */ rerollLeansNow:()=>rerollLeans(), settleRoll(maxSteps=1500){ simSteps(maxSteps); for(let g=0;rrPend&&!rrPend.manual&&g<4;g++){ fireReroll(); simSteps(maxSteps); } }, finishRoll, drift(n){ for(let i=0;i<n;i++){ tuneSolver(); world.step(1/60); if(settled&&leanRings.length) refreshLeans(); } },   // what the live loop does after a roll has settled
   get held(){return [...held];}, reskinDie, dieMenu, dieScreen, crapsCallout, get heldPose(){return heldPose;}, get faces(){ return readResult().map(p=>p.label); }, get restoring(){return !!restoring;}, get restoreTries(){return restoreTries;}, GAMES, get game(){return game;}, startGame, endGame, gameScore, openGames(){ document.dispatchEvent(new CustomEvent('pd-open-games')); }, markLean(i){ leanDice[i]=true; showLeans(); updateHoldUI(); }, RING_COLORS, get holdRingsVisible(){return holdRings.filter(m=>m.visible).length;}, get leanRingCount(){return leanRings.length;}, bodyScreen(i){ const b=bodies[i].position, v=new THREE.Vector3(b.x,b.y,b.z).project(camera), r=cv.getBoundingClientRect(); return {x:r.left+(v.x+1)/2*r.width, y:r.top+(1-v.y)/2*r.height}; }, toggleHold, clearHolds, pickDie, get holdRings(){return holdRings.length;},
   get rollT(){return rollT;}, set rollT(v){ rollT=v; }, step(n=1){ simSteps(n); }, get bodies(){return bodies;}, get rolling(){return rolling;}, get placed(){return placed;}, get settled(){return settled;}, set settled(v){ settled=v; }, get dragging(){return dragging;}, get history(){return {idx:hIdx,length:history.length};},
   pause(){ renderer.setAnimationLoop(null); }, resume(){ clock.getDelta(); renderer.setAnimationLoop(loop); },

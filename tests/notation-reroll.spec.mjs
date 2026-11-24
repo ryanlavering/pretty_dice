@@ -59,7 +59,7 @@ test('physical roll: breakdown and log show the original, the FINAL die decides 
   await app.reset(5);
   for (const seed of [5, 6, 7, 8]) {
     await app.reset(seed);
-    const r = await app.run(pd => { pd.state.notation = 'd20r>=2'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); const e = pd.bag.log.at(-1);
+    const r = await app.run(pd => { pd.state.autoReroll = true; pd.state.notation = 'd20r>=2'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); const e = pd.bag.log.at(-1);
       return { total: +e.total, detail: e.detail, notation: e.notation, text: document.querySelector('#result').textContent }; });
     expect(r.notation).toBe('d20r>=2');
     const m = r.detail.match(/^1d20r>=2: (?:(\d+)→)?(\d+)$/); expect(m, r.detail).toBeTruthy();
@@ -71,7 +71,7 @@ test('physical roll: breakdown and log show the original, the FINAL die decides 
 
 test('physical group roll: 2x 2d20r<=19kh1 shows the original per die and keeps the final values', async ({ shared: app }) => {
   await app.reset(9);
-  const r = await app.run(pd => { pd.state.notation = '2x 2d20r<=19kh1+1'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); const e = pd.bag.log.at(-1); return { total: e.total, detail: e.detail, n: pd.state.notation }; });
+  const r = await app.run(pd => { pd.state.autoReroll = true; pd.state.notation = '2x 2d20r<=19kh1+1'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.simRoll(); const e = pd.bag.log.at(-1); return { total: e.total, detail: e.detail, n: pd.state.notation }; });
   const lines = r.detail.split('  ·  '); expect(lines.length).toBe(2);
   const totals = r.total.split(' · ').map(Number);
   lines.forEach((l, i) => { const m = l.match(/^#\d: (.+) \+ 1 = (\d+)$/); expect(m, l).toBeTruthy(); const vs = m[1].split('+').map(x => ({ d: x.startsWith('('), v: +x.replace(/[()]/g, '').split('→').at(-1) }));
@@ -81,7 +81,7 @@ test('physical group roll: 2x 2d20r<=19kh1 shows the original per die and keeps 
 // PD-212: the reroll is a real re-throw of just the matching dice (ring first), not a re-evaluation
 test('physics reroll: matching dice get the ring, then only they are re-thrown once; reproducible with a seed', async ({ shared: app }) => {
   const once = async seed => { await app.reset(seed); return app.run(pd => {
-    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false);
+    pd.state.autoReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false);
     pd.step(1500); const first = pd.faces.slice(), pend = pd.rrPending, rings = pd.rrRingCount, hidden = !document.querySelector('#result').classList.contains('on');
     const posBefore = pd.bodies.map(b => b.position.toArray());
     pd.settleRoll(); const e = pd.bag.log.at(-1); return { first, pend, rings, hidden, orig: pd.rrOrig, final: pd.faces.slice(), detail: e && e.detail, total: e && +e.total, rerolls: pd.rrOrig.length }; }); };
@@ -101,10 +101,10 @@ test('physics reroll: matching dice get the ring, then only they are re-thrown o
   expect(seen).toBeGreaterThan(0);
 });
 
-test('manual rerolls: ring and chip wait, the chip throws; a new roll keeps the first values', async ({ shared: app }) => {
+test('manual rerolls (the default): ring and chip wait, the chip throws; a new roll keeps the first values', async ({ shared: app }) => {
   await app.reset(21);
   const r = await app.run(pd => {
-    pd.state.manualReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); const n0 = pd.bag.log.length; pd.startRoll(false, false); pd.step(1500);
+    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); const n0 = pd.bag.log.length; pd.startRoll(false, false); pd.step(1500);
     const out = { pend: pd.rrPending, manual: pd.rrManual, rings: pd.rrRingCount, chip: document.querySelector('#result .rrchip')?.textContent, logged: pd.bag.log.length - n0, first: pd.faces.slice() };
     pd.rerollNow(); out.afterThrow = { settled: pd.settled, pend: pd.rrPending, chip: !!document.querySelector('#result .rrchip') };
     pd.settleRoll(); out.final = pd.faces.slice(); out.detail = pd.bag.log.at(-1)?.detail; out.logged2 = pd.bag.log.length - n0;
@@ -112,16 +112,77 @@ test('manual rerolls: ring and chip wait, the chip throws; a new roll keeps the 
   expect(r.pend, 'seed 21 should have a match').not.toBeNull(); expect(r.manual).toBe(true); expect(r.rings).toBe(r.pend.length); expect(r.chip).toMatch(/Re-roll \d+ di/); expect(r.logged).toBe(0);
   expect(r.afterThrow.settled).toBe(false); expect(r.afterThrow.chip).toBe(false); expect(r.detail).toContain('→'); expect(r.logged2).toBe(1);
   // a new roll while the reroll is pending: the first values stand and are logged without any →
-  const k = await app.run(pd => { pd.reseed(21); pd.state.manualReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+  const k = await app.run(pd => { pd.reseed(21); pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
     const had = pd.rrPending, n0 = pd.bag.log.length; pd.startRoll(false, false); const e = pd.bag.log.length > n0 ? pd.bag.log.at(-1) : null; return { had, n0, n1: pd.bag.log.length, detail: e && e.detail, pendNow: pd.rrPending }; });
   expect(k.had).not.toBeNull(); expect(k.n1).toBe(k.n0 + 1); expect(k.detail).not.toContain('→'); expect(k.pendNow).toBeNull();
+});
+
+
+// PD-212 (owner 2026-11-24): manual is the default; Auto-reroll is the option
+test('reroll defaults: autoReroll is off, a legacy manualReroll value is ignored and stored settings load', async ({ app }) => {
+  await app.open({ storage: { 'prettydice.v1': JSON.stringify({ manualReroll: false, autoReroll: 'yes', notation: 'd20' }) } });
+  const r = await app.run(pd => ({ auto: pd.state.autoReroll, legacy: 'manualReroll' in pd.state, box: document.getElementById('autoreroll').checked, old: !!document.getElementById('manualreroll') }));
+  expect(r.auto).toBe(false); expect(r.legacy).toBe(false); expect(r.box).toBe(false); expect(r.old).toBe(false);   // a wrongly typed autoReroll is dropped too
+});
+
+test('r key: with a reroll waiting it re-throws only those dice (no full roll); the chip is gone once they settle', async ({ shared: app, page }) => {
+  await app.reset(21);
+  const r = await app.run(pd => {
+    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    return { pend: pd.rrPending, first: pd.faces.slice(), chips: document.querySelectorAll('#result .rrchip').length, n0: pd.bag.log.length }; });
+  expect(r.pend).not.toBeNull(); expect(r.chips).toBe(1);
+  await app.page.locator('#stage').click({ position: { x: 5, y: 5 } }); await app.page.keyboard.press('r');
+  const k = await app.run(pd => { const o = { settled: pd.settled, pend: pd.rrPending, chips: document.querySelectorAll('#result .relean').length };
+    pd.settleRoll(); o.final = pd.faces.slice(); o.after = { chips: document.querySelectorAll('#result .relean').length, pend: pd.rrPending, rings: pd.rrRingCount, logged: pd.bag.log.length, detail: pd.bag.log.at(-1)?.detail }; return o; });
+  expect(k.settled).toBe(false); expect(k.pend).toBeNull(); expect(k.chips).toBe(0);
+  r.first.forEach((v, i) => { if (!r.pend.includes(i)) expect(k.final[i], 'die ' + i).toBe(v); });   // a full roll would have changed the others
+  expect(k.after.chips).toBe(0); expect(k.after.pend).toBeNull(); expect(k.after.rings).toBe(0); expect(k.after.logged).toBe(r.n0 + 1); expect(k.after.detail).toContain('→');
+});
+
+test('reroll chip is dropped when the dice are rebuilt, a new roll starts, or the table is left', async ({ shared: app }) => {
+  await app.reset(21);
+  const r = await app.run(pd => {
+    const out = {}, roll = () => { pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500); };
+    roll(); out.shown = document.querySelectorAll('#result .rrchip').length; pd.state.notation = 'd20'; pd.buildDice(); out.rebuild = { chips: document.querySelectorAll('#result .relean').length, pend: pd.rrPending, rings: pd.rrRingCount };
+    pd.reseed(21); roll(); pd.startRoll(false, false); out.newRoll = { chips: document.querySelectorAll('#result .relean').length, pend: pd.rrPending };
+    pd.step(1500); out.afterNew = { chips: document.querySelectorAll('#result .relean').length };
+    return out; });
+  expect(r.shown).toBe(1); expect(r.rebuild).toEqual({ chips: 0, pend: null, rings: 0 }); expect(r.newRoll).toEqual({ chips: 0, pend: null });
+});
+
+test('leaning dice: manual chip and r re-throw only the leaner; the chip is gone after', async ({ shared: app, page }) => {
+  await app.reset(5);
+  const r = await app.run(pd => { pd.state.notation = '2d6'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    const before = pd.bodies.map(b => b.position.x.toFixed(3)); pd.cockDie(1); pd.renderOnce(2);   // 2 s: with Auto-reroll off nothing fires on its own
+    return { before, leans: pd.leans, stillLean: pd.leans.filter(Boolean).length, chips: document.querySelectorAll('#result .relean').length, settled: pd.settled }; });
+  expect(r.leans[1]).toBe(true); expect(r.chips).toBe(1); expect(r.settled).toBe(true);
+  await app.page.locator('#stage').click({ position: { x: 5, y: 5 } }); await app.page.keyboard.press('r');
+  const k = await app.run(pd => { const o = { settled: pd.settled, chips: document.querySelectorAll('#result .relean').length, moved: pd.bodies.map(b => b.position.x.toFixed(3)) };
+    pd.bodies[1].type = 1; pd.bodies[1].updateMassProperties();   // cockDie held it static: let it fall
+    pd.step(1500); pd.renderOnce(.1); o.after = { settled: pd.settled, chips: document.querySelectorAll('#result .relean').length, leans: pd.leans.filter(Boolean).length }; return o; });
+  expect(k.settled).toBe(false); expect(k.chips).toBe(0); expect(k.after.settled).toBe(true); expect(k.after.chips).toBe(0);
+  for (const i of [0]) if (!r.leans[i]) expect(k.moved[i], 'die ' + i + ' stays').toBe(r.before[i]);
+});
+
+test('Auto-reroll on: the r ring shows 1 s, then the dice are thrown on their own; leaning dice too', async ({ shared: app }) => {
+  await app.reset(21);
+  const r = await app.run(pd => { pd.state.autoReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    const o = { pend: pd.rrPending, manual: pd.rrManual, chips: document.querySelectorAll('#result .rrchip').length };
+    pd.renderOnce(.5); o.at05 = { pend: pd.rrPending, settled: pd.settled }; pd.renderOnce(.45); o.at095 = { pend: pd.rrPending, settled: pd.settled }; pd.renderOnce(.1); o.at105 = { pend: pd.rrPending, settled: pd.settled };
+    pd.settleRoll(); o.chipsEnd = document.querySelectorAll('#result .relean').length; return o; });
+  expect(r.pend).not.toBeNull(); expect(r.manual).toBe(false); expect(r.chips).toBe(0);
+  expect(r.at05.pend).not.toBeNull(); expect(r.at095.pend).not.toBeNull(); expect(r.at105.pend).toBeNull(); expect(r.at105.settled).toBe(false); expect(r.chipsEnd).toBe(0);
+  await app.reset(5);
+  const l = await app.run(pd => { pd.state.autoReroll = true; pd.state.notation = '2d6'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500); pd.cockDie(1);
+    const o = { start: pd.leans.filter(Boolean).length }; pd.renderOnce(.5); o.at05 = pd.settled; pd.renderOnce(.45); o.at095 = pd.settled; pd.renderOnce(.1); o.at105 = pd.settled; return o; });
+  expect(l.start).toBeGreaterThan(0); expect(l.at05).toBe(true); expect(l.at095).toBe(true); expect(l.at105).toBe(false);
 });
 
 // PD-212: dice that are not re-thrown are treated like held dice: a bump puts them back, they never ring or reroll
 test('reroll bump: a non-rerolled die turned by a bump goes back to its face, no extra ring or reroll', async ({ shared: app }) => {
   await app.reset(21);
   const r = await app.run(pd => {
-    pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    pd.state.autoReroll = true; pd.state.notation = '6d6r<=3'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
     const first = pd.faces.slice(), pend = pd.rrPending, keep = first.map((_, i) => i).filter(i => !pend.includes(i)); pd.rerollNow();
     const hit = keep.slice(0, 2).map(j => { const b = pd.bodies[j], q = new b.quaternion.constructor(); q.setFromAxisAngle({ x: 1, y: 0, z: 0 }, Math.PI / 2); q.mult(b.quaternion, q); b.quaternion.copy(q); b.wakeUp(); return j; });   // a "bump": two kept dice turned onto other faces
     pd.settleRoll(); const e = pd.bag.log.at(-1);
@@ -137,7 +198,7 @@ test('reroll: over 20 seeds the dice that were not re-thrown keep their values; 
   let rerolled = 0;
   for (let seed = 100; seed < 120; seed++) {
     await app.reset(seed);
-    const r = await app.run(pd => { pd.state.notation = '4d6r<=2'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
+    const r = await app.run(pd => { pd.state.autoReroll = true; pd.state.notation = '4d6r<=2'; pd.state.shape = 'custom'; pd.buildDice(); pd.startRoll(false, false); pd.step(1500);
       const first = pd.faces.slice(), pend = pd.rrPending || []; pd.settleRoll(); const e = pd.bag.log.at(-1);
       return { first, pend, final: pd.faces.slice(), orig: pd.rrOrig.map(x => x[0]), detail: e.detail, pending: pd.rrPending }; });
     r.first.forEach((v, i) => { if (!r.pend.includes(i)) expect(r.final[i], `seed ${seed} die ${i}`).toBe(v); });
