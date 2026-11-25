@@ -36,13 +36,13 @@ GATES = [
   ('PD-198 quick roll history + visible history control landed', True, '7c9f12f + 49ac78d'),
   ('PD-213 Bag remembers its tab, PD-214 set row relabel, pips fix, PD-215 mat follows the formula landed', True, 'be142c1, 4badeac, f59ef56, 8046702 + f937dc2'),
   ('PD-142.42.2/.3/.42 (longhand, chained rolls) moved to 4.3', True, 'owner decision 2026-11-22'),
-  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT H @0cc5ecf (final head: tour + PD-149 revert): 706 pass x2. Earlier: G @8046702 704 x2 (nav-tabs stale assertion fixed f937dc2), E @7c9f12f 679/679 x2, F @23c6e7d 693/693 x2. Real bugs found on the way: active.draft restore (77cdd4e), pips lost after Save as design (f59ef56)'),
-  ('Golden set stable (only owner-approved re-records)', True, 'approvals: PD-201 four files, S3 label, S5 pips row'),
-  ('Review build of the tested head for owner review (Dev artifact)', True, 'v27 at 5ece718 (adds tingles for the cards under review; PD-149 removed, tour added): https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
+  ('Full suite green on the release candidate (two clean runs, --retries=0)', True, 'CHECKPOINT J @2fc9bd1: 718 pass x2, 12 skipped, 0 failed. GitHub Actions green at 2fc9bd1 on v4.2 and v42-setlook. Earlier H @0cc5ecf 706 x2'),
+  ('Golden set stable (only owner-approved re-records)', True, 'approvals: PD-201 four files, S3 label, S5 pips row, PD-212 screens x2 (rename + checkbox label "Automatically roll leaning and re-roll dice"; phone layout up 8-18 px)'),
+  ('Review build of the tested head for owner review (Dev artifact)', True, 'v32 at 2fc9bd1: https://claude.ai/artifact/RxfqVoxXtRYJNvdXpR8MR2'),
   ('4.2 release tour entries (owner-picked four highlights) built and tested', True, '0fc0b37; release-tour spec 8, TOUR_VERSION 4.2'),
-  ('Release candidate artifact (review flag stripped, with the 4.2 tour)', False, 'build after the re-reviews'),
+  ('Release candidate artifact (review flag stripped, with the 4.2 tour)', True, 'built at 2fc9bd1 (--artifact --release-tour, dist/pretty-dice-release.html), CSP ready:true; published only at release'),
   ('Artifact CSP spec and single-file build boot clean', True, 'csptest ready:true at 7c9f12f; recheck at each publish'),
-  ('Owner review of Needs Review cards on the RC', False, 'Needs Review: PD-202 (set row), 188, 198, 142.42.1/212, 213, 214, 215; 206, 190, 201 ok'),
+  ('Owner review of Needs Review cards on the RC', True, 'all reviewed: 188/213/215/212/214/202 ok via resolved threads or ok; PD-198 and PD-142.42.1 had no thread (counted reviewed unless the owner says otherwise); PD-214 and PD-212 reworked after owner comments'),
   ('Guide and CHANGELOG 4.2 complete (reroll, history, glare lines)', True, 'S6 60e0443 + lane lines for reroll (guide 04), history (guide 05/08); owner skim optional'),
   ('Owner round with no new change requests; final sign-off', False, ''),
   ('Merge v4 backlog commits into v4.2; then ff main to v4.2', False, 'wait for sign-off'),
@@ -55,8 +55,8 @@ GATES = [
 ]
 
 OWNER_QS = [
-  'PD-20.7 (CI v5, sharding): stays in Needs Review until the first green GitHub run.',
-  'Final sign-off on the release candidate before the tag.',
+  'PD-20.7 (CI v5, sharding): owner ok 2026-11-22; GitHub Actions is now green on v4.2 at the RC head 2fc9bd1. Confirm it can go to Done at release.',
+  'Final sign-off on the release candidate before the tag (PD-198 and PD-142.42.1 had no review thread: fine to count as reviewed?).',
 ]
 
 
