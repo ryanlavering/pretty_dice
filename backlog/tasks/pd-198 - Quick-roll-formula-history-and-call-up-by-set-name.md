@@ -1,10 +1,10 @@
 ---
 id: PD-198
 title: Quick roll formula history and call-up by set name
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-20T23:52:00Z'
-updated_date: '2026-11-25T06:16:00Z'
+updated_date: '2026-11-25T06:19:00Z'
 labels:
   - v4.2
 dependencies: []

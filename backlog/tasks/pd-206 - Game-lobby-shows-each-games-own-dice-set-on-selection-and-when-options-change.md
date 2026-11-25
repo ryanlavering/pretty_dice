@@ -3,10 +3,10 @@ id: PD-206
 title: >-
   Every game shows its own dice in the lobby (held like Story Dice; Roll rolls
   them in place)
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-21T15:56:00Z'
-updated_date: '2026-11-22T06:12:00Z'
+updated_date: '2026-11-25T06:19:00Z'
 labels:
   - v4.2
 dependencies: []

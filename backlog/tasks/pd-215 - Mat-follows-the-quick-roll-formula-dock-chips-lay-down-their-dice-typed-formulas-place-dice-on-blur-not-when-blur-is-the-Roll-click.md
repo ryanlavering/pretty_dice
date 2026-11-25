@@ -3,10 +3,10 @@ id: PD-215
 title: >-
   Mat follows the quick-roll formula: dock chips lay down their dice; typed
   formulas place dice on blur (not when blur is the Roll click)
-status: Review Complete
+status: Done
 assignee: []
 created_date: '2026-11-22T06:56:00Z'
-updated_date: '2026-11-24T23:39:00Z'
+updated_date: '2026-11-25T06:19:00Z'
 labels:
   - v4.2
   - feature
