@@ -157,10 +157,10 @@ test('S12: Save as design on the ghost makes a design (look = the draft, suggest
   await startStory(app);
   const dice0 = await app.run(pd => ({ n: pd.dice.length, notation: pd.state.notation }));
   await app.run(async pd => { await pd.bagOps.keep(); }); await app.page.waitForTimeout(400);   // the Bag header's Save as design button
-  const o = await app.run(pd => { const d = pd.bag.designs[pd.bag.designs.length - 1], s = pd.bag.sets[pd.bag.sets.length - 1]; return { nd: pd.bag.designs.length, ns: pd.bag.sets.length, name: d.name, sub: d.design.substrate, shape: d.design.shape, notation: d.design.notation, active: pd.bag.active, hold: pd.bag.hold && { draft: pd.bag.hold.draft, phase: pd.bag.hold.phase, mine: pd.bag.hold.mine }, setName: s.name, setDesign: s.design, id: d.id, term: s.terms[0], dice: pd.dice.length, live: pd.state.notation }; });
+  const o = await app.run(pd => { const d = pd.bag.designs[pd.bag.designs.length - 1], s = pd.bag.sets[pd.bag.sets.length - 1]; return { nd: pd.bag.designs.length, ns: pd.bag.sets.length, name: d.name, sub: d.design.substrate, shape: d.design.shape, notation: d.design.notation, active: pd.bag.active, hold: pd.bag.hold && { draft: pd.bag.hold.draft, phase: pd.bag.hold.phase, mine: pd.bag.hold.mine }, setName: s.name, setHasDesign: 'design' in s, id: d.id, term: s.terms[0], dice: pd.dice.length, live: pd.state.notation }; });
   expect(o.nd).toBe(preDesigns + 1); expect(o.ns).toBe(preSets + 1);
   expect(o).toMatchObject({ name: 'Story Dice look', sub: 'solid', shape: 'custom', notation: '5d12', setName: 'Story Dice dice' });
-  expect(o.setDesign).toBe(o.id); expect(o.term).toMatchObject({ count: 5, sides: 12, design: o.id }); expect(o.term.faces).toBeTruthy();
+  expect(o.setHasDesign).toBe(false); expect(o.term).toMatchObject({ count: 5, sides: 12, design: o.id }); expect(o.term.faces).toBeTruthy();
   expect(o.active).toMatchObject({ design: o.id, draft: false }); expect(o.hold.draft).toBeNull(); expect(o.hold.phase).toBe('game'); expect(o.hold.mine).toMatchObject(OWN);
   expect({ n: o.dice, notation: o.live }).toEqual({ n: dice0.n, notation: dice0.notation });
   await endIt(app);

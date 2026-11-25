@@ -735,8 +735,8 @@ const bagOps={
   async keepGame(){ const h=bag.hold, d=h&&h.draft; if(!d) return; syncLive(); const wasLive=bag.active.draft==='game', info=GAMES.listGames().find(g=>g.id===h.game);
     const e=addEntry(wasLive?liveJSON():d.design,d.name);
     const go=game&&game.id==='story'?game.state.options:null, gs=h.game==='story'?(go?{count:go.dice,sides:go.sides,packs:go.packs,seed:go.seed,dice:'different',order:'shuffled'}:h.story):null, dd=(info&&info.dice)||{count:5,sides:6};
-    const term=gs?draftTerm({...gs,design:e.id}):{count:dd.count,sides:dd.sides};
-    setOps.create({name:`${info?info.name:h.game} dice`,terms:[term],mod:0,design:e.id});
+    const term=gs?draftTerm({...gs,design:e.id}):{count:dd.count,sides:dd.sides,design:e.id};   /* PD-214: the set names the design on its dice, there is no set-level design */
+    setOps.create({name:`${info?info.name:h.game} dice`,terms:[term],mod:0});
     if(d.kind!=='tweak') h.draftOff=true;   // PD-188: a saved tweak look (B+pips is now a design with pips) still follows later picks; only Discard turns it off for the round
     if(wasLive){ h.draft=null; bag.active.draft=false; bag.active.design=e.id; $('dname').value=e.name; save(); }   // the live look already is the new design
     else { await activate(e.id,{skipSync:true}); h.draft=null; save(); } },   // activate keeps the room and a running game's dice where they lie
