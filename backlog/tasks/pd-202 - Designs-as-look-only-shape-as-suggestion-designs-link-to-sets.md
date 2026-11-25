@@ -1,10 +1,12 @@
 ---
 id: PD-202
-title: 'Designs as look only: shape as suggestion, designs link to sets'
-status: To Do
+title: >-
+  Designs are looks: picks never change the dice; 'Suggested: dN' chip; sets can
+  name a design
+status: Review Complete
 assignee: []
 created_date: '2026-11-21T00:26:00Z'
-updated_date: '2026-11-21T00:29:00Z'
+updated_date: '2026-11-25T00:26:00Z'
 labels:
   - v4.2
 dependencies: []
@@ -23,3 +25,13 @@ Owner idea (RC thread on PD-197): apply only styling when picking a design (also
 - Direction of the link is reversed from the first idea: a SET may optionally reference a design (picking the set can bring its look along); a design does not need to carry sets. Drop the 'default set' idea.
 - Open detail for 4.2 start: if a set names a design and the user has since restyled, apply the set's design every time (lean) or only on opt-in, with a way to turn it off.
 - 4.2, high priority. 4.1 only does PD-197 (room return; look-only pick in Play).
+
+## 4.2 plan and design memo (2026-11-21)
+Model and slicing: docs/design/designs-sets-model.md (branch v4.2, 2a7b808). Slices: S1 (PD-202 part 1) landed 2a45428 on v4.2; S2 set->design link (PD-202 part 2); S3 lobby dice for every game (PD-206); S4 game draft (PD-190, needs S3); S5 tweak looks / Yacht 'Use d6 pips' (PD-188, needs S4); S6 docs and release pass.
+Owner answers: Q1 yes (a set that names a design applies that look every time, per-set 'Keep my look' switch); Q2 yes (Save as design on a game look makes the design AND a set with the game's dice that names it); Q4 yes (re-record ONLY the Games-screen dice label golden value in S3). Q3 (Use d6 pips on every d6 game, on by default only for Yacht) and Q5 (pips follow a mid-game pick) default to the memo recommendations unless the owner says otherwise.
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Owner 2026-11-21: generally ok, pending re-review of the updated set options (PD-214 row).
+<!-- SECTION:NOTES:END -->

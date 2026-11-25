@@ -1,9 +1,10 @@
 ---
 id: PD-198
 title: Quick roll formula history and call-up by set name
-status: To Do
+status: Review Complete
 assignee: []
 created_date: '2026-11-20T23:52:00Z'
+updated_date: '2026-11-25T06:16:00Z'
 labels:
   - v4.2
 dependencies: []
@@ -16,3 +17,9 @@ ordinal: 391000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Owner idea (RC artifact comment): the quick roll formula box (#rollbox) should have history: Up arrow steps through previous formulas and set names (shell style; Down past newest restores the draft). Dice can be called up by set name, set names win ties when a set is named like a valid formula. On mobile, long-press opens a history list. Open: persist across sessions (lean: ~20 entries) or reset on reload; de-duplicate, most recent first.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Owner review 2026-11-21: looks okay but hard to discover; Up/Down is desktop-only. Wants a way to pop up the history list and select from it: on mobile a long press on the formula box, on desktop click something in the textbox (e.g. a chevron) to open the menu.
+<!-- SECTION:NOTES:END -->
