@@ -99,3 +99,31 @@ for (const [w, h] of [[1280, 800], [390, 740]]) test(`Apply to all shares the Di
   expect(Math.abs((bb.y + bb.height / 2) - (sb.y + sb.height / 2))).toBeLessThan(sb.height);   // at both widths the real layout fits on one row
   await page.screenshot({ path: `/tmp/claude-1000/-home-ryan/0dac35b2-99da-4d11-a1c3-a032f79378da/scratchpad/seted-${w}.png` });
 });
+
+test('Dice use selects the one design every term carries; two designs or a mix keep the default; Apply to all selects it', async ({ app, page }) => {
+  let ed = await editor(app, page, 'has');                                  // 2d6@gold
+  await expect(dice(ed)).toHaveValue('gold');
+  await ed.locator('.senote').fill('2d6@gold+1d8@gold'); await ed.locator('.senote').press('Enter');
+  await expect(dice(ed)).toHaveValue('gold');
+  await ed.locator('.senote').fill('2d6@gold+1d8@amethyst'); await ed.locator('.senote').press('Enter');
+  await expect(dice(ed)).toHaveValue('gold');                               // two designs: the earlier choice stays, no new default
+  await ed.locator('.senote').fill('2d6@gold+1d8'); await ed.locator('.senote').press('Enter');
+  await expect(dice(ed)).toHaveValue('gold');
+  await page.locator('#setlist .seted .seclose').click(); await page.getByRole('button', { name: 'Discard' }).click().catch(() => {});
+  ed = await editor(app, page, 'two');                                      // 2d6+1d8: no designs
+  await expect(dice(ed)).toHaveValue('');
+  await dice(ed).selectOption('amethyst'); await all(ed).click();
+  await expect(note(ed)).toHaveValue('2d6@amethyst+1d8@amethyst');
+  await expect(dice(ed)).toHaveValue('amethyst');
+  await ed.locator('button[aria-label="Modifier up"]').click();
+  await expect(dice(ed)).toHaveValue('amethyst');
+  await dice(ed).selectOption('gold');                                     // a user choice survives unrelated edits
+  await ed.locator('button[aria-label="Modifier up"]').click();
+  await expect(dice(ed)).toHaveValue('gold');
+});
+
+test('Dice use default is Active design for a mixed set opened fresh', async ({ app, page }) => {
+  await app.run(pd => { pd.bag.sets.find(s => s.id === 'two').terms = [{ count: 2, sides: 6, design: 'gold' }, { count: 1, sides: 8, design: 'amethyst' }]; });
+  const ed = await editor(app, page, 'two');
+  await expect(dice(ed)).toHaveValue('');
+});
