@@ -49,7 +49,7 @@ test('set editor: the Use design for this set row is gone', async ({ app, page }
 });
 
 const dice = ed => ed.locator('.row2 select');
-const all = ed => ed.locator('.applyall button');
+const all = ed => ed.locator('button.applyall');
 
 test('Dice use alone adds a new term and never touches existing ones (single term too)', async ({ app, page }) => {
   const ed = await editor(app, page, 'one');
@@ -86,4 +86,16 @@ test('Apply to all is hidden like Dice use with a one-design bag', async ({ app,
   const ed = await editor(app, page, 'one');
   await expect(all(ed)).toBeHidden();
   await expect(dice(ed)).toBeHidden();
+});
+
+for (const [w, h] of [[1280, 800], [390, 740]]) test(`Apply to all shares the Dice use row, or wraps right-aligned under the dropdown (${w}x${h})`, async ({ app, page }) => {
+  await page.setViewportSize({ width: w, height: h });
+  const ed = await editor(app, page, 'one');
+  const sb = await dice(ed).boundingBox(), bb = await all(ed).boundingBox();
+  const vw = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(bb.x + bb.width).toBeLessThanOrEqual(vw + 0.5); expect(sb.width).toBeGreaterThan(60);
+  if (Math.abs((bb.y + bb.height / 2) - (sb.y + sb.height / 2)) < sb.height) expect(bb.x).toBeGreaterThanOrEqual(sb.x + sb.width - 0.5);   // same row, button right of the dropdown
+  else { expect(bb.y).toBeGreaterThanOrEqual(sb.y + sb.height - 0.5); expect(Math.abs(bb.x + bb.width - (sb.x + sb.width))).toBeLessThan(1.5); }   // wrapped: directly under, right edges aligned
+  expect(Math.abs((bb.y + bb.height / 2) - (sb.y + sb.height / 2))).toBeLessThan(sb.height);   // at both widths the real layout fits on one row
+  await page.screenshot({ path: `/tmp/claude-1000/-home-ryan/0dac35b2-99da-4d11-a1c3-a032f79378da/scratchpad/seted-${w}.png` });
 });
