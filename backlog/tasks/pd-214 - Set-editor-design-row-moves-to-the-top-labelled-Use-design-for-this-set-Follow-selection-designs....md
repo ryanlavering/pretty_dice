@@ -3,10 +3,10 @@ id: PD-214
 title: >-
   Set editor: design row moves to the top, labelled 'Use design for this set:'
   (Follow selection, designs...)
-status: Needs Review
+status: In Progress
 assignee: []
 created_date: '2026-11-22T06:10:00Z'
-updated_date: '2026-11-24T23:26:00Z'
+updated_date: '2026-11-25T00:13:00Z'
 labels:
   - v4.2
   - polish
