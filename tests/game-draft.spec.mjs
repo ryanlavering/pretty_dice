@@ -302,3 +302,14 @@ test('reload mid-game keeps a random draft as the player\'s look (it comes back 
   const after = await draftState(app);
   expect(after.draft).toBe(true); expect(lookOf(after.look)).toBe(lookOf(before.look)); expect(after.rdraft).toBe(before.rdraft);
 });
+
+test('PD-214: Save as design from a non-story game look puts the design on the set\'s dice', async ({ shared: app }) => {
+  await app.reset(202, { plain: true }); await app.run(pd => { for (const k of Object.keys(pd.gprefs.opts)) if (k.endsWith('.look')) delete pd.gprefs.opts[k]; });
+  const base = await app.run(async pd => { const j = pd.designToJSON(); j.substrate = 'solid'; j.name = 'Base'; j.numbers = { ...j.numbers, d6_style: 'numbers' }; return pd.bagOps.addLoaded(JSON.parse(JSON.stringify(j))); }); await app.run((pd, id) => pd.bagActivate(id), base); await app.page.waitForTimeout(800);
+  const pre = await app.run(pd => pd.bag.sets.map(x => x.id));
+  await toLobby(app, 'yahtzee');
+  expect(await app.run(pd => pd.bag.hold && pd.bag.hold.draft && pd.bag.hold.draft.kind)).toBe('tweak');   // Yacht's pips look: a non-story game draft
+  await app.run(async pd => { await pd.bagOps.keepGame(); });
+  const o = await app.run((pd, pre) => { const s = pd.bag.sets.find(x => !pre.includes(x.id)), d = pd.bag.designs[pd.bag.designs.length - 1]; return s && { has: 'design' in s, terms: s.terms.map(t => t.design || null), id: d.id }; }, pre);
+  expect(o, 'a set was made').toBeTruthy(); expect(o.has).toBe(false); expect(o.terms.length).toBeGreaterThan(0); expect(o.terms.every(t => t === o.id)).toBe(true);
+});

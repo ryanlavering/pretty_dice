@@ -614,7 +614,7 @@
     ],
     "value": "0.2"
    },
-   "manualreroll": {
+   "autoreroll": {
     "tag": "input",
     "cls": "",
     "shown": true,
@@ -2163,7 +2163,7 @@
     "cls": "",
     "shown": false
    },
-   "manualreroll": {
+   "autoreroll": {
     "tag": "input",
     "cls": "",
     "shown": false
@@ -3637,7 +3637,7 @@
     "cls": "",
     "shown": false
    },
-   "manualreroll": {
+   "autoreroll": {
     "tag": "input",
     "cls": "",
     "shown": false
@@ -4909,7 +4909,7 @@
     "cls": "",
     "shown": false
    },
-   "manualreroll": {
+   "autoreroll": {
     "tag": "input",
     "cls": "",
     "shown": false
