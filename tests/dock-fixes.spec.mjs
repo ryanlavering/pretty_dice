@@ -34,3 +34,14 @@ test('dock Adv/Dis insert d20adv like the Custom chips: tap replaces, double-cli
   await box.fill('2d20kh1'); await page.waitForTimeout(500); await dis.dblclick(); await expect(box, 'existing adv, double-click Dis: added').toHaveValue('2d20kh1+2d20kl1');
   await expect(page.locator('#qerr')).toHaveText('');
 });
+test('picking a set by any path empties the box, so Roll throws the set, not the stale chip formula (PD-225)', async ({ app, page }) => {
+  await open(app);
+  const id = await app.run(pd => pd.setOps.create({ name: 'Animals', terms: [{ count: 1, sides: 12 }], mod: 0, table: '1-6 Goat\n7-12 Horse' }));
+  const box = page.locator('#rollbox'), st = () => app.run(pd => ({ n: pd.state.notation, set: pd.bag.active.set }));
+  await page.locator('#qbar .dchip[data-die="20"]').click(); await page.waitForTimeout(400);
+  await expect(box).toHaveValue('1d20');
+  await app.run((pd, id) => { pd.setOps.open(id); }, id);   // what a sheet row or the Open menu does (the hotbar set chip already cleared the box)
+  await expect(box).toHaveValue('');
+  await page.locator('#rollbtn').click();
+  expect(await st(), 'Roll threw the set, not 1d20').toMatchObject({ n: '1d12', set: id });
+});

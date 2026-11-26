@@ -999,7 +999,8 @@ const setOps={
   /* the row's main action: the set's dice are set out on the mat, not thrown (selecting is not rolling); {roll:true} throws them at once */
   open(id,{roll=false}={}){ const st=this.find(id); if(!st||gameDiceFixed(!gameRun()||sameDiceAsGame(setNotation(st)))) return false;
     return this._place(st,id,roll); },
-  _place(st,id,roll){ checkpoint(); const gr=gameRun(), poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null; state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); if(gr){ pendingLay={n:dice.length,poses}; startRoll(false,true); gameSync(); renderGame(); } else startRoll(false,!roll); syncUI(); save(); return true; },
+  _place(st,id,roll){ checkpoint(); { const bx=$('rollbox'); if(bx){ bx.value=''; bx.classList.remove('bad'); bx.title=DOCK_TIP; } }   /* PD-225: any way of picking a set empties the dock box, or Roll would throw the stale formula and drop the set */
+   const gr=gameRun(), poses=gr?bodies.map(b=>({p:b.position.clone(),q:b.quaternion.clone()})):null; state.notation=setNotation(st); state.shape='custom'; bag.active.set=id; rollSetId=id; closeSheet(); buildDice(); if(gr){ pendingLay={n:dice.length,poses}; startRoll(false,true); gameSync(); renderGame(); } else startRoll(false,!roll); syncUI(); save(); return true; },
   /* the lightning button: a result without leaving the screen */
   quick(id){ const st=this.find(id); if(!st) return null;
     if(gameRun()){ if(!gameDiceFixed(sameDiceAsGame(setNotation(st)))) this.open(id); return null; }   // PD-192 D: a running game fixes the dice: a set with other dice is declined, a same-dice set applies as a look only; never a roll, never a log row
